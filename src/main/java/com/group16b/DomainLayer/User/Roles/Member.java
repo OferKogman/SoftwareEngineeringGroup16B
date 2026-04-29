@@ -1,5 +1,8 @@
 package com.group16b.DomainLayer.User.Roles;
 
-public class Member implements Role {
-
+public class Member extends Role {
+    
+    public Member(int parentID) {
+        super(parentID);
+    }
 }
