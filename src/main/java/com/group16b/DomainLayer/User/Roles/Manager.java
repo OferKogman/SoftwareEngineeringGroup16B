@@ -6,6 +6,7 @@ public class Manager extends Member {
 	protected Manager(int parentID) {
 		this.parentID = parentID;
 	}
+
 	public int getParentID() {
 		return parentID;
 	}

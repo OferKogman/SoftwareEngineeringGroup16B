@@ -33,7 +33,7 @@ public class User {
 	protected User getParentForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
-			int parentID = ((Manager)role).getParentID();
+			int parentID = ((Manager) role).getParentID();
 			return IUserRepository.getInstance().getUserByID(parentID);
 		}
 		return null; // No role for this company, hence no parent
