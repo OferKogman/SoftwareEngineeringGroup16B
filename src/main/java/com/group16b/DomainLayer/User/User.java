@@ -1,6 +1,8 @@
 package com.group16b.DomainLayer.User;
 
 import java.util.HashMap;
+
+import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Role;
 
 public class User {
@@ -10,38 +12,38 @@ public class User {
 	private String password;
 	private HashMap<Integer, Role> roles; // Key: companyID, Value: Role
 
-	public User(String email, String password) {
+	protected User(String email, String password) {
 		this.email = email;
 		this.password = password;
 		this.roles = new HashMap<>();
 	}
 
-	public String getEmail() {
+	protected String getEmail() {
 		return email;
 	}
 
-	public String getPassword() {
+	protected String getPassword() {
 		return password;
 	}
 
-	public Role getRole(int companyID) {
+	protected Role getRole(int companyID) {
 		return roles.get(companyID);
 	}
 
-	public void addRole(int companyID, Role role) {
+	protected void addRole(int companyID, Role role) {
 		roles.put(companyID, role);
 	}
 
-	public User getParentForCompany(int companyID) {
+	protected User getParentForCompany(int companyID) {
 		Role role = roles.get(companyID);
-		if (role != null) {
-			int parentID = role.getParentID();
+		if (role != null && role instanceof Manager) {
+			int parentID = ((Manager)role).getParentID();
 			return IUserRepository.getInstance().getUserByID(parentID);
 		}
 		return null; // No role for this company, hence no parent
 	}
 
-	public int getUserID() {
+	protected int getUserID() {
 		return userID;
 	}
 }

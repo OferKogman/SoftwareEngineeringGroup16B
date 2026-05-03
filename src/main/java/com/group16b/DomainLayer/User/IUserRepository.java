@@ -11,30 +11,30 @@ public class IUserRepository {
 	private IUserRepository() {
 	}
 
-	public static synchronized IUserRepository getInstance() {
+	protected static synchronized IUserRepository getInstance() {
 		if (instance == null) {
 			instance = new IUserRepository();
 		}
 		return instance;
 	}
 
-	public User getUserByID(int userID) {
+	protected User getUserByID(int userID) {
 		return users.get(userID);
 	}
 
-	public void addUser(User user) {
+	protected void addUser(User user) {
 		users.put(user.getUserID(), user);
 	}
 
-	public void updateUser(User user) {
+	protected void updateUser(User user) {
 		users.put(user.getUserID(), user);
 	}
 
-	public void deleteUser(int userID) {
+	protected void deleteUser(int userID) {
 		users.remove(userID);
 	}
 
-	public boolean userExists(int userID) {
+	protected boolean userExists(int userID) {
 		return users.containsKey(userID);
 	}
 }
