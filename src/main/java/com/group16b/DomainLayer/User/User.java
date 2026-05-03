@@ -22,10 +22,6 @@ public class User {
 		return email;
 	}
 
-	protected String getPassword() {
-		return password;
-	}
-
 	protected Role getRole(int companyID) {
 		return roles.get(companyID);
 	}
