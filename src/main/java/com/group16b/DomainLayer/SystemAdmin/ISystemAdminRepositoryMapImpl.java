@@ -7,10 +7,16 @@ public class ISystemAdminRepositoryMapImpl implements ISystemAdminRepository {
     private Map<Integer, SystemAdmin> systemAdminsById;
     private Map<String, SystemAdmin> systemAdminsByUsername;
 
+    private static final ISystemAdminRepositoryMapImpl instance = new ISystemAdminRepositoryMapImpl();
+
     public ISystemAdminRepositoryMapImpl() {
         this.systemAdminsById = new HashMap<>();
         this.systemAdminsByUsername = new HashMap<>();
     }
+
+    public static synchronized ISystemAdminRepositoryMapImpl getInstance() {
+		return instance;
+	}
 
     @Override
     public void addSystemAdmin(SystemAdmin systemAdmin) {
