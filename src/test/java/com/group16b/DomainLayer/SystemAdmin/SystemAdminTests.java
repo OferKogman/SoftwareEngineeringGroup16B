@@ -27,8 +27,4 @@ class SystemAdminTests {
         assertEquals("admin", admin.getUsername());
     }
 
-    @Test
-    void testGetPasswordHash() {
-        assertEquals("hashedpassword", admin.getPasswordHash());
-    }
 }

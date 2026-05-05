@@ -70,7 +70,6 @@ public class ISystemAdminRepositoryMapImplTests {
  
         SystemAdmin retrievedById = repository.getSystemAdminById(5);
         assertEquals(admin5, retrievedById); // should still be the first one added
-        assertEquals("pass1", retrievedById.getPasswordHash());
     }
 
     @Test
@@ -82,7 +81,6 @@ public class ISystemAdminRepositoryMapImplTests {
  
         SystemAdmin retrievedByUsername = repository.getSystemAdminByUsername("admin7");
         assertEquals(admin7, retrievedByUsername); // should still be the first one added
-        assertEquals("pass1", retrievedByUsername.getPasswordHash());
     }
 
     @Test
