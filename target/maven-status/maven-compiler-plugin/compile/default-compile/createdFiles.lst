@@ -11,14 +11,12 @@ com/group16b/DomainLayer/User/Roles/Member.class
 com/group16b/ApplicationLayer/PurchaseHistoryService.class
 com/group16b/DomainLayer/DomainServices/PaymentDomainService.class
 com/group16b/ApplicationLayer/PaymentService.class
-com/group16b/DomainLayer/Order/Ticket.class
 com/group16b/DomainLayer/SystemAdmin/ISystemAdminRepository.class
 com/group16b/DomainLayer/Policies/DiscountPolicy.class
 com/group16b/InfrastructureLayer/TicketGateway.class
 com/group16b/DomainLayer/DomainServices/ReserveDomainService.class
 com/group16b/DomainLayer/Event/Segment.class
 com/group16b/DomainLayer/User/Roles/Owner.class
-com/group16b/DomainLayer/Event/InactiveEvent.class
 com/group16b/DomainLayer/Order/ActiveOrder.class
 com/group16b/DomainLayer/Event/Lottery.class
 com/group16b/DomainLayer/Event/Event.class
@@ -29,9 +27,7 @@ com/group16b/DomainLayer/ProductionCompanyPolicy/CompanyState.class
 com/group16b/DomainLayer/Event/Venue.class
 com/group16b/DomainLayer/Policies/PurchasePolicy.class
 com/group16b/DomainLayer/DomainServices/PurchaseHistoryDomainService.class
-com/group16b/DomainLayer/Event/EventState.class
 com/group16b/DomainLayer/Event/IEventRepository.class
-com/group16b/DomainLayer/Event/ActiveEvent.class
 com/group16b/DomainLayer/DomainServices/AdminManagementDomainService.class
 com/group16b/DomainLayer/User/Roles/Manager.class
 com/group16b/InfrastructureLayer/PaymentGateway.class

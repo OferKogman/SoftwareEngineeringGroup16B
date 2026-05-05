@@ -4,6 +4,7 @@ import java.util.List;
 
 interface OrderState {
 
-    List<String> getTickets();
-    CompletedOrder completeOrder();
+	List<String> getTickets();
+
+	CompletedOrder completeOrder();
 }
