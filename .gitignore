@@ -26,6 +26,7 @@ obj/
 dist/
 build/
 out/
+target/
 
 # Mac .DS_Store
 .DS_Store
