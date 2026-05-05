@@ -28,29 +28,28 @@ public class User {
 	}
 
 	public void setPassword(String newPassword) {
-		try{
+		try {
 			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			messageDigest.update(newPassword.getBytes());
 			String stringHash = new String(messageDigest.digest());
 			this.password = stringHash;
-		}
-		catch(Exception e){
+		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
 		}
 	}
 
-	public boolean confirmPassword(String password){
-		try{
+	public boolean confirmPassword(String password) {
+		try {
 			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			messageDigest.update(password.getBytes());
 			String stringHash = new String(messageDigest.digest());
 			return this.password.equals(stringHash);
-		}
-		catch(Exception e){
+		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
 			return false;
 		}
 	}
+
 	public void addRole(int companyID, Role role) {
 		roles.put(companyID, role);
 	}
