@@ -19,8 +19,5 @@ public class SystemAdmin {
         return username;
     }
 
-    public String getPasswordHash() {
-        return passwordHash;
-    }
 
 }
