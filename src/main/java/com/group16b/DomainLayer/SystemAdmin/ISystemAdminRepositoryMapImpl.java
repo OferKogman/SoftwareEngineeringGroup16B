@@ -14,10 +14,16 @@ public class ISystemAdminRepositoryMapImpl implements ISystemAdminRepository {
         this.systemAdminsByUsername = new HashMap<>();
     }
 
+    //singleton pattern to ensure only one instance of the repository exists
     public static synchronized ISystemAdminRepositoryMapImpl getInstance() {
 		return instance;
 	}
 
+    /*
+     * Adds a system admin to the repository.
+     * @param systemAdmin the system admin to add
+     * @throws IllegalArgumentException if the system admin is null or if an admin with the same ID or username already exists
+     */
     @Override
     public void addSystemAdmin(SystemAdmin systemAdmin) {
         if(systemAdmin == null) {
@@ -33,11 +39,13 @@ public class ISystemAdminRepositoryMapImpl implements ISystemAdminRepository {
         systemAdminsByUsername.put(systemAdmin.getUsername(), systemAdmin);
     }
 
+    // Retrieves a system admin by their ID.
     @Override
     public SystemAdmin getSystemAdminById(int id) {
         return systemAdminsById.get(id);
     }
 
+    // Retrieves a system admin by their username.
     @Override
     public SystemAdmin getSystemAdminByUsername(String username) {
         return systemAdminsByUsername.get(username);
