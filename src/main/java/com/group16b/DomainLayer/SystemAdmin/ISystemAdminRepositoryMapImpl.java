@@ -9,7 +9,7 @@ public class ISystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 
     private static final ISystemAdminRepositoryMapImpl instance = new ISystemAdminRepositoryMapImpl();
 
-    public ISystemAdminRepositoryMapImpl() {
+    private ISystemAdminRepositoryMapImpl() {
         this.systemAdminsById = new HashMap<>();
         this.systemAdminsByUsername = new HashMap<>();
     }
@@ -20,6 +20,15 @@ public class ISystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 
     @Override
     public void addSystemAdmin(SystemAdmin systemAdmin) {
+        if(systemAdmin == null) {
+            throw new IllegalArgumentException("SystemAdmin cannot be null");
+        }
+        if(systemAdminsById.containsKey(systemAdmin.getId())) {
+            throw new IllegalArgumentException("SystemAdmin with this ID already exists");
+        }
+        if(systemAdminsByUsername.containsKey(systemAdmin.getUsername())) {
+            throw new IllegalArgumentException("SystemAdmin with this username already exists");
+        }
         systemAdminsById.put(systemAdmin.getId(), systemAdmin);
         systemAdminsByUsername.put(systemAdmin.getUsername(), systemAdmin);
     }
