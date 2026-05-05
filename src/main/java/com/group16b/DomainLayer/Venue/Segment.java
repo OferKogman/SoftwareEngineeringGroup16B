@@ -1,6 +1,4 @@
-package com.group16b.DomainLayer.Event;
-
-import java.lang.reflect.Type;
+package com.group16b.DomainLayer.Venue;
 
 abstract class Segment {
 	private final String segmentID;

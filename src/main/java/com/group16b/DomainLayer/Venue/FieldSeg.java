@@ -1,16 +1,16 @@
-package com.group16b.DomainLayer.Event;
+package com.group16b.DomainLayer.Venue;
 
 import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-class FieldSeg extends Segment {
+public class FieldSeg extends Segment {
 	private final int size;
 
 	private ConcurrentMap<Integer, Integer> stock;
 
-	protected FieldSeg(String segID, int size) {
+	public FieldSeg(String segID, int size) {
 		super(segID);
 		this.size = size;
 		stock = new ConcurrentHashMap<Integer, Integer>();

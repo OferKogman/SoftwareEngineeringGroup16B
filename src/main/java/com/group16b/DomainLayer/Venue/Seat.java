@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Event;
+package com.group16b.DomainLayer.Venue;
 
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;

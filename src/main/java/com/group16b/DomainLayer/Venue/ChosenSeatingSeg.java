@@ -1,7 +1,6 @@
-package com.group16b.DomainLayer.Event;
+package com.group16b.DomainLayer.Venue;
 
-import java.lang.reflect.Type;
-import java.util.*;
+import java.util.Map;
 
 class ChosenSeatingSeg extends Segment {
 	protected final Map<String, Seat> seats;
