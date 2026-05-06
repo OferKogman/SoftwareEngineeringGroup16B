@@ -15,6 +15,12 @@ public class IEventRepositoryMapImpl implements IEventRepository {
 	}
 
 	public void addEvent(Event e) {
+        if(e == null) {
+            throw new IllegalArgumentException("Event cannot be null");
+        }
+        if (getEventByID(e.getEventID())!= null) {
+            throw new IllegalArgumentException("Event with this ID already exists");
+        }
 		events.putIfAbsent(e.getEventID(), e);
 	}
 
