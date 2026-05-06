@@ -21,7 +21,7 @@ public class IEventRepositoryMapImpl implements IEventRepository {
         if (getEventByID(e.getEventID())!= null) {
             throw new IllegalArgumentException("Event with this ID already exists");
         }
-		events.putIfAbsent(e.getEventID(), e);
+		events.put(e.getEventID(), e);
 	}
 
 	public Event getEventByID(int eventID) {
