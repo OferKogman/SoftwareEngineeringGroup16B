@@ -10,19 +10,15 @@ import javax.crypto.SecretKey;
 
 public class AuthenticationServiceJWTImpl implements IAuthenticationService 
 {
-    @Value("${jwt.userSecret}")
-    private String userSecret;
-    @Value("${jwt.adminSecret}")
-    private String adminSecret;
 
     private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
     private final long adminExpirationTime = 1000 * 60 * 15; // 15 minutes
     
-    private SecretKey Userkey= Keys.hmacShaKeyFor(userSecret.getBytes());
-    private SecretKey Adminkey= Keys.hmacShaKeyFor(adminSecret.getBytes());
-    public AuthenticationServiceJWTImpl(String userSecret, String adminSecret) {
-        this.userSecret = userSecret;
-        this.adminSecret = adminSecret;
+    private final SecretKey Userkey;
+    private final SecretKey Adminkey;
+    public AuthenticationServiceJWTImpl(@Value("${jwt.userSecret}") String userSecret, @Value("${jwt.adminSecret}") String adminSecret) {
+        this.Userkey = Keys.hmacShaKeyFor(userSecret.getBytes());
+        this.Adminkey = Keys.hmacShaKeyFor(adminSecret.getBytes());
     }
 
     public String GenerateUserToken(int userID) {
