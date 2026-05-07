@@ -13,6 +13,8 @@ import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Venue;
 
+import io.jsonwebtoken.JwtException;
+
 public class EventService {
 
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
@@ -32,7 +34,7 @@ public class EventService {
     public void createEvent(EventRecord eventRecord, String sessionToken) {
         try{
             logger.info("Verifying session token for event creation.");
-            if(!authenticationService.validateUserToken(sessionToken)) {
+            if(!authenticationService.authenticate(sessionToken)) {
                 logger.warn("Invalid session token provided for event creation.");
                 throw new IllegalArgumentException("Invalid session token.");
             }
@@ -54,6 +56,14 @@ public class EventService {
         } catch (IllegalArgumentException e) {
             logger.error("Failed to create event: " + e.getMessage());
             throw e;
+        }
+        catch (JwtException e) {
+            logger.error("JWT authentication error during event creation: " + e.getMessage());
+            throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("Unexpected error during event creation: " + e.getMessage());
+            throw new RuntimeException("An unexpected error occurred: " + e.getMessage());
         }
     }
 

@@ -7,10 +7,10 @@ will issue the tokens and validate them
 will also act as a parser to extract info from the tokens when needed
 */
 public interface IAuthenticationService {
-        String authenticate(String username, String password);
-        String authenticateAdmin(String username, String password);
-        boolean validateUserToken(String token);
-        boolean validateAdminToken(String token);
+        boolean authenticate(String token);
+        boolean authenticateAdmin(String token);
+        String GenerateUserToken(int userID);
+        String GenerateAdminToken(int adminID);
 
         int extractIdFromUserToken(String token);
         int extractIdFromAdminToken(String token);
