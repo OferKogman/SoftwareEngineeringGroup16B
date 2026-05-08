@@ -3,8 +3,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
+import java.time.LocalDateTime;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.group16b.ApplicationLayer.Records.EventRecord;
 
 public class IEventRepositoryMapImplTests {
     IEventRepositoryMapImpl repository;
@@ -25,8 +29,11 @@ public class IEventRepositoryMapImplTests {
 
     @Test
     void testGetEventByIdNotFound() {
-        Event retrievedEvent = repository.getEventByID(999);
-        assertEquals(null, retrievedEvent);
+        try {
+             Event retrievedEvent = repository.getEventByID(999);
+        } catch (Exception e) {
+            assertEquals("Event with ID 999 not found", e.getMessage());
+        }
     }
 
     @Test

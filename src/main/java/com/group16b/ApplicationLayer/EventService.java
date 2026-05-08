@@ -80,7 +80,7 @@ public class EventService {
             Event event = eventRepository.getEventByID(eventID);
 
             logger.info("Validating user permissions for event activation.");
-            user.validatePermissions(event.getEventProductionCOmpanyID(), Owner.class);
+            user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
             logger.info("User permissions validated successfully.");
 
             logger.info("Attempting to activate event: " + event.getEventName());
@@ -118,7 +118,7 @@ public class EventService {
             Event event = eventRepository.getEventByID(eventID);
 
             logger.info("Validating user permissions for event deactivation.");
-            user.validatePermissions(event.getEventProductionCOmpanyID(), Owner.class);
+            user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
             logger.info("User permissions validated successfully.");
 
             logger.info("Attempting to deactivate event: " + event.getEventName());

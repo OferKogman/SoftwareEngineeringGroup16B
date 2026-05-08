@@ -104,7 +104,7 @@ public class Event {
 		this.category = category;
 	}
 
-	public int getEventProductionCOmpanyID() {
+	public int getEventProductionCompanyID() {
 		return productionCompanyID;
 	}
 
