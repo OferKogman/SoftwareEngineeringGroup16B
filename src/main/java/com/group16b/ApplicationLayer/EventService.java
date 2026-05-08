@@ -67,9 +67,79 @@ public class EventService {
         }
     }
 
-    public void activateEvent(int eventID) {
-        logger.info("Activating event: " + eventID);
+    public void activateEvent(int eventID, String sessionToken) {
+        try{
+            logger.info("Verifying session token for event activation.");
+            if(!authenticationService.authenticate(sessionToken)) {
+                logger.warn("Invalid session token provided for event activation.");
+                throw new IllegalArgumentException("Invalid session token.");
+            }
+            User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+            logger.info("Session token verified successfully.");
 
-        logger.info("Event activated: " + eventID);
+            Event event = eventRepository.getEventByID(eventID);
+
+            logger.info("Validating user permissions for event activation.");
+            user.validatePermissions(event.getEventProductionCOmpanyID(), Owner.class);
+            logger.info("User permissions validated successfully.");
+
+            logger.info("Attempting to activate event: " + event.getEventName());
+            event.activateEvent();
+            logger.info("Event activated successfully with ID: " + event.getEventID());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Failed to find event: " + e.getMessage());
+            throw e;
+        }
+        catch(IllegalStateException e){
+            logger.error("Failed to activate event: " + e.getMessage());
+            throw e;
+        }
+        catch (JwtException e) {
+            logger.error("JWT authentication error during event activation: " + e.getMessage());
+            throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("Unexpected error during event activation: " + e.getMessage());
+            throw new RuntimeException("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public void deactivateEvent(int eventID, String sessionToken) {
+        try{
+            logger.info("Verifying session token for event deactivation.");
+            if(!authenticationService.authenticate(sessionToken)) {
+                logger.warn("Invalid session token provided for event deactivation.");
+                throw new IllegalArgumentException("Invalid session token.");
+            }
+            User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+            logger.info("Session token verified successfully.");
+
+            Event event = eventRepository.getEventByID(eventID);
+
+            logger.info("Validating user permissions for event deactivation.");
+            user.validatePermissions(event.getEventProductionCOmpanyID(), Owner.class);
+            logger.info("User permissions validated successfully.");
+
+            logger.info("Attempting to deactivate event: " + event.getEventName());
+            event.deactivateEvent();
+            logger.info("Event deactivated successfully with ID: " + event.getEventID());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Failed to find event: " + e.getMessage());
+            throw e;
+        }
+        catch(IllegalStateException e){
+            logger.error("Failed to deactivate event: " + e.getMessage());
+            throw e;
+        }
+        catch (JwtException e) {
+            logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+            throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("Unexpected error during event deactivation: " + e.getMessage());
+            throw new RuntimeException("An unexpected error occurred: " + e.getMessage());
+        }
     }
 }

@@ -25,7 +25,11 @@ public class IEventRepositoryMapImpl implements IEventRepository {
 	}
 
 	public Event getEventByID(int eventID) {
-		return events.get(eventID);
+		Event e = events.get(eventID);
+		if (e == null) {
+			throw new IllegalArgumentException("Event with ID " + eventID + " not found");
+		}
+		return e;
 	}
 
 	public boolean EventExists(int eventID) {
