@@ -48,11 +48,15 @@ public class Event {
 	}
 
 	public void activateEvent() {
-		active.set(true);
+		if(active.getAndSet(true)){
+			throw new IllegalStateException("Event is already active.");
+		}
 	}
 
 	public void deactivateEvent() {
-		active.set(false);
+		if(!active.getAndSet(false)){
+			throw new IllegalStateException("Event is already inactive.");
+		}
 	}
 
 	public String getEventVenueID() {

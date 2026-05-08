@@ -118,4 +118,42 @@ public class EventTests {
         }
     }
 
+    @Test
+    public void SuccessfulEventActivation() {
+        assertDoesNotThrow(() -> {
+            Event event = new Event(new EventRecord("1","name", LocalDateTime.parse("2027-10-10T10:00:00"), LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, null, null));
+            event.activateEvent();
+        });
+    }
+
+    @Test
+    public void FailedEventActivationAlreadyActive() {
+        try {
+            Event event = new Event(new EventRecord("1","name", LocalDateTime.parse("2027-10-10T10:00:00"), LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, null, null));
+            event.activateEvent();
+            event.activateEvent();
+        } catch (Exception e) {
+            assertEquals("Event is already active.", e.getMessage());
+        }
+    }
+
+    @Test 
+    public void SuccessfulEventDeactivation() {
+        assertDoesNotThrow(() -> {
+            Event event = new Event(new EventRecord("1","name", LocalDateTime.parse("2027-10-10T10:00:00"), LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, null, null));
+            event.activateEvent();
+            event.deactivateEvent();
+        });
+    }
+
+    @Test 
+    public void FailedEventDeactivationAlreadyInactive() {
+        try {
+            Event event = new Event(new EventRecord("1","name", LocalDateTime.parse("2027-10-10T10:00:00"), LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, null, null));
+            event.deactivateEvent();
+        } catch (Exception e) {
+            assertEquals("Event is already inactive.", e.getMessage());
+        }
+    }
+
 }
