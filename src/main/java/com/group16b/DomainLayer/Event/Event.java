@@ -14,8 +14,8 @@ public class Event {
 	private AtomicBoolean active = new AtomicBoolean(false);
 	private String venueID;
 	private String name;
-	private LocalDateTime StarTime;
-	private LocalDateTime EndTime;
+	private LocalDateTime startTime;
+	private LocalDateTime endTime;
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
@@ -28,8 +28,8 @@ public class Event {
 		validateName(eventRecord.name());
 		this.name = eventRecord.name();
 		validateDates(eventRecord.startTime(), eventRecord.endTime());
-		this.StarTime = eventRecord.startTime();
-		this.EndTime = eventRecord.endTime();
+		this.startTime = eventRecord.startTime();
+		this.endTime = eventRecord.endTime();
 		validateArtist(eventRecord.artist());
 		this.artist = eventRecord.artist();
 		validateCategory(eventRecord.category());
@@ -73,11 +73,11 @@ public class Event {
 	}
 
 	public LocalDateTime getEventStartTime() {
-		return StarTime;
+		return startTime;
 	}
 	
 	public LocalDateTime getEventEndTime() {
-		return EndTime;
+		return endTime;
 	}
 	
 	public void setEventNewTime(LocalDateTime startTime, LocalDateTime endTime) {
@@ -100,7 +100,7 @@ public class Event {
 		this.category = category;
 	}
 
-	public int getEventProductionCOmpanyID() {
+	public int getEventProductionCompanyID() {
 		return productionCompanyID;
 	}
 
