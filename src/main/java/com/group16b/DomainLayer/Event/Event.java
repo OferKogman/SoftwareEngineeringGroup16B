@@ -48,13 +48,13 @@ public class Event {
 	}
 
 	public void activateEvent() {
-		if(active.getAndSet(true)){
+		if (active.getAndSet(true)) {
 			throw new IllegalStateException("Event is already active.");
 		}
 	}
 
 	public void deactivateEvent() {
-		if(!active.getAndSet(false)){
+		if (!active.getAndSet(false)) {
 			throw new IllegalStateException("Event is already inactive.");
 		}
 	}
@@ -79,11 +79,11 @@ public class Event {
 	public LocalDateTime getEventStartTime() {
 		return startTime;
 	}
-	
+
 	public LocalDateTime getEventEndTime() {
 		return endTime;
 	}
-	
+
 	public void setEventNewTime(LocalDateTime startTime, LocalDateTime endTime) {
 		validateDates(startTime, endTime);
 	}
@@ -137,16 +137,16 @@ public class Event {
 		if (startTime.isAfter(endTime)) {
 			throw new IllegalArgumentException("Start time must be before end time.");
 		}
-		if(endTime.isBefore(LocalDateTime.now())) {
+		if (endTime.isBefore(LocalDateTime.now())) {
 			throw new IllegalArgumentException("End time must be in the future.");
 		}
 	}
 
-    private void validateArtist(String artist) {
-        if (artist == null || artist.trim().isEmpty()) {
+	private void validateArtist(String artist) {
+		if (artist == null || artist.trim().isEmpty()) {
 			throw new IllegalArgumentException("Event artist cannot be null or empty.");
 		}
-    }
+	}
 
 	private void validateCategory(String category) {
 		if (category == null || category.trim().isEmpty()) {

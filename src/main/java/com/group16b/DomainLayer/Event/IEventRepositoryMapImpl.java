@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class IEventRepositoryMapImpl implements IEventRepository {
-    private final static IEventRepositoryMapImpl instance = new IEventRepositoryMapImpl();
+	private final static IEventRepositoryMapImpl instance = new IEventRepositoryMapImpl();
 	private Map<Integer, Event> events = new TreeMap<>();
 
 	private IEventRepositoryMapImpl() {
@@ -15,12 +15,12 @@ public class IEventRepositoryMapImpl implements IEventRepository {
 	}
 
 	public void addEvent(Event e) {
-        if(e == null) {
-            throw new IllegalArgumentException("Event cannot be null");
-        }
-        if (events.get(e.getEventID())!= null) {
-            throw new IllegalArgumentException("Event with this ID already exists");
-        }
+		if (e == null) {
+			throw new IllegalArgumentException("Event cannot be null");
+		}
+		if (events.get(e.getEventID()) != null) {
+			throw new IllegalArgumentException("Event with this ID already exists");
+		}
 		events.put(e.getEventID(), e);
 	}
 
