@@ -11,10 +11,6 @@ public class UserService {
 		this.userRepository = IUserRepository.getInstance();
 	}
 
-	public User getUserByID(int userID) {
-		return userRepository.getUserByID(userID);
-	}
-
 	public void registerUser(String email, String password) {
 		User newUser = new User(email, password);
 		userRepository.addUser(newUser);

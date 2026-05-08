@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
+import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -31,7 +32,7 @@ public class EventService {
     }
 
     //need to make event active manually
-    public void createEvent(EventRecord eventRecord, String sessionToken) {
+    public Result<EventDTO> createEvent(EventRecord eventRecord, String sessionToken) {
         try{
             logger.info("Verifying session token for event creation.");
             if(!authenticationService.authenticate(sessionToken)) {
@@ -52,18 +53,19 @@ public class EventService {
             venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
             eventRepository.addEvent(event);
             logger.info("Event created successfully with ID: " + event.getEventID());
+            return Result.makeOk(new EventDTO(event));
 
         } catch (IllegalArgumentException e) {
             logger.error("Failed to create event: " + e.getMessage());
-            throw e;
+            return Result.makeFail(e.getMessage());
         }
         catch (JwtException e) {
             logger.error("JWT authentication error during event creation: " + e.getMessage());
-            throw new IllegalArgumentException("Authentication failed: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
         }
         catch (Exception e) {
             logger.error("Unexpected error during event creation: " + e.getMessage());
-            throw new RuntimeException("An unexpected error occurred: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
