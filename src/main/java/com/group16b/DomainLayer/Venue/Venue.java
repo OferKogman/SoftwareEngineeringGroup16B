@@ -17,7 +17,7 @@ public class Venue {
 		events = new TreeMap<>();
 	}
 
-	public  String getName() {
+	public String getName() {
 		return name;
 	}
 
@@ -38,15 +38,15 @@ public class Venue {
 	}
 
 	public void bookEvent(LocalDateTime startTime, LocalDateTime endTime, int eventID) {
-		//initialize stock
-		//use start time n end time for event
+		// initialize stock
+		// use start time n end time for event
 		if (events.putIfAbsent(startTime, eventID) != null) {
 			throw new IllegalArgumentException("Venue is already reserved for requested date !");
 		}
 	}
 
 	protected void cancelEvent(LocalDateTime date, int eventID) {
-		//fix this method to use start time n end time for event
+		// fix this method to use start time n end time for event
 		if (!events.remove(date, eventID)) {
 			throw new IllegalArgumentException("Venue is not reserved for this event at requested date !");
 		}

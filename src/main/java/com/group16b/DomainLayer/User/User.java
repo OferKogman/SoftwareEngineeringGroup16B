@@ -68,8 +68,8 @@ public class User {
 	}
 
 	public void validatePermissions(int companyID, Class<? extends Role> requiredRole) {
-		//implement permission validation logic here
-		//throws exception if user does not have required permissions
+		// implement permission validation logic here
+		// throws exception if user does not have required permissions
 		return;
 	}
 }
