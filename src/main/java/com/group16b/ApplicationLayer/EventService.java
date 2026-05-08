@@ -141,4 +141,20 @@ public class EventService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+
+    public Result<EventDTO> viewEvent(int eventID) {
+        try {
+            logger.info("Attempting to retrieve event with ID: " + eventID);
+            Event event = eventRepository.getEventByID(eventID);
+            logger.info("Event retrieved successfully with ID: " + eventID);
+            return Result.makeOk(new EventDTO(event));
+        }
+        catch (IllegalArgumentException e) {
+            logger.error("Failed to find event: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during event retrieval: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
 }
