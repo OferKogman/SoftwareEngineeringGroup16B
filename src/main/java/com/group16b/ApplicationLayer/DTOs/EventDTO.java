@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 import com.group16b.DomainLayer.Event.Event;
 
 public class EventDTO {
-    private final int eventID;
+	private final int eventID;
 	private boolean active = false;
 	private String venueID;
 	private String name;
@@ -18,61 +18,61 @@ public class EventDTO {
 	private DiscountPolicyDTO discountPolicy;
 	private PurchasePolicyDTO purchasePolicy;
 
-    public EventDTO(Event event) {
-        eventID = event.getEventID();
-        active = event.getEventStatus();
-        venueID = event.getEventVenueID();
-        name = event.getEventName();
-        startTime = event.getEventStartTime();
-        endTime = event.getEventEndTime();
-        artist = event.getEventArtist();
-        category = event.getEventCategory();
-        productionCompanyID = event.getEventProductionCompanyID();
-        discountPolicy = new DiscountPolicyDTO(event.getEventDiscountPolicy());
-        purchasePolicy = new PurchasePolicyDTO(event.getEventPurchasePolicy());
-    }
+	public EventDTO(Event event) {
+		eventID = event.getEventID();
+		active = event.getEventStatus();
+		venueID = event.getEventVenueID();
+		name = event.getEventName();
+		startTime = event.getEventStartTime();
+		endTime = event.getEventEndTime();
+		artist = event.getEventArtist();
+		category = event.getEventCategory();
+		productionCompanyID = event.getEventProductionCompanyID();
+		discountPolicy = new DiscountPolicyDTO(event.getEventDiscountPolicy());
+		purchasePolicy = new PurchasePolicyDTO(event.getEventPurchasePolicy());
+	}
 
-    public int getEventID() {
-        return this.eventID;
-    }
+	public int getEventID() {
+		return this.eventID;
+	}
 
-    public boolean getEventStatus() {
-        return this.active;
-    }
+	public boolean getEventStatus() {
+		return this.active;
+	}
 
-    public String getEventVenueID() {
-        return this.venueID;
-    }
+	public String getEventVenueID() {
+		return this.venueID;
+	}
 
-    public String getEventName() {
-        return this.name;
-    }
+	public String getEventName() {
+		return this.name;
+	}
 
-    public LocalDateTime getEventStartTime() {
-        return this.startTime;
-    }
+	public LocalDateTime getEventStartTime() {
+		return this.startTime;
+	}
 
-    public LocalDateTime getEventEndTime() {
-        return this.endTime;
-    }
+	public LocalDateTime getEventEndTime() {
+		return this.endTime;
+	}
 
-    public String getEventArtist() {
-        return this.artist;
-    }
+	public String getEventArtist() {
+		return this.artist;
+	}
 
-    public String getEventCategory() {
-        return this.category;
-    }
+	public String getEventCategory() {
+		return this.category;
+	}
 
-    public int getEventProductionCompanyID() {
-        return this.productionCompanyID;
-    }
+	public int getEventProductionCompanyID() {
+		return this.productionCompanyID;
+	}
 
-    public DiscountPolicyDTO getEventDiscountPolicy() {
-        return this.discountPolicy;
-    }
+	public DiscountPolicyDTO getEventDiscountPolicy() {
+		return this.discountPolicy;
+	}
 
-    public PurchasePolicyDTO getEventPurchasePolicy() {
-        return this.purchasePolicy;
-    }
+	public PurchasePolicyDTO getEventPurchasePolicy() {
+		return this.purchasePolicy;
+	}
 }
