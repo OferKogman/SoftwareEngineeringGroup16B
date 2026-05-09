@@ -17,6 +17,8 @@ public class EventDTO {
 	private final int productionCompanyID;
 	private DiscountPolicyDTO discountPolicy;
 	private PurchasePolicyDTO purchasePolicy;
+	private double price;
+	private double rating;
 
 	public EventDTO(Event event) {
 		eventID = event.getEventID();
@@ -30,6 +32,8 @@ public class EventDTO {
 		productionCompanyID = event.getEventProductionCompanyID();
 		discountPolicy = new DiscountPolicyDTO(event.getEventDiscountPolicy());
 		purchasePolicy = new PurchasePolicyDTO(event.getEventPurchasePolicy());
+		price = event.getEventPrice();
+		rating = event.getEventRating();
 	}
 
 	public int getEventID() {
@@ -74,5 +78,13 @@ public class EventDTO {
 
 	public PurchasePolicyDTO getEventPurchasePolicy() {
 		return this.purchasePolicy;
+	}
+
+	public double getEventPrice() {
+		return this.price;
+	}
+
+	public double getEventRating() {
+		return this.rating;
 	}
 }

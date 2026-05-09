@@ -37,27 +37,32 @@
             <version>1.5.32</version>
         </dependency>
         <dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-api</artifactId>
-    <version>0.11.5</version>
-    </dependency>
-    <dependency>
+            <groupId>com.tomaytotomato</groupId>
+            <artifactId>location4j</artifactId>
+            <version>1.0.6</version>
+        </dependency>
+        <dependency>
         <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-impl</artifactId>
+        <artifactId>jjwt-api</artifactId>
         <version>0.11.5</version>
-        <scope>runtime</scope>
-    </dependency>
-    <dependency>
-        <groupId>io.jsonwebtoken</groupId>
-        <artifactId>jjwt-jackson</artifactId>
-        <version>0.11.5</version>
-        <scope>runtime</scope>
-    </dependency>
-    <dependency>
-        <groupId>org.springframework</groupId>
-        <artifactId>spring-context</artifactId>
-        <version>6.1.20</version>
-    </dependency>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-context</artifactId>
+            <version>6.1.20</version>
+        </dependency>
     </dependencies>
 
     <build>
