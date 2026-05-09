@@ -53,7 +53,7 @@ class OrderTest {
 	void seatOrderGetSeatsReturnsSeats() {
 		// Arrange
 		List<String> seats = List.of("A1", "A2", "A3");
-		Order order = new Order("segment1", seats);
+		Order order = new Order("segment1", seats, "sTocken");
 
 		// Act
 		List<String> actualSeats = order.getSeats();
@@ -65,7 +65,7 @@ class OrderTest {
 	@Test
 	void fieldOrderGetSeatsThrowsException() {
 		// Arrange
-		Order order = new Order("segment1", 3);
+		Order order = new Order("segment1", 3, "sTocken");
 
 		// Act + Assert
 		IllegalStateException exception = assertThrows(
@@ -80,7 +80,7 @@ class OrderTest {
 	@Test
 	void completeOrderChangesStateToCompletedOrder() {
 		// Arrange
-		Order order = new Order("segment1", List.of("A1", "A2"));
+		Order order = new Order("segment1", List.of("A1", "A2"), "sTocken");
 
 		assertInstanceOf(ActiveOrder.class, order.getState());
 
@@ -94,7 +94,7 @@ class OrderTest {
 	@Test
 	void seatOrderNumOfTicketsEqualsNumberOfSeats() {
 		// Arrange
-		Order order = new Order("segment1", List.of("A1", "A2", "A3"));
+		Order order = new Order("segment1", List.of("A1", "A2", "A3"), "sTocken");
 
 		// Act
 		int numOfTickets = order.getNumOfTickets();
@@ -106,7 +106,7 @@ class OrderTest {
 	@Test
 	void fieldOrderNumOfTicketsEqualsRequestedAmount() {
 		// Arrange
-		Order order = new Order("segment1", 5);
+		Order order = new Order("segment1", 5, "sTocken");
 
 		// Act
 		int numOfTickets = order.getNumOfTickets();

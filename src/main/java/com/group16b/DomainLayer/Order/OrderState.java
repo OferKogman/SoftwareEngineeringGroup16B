@@ -4,7 +4,11 @@ import java.util.List;
 
 interface OrderState {
 
-	List<String> getTickets();
+	List<Ticket> getTickets();
 
 	CompletedOrder completeOrder();
+	boolean isActive();
+	void generateTickets(int numOfTickets, String segmentId, double sumOrderprice, String orderId);
+	PaymentInfo getPaymentInfo();
+
 }

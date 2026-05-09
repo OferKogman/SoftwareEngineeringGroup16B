@@ -3,7 +3,7 @@ package com.group16b.DomainLayer.Venue;
 import java.util.List;
 import java.util.Map;
 
-class ChosenSeatingSeg extends Segment {
+public class ChosenSeatingSeg extends Segment {
 	protected final Map<String, Seat> seats;
 
 	ChosenSeatingSeg(String segmentID, Map<String, Seat> seats) {
@@ -12,13 +12,17 @@ class ChosenSeatingSeg extends Segment {
 	}
 
 	@Override
-	String getSegmentType() {
+	public String getSegmentType() {
 		return "S";
 	}
 
 	@Override
-	void reserve(ReservationRequest request) {
+	public void reserve(ReservationRequest request) {
 		reserveSeats(request.getSeatIds(), request.getEventID());
+	}
+	@Override
+	public double getPrice(int eventID) {
+		throw new UnsupportedOperationException("Price calculation is not implemented yet.");
 	}
 
 	void reserveSeats(List<String> seatIds, int eventID) {

@@ -11,17 +11,24 @@ class ActiveOrder implements OrderState {
 	}
 
 	@Override
-	public List<String> getTickets() {
+	public boolean isActive() {
+		validateTime();
+		return true;
+	}
+
+	@Override
+	public List<Ticket> getTickets() {
 
 		throw new IllegalStateException("Cannot get tickets from an active order");
-		// return null; // can only get tickets from completed order
 	}
 
 	@Override
 	public CompletedOrder completeOrder() {
+		PaymentInfo paymentInfo = null; // @TODO:  = getPaymentInfoFromUser();
+		if (!paymentInfo.isvalid())
+			throw new IllegalStateException("Invalid payment information.");
 		validateTime();
-		List<String> tickets = List.of(); // Generate tickets based on seats
-		return new CompletedOrder(tickets);
+		return new CompletedOrder(paymentInfo);
 	}
 
 	private void validateTime() {
@@ -29,6 +36,14 @@ class ActiveOrder implements OrderState {
 		if ((currentTime - creationTime) > ORDER_TIMEOUT){
 			throw new IllegalStateException("This Order is Expired.");
 		}
+	}
+	@Override
+	public void generateTickets(int numOfTickets, String segmentId, double sumOrderprice, String orderId) {
+		throw new IllegalStateException("Cannot generate tickets for an active order");
+	}
+	@Override
+	public PaymentInfo getPaymentInfo() {
+		throw new IllegalStateException("Cannot get payment info from an active order");
 	}
 
 }
