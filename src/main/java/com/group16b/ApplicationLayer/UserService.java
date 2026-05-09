@@ -16,8 +16,8 @@ public class UserService {
 	private IUserRepository userRepository;
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 	private final IAuthenticationService authenticationService;
-	public UserService(IAuthenticationService authenticationService) {
-		this.userRepository = IUserRepository.getInstance();
+	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+		this.userRepository = userRepository;
 		this.authenticationService = authenticationService;
 	}
 
@@ -138,10 +138,13 @@ public class UserService {
 			user.getUserInvitesLock().lock();
 			try {
 				user.acceptOwnerInvite(companyID, assignerID);
-			} catch (IllegalArgumentException e) {
-			logger.error("Failed to find event: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-			}finally {
+				logger.info("Owner assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			} 
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to find event: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
+			finally {
 				user.getUserInvitesLock().unlock();
 			}
 
