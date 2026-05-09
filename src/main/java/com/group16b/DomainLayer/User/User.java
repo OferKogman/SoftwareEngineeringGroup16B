@@ -10,6 +10,8 @@ import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
+import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
+
 import java.security.MessageDigest;
 
 public class User {
@@ -73,9 +75,8 @@ public class User {
 	public User getParentIDForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
-			Integer parentID = ((Manager) role).getAssignerID();
-			if(parentID==null) return this; // No parent, this is the founder
-			return IUserRepository.getInstance().getUserByID(parentID);
+			int parentID = ((Manager) role).getParentID();
+			return UserRepositoryImpl.getInstance().getUserByID(parentID);
 		}
 		return null; // No role for this company, hence no parent
 	}

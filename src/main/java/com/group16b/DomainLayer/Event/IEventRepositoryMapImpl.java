@@ -14,6 +14,7 @@ public class IEventRepositoryMapImpl implements IEventRepository {
 		return instance;
 	}
 
+	@Override
 	public void addEvent(Event e) {
 		if (e == null) {
 			throw new IllegalArgumentException("Event cannot be null");
@@ -24,6 +25,7 @@ public class IEventRepositoryMapImpl implements IEventRepository {
 		events.put(e.getEventID(), e);
 	}
 
+	@Override
 	public Event getEventByID(int eventID) {
 		Event e = events.get(eventID);
 		if (e == null) {
@@ -32,6 +34,7 @@ public class IEventRepositoryMapImpl implements IEventRepository {
 		return e;
 	}
 
+	@Override
 	public boolean EventExists(int eventID) {
 		return events.containsKey(eventID);
 	}

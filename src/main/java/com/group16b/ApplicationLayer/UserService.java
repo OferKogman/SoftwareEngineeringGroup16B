@@ -7,6 +7,7 @@ import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
+import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
 
 import io.jsonwebtoken.JwtException;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ public class UserService {
 	private IUserRepository userRepository;
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 	private final IAuthenticationService authenticationService;
+  private final IuserRepository userRepository;
 	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
 		this.userRepository = userRepository;
 		this.authenticationService = authenticationService;

@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.util.List;
 import java.util.Map;
 
 class ChosenSeatingSeg extends Segment {
@@ -13,5 +14,30 @@ class ChosenSeatingSeg extends Segment {
 	@Override
 	String getSegmentType() {
 		return "S";
+	}
+
+	@Override
+	void reserve(ReservationRequest request) {
+		reserveSeats(request.getSeatIds(), request.getEventID());
+	}
+
+	void reserveSeats(List<String> seatIds, int eventID) {
+		List<Seat> reservedSeats = new java.util.ArrayList<>();
+		for (String seatId : seatIds) {
+			Seat seat = seats.get(seatId);
+			if (seat == null) {
+				for (Seat _seat : reservedSeats) {
+					_seat.returnSeat(eventID);
+				}
+				throw new IllegalArgumentException("Seat with ID " + seatId + " not found");
+			}
+			if (!seat.reserveSeat(eventID)){
+				for (Seat _seat : reservedSeats) {
+					_seat.returnSeat(eventID);
+				}
+				throw new IllegalArgumentException("Failed to reserve seat with ID " + seatId);
+			}
+			reservedSeats.add(seat);
+		}
 	}
 }

@@ -1,6 +1,5 @@
 package com.group16b.DomainLayer.VirtualQueue;
 
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class VirtualQueueRepository implements IVirtualQueueRepository{
@@ -49,4 +48,10 @@ public class VirtualQueueRepository implements IVirtualQueueRepository{
 
 		queues.put(virtualQueue.getId(), virtualQueue);
     }
+
+	@Override
+	public boolean isUserPassedQueue(int userId, int eventId) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'isUserPassedQueue'");
+	}
 }
