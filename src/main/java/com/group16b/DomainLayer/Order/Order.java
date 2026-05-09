@@ -1,49 +1,44 @@
 package com.group16b.DomainLayer.Order;
 
-import java.util.Date;
 import java.util.List;
 
-class Order {
+
+public class Order {
 	private final String orderId;
-	private final Date orderDate;
 	private OrderState state;
 	private final String segmentId;
 	private List<String> seats; // seat Ids
 	private int numOfTickets;
 	private final OrderType orderType;
+	private static int idCounter = 0;
 
-	protected Order(String orderId, String segmentId, List<String> seats) {
-		this.orderId = orderId;
+	
+
+
+	public Order(String segmentId, List<String> seats) {
+		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.seats = List.copyOf(seats);
 		this.numOfTickets = seats.size();
 		this.segmentId = segmentId;
 		this.orderType = OrderType.SEAT;
-		this.orderDate = new Date(System.currentTimeMillis()); // get time
 	}
-
-	protected Order(String orderId, String segmentId, int amount) {
-		this.orderId = orderId;
+	public Order(String segmentId, int amount) {
+		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
 		this.orderType = OrderType.FIELD;
-		this.orderDate = new Date(System.currentTimeMillis()); // get time
 	}
-
-	protected String getOrderId() {
+	public String getOrderId() {
 		return orderId;
 	}
 
-	protected Date getOrderDate() {
-		return orderDate;
-	}
-
-	protected OrderState getState() {
+	public OrderState getState() {
 		return state;
 	}
 
-	protected String getSegmentId() {
+	public String getSegmentId() {
 		return segmentId;
 	}
 
@@ -69,5 +64,6 @@ class Order {
 	protected List<String> getTickets() {
 		return state.getTickets();
 	}
+
 
 }
