@@ -1,7 +1,5 @@
 package com.group16b.DomainLayer.Venue;
 
-import java.lang.reflect.Type;
-import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -54,6 +52,11 @@ public class FieldSeg extends Segment {
 			}
 		}
 	}
+	@Override
+	protected void reserve(ReservationRequest request) {
+		removeStock(request.getEventID(), request.getQuantity());
+	}
+
 
 	protected void addEvent(int eventID) {
 		stock.putIfAbsent(eventID, size);

@@ -6,5 +6,4 @@ interface IOrderRepository {
 	boolean removeOrder(String orderId);
 
 	Order getOrder(String orderId);
-
 }
