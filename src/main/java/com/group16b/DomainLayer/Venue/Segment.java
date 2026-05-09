@@ -11,5 +11,7 @@ abstract class Segment {
 		return segmentID;
 	}
 
+	abstract void reserve(ReservationRequest request);
+
 	abstract String getSegmentType();
 }

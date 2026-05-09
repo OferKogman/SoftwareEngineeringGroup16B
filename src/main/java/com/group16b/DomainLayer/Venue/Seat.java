@@ -30,7 +30,7 @@ class Seat {
 		return number;
 	}
 
-	protected boolean getStock(int eventID) {
+	protected boolean getStock(Integer eventID) {
 		return stock.get(eventID);
 	}
 
@@ -47,6 +47,13 @@ class Seat {
 				return;
 			}
 		}
+	}
+	protected boolean isSeatReserved(int eventID) {
+		Boolean reserved = stock.get(eventID);
+		if (reserved == null) {
+			throw new IllegalArgumentException("this event is not in this venue.");
+		}
+		return reserved;
 	}
 
 	protected void returnSeat(int eventID) {

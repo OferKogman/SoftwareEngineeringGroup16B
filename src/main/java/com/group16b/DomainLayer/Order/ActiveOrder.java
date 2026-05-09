@@ -1,15 +1,13 @@
 package com.group16b.DomainLayer.Order;
 
 import java.util.List;
-import java.util.Timer;
 
 class ActiveOrder implements OrderState {
-	private final Timer OrderTimer;
-	private static final int ORDER_TIMEOUT = 10 * 60 * 1000; // 10 minutes
+	private final long creationTime;
+    private static final long ORDER_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
 
 	protected ActiveOrder() {
-		this.OrderTimer = new Timer(); // in each function. make sure timer is less then 10 minutes. if more then 10
-										// minutes, cancel order and release seats
+		this.creationTime = System.currentTimeMillis();
 	}
 
 	@Override
@@ -21,8 +19,16 @@ class ActiveOrder implements OrderState {
 
 	@Override
 	public CompletedOrder completeOrder() {
+		validateTime();
 		List<String> tickets = List.of(); // Generate tickets based on seats
 		return new CompletedOrder(tickets);
+	}
+
+	private void validateTime() {
+        long currentTime = System.currentTimeMillis();
+		if ((currentTime - creationTime) > ORDER_TIMEOUT){
+			throw new IllegalStateException("This Order is Expired.");
+		}
 	}
 
 }

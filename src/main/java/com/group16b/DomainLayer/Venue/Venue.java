@@ -51,4 +51,12 @@ public class Venue {
 			throw new IllegalArgumentException("Venue is not reserved for this event at requested date !");
 		}
 	}
+
+	protected void reserveSeats(ReservationRequest request) {
+		Segment segment = segments.get(request.getSegmentId());
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
+		}
+		segment.reserve(request);
+	}
 }

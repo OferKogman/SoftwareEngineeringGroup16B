@@ -54,6 +54,25 @@ public class FieldSeg extends Segment {
 			}
 		}
 	}
+	@Override
+	protected void reserve(ReservationRequest request) {
+		reserveInField(request.getEventID(), request.getQuantity());
+	}
+
+	private void reserveInField(int eventID, Integer quantity){
+		while (true) {
+			Integer currQty = stock.get(eventID);
+			if (currQty == null) {
+				throw new IllegalArgumentException("this event is not in this venue.");
+			}
+			if (currQty - quantity < 0) {
+				throw new IllegalArgumentException("Not enough tickets left in stock !");
+			}
+			if (stock.replace(eventID, currQty, currQty - quantity)) {
+				return;
+			}
+		}
+	}
 
 	protected void addEvent(int eventID) {
 		stock.putIfAbsent(eventID, size);
