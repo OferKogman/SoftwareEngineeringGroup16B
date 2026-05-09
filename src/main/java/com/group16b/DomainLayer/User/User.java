@@ -75,7 +75,7 @@ public class User {
 	public User getParentIDForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
-			int parentID = ((Manager) role).getParentID();
+			int parentID = ((Manager) role).getAssignerID();
 			return UserRepositoryImpl.getInstance().getUserByID(parentID);
 		}
 		return null; // No role for this company, hence no parent

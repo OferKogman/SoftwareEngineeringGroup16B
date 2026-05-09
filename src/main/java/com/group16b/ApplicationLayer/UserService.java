@@ -17,7 +17,6 @@ public class UserService {
 	private IUserRepository userRepository;
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 	private final IAuthenticationService authenticationService;
-  private final IuserRepository userRepository;
 	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
 		this.userRepository = userRepository;
 		this.authenticationService = authenticationService;
