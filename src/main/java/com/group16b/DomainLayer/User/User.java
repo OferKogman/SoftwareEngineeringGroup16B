@@ -148,30 +148,24 @@ public class User {
 		}
 	}
 
-	//accepts an invite to be an owner
-	//after that all other invites are useless so remove them
-	public void acceptOwnerInvite(int companyID, int assignerID) {
-		if(!canGetAssignedRole(companyID, Owner.class)) {
-			throw new IllegalArgumentException("User already has this role for this company.");
-		}
+	//accept and invite to a company
+	//after asigning, clear all the irelevant invites
+	//also ensure user role is not already high enough
+	public void acceptInvite(int companyID, int assignerID) {
 		CompanyAssigmentKey key = new CompanyAssigmentKey(companyID, assignerID);
 		Manager offeredRole = userInvites.get(key);
+		
 		if (offeredRole != null) {
+			if(!canGetAssignedRole(companyID, offeredRole.getClass())) {
+				throw new IllegalArgumentException("User already has this role for this company.");
+			}
+			//all clear, can add
 			addRole(companyID, offeredRole);
-			removeAllInvitesForCompany(companyID);
-		} else {
-			throw new IllegalArgumentException("No invite found for company ID " + companyID + " from assigner ID " + assignerID);
-		}
-	}
-	public void acceptManagerInvite(int companyID, int assignerID) {
-		if(!canGetAssignedRole(companyID, Manager.class)) {
-			throw new IllegalArgumentException("User already has this role for this company.");
-		}
-		CompanyAssigmentKey key = new CompanyAssigmentKey(companyID, assignerID);
-		Manager offeredRole = userInvites.get(key);
-		if (offeredRole != null) {
-			addRole(companyID, offeredRole);
-			removeAllManagerInvitesForCompany(companyID);
+			if(offeredRole.getRoleType() == RoleType.OWNER) {
+				removeAllInvitesForCompany(companyID);
+			} else if(offeredRole.getRoleType() == RoleType.MANAGER) {
+				removeAllManagerInvitesForCompany(companyID);
+			}
 		} else {
 			throw new IllegalArgumentException("No invite found for company ID " + companyID + " from assigner ID " + assignerID);
 		}

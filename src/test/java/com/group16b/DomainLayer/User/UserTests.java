@@ -26,16 +26,16 @@ public class UserTests {
     void testAddingAssigningOwnerRequestAndAccepting()
     {
         User user = new User( "testuser", "hashedpassword");
-        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
         assertNull(user.getRole(0));
         user.addInvite(0, 0, new Owner(0));
         user.addInvite(0, 1, new Owner(1));
         user.addInvite(1, 1, new Owner(1));
         assertNull(user.getRole(0));
-        assertDoesNotThrow(() -> user.acceptOwnerInvite(0, 0));
+        assertDoesNotThrow(() -> user.acceptInvite(0, 0));
         assertEquals(Owner.class, user.getRole(0).getClass());
-        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
-        assertDoesNotThrow(() -> user.acceptOwnerInvite(1, 1));
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertDoesNotThrow(() -> user.acceptInvite(1, 1));
     }
 
     @Test
