@@ -3,21 +3,11 @@ package com.group16b.DomainLayer.Order;
 import java.lang.reflect.Field;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 
+
+import static org.junit.jupiter.api.Assertions.*;
 public class ActiveOrderTest {
-    @Test
-    void completeOrder_shouldReturnCompletedOrderWhenOrderIsNotExpired() {
-        ActiveOrder activeOrder = new ActiveOrder();
-
-        CompletedOrder completedOrder = activeOrder.completeOrder();
-
-        assertNotNull(completedOrder);
-        assertEquals(List.of(), completedOrder.getTickets());
-    }
 
     @Test
     void getTickets_shouldThrowWhenOrderIsStillActive() {
@@ -44,4 +34,39 @@ public class ActiveOrderTest {
                 activeOrder::completeOrder
         );
     }
+
+    @Test
+    void isActive_shouldReturnTrue() {
+        ActiveOrder activeOrder = new ActiveOrder();
+
+        assertTrue(activeOrder.isActive());
+    }
+
+    @Test
+    void getTickets_shouldThrowException() {
+        ActiveOrder activeOrder = new ActiveOrder();
+
+        assertThrows(IllegalStateException.class, activeOrder::getTickets);
+    }
+
+    @Test
+    void setTickets_shouldThrowException() {
+        ActiveOrder activeOrder = new ActiveOrder();
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> activeOrder.setTickets(List.of("ticket1"))
+        );
+    }
+
+    @Test
+    void completeOrder_shouldReturnCompletedOrder() {
+        ActiveOrder activeOrder = new ActiveOrder();
+
+        CompletedOrder completedOrder = activeOrder.completeOrder();
+
+        assertNotNull(completedOrder);
+        assertFalse(completedOrder.isActive());
+    }
+
 }

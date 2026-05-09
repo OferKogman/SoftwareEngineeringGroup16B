@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Order;
+package com.group16b.ApplicationLayer;
 
 public class PaymentInfo {
     String cardNumber;
@@ -25,6 +25,7 @@ public class PaymentInfo {
         return cvv;
     }
     public boolean isvalid() {
-        throw new UnsupportedOperationException("Payment validation not implemented yet");
+        return true; //@TODO: implement actual validation logic
+        //throw new UnsupportedOperationException("Payment validation not implemented yet");
     }
 }

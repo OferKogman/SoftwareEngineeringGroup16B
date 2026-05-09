@@ -20,6 +20,13 @@ public class ChosenSeatingSeg extends Segment {
 	public void reserve(ReservationRequest request) {
 		reserveSeats(request.getSeatIds(), request.getEventID());
 	}
+
+	@Override
+	public void cancelReservation(ReservationRequest request) {
+		returnSeats(request.getSeatIds(), request.getEventID());
+	}
+
+
 	@Override
 	public double getPrice(int eventID) {
 		throw new UnsupportedOperationException("Price calculation is not implemented yet.");
@@ -42,6 +49,14 @@ public class ChosenSeatingSeg extends Segment {
 				throw new IllegalArgumentException("Failed to reserve seat with ID " + seatId);
 			}
 			reservedSeats.add(seat);
+		}
+	}
+	public void returnSeats(List<String> seatIds, int eventID) {
+		for (String seatId : seatIds) {
+			Seat seat = seats.get(seatId);
+			if (seat != null) {
+				seat.returnSeat(eventID);
+			}
 		}
 	}
 }

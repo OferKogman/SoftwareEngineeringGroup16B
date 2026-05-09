@@ -2,7 +2,7 @@ package com.group16b.DomainLayer.Venue;
 
 import java.util.List;
 
-class ReservationRequest {
+public class ReservationRequest {
     private final int eventID;
     private final List<String> seatIds;
     private final Integer quantity;
@@ -15,11 +15,11 @@ class ReservationRequest {
         this.segmentId = segmentId;
     }
 
-    static ReservationRequest forSeats(int eventID, List<String> seatIds, String segmentId) {
+    public static ReservationRequest forSeats(int eventID, List<String> seatIds, String segmentId) {
         return new ReservationRequest(eventID, seatIds, null, segmentId);
     }
 
-    static ReservationRequest forField(int eventID, int quantity, String segmentId) {
+    public static ReservationRequest forField(int eventID, int quantity, String segmentId) {
         return new ReservationRequest(eventID, null, quantity, segmentId);
     }
 

@@ -1,7 +1,6 @@
 package com.group16b.ApplicationLayer;
 
 import java.util.List;
-import java.util.ArrayList;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,7 +110,7 @@ public class ReserveService {
 
     private void cancelOrder(String orderId) { // to call when order is expired
         // Logic to cancel the order, e.g., release reserved seats
-        orderRepo.removeOrder(orderId);
+        orderRepo.cancelOrder(orderId);
     }
     
 }

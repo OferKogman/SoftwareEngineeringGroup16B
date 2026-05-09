@@ -4,19 +4,22 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.group16b.ApplicationLayer.PaymentInfo;
+
 
 public class Order {
 	private final String orderId;
 	private OrderState state;
 	private final String segmentId;
 	private List<String> seats; // seat Ids
-	private List<Double> pricesPerSeat;
+	private double pricesPerSeat;
 	private int numOfTickets;
 	private final OrderType orderType;
 	private static int idCounter = 0;
 	private final String incodedSTocken;
 	private  double sumOrderprice; // @TODO: calculate price based on the segment and number of tickets.
-	private List<Ticket> tickets; // List of tickets associated with this order
+	private List<String> tickets; // List of tickets associated with this order
+	private int eventId;
 	
 
 
@@ -29,16 +32,20 @@ public class Order {
 		this.incodedSTocken = encodeStocken(STocken);
 		this.orderType = OrderType.SEAT;
 		this.sumOrderprice = pricesPerSeat * seats.size();
+		this.pricesPerSeat = pricesPerSeat;
+		this.eventId = eventId;
 		
 	}
-	public Order(String segmentId, int amount, String STocken, double pricesPerTicket, int eventId, int userId) {
+	public Order(String segmentId, int amount, String STocken, double pricesPerSeat, int eventId, int userId) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
 		this.incodedSTocken = encodeStocken(STocken);
 		this.orderType = OrderType.FIELD;
-		this.sumOrderprice = pricesPerTicket * amount;
+		this.sumOrderprice = pricesPerSeat * amount;
+		this.pricesPerSeat = pricesPerSeat;
+		this.eventId = eventId;
 
 		
 		}
@@ -46,14 +53,14 @@ public class Order {
 	public String getOrderId() {
 		return orderId;
 	}
+	public int getEventId() {
+		return eventId;
+	}
 
 	public OrderState getState() {
 		return state;
 	}
 
-	public void generateTickets(int eventId, int userId) {
-		state.generateTickets(numOfTickets, segmentId, sumOrderprice, orderId);
-	}
 
 	public String getSegmentId() {
 		return segmentId;
@@ -66,14 +73,7 @@ public class Order {
 		return seats;
 	}
 
-	public List<Double> getPricesPerSeat() {
-		if (orderType == OrderType.FIELD) {
-			List<Double> fieldPrices = new ArrayList<>();
-			for (int i = 0; i < numOfTickets; i++) {
-				fieldPrices.add(sumOrderprice / numOfTickets); // Distribute total price equally among field tickets
-			}
-			return fieldPrices;
-		}
+	public double getPricesPerSeat() {
 		return pricesPerSeat;
 	}
 
@@ -90,9 +90,6 @@ public class Order {
 		return true;
 	}
 
-	public List<Ticket> getTickets() {
-		return state.getTickets();
-	}
 	public double getSumOrderprice() {
 		return sumOrderprice;
 	}
@@ -101,10 +98,12 @@ public class Order {
 	public boolean isActive() {
 		return state.isActive();
 	}
-	public boolean isBelongsToUser(String userId) {
-		String encodedUserId = encodeStocken(userId);
+	public boolean isBelongsToUser(String sTocken) {
+		String encodedUserId = encodeStocken(String.valueOf(sTocken));
 		return this.incodedSTocken.equals(encodedUserId);
 	}
+
+	
 
 	public String encodeStocken(String sTocken) {
 		try{
@@ -116,8 +115,8 @@ public class Order {
 			throw new RuntimeException("Error hashing password: " + e.getMessage());
 		}
 	}
-	public PaymentInfo getPaymentInfo() {
-		return state.getPaymentInfo();
-	}
+
+	
+	
 
 }

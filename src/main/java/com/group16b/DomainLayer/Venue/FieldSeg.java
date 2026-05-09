@@ -61,6 +61,11 @@ public class FieldSeg extends Segment {
 		removeStock(request.getEventID(), request.getQuantity());
 	}
 
+	@Override
+	public void cancelReservation(ReservationRequest request) {
+		addStock(request.getEventID(), request.getQuantity());
+	}
+
 
 	protected void addEvent(int eventID) {
 		stock.putIfAbsent(eventID, size);

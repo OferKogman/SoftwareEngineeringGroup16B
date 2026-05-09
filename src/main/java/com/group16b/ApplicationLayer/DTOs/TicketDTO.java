@@ -1,6 +1,5 @@
 package com.group16b.ApplicationLayer.DTOs;
 
-import com.group16b.DomainLayer.Order.Ticket;
 
 public class TicketDTO {
     private final String ticketId;
@@ -9,13 +8,13 @@ public class TicketDTO {
     private final String segmentName; // Optional, can be null for field ticket
     private final String seatNumber; // Optional, can be null for field tickets
     private final double price;
-    public TicketDTO(Ticket ticket) {
-        this.ticketId = ticket.getTicketId();
-        this.eventId = ticket.getEventId();
-        this.userId = ticket.getUserId();
-        this.segmentName = ticket.getSegmentName();
-        this.seatNumber = ticket.getSeatNumber();
-        this.price = ticket.getPrice();
+    public TicketDTO(int eventId, int userId, String segmentId, String seatId, double price) {
+        this.ticketId = "ticket_" + eventId + "_" + segmentId + "_" + seatId; // Generate a unique ticket ID based on event, segment, and seat
+        this.eventId = eventId;
+        this.userId = userId;
+        this.segmentName = segmentId;
+        this.seatNumber = seatId;
+        this.price = price;
     }
 
     public String getTicketId() {

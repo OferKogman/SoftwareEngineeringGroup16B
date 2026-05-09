@@ -12,6 +12,7 @@ abstract public class Segment {
 	}
 
 	public abstract void reserve(ReservationRequest request);
+	public abstract void cancelReservation(ReservationRequest request);
 
 	public abstract String getSegmentType();
 	public abstract double getPrice(int eventID);

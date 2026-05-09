@@ -2,21 +2,28 @@ package com.group16b.ApplicationLayer;
 
 import java.util.ArrayList;
 import java.util.List;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
+import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.DomainLayer.Event.Event;
+import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderRepository;
-import com.group16b.DomainLayer.Order.Ticket;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
+import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Venue;
 
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 	private final IUserRepository userRepository = IUserRepository.getInstance();
 	private final OrderRepository orderRepo = OrderRepository.getInstance();
+	private final IVenueRepositoryImp venueRepo = IVenueRepositoryImp.getInstance();
+	private final IEventRepositoryMapImpl eventRepo = IEventRepositoryMapImpl.getInstance();
 
 
 
@@ -62,7 +69,7 @@ public class UserService {
 	}
 
 	// should be here? 
-	public Result<List<TicketDTO>> CompleteActiveOrder(String userId, String orderID){
+	public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
 		logger.info("UserService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
 		/*
 			1. System - check active order status.
@@ -83,8 +90,10 @@ public class UserService {
 				logger.error("UserService.CompleteActiveOrder: Order {} is not active for user {}", orderID, userId);
 				return Result.makeFail("Order is not active");
 			}
+
 				// 1.5 System - verify order belungs to the user.
-			if (!order.isBelongsToUser(userId)) {
+			
+			if (!order.isBelongsToUser(sTocken)) {
 				logger.error("UserService.CompleteActiveOrder: Order {} does not belong to user {}", orderID, userId);
 				return Result.makeFail("Order does not belong to the given user");
 			}
@@ -95,36 +104,78 @@ public class UserService {
 
 			// 3. System - charges the user for the designed price.
 			logger.info("UserService.CompleteActiveOrder: user {} is attempting to pay {} for order {}", userId, price, orderID);
-			User user = userRepository.getUserByID(Integer.parseInt(userId));
+			User user = userRepository.getUserByID(userId);
 			if (user == null) {
 				logger.error("UserService.CompleteActiveOrder: User {} not found while attempting to complete order {}", userId, orderID);
 				return Result.makeFail("User not found");
 			}
 
-			order.CompleteOrder();
-				logger.info("UserService.CompleteActiveOrder: Order {} completed successfully for user {}", orderID, userId);
-
+			
 			PaymentService paymentService = new PaymentService();
-			if (!paymentService.processPayment(order.getPaymentInfo(), price)) {
+			if (!paymentService.processPayment(paymentInfo, price)) {
 				return Result.makeFail("Payment failed");
 			}
 			logger.info("UserService.CompleteActiveOrder: user {} paid {} successfully for order {}", userId, price, orderID);
 
 			// 4. System - creates Tickets for each of the tickets.
-				
-				List<TicketDTO> tikketDTOs = new ArrayList<>();
-				for (Ticket ticket : order.getTickets()) {
-					TicketDTO ticketDTO = new TicketDTO(ticket);
-					tikketDTOs.add(ticketDTO);
-				}
+			List<TicketDTO> tikketDTOs = new ArrayList<>();
+			for (int i = 0; i < order.getNumOfTickets(); i++) {
+				ITicketGateway ticketGateway = new ITicketGateway();
+				TicketDTO ticketDTO = null; // @TODO: implement actual ticket generation logic
+				tikketDTOs.add(ticketDTO);
+			}
+			order.CompleteOrder();
+			logger.info("UserService.CompleteActiveOrder: Order {} completed successfully for user {}", orderID, userId);
+
+			
 			// 5. System - sends the user his acquired tickets.
 				return Result.makeOk(tikketDTOs);
 
 
-		} catch (Exception e) {
+		} catch (IllegalStateException e) { 
+			logger.error("UserService.CompleteActiveOrder: Failed to generate tickets for order {} for user {}: {}", orderID, userId, e.getMessage());
+			cancelPayment(paymentInfo); // @TODO: implement payment cancellation logic
+			cancelOrder(orderID); // @TODO: implement order cancellation logic
+			return Result.makeFail(e.getMessage());
+		}catch (Exception e) {
+			cancelPayment(paymentInfo); // @TODO: implement payment cancellation logic
+			cancelOrder(orderID); // @TODO: implement order cancellation logic
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
+
+
 		
+	}
+	private void cancelPayment(PaymentInfo paymentInfo) {} 
+
+	private void cancelOrder(String orderID) {
+		Order order = orderRepo.getOrder(orderID);
+		if (order != null) {
+			orderRepo.cancelOrder(orderID);
+		}
+		Event event = eventRepo.getEventByID(order.getEventId());
+		if (event == null) {
+			logger.error("UserService.cancelOrder: Event {} not found while attempting to cancel order {}", order.getEventId(), orderID);
+			return;
+		}
+
+		Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+		if (venue == null) {
+			logger.error("UserService.cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
+			return;
+		}
+		Segment segment = venue.getSegmentByID(order.getSegmentId());
+		if (segment == null) {
+			logger.error("UserService.cancelOrder: Segment {} not found while attempting to cancel order {}", order.getSegmentId(), orderID);
+			return;
+		}
+
+        switch (segment.getSegmentType()) {
+            case "S" -> segment.cancelReservation(ReservationRequest.forSeats(order.getEventId(), order.getSeats(), order.getSegmentId()));
+            case "F" -> segment.cancelReservation(ReservationRequest.forField(order.getEventId(), order.getNumOfTickets(), order.getSegmentId()));
+            default -> logger.error("UserService.cancelOrder: Unknown segment type {} for segment {} while attempting to cancel order {}", segment.getSegmentType(), segment.getSegmentID(), orderID);
+        }
+
 	}
 
 }
