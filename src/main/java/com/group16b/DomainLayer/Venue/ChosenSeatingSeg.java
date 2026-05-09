@@ -26,6 +26,9 @@ class ChosenSeatingSeg extends Segment {
 		for (String seatId : seatIds) {
 			Seat seat = seats.get(seatId);
 			if (seat == null) {
+				for (Seat _seat : reservedSeats) {
+					_seat.returnSeat(eventID);
+				}
 				throw new IllegalArgumentException("Seat with ID " + seatId + " not found");
 			}
 			if (!seat.reserveSeat(eventID)){
