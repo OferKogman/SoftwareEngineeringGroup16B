@@ -8,6 +8,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Role;
+import com.group16b.DomainLayer.User.Roles.RoleType;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 import java.security.MessageDigest;
 
@@ -100,49 +101,29 @@ public class User {
 	//adds an invite to a company
 	//one invite per company and owner can exist
 	public void addInvite(int companyID, int assignerID, Manager offeredRole) {
-		userInvitesLock.lock();
-		try {
 			userInvites.put(new CompanyAssigmentKey(companyID, assignerID), offeredRole);
-		} finally {
-			userInvitesLock.unlock();
-		}
 	}
 
-	private void removeInvite(int companyID, int assignerID) {
-		userInvitesLock.lock();
-		try {
-			userInvites.remove(new CompanyAssigmentKey(companyID, assignerID));
-		} finally {
-			userInvitesLock.unlock();
-		}
-	}
-
-	private void removeAllInvitesForCompany(int companyID) {
-		userInvitesLock.lock();
-		try {
-			userInvites.entrySet().removeIf(entry -> entry.getKey().companyID() == companyID);
-		} finally {
-			userInvitesLock.unlock();
-		}
-	}
-
-	public void acceptInvite(int companyID, int assignerID) {
-		userInvitesLock.lock();
-		try {
+	//accepts an invite to be an owner
+	//after that all other invites are useless so remove them
+	public void acceptOwnerInvite(int companyID, int assignerID) {
 			CompanyAssigmentKey key = new CompanyAssigmentKey(companyID, assignerID);
-			if (userInvites.containsKey(key)) {
-				Manager offeredRole = userInvites.get(key);
+			Manager offeredRole = userInvites.get(key);
+			if (offeredRole != null) {
 				addRole(companyID, offeredRole);
-				userInvites.remove(key);
+				removeAllInvitesForCompany(companyID);
 			} else {
 				throw new IllegalArgumentException("No invite found for company ID " + companyID + " from assigner ID " + assignerID);
 			}
-		} finally {
-			userInvitesLock.unlock();
-		}
+	}
+	private void removeAllManagerInvitesForCompany(int companyID) {
+			userInvites.entrySet().removeIf(entry -> entry.getKey().companyID() == companyID && entry.getValue().getRoleType() == RoleType.MANAGER);
 	}
 
-	public void rejectInvite(int companyID, int assignerID) {
-		removeInvite(companyID, assignerID);
+	private void removeAllInvitesForCompany(int companyID) {
+			userInvites.entrySet().removeIf(entry -> entry.getKey().companyID() == companyID);
+	}
+	public ReentrantLock getUserInvitesLock() {
+		return userInvitesLock;
 	}
 }

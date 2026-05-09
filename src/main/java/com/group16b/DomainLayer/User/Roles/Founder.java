@@ -1,8 +1,9 @@
 package com.group16b.DomainLayer.User.Roles;
 
 public class Founder extends Owner {
-	protected Founder() {
+	public Founder() {
 		super(null);
+		this.roleType = RoleType.FOUNDER;
 	}
 
 }

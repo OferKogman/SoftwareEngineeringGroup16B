@@ -4,8 +4,9 @@ import java.util.EnumSet;
 
 public class Owner extends Manager {
 
-	protected Owner(Integer parentID) {
+	public Owner(Integer parentID) {
 		super(parentID,EnumSet.allOf(ManagerPermissions.class));
+		this.roleType = RoleType.OWNER;
 	}
 
 }
