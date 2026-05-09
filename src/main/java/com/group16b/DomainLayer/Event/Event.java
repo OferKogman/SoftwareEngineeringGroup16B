@@ -21,6 +21,8 @@ public class Event {
 	private final int productionCompanyID;
 	private DiscountPolicy discountPolicy;
 	private PurchasePolicy purchasePolicy;
+	private double price;
+	private double rating;
 
 	public Event(EventRecord eventRecord) {
 		this.eventID = IDCounter++;
@@ -37,6 +39,10 @@ public class Event {
 		this.productionCompanyID = eventRecord.pcID();
 		this.discountPolicy = eventRecord.discountPolicy();
 		this.purchasePolicy = eventRecord.purchasePolicy();
+		validatePrice(eventRecord.price());
+		this.price = eventRecord.price();
+		validateRating(eventRecord.rating());
+		this.rating = eventRecord.rating();
 	}
 
 	public int getEventID() {
@@ -124,6 +130,19 @@ public class Event {
 		this.purchasePolicy = pp;
 	}
 
+	public double getEventPrice() {
+		return price; //update when disocunt policies are implemented
+	}
+
+	public void setEventPrice(double price) {
+		this.price = price;
+	}
+
+	public double getEventRating() {
+		return rating;
+	}
+	
+
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {
 			throw new IllegalArgumentException("Event name cannot be null or empty.");
@@ -152,5 +171,32 @@ public class Event {
 		if (category == null || category.trim().isEmpty()) {
 			throw new IllegalArgumentException("Event category cannot be null or empty.");
 		}
+	}
+
+	private void validatePrice(double price) {
+		if (price < 0) {
+			throw new IllegalArgumentException("Event price cannot be negative.");
+		}
+	}
+
+	private void validateRating(double rating) {
+		if (rating < 0 || rating > 5) {
+			throw new IllegalArgumentException("Event rating must be between 0 and 5.");
+		}
+	}
+
+	@Override
+	public String toString() {
+		return "Event{" +
+				"eventID=" + eventID +
+				", active=" + active +
+				", venueID='" + venueID + '\'' +
+				", name='" + name + '\'' +
+				", startTime=" + startTime +
+				", endTime=" + endTime +
+				", artist='" + artist + '\'' +
+				", category='" + category + '\'' +
+				", productionCompanyID=" + productionCompanyID +
+				'}';
 	}
 }

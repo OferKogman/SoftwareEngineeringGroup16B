@@ -6,11 +6,11 @@ import java.util.TreeMap;
 
 public class Venue {
 	private volatile String name;
-	private final String location;
+	private final Location location;
 	private final Map<String, Segment> segments;
 	private final Map<LocalDateTime, Integer> events;
 
-	protected Venue(String name, String location, Map<String, Segment> segments) {
+	protected Venue(String name, Location location, Map<String, Segment> segments) {
 		this.name = name;
 		this.location = location;
 		this.segments = segments;
@@ -25,7 +25,7 @@ public class Venue {
 		name = newName;
 	}
 
-	public String getLocation() {
+	public Location getLocation() {
 		return location;
 	}
 
