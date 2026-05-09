@@ -127,66 +127,6 @@ public class UserServiceTests {
         assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
     }
 
-    @Test
-    void testAcceptOwnerAssignmentSuccess() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
-        User mockUser = mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
-        assertTrue(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
-    }
-
-    @Test
-    void testAcceptOwnerAssignmentInvalidSessionFail() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
-
-        when(mockAuthService.authenticate(anyString())).thenReturn(false);
-
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
-    }
-
-    @Test
-    void testAcceptOwnerAssignmentNoInviteFail() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
-        User mockUser = mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
-
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
-    }
-
-    @Test
-    void testAcceptOwnerAssignmentAssignerNotFoundFail() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
-        User mockUser = mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(false);
-
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
-    }
     
     //---------------------------------------------------------------------
     //    ADD MANAGER ASSIGMENT TESTS
@@ -283,8 +223,15 @@ public class UserServiceTests {
         assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
-    @Test
-    void testAcceptManagerAssignmentSuccess() {
+
+
+
+    //----------------------------------------------------------------------
+    //    ACCEPT INVITE ASSIGMENT TESTS
+    //----------------------------------------------------------------------
+
+        @Test
+    void testAcceptInviteAssignmentSuccess() {
         int userID = 1;
         int companyID = 1;
         int assignerID = 2;
@@ -301,7 +248,7 @@ public class UserServiceTests {
     }
 
     @Test
-    void testAcceptManagerAssignmentInvalidSessionFail() {
+    void testAcceptInviteAssignmentInvalidSessionFail() {
         int userID = 1;
         int companyID = 1;
         int assignerID = 2;
@@ -312,7 +259,7 @@ public class UserServiceTests {
     }
 
     @Test
-    void testAcceptManagerAssignmentNoInviteFail() {
+    void testAcceptInviteAssignmentNoInviteFail() {
         int userID = 1;
         int companyID = 1;
         int assignerID = 2;
@@ -330,7 +277,7 @@ public class UserServiceTests {
     }
 
     @Test
-    void testAcceptManagerAssignmentAssignerNotFoundFail() {
+    void testAcceptInviteAssignmentAssignerNotFoundFail() {
         int userID = 1;
         int companyID = 1;
         int assignerID = 2;
@@ -343,4 +290,59 @@ public class UserServiceTests {
 
         assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
+
+
+    //----------------------------------------------------------------------
+    //    REJECT INVITE ASSIGMENT TESTS
+    //----------------------------------------------------------------------
+
+    @Test
+    void testRejectAssignmentSuccess() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        doNothing().when(mockUser).rejectInvite(companyID, assignerID);
+        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
+        assertTrue(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+    }
+
+    @Test
+    void testRejectAssignmentNoInviteFailure() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).rejectInvite(companyID, assignerID);
+        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
+
+        assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+    }
+
+    @Test
+    void testRejectAssignmentBadSessionTokenFailure() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
+        when(mockAuthService.authenticate(anyString())).thenReturn(false);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        doNothing().when(mockUser).rejectInvite(companyID, assignerID);
+        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
+        assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+    }
+
 }
