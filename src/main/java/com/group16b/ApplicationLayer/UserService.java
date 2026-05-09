@@ -5,11 +5,16 @@ import org.slf4j.LoggerFactory;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
 
 import io.jsonwebtoken.JwtException;
+
+import java.util.Set;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 public class UserService {
@@ -148,6 +153,110 @@ public class UserService {
 			} 
 			catch (IllegalArgumentException e) {
 				logger.error("Failed to add owner assignment invite: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
+			finally {
+				user.getUserInvitesLock().unlock();
+			}
+
+			return Result.makeOk(true);
+		} catch (IllegalArgumentException e) {
+			logger.error("Failed to find event: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("Failed to deactivate event: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+	public Result<Boolean> assignManagerToCompany(int userID, int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for Manager assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for Manager assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+				return Result.makeFail("Invalid session token.");
+			}
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			logger.info("Session token verified successfully.");
+
+			//get perms
+			logger.info("Validating user permissions for manager assignment.");
+			user.validatePermissions(companyID, Owner.class);
+			logger.info("User permissions validated successfully.");
+
+			//get target user
+			logger.info("retrieving target user for Manager assignment.");
+			User targetUser = userRepository.getUserByID(targetID);
+			if (targetUser==null) {
+				logger.warn("Target user with ID {0} not found for Manager assignment.", targetID);
+				return Result.makeFail("Target user not found.");
+			}
+
+			//send invite
+			logger.info("ensuring target isnt already an owner for company.");
+			targetUser.getUserInvitesLock().lock();
+			try {
+				logger.info("Adding manager assignment invite to target user.");
+				targetUser.addInvite(companyID, userID, new Manager(userID, permissions));
+			}
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to add manager assignment invite: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
+			finally {
+				targetUser.getUserInvitesLock().unlock();
+			}
+			return Result.makeOk(true);
+
+		} catch (IllegalArgumentException e) {
+			logger.error("Failed to find event: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("Failed to deactivate event: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+
+	public Result<Boolean> acceptManagerAssignmentToCompany(int userID, int companyID, int assignerID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for accepting manager assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for accepting manager assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				return Result.makeFail("Invalid session token.");
+			}
+			
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			logger.info("Session token verified successfully.");
+
+			//ensure assigner exists
+			if(!userRepository.userExists(assignerID))
+			{
+				logger.warn("Assigner user with ID {0} not found for accepting manager assignment to company {1} by user {2}.", assignerID, companyID, userID);
+				return Result.makeFail("Assigner user not found.");
+			}
+
+			//check that invite exists and accept it
+			logger.info("accepting manager assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			user.getUserInvitesLock().lock();
+			try {
+				user.acceptManagerInvite(companyID, assignerID);
+				logger.info("Manager assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			} 
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to add manager assignment invite: " + e.getMessage());
 				return Result.makeFail(e.getMessage());
 			}
 			finally {
