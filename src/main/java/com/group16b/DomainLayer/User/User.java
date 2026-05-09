@@ -4,6 +4,8 @@ import java.util.HashMap;
 
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Role;
+import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
+
 import java.security.MessageDigest;
 
 public class User {
@@ -58,7 +60,7 @@ public class User {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
 			int parentID = ((Manager) role).getParentID();
-			return IUserRepository.getInstance().getUserByID(parentID);
+			return UserRepositoryImpl.getInstance().getUserByID(parentID);
 		}
 		return null; // No role for this company, hence no parent
 	}
