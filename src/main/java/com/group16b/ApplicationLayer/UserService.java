@@ -2,13 +2,14 @@ package com.group16b.ApplicationLayer;
 
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
 
 public class UserService {
 
 	private IUserRepository userRepository;
 
 	public UserService() {
-		this.userRepository = IUserRepository.getInstance();
+		this.userRepository = UserRepositoryImpl.getInstance();
 	}
 
 	public void registerUser(String email, String password) {
