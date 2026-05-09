@@ -55,6 +55,20 @@ public class UserTests {
         assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 3));
     }
 
+    @Test
+    void testAddingInvites()
+    {
+        User user = new User( "testuser", "hashedpassword");
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertNull(user.getRole(0));
+        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        assertDoesNotThrow(() -> user.acceptInvite(0, 0));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class))));
+        assertDoesNotThrow( () -> user.addInvite(0, 1, new Owner(0)));
+        assertDoesNotThrow(()->user.acceptInvite(0, 1));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 0, new Owner(0)));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class))));
+    }
 
     @Test
     void testCheckingForUserRolePermissionsOwnerSuccess()
