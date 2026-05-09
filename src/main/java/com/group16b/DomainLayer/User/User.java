@@ -3,6 +3,7 @@ package com.group16b.DomainLayer.User;
 import java.util.HashMap;
 
 import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Role;
 import java.security.MessageDigest;
 
@@ -75,6 +76,13 @@ public class User {
 	}
 
 	public void validatePermissions(int companyID, Class<? extends Role> requiredRole) {
+		// implement permission validation logic here
+		// throws exception if user does not have required permissions
+		return;
+	}
+
+	//probably the correct version, maybe add a set variant, as for managers we want to ensure perm is correct, not only role
+	public void validatePermissions(int companyID, ManagerPermissions permission) {
 		// implement permission validation logic here
 		// throws exception if user does not have required permissions
 		return;
