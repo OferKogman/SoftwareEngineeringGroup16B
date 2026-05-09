@@ -98,7 +98,12 @@ public class UserService {
 				//add invite to target user
 				logger.info("Adding owner assignment invite to target user.");
 				targetUser.addInvite(companyID, userID, new Owner(userID));
-			} finally {
+			}
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to add owner assignment invite: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
+			finally {
 				targetUser.getUserInvitesLock().unlock();
 			}
 			return Result.makeOk(true);
@@ -142,7 +147,7 @@ public class UserService {
 				logger.info("Owner assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			} 
 			catch (IllegalArgumentException e) {
-				logger.error("Failed to find event: " + e.getMessage());
+				logger.error("Failed to add owner assignment invite: " + e.getMessage());
 				return Result.makeFail(e.getMessage());
 			}
 			finally {
