@@ -16,7 +16,28 @@ import com.group16b.DomainLayer.User.Roles.Member;
 import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Owner;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.group16b.DomainLayer.User.Roles.Owner;
 public class UserTests {
+    @Test
+    void testAddingAssigningOwnerRequestAndAccepting()
+    {
+        User user = new User( "testuser", "hashedpassword");
+        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
+        assertNull(user.getRole(0));
+        user.addInvite(0, 0, new Owner(0));
+        user.addInvite(0, 1, new Owner(1));
+        user.addInvite(1, 1, new Owner(1));
+        assertNull(user.getRole(0));
+        assertDoesNotThrow(() -> user.acceptOwnerInvite(0, 0));
+        assertEquals(Owner.class, user.getRole(0).getClass());
+        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
+        assertDoesNotThrow(() -> user.acceptOwnerInvite(1, 1));
+    }
+
     @Test
     void testCheckingForUserRolePermissionsOwnerSuccess()
     {
@@ -30,7 +51,7 @@ public class UserTests {
     void testCheckingForUserRolePermissionsFounderSuccess()
     {
         User user1 = new User( "testuser", "hashedpassword");
-        user1.addRole(1, new Founder(0));
+        user1.addRole(1, new Founder());
         assertDoesNotThrow(() -> user1.validatePermissions(1, Founder.class));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Owner.class));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Manager.class));
@@ -73,26 +94,5 @@ public class UserTests {
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.CUSTOMER_SUPPORT));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.VIEW_PURCHASE_HISTORY));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.SALES_REPORT));
-    }
-}
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
-import com.group16b.DomainLayer.User.Roles.Owner;
-public class UserTests {
-    @Test
-    void testAddingAssigningOwnerRequestAndAccepting()
-    {
-        User user = new User( "testuser", "hashedpassword");
-        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
-        assertNull(user.getRole(0));
-        user.addInvite(0, 0, new Owner(0));
-        user.addInvite(0, 1, new Owner(1));
-        user.addInvite(1, 1, new Owner(1));
-        assertNull(user.getRole(0));
-        assertDoesNotThrow(() -> user.acceptOwnerInvite(0, 0));
-        assertEquals(Owner.class, user.getRole(0).getClass());
-        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
-        assertDoesNotThrow(() -> user.acceptOwnerInvite(1, 1));
     }
 }

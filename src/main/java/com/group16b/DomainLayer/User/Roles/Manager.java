@@ -22,6 +22,9 @@ public class Manager extends Member {
 		return roleType;
 	}
 
+	public Set<ManagerPermissions> getPermissions() {
+		return permissions;
+	}
 
 
 }
