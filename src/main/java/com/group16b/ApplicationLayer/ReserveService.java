@@ -32,7 +32,7 @@ public class ReserveService {
         logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for user {}", userId);
         try {
             //1. System - Checks user passed the queue.
-            if(!queueImp.isUserPassedQueue(userId)){
+            if(!queueImp.isUserPassedQueue(userId, eventID)){
                 throw new IllegalArgumentException("ApplicationLayer.ReserveService.reserveSeats: user did not pass the queue");
             }
             logger.info("ApplicationLayer.ReserveService.reserveSeats: User {} is passed the queue", userId);
@@ -59,14 +59,14 @@ public class ReserveService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
-    // needed or only one?
+    
     public Result<String> reserveFieldSeats(int userId, String segmentId, int amount, int eventID, String venueId) {
            // 0. log everything
 
         logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Attempting to reserve seats for user {}", userId);
         try {
             //1. System - Checks user passed the queue.
-            if(!queueImp.isUserPassedQueue(userId)){
+            if(!queueImp.isUserPassedQueue(userId, eventID)){
                 throw new IllegalArgumentException("ApplicationLayer.ReserveService.reserveFieldSeats: user did not pass the queue");
             }
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: User {} is passed the queue", userId);

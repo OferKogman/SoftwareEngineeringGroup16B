@@ -13,8 +13,26 @@ public class VirtualQueueImp  implements IVirtualQueueRepository{
 	}
 
 	@Override
-	public boolean isUserPassedQueue(int userId) {
+	public boolean isUserPassedQueue(int userId, int eventId) {
 		// TODO Auto-generated method stub
 		throw new UnsupportedOperationException("Unimplemented method 'isUserPassedQueue'");
+	}
+
+	@Override
+	public VirtualQueue findVirtualQueueById(long id) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'findVirtualQueueById'");
+	}
+
+	@Override
+	public void saveVirtualQueue(VirtualQueue virtualQueue) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'saveVirtualQueue'");
+	}
+
+	@Override
+	public void addVirtualQueue(VirtualQueue virtualQueue) {
+		// TODO Auto-generated method stub
+		throw new UnsupportedOperationException("Unimplemented method 'addVirtualQueue'");
 	}
 }
