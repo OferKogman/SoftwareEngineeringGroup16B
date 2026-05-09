@@ -1,112 +1,156 @@
 package com.group16b.DomainLayer.Event;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy;
 
-class Event {
+public class Event {
 	private static int IDCounter = 1;
 
 	private final int eventID;
 	private AtomicBoolean active = new AtomicBoolean(false);
-	private Venue venue;
+	private String venueID;
 	private String name;
-	private Date date;
+	private LocalDateTime startTime;
+	private LocalDateTime endTime;
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
 	private DiscountPolicy discountPolicy;
 	private PurchasePolicy purchasePolicy;
 
-	public Event(Venue venue, String name, Date date, String artist, String category, int pcID) {
+	public Event(EventRecord eventRecord) {
 		this.eventID = IDCounter++;
-		this.venue = venue;
-		this.venue.addEvent(date, eventID);
-		// initialize stock
-		this.name = name;
-		this.date = date;
-		this.artist = artist;
-		this.category = category;
-		this.productionCompanyID = pcID;
+		this.venueID = eventRecord.venueID();
+		validateName(eventRecord.name());
+		this.name = eventRecord.name();
+		validateDates(eventRecord.startTime(), eventRecord.endTime());
+		this.startTime = eventRecord.startTime();
+		this.endTime = eventRecord.endTime();
+		validateArtist(eventRecord.artist());
+		this.artist = eventRecord.artist();
+		validateCategory(eventRecord.category());
+		this.category = eventRecord.category();
+		this.productionCompanyID = eventRecord.pcID();
+		this.discountPolicy = eventRecord.discountPolicy();
+		this.purchasePolicy = eventRecord.purchasePolicy();
 	}
 
-	protected int getEventID() {
+	public int getEventID() {
 		return eventID;
 	}
 
-	protected boolean getEventStatus() {
+	public boolean getEventStatus() {
 		return active.get();
 	}
 
-	protected void activateEvent() {
-		active.set(true);
+	public void activateEvent() {
+		if (active.getAndSet(true)) {
+			throw new IllegalStateException("Event is already active.");
+		}
 	}
 
-	protected void deactivateEvent() {
-		active.set(false);
+	public void deactivateEvent() {
+		if (!active.getAndSet(false)) {
+			throw new IllegalStateException("Event is already inactive.");
+		}
 	}
 
-	protected Venue getEventVenue() {
-		return venue;
+	public String getEventVenueID() {
+		return venueID;
 	}
 
-	protected void setEventVenue(Venue venue) {
-		this.venue = venue;
+	public void setEventString(String venueID) {
+		this.venueID = venueID;
 		// initialize stock and handle old sales
 	}
 
-	protected String getEventName() {
+	public String getEventName() {
 		return name;
 	}
 
-	protected void setEventName(String name) {
+	public void setEventName(String name) {
 		this.name = name;
 	}
 
-	protected Date getEventDate() {
-		return date;
+	public LocalDateTime getEventStartTime() {
+		return startTime;
 	}
 
-	protected void setEventDate(Date date) {
-		this.date = date;
-		// update all stock
+	public LocalDateTime getEventEndTime() {
+		return endTime;
 	}
 
-	protected String getEventArtist() {
+	public void setEventNewTime(LocalDateTime startTime, LocalDateTime endTime) {
+		validateDates(startTime, endTime);
+	}
+
+	public String getEventArtist() {
 		return artist;
 	}
 
-	protected void setEventArtist(String artist) {
+	public void setEventArtist(String artist) {
 		this.artist = artist;
 	}
 
-	protected String getEventCategory() {
+	public String getEventCategory() {
 		return category;
 	}
 
-	protected void setEventCategory(String category) {
+	public void setEventCategory(String category) {
 		this.category = category;
 	}
 
-	protected int getEventProductionCOmpanyID() {
+	public int getEventProductionCompanyID() {
 		return productionCompanyID;
 	}
 
-	protected DiscountPolicy getEventDiscountPolicy() {
+	public DiscountPolicy getEventDiscountPolicy() {
 		return discountPolicy;
 	}
 
-	protected void setEventDiscountPolicy(DiscountPolicy dp) {
+	public void setEventDiscountPolicy(DiscountPolicy dp) {
 		this.discountPolicy = dp;
 	}
 
-	protected PurchasePolicy getEvenPurchasePolicy() {
+	public PurchasePolicy getEventPurchasePolicy() {
 		return purchasePolicy;
 	}
 
-	protected void setEventPurchasePolicy(PurchasePolicy pp) {
+	public void setEventPurchasePolicy(PurchasePolicy pp) {
 		this.purchasePolicy = pp;
+	}
+
+	private void validateName(String name) {
+		if (name == null || name.trim().isEmpty()) {
+			throw new IllegalArgumentException("Event name cannot be null or empty.");
+		}
+	}
+
+	private void validateDates(LocalDateTime startTime, LocalDateTime endTime) {
+		if (startTime == null || endTime == null) {
+			throw new IllegalArgumentException("Start time and end time cannot be null.");
+		}
+		if (startTime.isAfter(endTime)) {
+			throw new IllegalArgumentException("Start time must be before end time.");
+		}
+		if (endTime.isBefore(LocalDateTime.now())) {
+			throw new IllegalArgumentException("End time must be in the future.");
+		}
+	}
+
+	private void validateArtist(String artist) {
+		if (artist == null || artist.trim().isEmpty()) {
+			throw new IllegalArgumentException("Event artist cannot be null or empty.");
+		}
+	}
+
+	private void validateCategory(String category) {
+		if (category == null || category.trim().isEmpty()) {
+			throw new IllegalArgumentException("Event category cannot be null or empty.");
+		}
 	}
 }

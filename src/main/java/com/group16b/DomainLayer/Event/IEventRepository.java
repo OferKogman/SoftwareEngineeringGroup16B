@@ -1,28 +1,12 @@
 package com.group16b.DomainLayer.Event;
 
-import java.util.Map;
-import java.util.TreeMap;
+public interface IEventRepository {
+	// event must not be null and must have a unique ID
+	public void addEvent(Event e);
 
-class IEventRepository {
-	private final static IEventRepository instance = new IEventRepository();
-	private Map<Integer, Event> events = new TreeMap<>();
+	// event or null if no event with the given ID exists
+	public Event getEventByID(int eventID);
 
-	private IEventRepository() {
-	}
-
-	protected IEventRepository getInstance() {
-		return instance;
-	}
-
-	protected void addEvent(Event e) {
-		events.putIfAbsent(e.getEventID(), e);
-	}
-
-	protected Event getEventByID(int eventID) {
-		return events.get(eventID);
-	}
-
-	protected boolean EventExists(int eventID) {
-		return events.containsKey(eventID);
-	}
+	// returns true if an event with the given ID exists, false otherwise
+	public boolean EventExists(int eventID);
 }

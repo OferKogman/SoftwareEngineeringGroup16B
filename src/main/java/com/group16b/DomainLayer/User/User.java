@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Role;
+import java.security.MessageDigest;
 
 public class User {
 
@@ -12,25 +13,48 @@ public class User {
 	private String password;
 	private HashMap<Integer, Role> roles; // Key: companyID, Value: Role
 
-	protected User(String email, String password) {
+	public User(String email, String password) {
 		this.email = email;
-		this.password = password;
+		setPassword(password);
 		this.roles = new HashMap<>();
 	}
 
-	protected String getEmail() {
+	public String getEmail() {
 		return email;
 	}
 
-	protected Role getRole(int companyID) {
+	public Role getRole(int companyID) {
 		return roles.get(companyID);
 	}
 
-	protected void addRole(int companyID, Role role) {
+	public void setPassword(String newPassword) {
+		try {
+			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			messageDigest.update(newPassword.getBytes());
+			String stringHash = new String(messageDigest.digest());
+			this.password = stringHash;
+		} catch (Exception e) {
+			System.out.println("Error hashing password: " + e.getMessage());
+		}
+	}
+
+	public boolean confirmPassword(String password) {
+		try {
+			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			messageDigest.update(password.getBytes());
+			String stringHash = new String(messageDigest.digest());
+			return this.password.equals(stringHash);
+		} catch (Exception e) {
+			System.out.println("Error hashing password: " + e.getMessage());
+			return false;
+		}
+	}
+
+	public void addRole(int companyID, Role role) {
 		roles.put(companyID, role);
 	}
 
-	protected User getParentForCompany(int companyID) {
+	public User getParentForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
 			int parentID = ((Manager) role).getParentID();
@@ -39,7 +63,13 @@ public class User {
 		return null; // No role for this company, hence no parent
 	}
 
-	protected int getUserID() {
+	public int getUserID() {
 		return userID;
+	}
+
+	public void validatePermissions(int companyID, Class<? extends Role> requiredRole) {
+		// implement permission validation logic here
+		// throws exception if user does not have required permissions
+		return;
 	}
 }
