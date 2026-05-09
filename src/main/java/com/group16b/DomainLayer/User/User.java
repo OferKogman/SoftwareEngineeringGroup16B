@@ -170,6 +170,18 @@ public class User {
 			throw new IllegalArgumentException("No invite found for company ID " + companyID + " from assigner ID " + assignerID);
 		}
 	}
+
+	public void rejectInvite(int companyID, int assignerID) {
+		CompanyAssigmentKey key = new CompanyAssigmentKey(companyID, assignerID);
+		Manager offeredRole = userInvites.get(key);
+		
+		if (offeredRole != null) {
+			userInvites.remove(key);
+		} else {
+			throw new IllegalArgumentException("No invite found for company ID " + companyID + " from assigner ID " + assignerID);
+		}
+	}
+	
 	private void removeAllManagerInvitesForCompany(int companyID) {
 			userInvites.entrySet().removeIf(entry -> entry.getKey().companyID() == companyID && entry.getValue().getRoleType() == RoleType.MANAGER);
 	}

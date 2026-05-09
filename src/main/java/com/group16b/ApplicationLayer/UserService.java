@@ -110,66 +110,21 @@ public class UserService {
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException e) {
-			logger.error("Failed to find event: " + e.getMessage());
+			logger.error("Failed to invite owner: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (IllegalStateException e) {
-			logger.error("Failed to deactivate event: " + e.getMessage());
+			logger.error("Failed to invite owner: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			logger.error("JWT authentication error during owner invitation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			logger.error("Unexpected error during owner invitation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
 
-	public Result<Boolean> acceptInviteToCompany(int userID, int companyID, int assignerID, String sessionToken) {
-		try {
-			//auth
-			logger.info("Verifying session token for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-				return Result.makeFail("Invalid session token.");
-			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
-			logger.info("Session token verified successfully.");
-			if(!userRepository.userExists(assignerID))
-			{
-				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
-				return Result.makeFail("Assigner user not found.");
-			}
-
-			//check that invite exists and accept it
-			logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			user.getUserInvitesLock().lock();
-			try {
-				user.acceptInvite(companyID, assignerID);
-				logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			} 
-			catch (IllegalArgumentException e) {
-				logger.error("Failed to add invite assignment invite: " + e.getMessage());
-				return Result.makeFail(e.getMessage());
-			}
-			finally {
-				user.getUserInvitesLock().unlock();
-			}
-
-			return Result.makeOk(true);
-		} catch (IllegalArgumentException e) {
-			logger.error("Failed to find event: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (IllegalStateException e) {
-			logger.error("Failed to deactivate event: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
-	}
+	
 	public Result<Boolean> assignManagerToCompany(int userID, int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
 		try {
 			//auth
@@ -211,16 +166,108 @@ public class UserService {
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException e) {
-			logger.error("Failed to find event: " + e.getMessage());
+			logger.error("Failed to invite manager: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (IllegalStateException e) {
-			logger.error("Failed to deactivate event: " + e.getMessage());
+			logger.error("Failed to invite manager: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			logger.error("JWT authentication error during inviting manager: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			logger.error("Unexpected error during inviting manager: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+	public Result<Boolean> acceptInviteToCompany(int userID, int companyID, int assignerID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				return Result.makeFail("Invalid session token.");
+			}
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			logger.info("Session token verified successfully.");
+			if(!userRepository.userExists(assignerID))
+			{
+				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
+				return Result.makeFail("Assigner user not found.");
+			}
+
+			//check that invite exists and accept it
+			logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			user.getUserInvitesLock().lock();
+			try {
+				user.acceptInvite(companyID, assignerID);
+				logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			} 
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to accept invite: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
+			finally {
+				user.getUserInvitesLock().unlock();
+			}
+
+			return Result.makeOk(true);
+		} catch (IllegalArgumentException e) {
+			logger.error("Failed to accepting invite: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("Failed to accept invite: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during invite acceptance: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during accepting invite: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+	public Result<Boolean> rejectInviteToCompany(int userID, int companyID, int assignerID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for rejecting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for rejecting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				return Result.makeFail("Invalid session token.");
+			}
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			logger.info("Session token verified successfully.");
+			if(!userRepository.userExists(assignerID))
+			{
+				logger.warn("Assigner user with ID {0} not found for rejecting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
+				return Result.makeFail("Assigner user not found.");
+			}
+
+			//check that invite exists and reject it
+			logger.info("rejecting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			user.getUserInvitesLock().lock();
+			try {
+				user.rejectInvite(companyID, assignerID);
+				logger.info("Invite assignment invite rejected successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			} 
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to add invite assignment invite: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
+			finally {
+				user.getUserInvitesLock().unlock();
+			}
+
+			return Result.makeOk(true);
+		} catch (IllegalArgumentException e) {
+			logger.error("Failed to reject invite: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("Failed to reject invite: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during invite rejection: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during invite rejection: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
