@@ -34,20 +34,21 @@ class Seat {
 		return stock.get(eventID);
 	}
 
-	protected void reserveSeat(int eventID) {
+	protected boolean reserveSeat(int eventID) {
 		while (true) {
 			Boolean reserved = stock.get(eventID);
 			if (reserved == null) {
 				throw new IllegalArgumentException("this event is not in this venue.");
 			}
 			if (reserved) {
-				throw new IllegalArgumentException("Seat is already reserved !");
+				return false;
 			}
 			if (stock.replace(eventID, reserved, true)) {
-				return;
+				return true;
 			}
 		}
 	}
+	
 	protected boolean isSeatReserved(int eventID) {
 		Boolean reserved = stock.get(eventID);
 		if (reserved == null) {

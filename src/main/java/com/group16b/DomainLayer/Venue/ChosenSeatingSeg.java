@@ -22,19 +22,19 @@ class ChosenSeatingSeg extends Segment {
 	}
 
 	void reserveSeats(List<String> seatIds, int eventID) {
+		List<Seat> reservedSeats = new java.util.ArrayList<>();
 		for (String seatId : seatIds) {
 			Seat seat = seats.get(seatId);
 			if (seat == null) {
 				throw new IllegalArgumentException("Seat with ID " + seatId + " not found");
 			}
-			if (seat.isSeatReserved(eventID)){
-				throw new IllegalArgumentException("Seat with ID " + seatId + " is already reserved for event " + eventID);
+			if (!seat.reserveSeat(eventID)){
+				for (Seat _seat : reservedSeats) {
+					_seat.returnSeat(eventID);
+				}
+				throw new IllegalArgumentException("Failed to reserve seat with ID " + seatId);
 			}
-		}
-
-		for (String seatId : seatIds) {
-			Seat seat = seats.get(seatId);
-			seat.reserveSeat(eventID);
+			reservedSeats.add(seat);
 		}
 	}
 }

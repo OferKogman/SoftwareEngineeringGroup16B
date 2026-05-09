@@ -5,6 +5,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueueImp;
@@ -46,9 +47,10 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for user {}", userId);
 
             //6. System - creates an active order for the user with the selected tickets.
-            String orderId = orderRepo.createSeatingActiveOrder(seatIds, segmentId, eventID, userId);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", orderId, userId);
-            return Result.makeOk("new OrderId: " + orderId);
+            Order order = new Order(segmentId, seatIds);
+            orderRepo.addOrder(order);
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), userId);
+            return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (IllegalArgumentException e) {
             logger.error("ApplicationLayer.ReserveService.reserveSeats: Failed to reserve seats for user {}: {}", userId, e.getMessage());
@@ -81,16 +83,17 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for user {}", userId);
 
             //6. System - creates an active order for the user with the selected tickets.
-            String orderId = orderRepo.createFieldActiveOrder(amount, segmentId, eventID, userId);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for user {}", orderId, userId);
-            return Result.makeOk("new OrderId: " + orderId);
+            Order order = new Order(segmentId, amount);
+            orderRepo.addOrder(order);
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for user {}", order.getOrderId(), userId);
+            return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (IllegalArgumentException e) {
             logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: Failed to reserve seats for user {}: {}", userId, e.getMessage());
             return Result.makeFail(e.getMessage());
         }
         catch (Exception e) {
-            logger.error("ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user {}: {}", userId, e.getMessage());
+            logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: An unexpected error occurred while reserving seats for user {}: {}", userId, e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }

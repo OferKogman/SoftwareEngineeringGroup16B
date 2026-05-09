@@ -15,7 +15,7 @@ public class Order {
 	
 
 
-	protected Order(String segmentId, List<String> seats) {
+	public Order(String segmentId, List<String> seats) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.seats = List.copyOf(seats);
@@ -23,22 +23,22 @@ public class Order {
 		this.segmentId = segmentId;
 		this.orderType = OrderType.SEAT;
 	}
-	protected Order(String segmentId, int amount) {
+	public Order(String segmentId, int amount) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
 		this.orderType = OrderType.FIELD;
 	}
-	protected String getOrderId() {
+	public String getOrderId() {
 		return orderId;
 	}
 
-	protected OrderState getState() {
+	public OrderState getState() {
 		return state;
 	}
 
-	protected String getSegmentId() {
+	public String getSegmentId() {
 		return segmentId;
 	}
 
