@@ -3,7 +3,6 @@ package com.group16b.DomainLayer.User.Roles;
 import java.util.Set;
 
 public class Manager extends Member {
-	private int parentID;
 	private Integer assignerID;
 	private Set<ManagerPermissions> permissions;
 
