@@ -1,10 +1,14 @@
 package com.group16b.DomainLayer.User;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Role;
+import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 import java.security.MessageDigest;
 
 public class User {
@@ -13,11 +17,15 @@ public class User {
 	private String email;
 	private String password;
 	private HashMap<Integer, Role> roles; // Key: companyID, Value: Role
+	private final Map<CompanyAssigmentKey, Manager> userInvites; // Key: companyID, Value: List of Managers who invited the user
 
+	private final ReentrantLock userInvitesLock;
 	public User(String email, String password) {
 		this.email = email;
 		setPassword(password);
 		this.roles = new HashMap<>();
+		this.userInvites = new ConcurrentHashMap<>();
+		this.userInvitesLock = new ReentrantLock();
 	}
 
 	public String getEmail() {
@@ -82,9 +90,59 @@ public class User {
 	}
 
 	//probably the correct version, maybe add a set variant, as for managers we want to ensure perm is correct, not only role
-	public void validatePermissions(int companyID, ManagerPermissions permission) {
+	public void validatePermission(int companyID, ManagerPermissions permission) {
 		// implement permission validation logic here
 		// throws exception if user does not have required permissions
 		return;
+	}
+
+
+	//adds an invite to a company
+	//one invite per company and owner can exist
+	public void addInvite(int companyID, int assignerID, Manager offeredRole) {
+		userInvitesLock.lock();
+		try {
+			userInvites.put(new CompanyAssigmentKey(companyID, assignerID), offeredRole);
+		} finally {
+			userInvitesLock.unlock();
+		}
+	}
+
+	private void removeInvite(int companyID, int assignerID) {
+		userInvitesLock.lock();
+		try {
+			userInvites.remove(new CompanyAssigmentKey(companyID, assignerID));
+		} finally {
+			userInvitesLock.unlock();
+		}
+	}
+
+	private void removeAllInvitesForCompany(int companyID) {
+		userInvitesLock.lock();
+		try {
+			userInvites.entrySet().removeIf(entry -> entry.getKey().companyID() == companyID);
+		} finally {
+			userInvitesLock.unlock();
+		}
+	}
+
+	public void acceptInvite(int companyID, int assignerID) {
+		userInvitesLock.lock();
+		try {
+			CompanyAssigmentKey key = new CompanyAssigmentKey(companyID, assignerID);
+			if (userInvites.containsKey(key)) {
+				Manager offeredRole = userInvites.get(key);
+				addRole(companyID, offeredRole);
+				userInvites.remove(key);
+			} else {
+				throw new IllegalArgumentException("No invite found for company ID " + companyID + " from assigner ID " + assignerID);
+			}
+		} finally {
+			userInvitesLock.unlock();
+		}
+	}
+
+	public void rejectInvite(int companyID, int assignerID) {
+		removeInvite(companyID, assignerID);
 	}
 }
