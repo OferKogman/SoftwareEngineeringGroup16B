@@ -13,5 +13,7 @@ public record EventRecord(String venueID,
 		String category,
 		int pcID,
 		DiscountPolicy discountPolicy,
-		PurchasePolicy purchasePolicy) {
+		PurchasePolicy purchasePolicy,
+		double price,
+		double rating) {
 }
