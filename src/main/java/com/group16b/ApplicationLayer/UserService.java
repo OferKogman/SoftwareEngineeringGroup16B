@@ -124,7 +124,7 @@ public class UserService {
 		}
 	}
 
-	public Result<Boolean> acceptAssignmentToCompany(int userID, int companyID, int assignerID, String sessionToken) {
+	public Result<Boolean> acceptInviteToCompany(int userID, int companyID, int assignerID, String sessionToken) {
 		try {
 			//auth
 			logger.info("Verifying session token for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);

@@ -141,7 +141,7 @@ public class UserServiceTests {
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertTrue(userService.acceptOwnerAssigmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertTrue(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -152,7 +152,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.acceptOwnerAssigmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -168,9 +168,9 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptOwnerInvite(companyID, assignerID);
+        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
-        assertFalse(userService.acceptOwnerAssigmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -185,7 +185,7 @@ public class UserServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(false);
 
-        assertFalse(userService.acceptOwnerAssigmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
     
     //---------------------------------------------------------------------
@@ -297,7 +297,7 @@ public class UserServiceTests {
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertTrue(userService.acceptManagerAssignmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertTrue(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -308,7 +308,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.acceptManagerAssignmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -324,9 +324,9 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptManagerInvite(companyID, assignerID);
+        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
-        assertFalse(userService.acceptManagerAssignmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -341,6 +341,6 @@ public class UserServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(false);
 
-        assertFalse(userService.acceptManagerAssignmentToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 }
