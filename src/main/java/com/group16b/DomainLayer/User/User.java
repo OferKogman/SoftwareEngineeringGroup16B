@@ -3,6 +3,7 @@ package com.group16b.DomainLayer.User;
 import java.util.HashMap;
 
 import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
 
@@ -72,16 +73,38 @@ public class User {
 	//validates role permissions is high enough for a specific company
 	//hierarchy: founder > owner > manager > member no idea what is member
 	public void validatePermissions(int companyID, Class<? extends Role> requiredRole) {
-		Role role = getRole(companyID);
-		if (role == null) {
+		
+		if (!managerInCompany(companyID)) {
 			throw new IllegalArgumentException(
 				"User does not have a role for this company."
 			);
 		}
+
+		Role role = getRole(companyID);
 		if (!requiredRole.isAssignableFrom(role.getClass())) {
 			throw new IllegalArgumentException(
 				"User does not have sufficient permissions for this action."
 			);
 		}
+	}
+	//validates user have permission for a specific company to perform a specific action
+	public void validatePermissions(int companyID, ManagerPermissions requiredPermission) {
+		if (!managerInCompany(companyID)) {
+			throw new IllegalArgumentException(
+				"User does not have a role for this company."
+			);
+		}
+
+		Role role = getRole(companyID);
+		if(!((Manager) role).getPermissions().contains(requiredPermission)) {
+			throw new IllegalArgumentException(
+				"User does not have sufficient permissions for this action."
+			);
+		}
+	}
+
+	public boolean managerInCompany(int companyID) {
+		Role role = getRole(companyID);
+		return role != null && role instanceof Manager;
 	}
 }
