@@ -96,10 +96,6 @@ public class UserService {
 			logger.info("ensuring target isnt already an owner for company.");
 			targetUser.getUserInvitesLock().lock();
 			try {
-				if (targetUser.getRole(companyID) != null && targetUser.getRole(companyID) instanceof Owner) {
-					logger.warn("Target user with ID {0} already OWNER for company {1}.", targetID, companyID);
-					return Result.makeFail("Target user already OWNER for this company.");
-				}
 				//add invite to target user
 				logger.info("Adding owner assignment invite to target user.");
 				targetUser.addInvite(companyID, userID, new Owner(userID));

@@ -103,11 +103,8 @@ public class UserServiceTests {
         int targetID = 2;
         User mockUser = mock(User.class);
         User mockTarget=mock(User.class);
-        Owner existingOwnerRole = new Owner(3);
-        when(mockTarget.getRole(companyID)).thenReturn(existingOwnerRole);
         doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        when(mockTarget.getRole(companyID)).thenReturn(existingOwnerRole);
-
+        doThrow(new IllegalArgumentException("User already has a role for this company")).when(mockTarget).addInvite(anyInt(),anyInt(), any(Owner.class));
         when(mockAuthService.authenticate(anyString())).thenReturn(true);
         when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
