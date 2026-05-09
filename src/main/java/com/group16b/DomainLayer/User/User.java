@@ -69,9 +69,19 @@ public class User {
 		return userID;
 	}
 
+	//validates role permissions is high enough for a specific company
+	//hierarchy: founder > owner > manager > member no idea what is member
 	public void validatePermissions(int companyID, Class<? extends Role> requiredRole) {
-		// implement permission validation logic here
-		// throws exception if user does not have required permissions
-		return;
+		Role role = getRole(companyID);
+		if (role == null) {
+			throw new IllegalArgumentException(
+				"User does not have a role for this company."
+			);
+		}
+		if (!requiredRole.isAssignableFrom(role.getClass())) {
+			throw new IllegalArgumentException(
+				"User does not have sufficient permissions for this action."
+			);
+		}
 	}
 }
