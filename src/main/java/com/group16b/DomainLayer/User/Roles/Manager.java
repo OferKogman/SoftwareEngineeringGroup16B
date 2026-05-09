@@ -9,20 +9,14 @@ public class Manager extends Member {
 
 	protected Manager(Integer assignerID, Set<ManagerPermissions> permissions) {
 		this.assignerID = assignerID;
-		this.permissions = permissions;
+		this.permissions = Set.copyOf(permissions);
 	}
 
 	public Integer getAssignerID() {
 		return assignerID;
 	}
 
-	public boolean hasPermission(ManagerPermissions permission) {
-		return permissions.contains(permission);
-	}
 
-	public Set<ManagerPermissions> getPermissions() {
-		return Set.copyOf(permissions);
-	}
 
 
 }
