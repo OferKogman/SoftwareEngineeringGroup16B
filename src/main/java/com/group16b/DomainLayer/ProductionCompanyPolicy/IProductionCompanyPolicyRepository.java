@@ -1,14 +1,33 @@
 package com.group16b.DomainLayer.ProductionCompanyPolicy;
 
-import java.util.Set;
+public interface IProductionCompanyPolicyRepository {
+    /*
+     * Adds a production company policy to the repository.
+     * 
+     * @param productionCompanyPolicy the production company policy to add
+     * 
+     * @throws IllegalArgumentException if the production company policy is null or
+     * already exists
+     */
+    public void addProductionCompanyPolicy(ProductionCompanyPolicy productionCompanyPolicy);
 
-import com.group16b.DomainLayer.Policies.DiscountPolicy;
-import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+    /*
+     * Retrieves a production company policy by it's ID.
+     * 
+     * @param id the ID of the production company policy to retrieve
+     * 
+     * @return the production company policy with the specified ID, or null if not
+     * found
+     */
+    public ProductionCompanyPolicy getProductionCompanyPolicyById(int id);
 
-public interface  IProductionCompanyPolicyRepository {
-    public ProductionCompanyPolicy getProductionCompanyByName(String name);
-
-    public ProductionCompanyPolicy getProductionCompanyByID(int id);
-    public Set<PurchasePolicy> getPurchasePolicyByID(int productionCompanyId);
-    public Set<DiscountPolicy> getDiscountPolicyByID(int productionCompanyId);
+    /*
+     * Retrieves a production company policy by it's name.
+     * 
+     * @param name the name of the production company policy to retrieve
+     * 
+     * @return the production company policy with the specified name, or null if not
+     * found
+     */
+    public ProductionCompanyPolicy getProductionCompanyPolicyByName(String name);
 }
