@@ -264,6 +264,7 @@ public class UserService {
 			finally {
 				targetUser.getUserInvitesLock().unlock();
 			}
+			logger.info("user {0} have been succesfully invited to be an owner in company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException e) {
@@ -321,6 +322,7 @@ public class UserService {
 			finally {
 				targetUser.getUserInvitesLock().unlock();
 			}
+			logger.info("user {0} have been succesfully invited to be a manager in company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException e) {
@@ -375,7 +377,7 @@ public class UserService {
 			finally {
 				user.getUserInvitesLock().unlock();
 			}
-
+			logger.info("user {0} have succesfully accepted an invite to company {1} by user {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
 		} catch (IllegalArgumentException e) {
 			logger.error("Failed to accepting invite: " + e.getMessage());
@@ -422,7 +424,7 @@ public class UserService {
 			finally {
 				user.getUserInvitesLock().unlock();
 			}
-
+			logger.info("user {0} have succesfully rejected an invite to company {1} by user {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
 		} catch (IllegalArgumentException e) {
 			logger.error("Failed to reject invite: " + e.getMessage());
@@ -498,7 +500,6 @@ public class UserService {
 				logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
 				return Result.makeFail("user is not owner");
 			}
-			Manager userManager=(Manager)user.getRole(companyID);
 
 			Integer assignerID=user.getParentIDForCompany(companyID);
 			if(assignerID==null)
@@ -510,13 +511,13 @@ public class UserService {
 			User assigner=userRepository.getUserByID(assignerID);
 			if(assigner==null)
 			{
-				logger.error("assigner want found to remove the user from his asignee list in forfeit ownership");
+				logger.error("assigner wasnt found to remove the user from his asignee list in forfeit ownership");
 				return Result.makeFail("assigner wasnt found");
 			}
-			Owner assignerOwner=(Owner)assigner.getRole(companyID);
 
-			assignerOwner.removeManager(userManager);
-			user.removeRole(companyID);
+			companyHierarchyDomainService.removeUserFromCompany(user, companyID);
+
+			logger.info("user {0} has succesfuly forfeited its role in company {1}, thus removing itself from the children of its company parent {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException | IllegalStateException e) {
@@ -530,5 +531,61 @@ public class UserService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+		public Result<Boolean> removeOwnerManager(int targetID, int companyID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for removing manager with id {0} for company {1}.", targetID,companyID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for removing manager with id {0} for company {1}.", targetID,companyID);
+				return Result.makeFail("Invalid session token.");
+			}
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
+			if (user == null) {
+				logger.warn("User with ID {0} not found for removing manager", userID);
+				return Result.makeFail("User not found.");
+			}
+			logger.info("Session token verified successfully.");
 
+			if(!user.isOwnerOfCompany(companyID))
+			{
+				logger.warn("user {0} is not owner for comapny {1}, thus he cant remove manager there",userID,companyID);
+				return Result.makeFail("user is not owner");
+			}
+			
+			logger.info("retrieving target user {0} to remove manager from company {1} by user {2}",targetID,companyID,userID);
+			User target=userRepository.getUserByID(targetID);
+			if(target==null)
+			{
+				logger.warn("target user {0} was not found to remove him from the compny {1} by user {2}.",targetID,companyID,userID);
+				return Result.makeFail("target user was not found");
+			}
+
+			if(target.getRole(companyID)==null)
+			{
+				logger.warn("target user {0} is not personal in the company {1} to remove them by user {2}",targetID,companyID,userID);
+				return Result.makeFail("target user is not personal in company");
+			}
+
+			if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(target, user, companyID))
+			{
+				logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant remove them",userID,targetID,companyID);
+				return Result.makeFail("User didn't apoint target so no permission to remove");
+			}
+			companyHierarchyDomainService.removeUserFromCompany(user, companyID);
+			logger.info("target {0} was removed from company {1} by user {2}",targetID,companyID,userID);
+			return Result.makeOk(true);
+
+
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			logger.error("Failed to forfeit ownership: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during forfeitng ownership: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during forfeiting ownership: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
 }

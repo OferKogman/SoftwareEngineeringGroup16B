@@ -23,6 +23,10 @@ public class CompanyHierarchyDomainService {
         {//save us runtime by checking this before traversing the tree
             return false;
         }
+        if(manager.getUserID()==owner.getUserID())
+        {
+            return false;
+        }
         //traverse upwards in search of owner
         User current = manager;
         while (current != null) {
@@ -36,6 +40,19 @@ public class CompanyHierarchyDomainService {
             current = userRepository.getUserByID(parentID);
         }
         return false;
+    }
+
+    //will remove a user from a company irarchy
+    //PRECONDITIONS: user is a manager in the company, user is not owner of the company
+    //this should only be called after ensuring that the callee have high enough clearance
+    public void removeUserFromCompany(User user, int companyID)
+    {   
+        int parentID= user.getParentIDForCompany(companyID);
+        User parent=userRepository.getUserByID(parentID);
+        Manager userRole=(Manager)user.getRole(companyID);
+        Owner parentRole=(Owner)parent.getRole(companyID);
+        parentRole.removeManager(userRole);
+        user.removeRole(companyID);
     }
 
 }
