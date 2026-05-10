@@ -197,15 +197,16 @@ public class UserService {
 
 	}
 
-	public Result<Boolean> assignOwnerToCompany(int userID, int companyID, int targetID, String sessionToken) {
+	public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for Owner assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+			logger.info("Verifying session token for Owner assignment of user {0} to company {1}.", targetID, companyID);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			//get perms

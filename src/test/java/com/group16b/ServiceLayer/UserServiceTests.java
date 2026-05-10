@@ -53,7 +53,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertTrue(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertTrue(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     //user not owner
@@ -73,7 +73,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     //target user not found
@@ -93,7 +93,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany( companyID, targetID, "").isSuccess());
     }
 
     //target user already owner
@@ -113,7 +113,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
 
@@ -125,7 +125,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     

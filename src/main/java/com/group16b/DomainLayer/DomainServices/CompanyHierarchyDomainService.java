@@ -38,10 +38,4 @@ public class CompanyHierarchyDomainService {
         return false;
     }
 
-
-    public void removeManager(Manager manager, Owner owner)
-    {
-        owner.removeManager(manager);
-        
-    }
 }
