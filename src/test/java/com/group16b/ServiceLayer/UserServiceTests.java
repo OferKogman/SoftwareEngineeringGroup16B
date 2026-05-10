@@ -149,7 +149,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertTrue(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertTrue(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
     //user not owner
@@ -169,7 +169,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
     //target user not found
@@ -189,7 +189,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
     //target user already owner
@@ -209,7 +209,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
 
@@ -221,7 +221,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
 
