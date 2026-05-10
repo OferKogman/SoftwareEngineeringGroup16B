@@ -101,7 +101,7 @@ public class ReserveService {
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
             // @TODO: Implement price calculation logic
-            // @TODO check purchase policy
+            // @TODO check purchase policy //already checked lottery policy
             double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
 
             //6. System - creates an active order for the user with the selected tickets.

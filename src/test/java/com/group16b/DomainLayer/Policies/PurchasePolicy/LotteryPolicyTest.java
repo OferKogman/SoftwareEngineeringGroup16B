@@ -1,12 +1,9 @@
 package com.group16b.DomainLayer.Policies.PurchasePolicy;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-
 import java.time.LocalDateTime;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.junit.jupiter.api.Test;
-
-import net.bytebuddy.asm.Advice;
 
 public class LotteryPolicyTest {
     
@@ -58,12 +55,14 @@ public class LotteryPolicyTest {
 
     @Test
     public void FailureEnrollInLotteryAfterDueDate() {
+        LocalDateTime lotteryDate = LocalDateTime.now().plusSeconds(5);
         try {
-            LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now());
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, lotteryDate);
+            Thread.sleep(10000);
             lotteryPolicy.enrollInLottery(1, 1);
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
-            assert(e.getMessage().equals("Lottery enrollment is closed since " + LocalDateTime.now() + "."));
+            assert(e.getMessage().equals("Lottery enrollment is closed since " + lotteryDate + "."));
         }
     }
 
