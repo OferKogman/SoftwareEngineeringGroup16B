@@ -3,18 +3,19 @@ package com.group16b.DomainLayer.ProductionCompanyPolicy;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class ProductionCompanyPolicy {
     private int id;
     private String name;
-    private CompanyState companyState;
+    private AtomicBoolean isOpen = new AtomicBoolean(false);
     private PurchasePolicy purchasePolicy;
     private DiscountPolicy discountPolicy;
 
-    ProductionCompanyPolicy(int id, String name, CompanyState companyState, PurchasePolicy purchasePolicy,
+    ProductionCompanyPolicy(int id, String name, PurchasePolicy purchasePolicy,
             DiscountPolicy discountPolicy) {
         this.id = id;
         this.name = name;
-        this.companyState = companyState;
         this.purchasePolicy = purchasePolicy;
         this.discountPolicy = discountPolicy;
     }
@@ -27,8 +28,8 @@ public class ProductionCompanyPolicy {
         return this.name;
     }
 
-    public CompanyState getCompanyState() {
-        return this.companyState;
+    public boolean isOpen() {
+        return isOpen.get();
     }
 
     public PurchasePolicy getPurchasePolicy() {
@@ -47,8 +48,16 @@ public class ProductionCompanyPolicy {
         this.name = name;
     }
 
-    public void setCompanyState(CompanyState companyState) {
-        this.companyState = companyState;
+    public void openCompany(){
+        if(isOpen.getAndSet(true)){
+            throw new IllegalStateException("Company is already open.");
+        }
+    }
+
+    public void closeCompany(){
+        if(!(isOpen.getAndSet(false))){
+            throw new IllegalStateException("Company is already closed.");
+        }
     }
 
     public void setPurchasePolicy(PurchasePolicy purchasePolicy) {
