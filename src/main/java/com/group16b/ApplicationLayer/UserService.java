@@ -373,7 +373,8 @@ public class UserService {
 				return Result.makeFail("Invalid session token.");
 			}
 			int userID=authenticationService.extractIdFromUserToken(sessionToken);
-			User user = userRepository.getUserByID(userID);			logger.info("Session token verified successfully.");
+			User user = userRepository.getUserByID(userID);
+			logger.info("Session token verified successfully.");
 			if(!userRepository.userExists(assignerID))
 			{
 				logger.warn("Assigner user with ID {0} not found for rejecting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
@@ -411,15 +412,16 @@ public class UserService {
 		}
 	}
 
-	public Result<List<OrderDTO>> getUserOrders(int userID, String sessionToken) {
+	public Result<List<OrderDTO>> getUserOrders(String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for retrieving orders of user {0}.", userID);
+			logger.info("Verifying session token for retrieving orders of user with session token {0}.", sessionToken);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for retrieving orders of user {0}.", userID);
+				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");
