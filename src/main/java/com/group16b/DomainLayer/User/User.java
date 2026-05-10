@@ -12,6 +12,8 @@ import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.InfrastructureLayer.AuthServices.AuthenticationServiceJWTImpl;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 
 import java.security.MessageDigest;
@@ -25,6 +27,7 @@ public class User {
 	private final Map<CompanyAssigmentKey, Manager> userInvites; // Key: companyID, Value: List of Managers who invited the user
 
 	private final ReentrantLock userInvitesLock;
+
 	public User(String email, String password) {
 		this.email = email;
 		setPassword(password);
@@ -41,7 +44,7 @@ public class User {
 		return roles.get(companyID);
 	}
 
-	public void setPassword(String newPassword) {
+	private void setPassword(String newPassword) {
 		try {
 			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			messageDigest.update(newPassword.getBytes());
@@ -50,6 +53,15 @@ public class User {
 		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
 		}
+	}
+	
+	public void changePassword(String oldPassword, String newPassword) {
+		
+		if (!confirmPassword(oldPassword)) {
+			throw new IllegalArgumentException("Old password is incorrect.");
+		}
+		setPassword(newPassword);
+		
 	}
 
 	public boolean confirmPassword(String password) {
