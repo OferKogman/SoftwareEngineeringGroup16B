@@ -10,6 +10,7 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
 
 public class Event {
 	private static int IDCounter = 1;
@@ -158,10 +159,8 @@ public class Event {
 		return rating;
 	}
 
-	public boolean HasLotteryPolicy() {
-		return purchasePolicy.stream().anyMatch(pp -> {
-                    return pp instanceof LotteryPolicy;
-                });
+	public LotteryPolicy getLotteryPolicy() {
+		return purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
 	}
 
 	private void validateName(String name) {

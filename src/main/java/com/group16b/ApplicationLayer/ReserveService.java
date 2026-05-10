@@ -36,7 +36,7 @@ public class ReserveService {
             //2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for user {}", userId);
-            if (eventRepo.getEventByID(eventID).HasLotteryPolicy()) {
+            if (eventRepo.getEventByID(eventID).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveSeats: User {} did not provide lottery keypass", userId);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
@@ -84,7 +84,7 @@ public class ReserveService {
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for user {}", userId);
-            if (eventRepo.getEventByID(eventID).HasLotteryPolicy()) {
+            if (eventRepo.getEventByID(eventID).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: User {} did not provide lottery keypass", userId);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
@@ -101,7 +101,7 @@ public class ReserveService {
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
             // @TODO: Implement price calculation logic
-            // @TODO check purchase policy
+            // @TODO check purchase policy //already checked lottery policy
             double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
 
             //6. System - creates an active order for the user with the selected tickets.
