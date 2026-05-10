@@ -1,6 +1,8 @@
 package com.group16b.DomainLayer.User;
 
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -11,7 +13,6 @@ import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
-import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
 
 import java.security.MessageDigest;
 
@@ -65,6 +66,10 @@ public class User {
 
 	public void addRole(int companyID, Role role) {
 		roles.put(companyID, role);
+	}
+
+	public HashMap<Integer, Role> getRoles() {
+		return new HashMap<>(this.roles);
 	}
 
 

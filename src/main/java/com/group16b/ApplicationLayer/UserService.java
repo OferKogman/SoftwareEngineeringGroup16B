@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -42,45 +43,65 @@ public class UserService {
 		this.userRepository = userRepository;
 	}
 
-	public void registerUser(String email, String password) {
+	public Result<UserDTO> registerUser(String email, String password) {
+		logger.info("Creating new User with email: " + email);
 		User newUser = new User(email, password);
 		userRepository.addUser(newUser);
+		return Result.makeOk(new UserDTO(newUser));
 	}
 
-	public void updateUserPassword(int userID, String oldPassword, String newPassword) {
-		User user = userRepository.getUserByID(userID);
-		if (user == null) {
-			System.out.println("User not found.");
-			return;
+	public Result<Boolean> updateUserPassword(String sessionToken, String oldPassword, String newPassword) {
+		try {
+			logger.info("Verifying session token for event deactivation.");
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for event deactivation.");
+				return Result.makeFail("Invalid session token.");
+			}
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			logger.info("Session token verified successfully.");
+			logger.info("Validating old password");
+			if (!user.confirmPassword(oldPassword)) {
+				logger.error("Old password is incorrect.");
+				return Result.makeFail("Old password is incorrect.");
+			}
+			logger.info("Validating new password");
+			if (!user.confirmPassword(newPassword)) {
+				logger.error("New password cannot be the same as the old password.");
+				return Result.makeFail("New password cannot be the same as the old password.");
+			} // else, user is not null and old password is correct and new password is
+				// different from old password
+			user.setPassword(newPassword);
+			userRepository.updateUser(user);
+			logger.info("Password changed successfully");
+			return Result.makeOk(true);
 		}
-		if (!user.confirmPassword(oldPassword)) {
-			System.out.println("Old password is incorrect.");
-			return;
+		catch (JwtException e) {
+			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
-		if (!user.confirmPassword(newPassword)) {
-			System.out.println("New password cannot be the same as the old password.");
-			return;
-		} // else, user is not null and old password is correct and new password is
-			// different from old password
-		user.setPassword(newPassword);
-		userRepository.updateUser(user);
-
 	}
 
-	public boolean authenticateUser(int userID, String password) {
-		User user = userRepository.getUserByID(userID);
-		if (user != null) {
-			return user.confirmPassword(password);
+	public Result<Boolean> deleteUser(String sessionToken) {
+		try {
+			logger.info("Verifying session token for event deactivation.");
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for event deactivation.");
+				return Result.makeFail("Invalid session token.");
+			}
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			logger.info("Session token verified successfully.");
+			return Result.makeOk(true);
 		}
-		return false;
-	}
-
-	public void deleteUser(int userID) {
-		userRepository.deleteUser(userID);
-	}
-
-	public boolean userExists(int userID) {
-		return userRepository.userExists(userID);
+		catch (JwtException e) {
+			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
 	}
 
 	// should be here? 
