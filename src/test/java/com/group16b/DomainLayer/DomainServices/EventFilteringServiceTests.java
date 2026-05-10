@@ -118,10 +118,10 @@ public class EventFilteringServiceTests {
             same(names), any(), any(), any(), any(), any(), any(), any(), any(), not(same(compID))
         )).thenReturn(new ArrayList<>(List.of(inactiveEvent)));
         Venue v1 = mock(Venue.class);
-        when(v1.getLocation()).thenReturn(new Location("A", "A", "A", "A", "A", "A", "A", 0.0, 0.0));
+        when(v1.getLocation()).thenReturn(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
         when(venueRepository.getVenueByID("1")).thenReturn(v1);
         Venue v2 = mock(Venue.class);
-        when(v2.getLocation()).thenReturn(new Location("B", "B", "B", "B", "B", "B", "B", 0.0, 0.0));
+        when(v2.getLocation()).thenReturn(new Location("B", "B", "B", "B", "B", "B", 0.0, 0.0));
         when(venueRepository.getVenueByID("2")).thenReturn(v2);
         ProductionCompanyPolicy pcp1 = mock(ProductionCompanyPolicy.class);
         when(pcp1.getRating()).thenReturn(3.0);
@@ -170,7 +170,7 @@ public class EventFilteringServiceTests {
 
     @Test 
     void SuccessfulSearchEventsLocationFilter() {
-        List<Location> locations = List.of(new Location("A", "A", "A", "A", "A", "A", "A", 0.0, 0.0));
+        List<Location> locations = List.of(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
         List<Event> results = eventFilteringService.searchEvents(
             null, null, null, null, null, null, null, null, null, null, locations, null
         );
