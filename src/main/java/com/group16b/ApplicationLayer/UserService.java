@@ -314,17 +314,24 @@ public class UserService {
 			}
 			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
 			logger.info("Session token verified successfully.");
-			if(!userRepository.userExists(assignerID))
-			{
+
+			User assigner = userRepository.getUserByID(assignerID);
+			if (assigner == null) {
 				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
 				return Result.makeFail("Assigner user not found.");
 			}
-
+			if(!assigner.isOwnerOfCompany(companyID))
+			{
+				logger.warn("Assigner user with ID {0} does not have permission to assign roles for company {1} for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
+				return Result.makeFail("Assigner user does not have permission to assign roles for this company.");
+			}
+			
 			//check that invite exists and accept it
 			logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			user.getUserInvitesLock().lock();
 			try {
 				user.acceptInvite(companyID, assignerID);
+				assigner.addAssignee(companyID, (Manager) user.getRole(companyID));
 				logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			} 
 			catch (IllegalArgumentException e) {
