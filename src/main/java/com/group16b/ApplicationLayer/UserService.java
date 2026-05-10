@@ -11,6 +11,7 @@ import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
@@ -38,9 +39,12 @@ public class UserService {
 	private final IAuthenticationService authenticationService;
 	private final IUserRepository userRepository;
 
-	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+	private final CompanyHierarchyDomainService companyHierarchyDomainService;
+
+	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository, CompanyHierarchyDomainService companyHierarchyDomainService) {
 		this.authenticationService = authenticationService;
 		this.userRepository = userRepository;
+		this.companyHierarchyDomainService=companyHierarchyDomainService;
 	}
 
 	public Result<UserDTO> registerUser(String email, String password) {
@@ -220,15 +224,16 @@ public class UserService {
 
 	}
 
-	public Result<Boolean> assignOwnerToCompany(int userID, int companyID, int targetID, String sessionToken) {
+	public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for Owner assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+			logger.info("Verifying session token for Owner assignment of user {0} to company {1}.", targetID, companyID);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			//get perms
@@ -277,15 +282,16 @@ public class UserService {
 	}
 
 	
-	public Result<Boolean> assignManagerToCompany(int userID, int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
+	public Result<Boolean> assignManagerToCompany(int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for Manager assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+			logger.info("Verifying session token for Manager assignment of user {0} to company {1}.", targetID, companyID);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for Manager assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
+				logger.warn("Invalid session token provided for Manager assignment of user {0} to company {1}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			//get perms
@@ -331,15 +337,16 @@ public class UserService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-	public Result<Boolean> acceptInviteToCompany(int userID, int companyID, int assignerID, String sessionToken) {
+	public Result<Boolean> acceptInviteToCompany(int companyID, int assignerID, String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			logger.info("Verifying session token for accepting invite assignment to company {0} by assigner {2}.", companyID, assignerID);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				logger.warn("Invalid session token provided for accepting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			User assigner = userRepository.getUserByID(assignerID);
@@ -384,15 +391,16 @@ public class UserService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-	public Result<Boolean> rejectInviteToCompany(int userID, int companyID, int assignerID, String sessionToken) {
+	public Result<Boolean> rejectInviteToCompany( int companyID, int assignerID, String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for rejecting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			logger.info("Verifying session token for rejecting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for rejecting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				logger.warn("Invalid session token provided for rejecting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 			if(!userRepository.userExists(assignerID))
 			{
@@ -431,15 +439,16 @@ public class UserService {
 		}
 	}
 
-	public Result<List<OrderDTO>> getUserOrders(int userID, String sessionToken) {
+	public Result<List<OrderDTO>> getUserOrders(String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for retrieving orders of user {0}.", userID);
+			logger.info("Verifying session token for retrieving orders of user with session token {0}.", sessionToken);
 			if (!authenticationService.authenticate(sessionToken)) {
-				logger.warn("Invalid session token provided for retrieving orders of user {0}.", userID);
+				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");
@@ -464,6 +473,60 @@ public class UserService {
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
 			logger.error("Unexpected error during retrieving orders: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+
+	public Result<Boolean> forfeitOwnership(int companyID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for forfeiten ownership for company {0}.", companyID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for forfeiten ownership for company {0}.", companyID);
+				return Result.makeFail("Invalid session token.");
+			}
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
+			if (user == null) {
+				logger.warn("User with ID {0} not found for forfeiting ownership", userID);
+				return Result.makeFail("User not found.");
+			}
+			logger.info("Session token verified successfully.");
+
+			if(!user.isOwnerOfCompany(companyID))
+			{
+				logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
+				return Result.makeFail("user is not owner");
+			}
+			Manager userManager=(Manager)user.getRole(companyID);
+
+			Integer assignerID=user.getParentIDForCompany(companyID);
+			if(assignerID==null)
+			{
+				logger.warn("user {0} is founder and thus can't leave the company {1}",userID, companyID);
+				return Result.makeFail("founder cant leave company");
+			}
+
+			User assigner=userRepository.getUserByID(assignerID);
+			if(assigner==null)
+			{
+				logger.error("assigner want found to remove the user from his asignee list in forfeit ownership");
+				return Result.makeFail("assigner wasnt found");
+			}
+			Owner assignerOwner=(Owner)assigner.getRole(companyID);
+
+			assignerOwner.removeManager(userManager);
+			user.removeRole(companyID);
+			return Result.makeOk(true);
+
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			logger.error("Failed to forfeit ownership: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during forfeitng ownership: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during forfeiting ownership: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

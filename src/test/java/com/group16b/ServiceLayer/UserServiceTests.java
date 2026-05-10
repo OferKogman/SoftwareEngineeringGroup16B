@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.UserService;
+import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Owner;
@@ -25,11 +26,14 @@ public class UserServiceTests {
     UserService userService;
     IAuthenticationService mockAuthService;
     IUserRepository mockUserRepository;
+    CompanyHierarchyDomainService mockCompanyHierarchyDomainService;
+
     @BeforeEach
     void setUp() {
         mockAuthService = mock(IAuthenticationService.class);
         mockUserRepository = mock(IUserRepository.class);
-        userService = new UserService(mockAuthService, mockUserRepository);
+        mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
+        userService = new UserService(mockAuthService, mockUserRepository,mockCompanyHierarchyDomainService);
     }
 
     //good
@@ -49,7 +53,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertTrue(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertTrue(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     //user not owner
@@ -69,7 +73,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     //target user not found
@@ -89,7 +93,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany( companyID, targetID, "").isSuccess());
     }
 
     //target user already owner
@@ -109,7 +113,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
 
@@ -121,7 +125,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.assignOwnerToCompany(userID, companyID, targetID, "").isSuccess());
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     
@@ -145,7 +149,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertTrue(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertTrue(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
     //user not owner
@@ -165,7 +169,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
     //target user not found
@@ -185,7 +189,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
     //target user already owner
@@ -205,7 +209,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
 
@@ -217,7 +221,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.assignManagerToCompany(userID, companyID, targetID, Collections.emptySet(), "").isSuccess());
+        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
 
 
@@ -242,7 +246,7 @@ public class UserServiceTests {
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         doNothing().when(mockAssigner).addAssignee(anyInt(), any(Manager.class));
         when(mockAssigner.isOwnerOfCompany(companyID)).thenReturn(true);
-        assertTrue(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertTrue(userService.acceptInviteToCompany(companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -253,7 +257,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -271,7 +275,7 @@ public class UserServiceTests {
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -286,7 +290,7 @@ public class UserServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(false);
 
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
 
@@ -307,7 +311,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        assertTrue(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertTrue(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -324,7 +328,7 @@ public class UserServiceTests {
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).rejectInvite(companyID, assignerID);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -340,7 +344,95 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
+
+    //-----------------------------------------------------------------
+    //   FORFEIT OWNERSHIP TESTS
+    //-----------------------------------------------------------------
+    @Test
+    void testForfeitOwnershipSUccess() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertTrue(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+
+    @Test
+    void testForfeitOwnershipUserNotOwnerFail() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+
+    @Test
+    void testForfeitOwnershipUserIsDounderFail() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(null);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+
+       @Test
+    void testForfeitOwnershipAuthFail() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(false);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+    
 
 }
