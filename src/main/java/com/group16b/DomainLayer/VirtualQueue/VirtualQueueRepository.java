@@ -4,7 +4,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class VirtualQueueRepository implements IVirtualQueueRepository{
 	private final static VirtualQueueRepository instance = new VirtualQueueRepository();
-	private final ConcurrentHashMap<Long, VirtualQueue> queues = new ConcurrentHashMap<>();
+	private final ConcurrentHashMap<Integer, VirtualQueue> queues = new ConcurrentHashMap<>();
 
 	private VirtualQueueRepository() {
 	}
@@ -14,7 +14,7 @@ public class VirtualQueueRepository implements IVirtualQueueRepository{
 	}
 
 	@Override
-	public VirtualQueue findVirtualQueueById(long id) {
+	public VirtualQueue findVirtualQueueById(int id) {
 		VirtualQueue dbVirtualQueue = queues.get(id);
 		if (dbVirtualQueue == null) {
 			throw new IllegalArgumentException("Queue does not exist");
@@ -48,10 +48,4 @@ public class VirtualQueueRepository implements IVirtualQueueRepository{
 
 		queues.put(virtualQueue.getId(), virtualQueue);
     }
-
-	@Override
-	public boolean isUserPassedQueue(int userId, int eventId) {
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'isUserPassedQueue'");
-	}
 }
