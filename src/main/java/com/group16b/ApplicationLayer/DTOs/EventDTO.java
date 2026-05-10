@@ -1,7 +1,8 @@
 package com.group16b.ApplicationLayer.DTOs;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.group16b.DomainLayer.Event.Event;
 
@@ -15,8 +16,8 @@ public class EventDTO {
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
-	private DiscountPolicyDTO discountPolicy;
-	private PurchasePolicyDTO purchasePolicy;
+	private final Set<DiscountPolicyDTO> discountPolicy;
+	private final Set<PurchasePolicyDTO> purchasePolicy;
 	private double price;
 	private double rating;
 
@@ -30,8 +31,14 @@ public class EventDTO {
 		artist = event.getEventArtist();
 		category = event.getEventCategory();
 		productionCompanyID = event.getEventProductionCompanyID();
-		discountPolicy = new DiscountPolicyDTO(event.getEventDiscountPolicy());
-		purchasePolicy = new PurchasePolicyDTO(event.getEventPurchasePolicy());
+		discountPolicy = new HashSet<>();
+		for (var policy : event.getEventDiscountPolicy()) {
+			discountPolicy.add(new DiscountPolicyDTO(policy));
+		}
+		purchasePolicy = new HashSet<>();
+		for (var policy : event.getEventPurchasePolicy()) {
+			purchasePolicy.add(new PurchasePolicyDTO(policy));
+		}
 		price = event.getEventPrice();
 		rating = event.getEventRating();
 	}
@@ -72,11 +79,11 @@ public class EventDTO {
 		return this.productionCompanyID;
 	}
 
-	public DiscountPolicyDTO getEventDiscountPolicy() {
+	public Set<DiscountPolicyDTO> getEventDiscountPolicy() {
 		return this.discountPolicy;
 	}
 
-	public PurchasePolicyDTO getEventPurchasePolicy() {
+	public Set<PurchasePolicyDTO> getEventPurchasePolicy() {
 		return this.purchasePolicy;
 	}
 

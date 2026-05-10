@@ -119,7 +119,9 @@ public class Event {
 	}
 
 	public Set<DiscountPolicy> getEventDiscountPolicy() {
-		return discountPolicy;
+		synchronized (discountPolicy) {
+        return new HashSet<>(discountPolicy);
+    }
 	}
 
 	public void addEventDiscountPolicy(DiscountPolicy dp) {
@@ -131,7 +133,9 @@ public class Event {
 	}
 
 	public Set<PurchasePolicy> getEventPurchasePolicy() {
-		return purchasePolicy;
+		synchronized (purchasePolicy) {
+        return new HashSet<>(purchasePolicy);
+    }
 	}
 
 	public void addEventPurchasePolicy(PurchasePolicy pp) {
