@@ -3,6 +3,7 @@ package com.group16b.ApplicationLayer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,8 @@ public class UserService {
 	private final IUserRepository userRepository;
 
 	private final CompanyHierarchyDomainService companyHierarchyDomainService;
+
+	private final ConcurrentHashMap<Integer, Object> companyLocks = new ConcurrentHashMap<>();
 
 	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository, CompanyHierarchyDomainService companyHierarchyDomainService) {
 		this.authenticationService = authenticationService;
@@ -480,6 +483,7 @@ public class UserService {
 	}
 
 	public Result<Boolean> forfeitOwnership(int companyID, String sessionToken) {
+		Object lock = getCompanyLock(companyID);
 		try {
 			//auth
 			logger.info("Verifying session token for forfeiten ownership for company {0}.", companyID);
@@ -489,34 +493,30 @@ public class UserService {
 			}
 			int userID=authenticationService.extractIdFromUserToken(sessionToken);
 			User user = userRepository.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found for forfeiting ownership", userID);
-				return Result.makeFail("User not found.");
-			}
-			logger.info("Session token verified successfully.");
 
-			if(!user.isOwnerOfCompany(companyID))
+			Integer assignerID;
+			synchronized(lock)
 			{
-				logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
-				return Result.makeFail("user is not owner");
+				if (user == null) {
+					logger.warn("User with ID {0} not found for forfeiting ownership", userID);
+					return Result.makeFail("User not found.");
+				}
+				logger.info("Session token verified successfully.");
+
+				if(!user.isOwnerOfCompany(companyID))
+				{
+					logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
+					return Result.makeFail("user is not owner");
+				}
+
+				assignerID=user.getParentIDForCompany(companyID);
+				if(assignerID==null)
+				{
+					logger.warn("user {0} is founder and thus can't leave the company {1}",userID, companyID);
+					return Result.makeFail("founder cant leave company");
+				}
+				companyHierarchyDomainService.removeUserFromCompany(user, companyID);
 			}
-
-			Integer assignerID=user.getParentIDForCompany(companyID);
-			if(assignerID==null)
-			{
-				logger.warn("user {0} is founder and thus can't leave the company {1}",userID, companyID);
-				return Result.makeFail("founder cant leave company");
-			}
-
-			User assigner=userRepository.getUserByID(assignerID);
-			if(assigner==null)
-			{
-				logger.error("assigner wasnt found to remove the user from his asignee list in forfeit ownership");
-				return Result.makeFail("assigner wasnt found");
-			}
-
-			companyHierarchyDomainService.removeUserFromCompany(user, companyID);
-
 			logger.info("user {0} has succesfuly forfeited its role in company {1}, thus removing itself from the children of its company parent {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
 
@@ -587,5 +587,10 @@ public class UserService {
 			logger.error("Unexpected error during forfeiting ownership: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
+	}
+
+
+	private Object getCompanyLock(int companyID) {
+		return companyLocks.computeIfAbsent(companyID, id -> new Object());
 	}
 }
