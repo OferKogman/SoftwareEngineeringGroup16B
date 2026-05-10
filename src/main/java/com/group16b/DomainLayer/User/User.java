@@ -67,17 +67,20 @@ public class User {
 		roles.put(companyID, role);
 	}
 
+	public void removeRole(int companyID) {
+		roles.remove(companyID);
+	}
 
 	//*
 	// this method really needs a redesign or at least clarity notes
 	// like what if caller is founder, do we return null or this
 	// why do we return user instead of ID, since according to lecture 1, aggragate doesnt contains its own repo
 	// this may also lead to how we model the hierarchy, but ill whoever uses it to figure that out */
-	public User getParentIDForCompany(int companyID) {
+	public Integer getParentIDForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
 			int parentID = ((Manager) role).getAssignerID();
-			return UserRepositoryImpl.getInstance().getUserByID(parentID);
+			return parentID;
 		}
 		return null; // No role for this company, hence no parent
 	}
