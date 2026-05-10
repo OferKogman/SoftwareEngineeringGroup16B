@@ -20,7 +20,7 @@ public class Order {
 	private  double sumOrderprice; // @TODO: calculate price based on the segment and number of tickets.
 	private List<String> tickets; // List of tickets associated with this order
 	private int eventId;
-	
+	private final int userId;
 
 
 	public Order(String segmentId, List<String> seats, String STocken, double pricesPerSeat, int eventId, int userId) {
@@ -34,7 +34,7 @@ public class Order {
 		this.sumOrderprice = pricesPerSeat * seats.size();
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
-		
+		this.userId = userId;
 	}
 	public Order(String segmentId, int amount, String STocken, double pricesPerSeat, int eventId, int userId) {
 		this.orderId = "order_" + ++idCounter;
@@ -46,8 +46,7 @@ public class Order {
 		this.sumOrderprice = pricesPerSeat * amount;
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
-
-		
+		this.userId = userId;
 		}
 
 	public String getOrderId() {
@@ -56,11 +55,13 @@ public class Order {
 	public int getEventId() {
 		return eventId;
 	}
+	public int getUserId() {
+		return userId;
+	}
 
 	public OrderState getState() {
 		return state;
 	}
-
 
 	public String getSegmentId() {
 		return segmentId;

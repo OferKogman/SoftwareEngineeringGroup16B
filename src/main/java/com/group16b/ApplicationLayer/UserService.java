@@ -7,6 +7,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -334,17 +335,24 @@ public class UserService {
 			}
 			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
 			logger.info("Session token verified successfully.");
-			if(!userRepository.userExists(assignerID))
-			{
+
+			User assigner = userRepository.getUserByID(assignerID);
+			if (assigner == null) {
 				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
 				return Result.makeFail("Assigner user not found.");
 			}
-
+			if(!assigner.isOwnerOfCompany(companyID))
+			{
+				logger.warn("Assigner user with ID {0} does not have permission to assign roles for company {1} for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
+				return Result.makeFail("Assigner user does not have permission to assign roles for this company.");
+			}
+			
 			//check that invite exists and accept it
 			logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			user.getUserInvitesLock().lock();
 			try {
 				user.acceptInvite(companyID, assignerID);
+				assigner.addAssignee(companyID, (Manager) user.getRole(companyID));
 				logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			} 
 			catch (IllegalArgumentException e) {
@@ -413,6 +421,43 @@ public class UserService {
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
 			logger.error("Unexpected error during invite rejection: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+
+	public Result<List<OrderDTO>> getUserOrders(int userID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for retrieving orders of user {0}.", userID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for retrieving orders of user {0}.", userID);
+				return Result.makeFail("Invalid session token.");
+			}
+			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			if (user == null) {
+				logger.warn("User with ID {0} not found for retrieving orders.", userID);
+				return Result.makeFail("User not found.");
+			}
+			logger.info("Session token verified successfully.");
+
+			//get orders
+			logger.info("Retrieving orders for user {0}.", userID);
+			List<Order> orders = orderRepo.getOrdersByUserID(userID);
+			List<OrderDTO> orderDTOs = new ArrayList<>();
+			for (Order order : orders) {
+				OrderDTO orderDTO = new OrderDTO(order); 
+				orderDTOs.add(orderDTO);
+			}
+			logger.info("Orders retrieved successfully for user {0}.", userID);
+			return Result.makeOk(orderDTOs);
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			logger.error("Failed to retrieve orders: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during retrieving orders: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during retrieving orders: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

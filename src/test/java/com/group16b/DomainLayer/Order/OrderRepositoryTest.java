@@ -1,11 +1,53 @@
 package com.group16b.DomainLayer.Order;
 
-import org.junit.jupiter.api.Test;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class OrderRepositoryTest {
+    private OrderRepository orderRepository;
+    private Order user1OrderA;
+    private Order user1OrderB;
+    private Order user2Order;
+
+    @BeforeEach
+    void setUp() {
+
+        orderRepository = new OrderRepository();
+
+        user1OrderA = mock(Order.class);
+
+        user1OrderB = mock(Order.class);
+
+        user2Order = mock(Order.class);
+
+        when(user1OrderA.getUserId()).thenReturn(1);
+        when(user1OrderA.getOrderId()).thenReturn("order_1");
+
+        when(user1OrderB.getUserId()).thenReturn(1);
+        when(user1OrderB.getOrderId()).thenReturn("order_2");
+        
+        when(user2Order.getUserId()).thenReturn(2);
+        when(user2Order.getOrderId()).thenReturn("order_3");
+
+        // Use your real repository add/save/create method here.
+
+        orderRepository.addOrder(user1OrderA);
+
+        orderRepository.addOrder(user1OrderB);
+
+        orderRepository.addOrder(user2Order);
+
+    }
 
     @Test
     void addOrder_shouldReturnTrueAndStoreOrder() {
@@ -47,5 +89,42 @@ class OrderRepositoryTest {
         OrderRepository repository = new OrderRepository();
 
         assertNull(repository.getOrder("missing_order"));
+    }
+
+    @Test
+
+    void getOrdersByUserID_existingUserWithOrders_returnsOnlyThatUsersOrders() {
+
+        List<Order> result = orderRepository.getOrdersByUserID(1);
+
+        assertEquals(2, result.size());
+        assertTrue(result.contains(user1OrderA));
+        assertTrue(result.contains(user1OrderB));
+        assertFalse(result.contains(user2Order));
+
+    }
+
+    @Test
+
+    void getOrdersByUserID_userWithNoOrders_returnsEmptyList() {
+
+        List<Order> result = orderRepository.getOrdersByUserID(999);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+    }
+
+    @Test
+
+    void getOrdersByUserID_doesNotReturnOrdersOfOtherUsers() {
+
+        List<Order> result = orderRepository.getOrdersByUserID(2);
+
+        assertEquals(1, result.size());
+        assertTrue(result.contains(user2Order));
+        assertFalse(result.contains(user1OrderA));
+        assertFalse(result.contains(user1OrderB));
+
     }
 }

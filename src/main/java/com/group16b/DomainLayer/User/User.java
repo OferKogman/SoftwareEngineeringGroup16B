@@ -69,7 +69,7 @@ public class User {
 	}
 
 	public HashMap<Integer, Role> getRoles() {
-		return this.roles;
+		return new HashMap<>(this.roles);
 	}
 
 
@@ -193,6 +193,21 @@ public class User {
 
 	private void removeAllInvitesForCompany(int companyID) {
 			userInvites.entrySet().removeIf(entry -> entry.getKey().companyID() == companyID);
+	}
+
+	//add an asigneed under this owner
+	public void addAssignee(int companyID, Manager manager) {
+		Role role = getRole(companyID);
+		if (role == null || !(role instanceof Owner)) {
+			throw new IllegalArgumentException("User does not have permission to assign roles for this company.");
+		}
+
+		((Owner)role).assignManager(manager);
+	}
+
+	public boolean isOwnerOfCompany(int companyID) {
+		Role role = getRole(companyID);
+		return role != null && role instanceof Owner;
 	}
 	public ReentrantLock getUserInvitesLock() {
 		return userInvitesLock;

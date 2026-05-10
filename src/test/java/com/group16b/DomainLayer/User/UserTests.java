@@ -142,4 +142,16 @@ public class UserTests {
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.VIEW_PURCHASE_HISTORY));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.SALES_REPORT));
     }
-}
+
+    @Test
+    void testToAddAssigneeUnderOwner()
+    {
+        User ownerUser = new User( "owneruser", "hashedpassword");
+        User managerUser = new User( "manageruser", "hashedpassword");
+        ownerUser.addRole(1, new Owner(0));
+        managerUser.addRole(1, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        assertEquals(0, ((Owner) ownerUser.getRole(1)).getAssignedManagers().size());
+        assertDoesNotThrow(() -> ownerUser.addAssignee(1, (Manager) managerUser.getRole(1)));
+        assertEquals(1, ((Owner) ownerUser.getRole(1)).getAssignedManagers().size());
+        assertEquals(managerUser.getRole(1), ((Owner) ownerUser.getRole(1)).getAssignedManagers().get(0));
+    }}
