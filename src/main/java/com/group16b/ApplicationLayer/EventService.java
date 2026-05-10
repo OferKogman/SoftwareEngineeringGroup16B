@@ -1,5 +1,7 @@
 package com.group16b.ApplicationLayer;
 
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -174,7 +176,14 @@ public class EventService {
     public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
         try {
             logger.info("Attempting to search events with parameters: " + searchParams);
-            List<Location> locations = getParam(searchParams, "location", String.class).stream().map(locationService::search).toList();
+            List<String> locationNames = getParam(searchParams, "location", String.class);
+            List<Location> locations = null;
+            if (locationNames != null) {
+                locations = new ArrayList<>();
+                for (String locationName : locationNames) {
+                    locations.add(locationService.search(locationName));
+                }
+            }
             List<Integer> pcID = getParam(searchParams, "productionCompany", String.class).stream().map(name -> productionCompanyPolicyRepository.getProductionCompanyByName(name).getProductionCompanyID()).toList();
             List<EventDTO> results = eventFilteringService.searchEvents(
                 getParam(searchParams, "name", String.class),
@@ -198,7 +207,14 @@ public class EventService {
             logger.error("Invalid search parameters: " + e.getMessage());
             return Result.makeFail("Invalid search parameters: " + e.getMessage());
         }
-        catch (Exception e) {
+        catch (IOException e) {
+			logger.error("Failed contacting Photon API: " + e.getMessage());
+            return Result.makeFail("Failed contacting Photon API: " + e.getMessage());
+		} catch (InterruptedException e) {
+			logger.error("Request interrupted: " + e.getMessage());
+            return Result.makeFail("Request interrupted: " + e.getMessage());
+		}
+		catch (Exception e) {
             logger.error("Unexpected error during event search: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
