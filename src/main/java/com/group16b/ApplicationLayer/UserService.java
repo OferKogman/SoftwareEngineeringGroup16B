@@ -70,7 +70,7 @@ public class UserService {
 				return Result.makeFail("New password cannot be the same as the old password.");
 			} // else, user is not null and old password is correct and new password is
 				// different from old password
-			user.setPassword(newPassword);
+			user.changePassword(oldPassword, newPassword, sessionToken);
 			userRepository.updateUser(user);
 			logger.info("Password changed successfully");
 			return Result.makeOk(true);
