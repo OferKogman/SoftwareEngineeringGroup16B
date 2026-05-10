@@ -1,10 +1,7 @@
-package com.group16b.DomainLayer.User.Roles;
+package com.group16b.DomainLayer.User;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
 
 public class UserRepositoryImpl implements IUserRepository {
 
