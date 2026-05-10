@@ -2,51 +2,43 @@ package com.group16b.ApplicationLayer;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.group16b.DomainLayer.Venue.ReservationRequest;
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
-import com.group16b.DomainLayer.Event.Event;
-import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
-import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.Order.OrderRepository;
-import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
-import com.group16b.DomainLayer.Venue.Segment;
-import com.group16b.DomainLayer.Venue.Venue;
-import org.slf4j.LoggerFactory;
-
-import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Manager;
-import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.Owner;
-import com.group16b.DomainLayer.User.Roles.Role;
-import com.group16b.DomainLayer.User.Roles.UserRepositoryImpl;
-
-import io.jsonwebtoken.JwtException;
-
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.DomainLayer.Event.Event;
+import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
+import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Order.OrderRepository;
+import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
+import com.group16b.DomainLayer.User.Roles.Owner;
+import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.IVenueRepository;
+import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
+import com.group16b.DomainLayer.Venue.ReservationRequest;
+import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Venue;
+
+import io.jsonwebtoken.JwtException;
+
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-	private final IUserRepository userRepository = IUserRepository.getInstance();
 	private final OrderRepository orderRepo = OrderRepository.getInstance();
-	private final IVenueRepositoryImp venueRepo = IVenueRepositoryImp.getInstance();
-	private final IEventRepositoryMapImpl eventRepo = IEventRepositoryMapImpl.getInstance();
+	private final IVenueRepository venueRepo = IVenueRepositoryImp.getInstance();
+	private final IEventRepository eventRepo = IEventRepositoryMapImpl.getInstance();
 
-	private IUserRepository userRepository;
-	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 	private final IAuthenticationService authenticationService;
-  
+	private final IUserRepository userRepository;
+
 	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
-		this.userRepository = userRepository;
 		this.authenticationService = authenticationService;
+		this.userRepository = userRepository;
 	}
 
 	public void registerUser(String email, String password) {
