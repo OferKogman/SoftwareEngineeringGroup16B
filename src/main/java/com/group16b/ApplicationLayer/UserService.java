@@ -531,7 +531,7 @@ public class UserService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-		public Result<Boolean> removeOwnerManager(int targetID, int companyID, String sessionToken) {
+	public Result<Boolean> removeOwnerManager(int targetID, int companyID, String sessionToken) {
 		try {
 			//auth
 			logger.info("Verifying session token for removing manager with id {0} for company {1}.", targetID,companyID);
@@ -572,13 +572,13 @@ public class UserService {
 				logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant remove them",userID,targetID,companyID);
 				return Result.makeFail("User didn't apoint target so no permission to remove");
 			}
-			companyHierarchyDomainService.removeUserFromCompany(user, companyID);
+			companyHierarchyDomainService.removeUserFromCompany(target, companyID);
 			logger.info("target {0} was removed from company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
 
 
 		} catch (IllegalArgumentException | IllegalStateException e) {
-			logger.error("Failed to forfeit ownership: " + e.getMessage());
+			logger.error("Failed to remove manager from company: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (JwtException e) {
 			logger.error("JWT authentication error during forfeitng ownership: " + e.getMessage());
