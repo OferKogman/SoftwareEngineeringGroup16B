@@ -246,7 +246,7 @@ public class UserServiceTests {
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         doNothing().when(mockAssigner).addAssignee(anyInt(), any(Manager.class));
         when(mockAssigner.isOwnerOfCompany(companyID)).thenReturn(true);
-        assertTrue(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertTrue(userService.acceptInviteToCompany(companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -257,7 +257,7 @@ public class UserServiceTests {
 
         when(mockAuthService.authenticate(anyString())).thenReturn(false);
 
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -275,7 +275,7 @@ public class UserServiceTests {
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -290,7 +290,7 @@ public class UserServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(false);
 
-        assertFalse(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
 
@@ -311,7 +311,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        assertTrue(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertTrue(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -328,7 +328,7 @@ public class UserServiceTests {
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).rejectInvite(companyID, assignerID);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
-        assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     @Test
@@ -344,7 +344,7 @@ public class UserServiceTests {
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-        assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
+        assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
     //-----------------------------------------------------------------
