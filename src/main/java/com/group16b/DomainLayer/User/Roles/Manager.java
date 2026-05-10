@@ -32,6 +32,7 @@ public class Manager extends Member {
 	public Set<ManagerPermissions> getPermissions() {
 		return permissions;
 	}
+	
 	protected void setParent(Integer newID)
 	{
 		synchronized(lock)

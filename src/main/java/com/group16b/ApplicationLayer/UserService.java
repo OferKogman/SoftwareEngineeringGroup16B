@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
@@ -37,9 +38,12 @@ public class UserService {
 	private final IAuthenticationService authenticationService;
 	private final IUserRepository userRepository;
 
-	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+	private final CompanyHierarchyDomainService companyHierarchyDomainService;
+
+	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository, CompanyHierarchyDomainService companyHierarchyDomainService) {
 		this.authenticationService = authenticationService;
 		this.userRepository = userRepository;
+		this.companyHierarchyDomainService=companyHierarchyDomainService;
 	}
 
 	public void registerUser(String email, String password) {
@@ -437,6 +441,60 @@ public class UserService {
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
 			logger.error("Unexpected error during retrieving orders: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+
+	public Result<Boolean> forfeitOwnership(int companyID, String sessionToken) {
+		try {
+			//auth
+			logger.info("Verifying session token for forfeiten ownership for company {0}.", companyID);
+			if (!authenticationService.authenticate(sessionToken)) {
+				logger.warn("Invalid session token provided for forfeiten ownership for company {0}.", companyID);
+				return Result.makeFail("Invalid session token.");
+			}
+			int userID=authenticationService.extractIdFromUserToken(sessionToken);
+			User user = userRepository.getUserByID(userID);
+			if (user == null) {
+				logger.warn("User with ID {0} not found for forfeiting ownership", userID);
+				return Result.makeFail("User not found.");
+			}
+			logger.info("Session token verified successfully.");
+
+			if(!user.isOwnerOfCompany(companyID))
+			{
+				logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
+				return Result.makeFail("user is not owner");
+			}
+			Manager userManager=(Manager)user.getRole(companyID);
+
+			Integer assignerID=user.getParentIDForCompany(companyID);
+			if(assignerID==null)
+			{
+				logger.warn("user {0} is founder and thus can't leave the company {1}",userID, companyID);
+				return Result.makeFail("founder cant leave company");
+			}
+
+			User assigner=userRepository.getUserByID(assignerID);
+			if(assigner==null)
+			{
+				logger.error("assigner want found to remove the user from his asignee list in forfeit ownership");
+				return Result.makeFail("assigner wasnt found");
+			}
+			Owner assignerOwner=(Owner)assigner.getRole(companyID);
+
+			assignerOwner.removeManager(userManager);
+			user.removeRole(companyID);
+			return Result.makeOk(true);
+
+		} catch (IllegalArgumentException | IllegalStateException e) {
+			logger.error("Failed to forfeit ownership: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (JwtException e) {
+			logger.error("JWT authentication error during forfeitng ownership: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("Unexpected error during forfeiting ownership: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

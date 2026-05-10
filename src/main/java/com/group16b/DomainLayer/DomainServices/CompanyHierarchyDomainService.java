@@ -2,6 +2,9 @@ package com.group16b.DomainLayer.DomainServices;
 
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.Owner;
+import com.group16b.DomainLayer.User.Roles.Role;
 
 public class CompanyHierarchyDomainService {
     private final IUserRepository userRepository;
@@ -12,7 +15,7 @@ public class CompanyHierarchyDomainService {
 
     //check upwards whether the manager is under the owner in the hierarchy, if we reach the top of the hierarchy without finding the owner, return false
     //works because each user have only 1 direct parent
-    private boolean isManagerUnderOwnerTreeTraversal(User manager, User owner, int companyID) {
+    public boolean isManagerUnderOwnerTreeTraversal(User manager, User owner, int companyID) {
         if (manager == null || owner == null) {
             return false;
         }
@@ -33,5 +36,12 @@ public class CompanyHierarchyDomainService {
             current = userRepository.getUserByID(parentID);
         }
         return false;
+    }
+
+
+    public void removeManager(Manager manager, Owner owner)
+    {
+        owner.removeManager(manager);
+        
     }
 }

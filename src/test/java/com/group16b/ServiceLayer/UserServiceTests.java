@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.UserService;
+import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Owner;
@@ -25,11 +26,14 @@ public class UserServiceTests {
     UserService userService;
     IAuthenticationService mockAuthService;
     IUserRepository mockUserRepository;
+    CompanyHierarchyDomainService mockCompanyHierarchyDomainService;
+
     @BeforeEach
     void setUp() {
         mockAuthService = mock(IAuthenticationService.class);
         mockUserRepository = mock(IUserRepository.class);
-        userService = new UserService(mockAuthService, mockUserRepository);
+        mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
+        userService = new UserService(mockAuthService, mockUserRepository,mockCompanyHierarchyDomainService);
     }
 
     //good
@@ -342,5 +346,93 @@ public class UserServiceTests {
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         assertFalse(userService.rejectInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
+
+    //-----------------------------------------------------------------
+    //   FORFEIT OWNERSHIP TESTS
+    //-----------------------------------------------------------------
+    @Test
+    void testForfeitOwnershipSUccess() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertTrue(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+
+    @Test
+    void testForfeitOwnershipUserNotOwnerFail() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+
+    @Test
+    void testForfeitOwnershipUserIsDounderFail() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(null);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+
+       @Test
+    void testForfeitOwnershipAuthFail() {
+        int userID = 1;
+        int companyID = 1;
+        int assignerID = 2;
+        User mockUser = mock(User.class);
+        User mockAssigner=mock(User.class);
+        Owner mockOwner=mock(Owner.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(false);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
+        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
+       
+        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+    }
+    
 
 }
