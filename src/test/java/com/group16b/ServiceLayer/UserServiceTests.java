@@ -233,14 +233,15 @@ public class UserServiceTests {
         int companyID = 1;
         int assignerID = 2;
         User mockUser = mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
+        User mockAssigner = mock(User.class);
         when(mockAuthService.authenticate(anyString())).thenReturn(true);
         when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
+        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
         when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
+        doNothing().when(mockAssigner).addAssignee(anyInt(), any(Manager.class));
+        when(mockAssigner.isOwnerOfCompany(companyID)).thenReturn(true);
         assertTrue(userService.acceptInviteToCompany(userID, companyID, assignerID, "").isSuccess());
     }
 
