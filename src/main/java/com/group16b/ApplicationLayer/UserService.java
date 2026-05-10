@@ -343,6 +343,7 @@ public class UserService {
 		}
 	}
 	public Result<Boolean> acceptInviteToCompany(int companyID, int assignerID, String sessionToken) {
+		Object companyLock = getCompanyLock(companyID);
 		try {
 			//auth
 			logger.info("Verifying session token for accepting invite assignment to company {0} by assigner {2}.", companyID, assignerID);
@@ -352,6 +353,11 @@ public class UserService {
 			}
 			int userID=authenticationService.extractIdFromUserToken(sessionToken);
 			User user = userRepository.getUserByID(userID);
+			if(user==null)
+			{
+				logger.warn("user {0} was not found, maybe deleted",userID);
+				return Result.makeFail("user not found");
+			}
 			logger.info("Session token verified successfully.");
 
 			User assigner = userRepository.getUserByID(assignerID);
@@ -359,26 +365,30 @@ public class UserService {
 				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
 				return Result.makeFail("Assigner user not found.");
 			}
-			if(!assigner.isOwnerOfCompany(companyID))
+			synchronized(companyLock)
 			{
-				logger.warn("Assigner user with ID {0} does not have permission to assign roles for company {1} for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
-				return Result.makeFail("Assigner user does not have permission to assign roles for this company.");
-			}
-			
-			//check that invite exists and accept it
-			logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			user.getUserInvitesLock().lock();
-			try {
-				user.acceptInvite(companyID, assignerID);
-				assigner.addAssignee(companyID, (Manager) user.getRole(companyID));
-				logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			} 
-			catch (IllegalArgumentException e) {
-				logger.error("Failed to accept invite: " + e.getMessage());
-				return Result.makeFail(e.getMessage());
-			}
-			finally {
-				user.getUserInvitesLock().unlock();
+				if(!assigner.isOwnerOfCompany(companyID))
+				{
+					logger.warn("Assigner user with ID {0} does not have permission to assign roles for company {1} for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
+					return Result.makeFail("Assigner user does not have permission to assign roles for this company.");
+				}
+				
+				//check that invite exists and accept it
+				logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				user.getUserInvitesLock().lock();
+				try {
+					user.acceptInvite(companyID, assignerID);
+					assigner.addAssignee(companyID, (Manager) user.getRole(companyID));
+					logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				} 
+				catch (IllegalArgumentException e) {
+					logger.error("Failed to accept invite: " + e.getMessage());
+					user.removeRole(companyID);//just in case
+					return Result.makeFail(e.getMessage());
+				}
+				finally {
+					user.getUserInvitesLock().unlock();
+				}
 			}
 			logger.info("user {0} have succesfully accepted an invite to company {1} by user {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
@@ -414,14 +424,14 @@ public class UserService {
 			}
 
 			//check that invite exists and reject it
-			logger.info("rejecting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+			logger.info("rejecting invite assignment for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			user.getUserInvitesLock().lock();
 			try {
 				user.rejectInvite(companyID, assignerID);
-				logger.info("Invite assignment invite rejected successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+				logger.info("invite rejected successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 			} 
 			catch (IllegalArgumentException e) {
-				logger.error("Failed to add invite assignment invite: " + e.getMessage());
+				logger.error("Failed to reject invite: " + e.getMessage());
 				return Result.makeFail(e.getMessage());
 			}
 			finally {
