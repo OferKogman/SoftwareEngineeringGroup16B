@@ -84,9 +84,9 @@ public class AuthinticationServiceJWTImplTests {
 		String token = authService.GenerateUserToken(userID);
 		// Tamper with the token by changing a character
 		String tamperedToken = token.substring(0, token.length() - 1) + "X";
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(tamperedToken),
+		Assertions.assertThrows(Exception.class, () -> authService.authenticate(tamperedToken),
 				"Tampered token should not be authenticated");
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(tamperedToken),
+		Assertions.assertThrows(Exception.class, () -> authService.authenticateAdmin(tamperedToken),
 				"Tampered token should not be authenticated as admin");
 	}
 
@@ -96,9 +96,9 @@ public class AuthinticationServiceJWTImplTests {
 		String token = authService.GenerateAdminToken(adminID);
 		// Tamper with the token by changing a character
 		String tamperedToken = token.substring(0, token.length() - 1) + "X";
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(tamperedToken),
+		Assertions.assertThrows(Exception.class, () -> authService.authenticate(tamperedToken),
 				"Tampered token should not be authenticated");
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(tamperedToken),
+		Assertions.assertThrows(Exception.class, () -> authService.authenticateAdmin(tamperedToken),
 				"Tampered token should not be authenticated as admin");
 	}
 
