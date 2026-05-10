@@ -1,6 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
 import java.util.HashMap;
+import java.util.List;
 
 public class OrderRepository implements IOrderRepository {
 	private final HashMap<String, Order> orders;
@@ -38,6 +39,13 @@ public class OrderRepository implements IOrderRepository {
 	@Override
 	public Order getOrder(String orderId) {
 		return this.orders.get(orderId);
+	}
+
+	@Override
+	public List<Order> getOrdersByUserID(int userId) {
+		return this.orders.values().stream()
+				.filter(order -> order.getUserId() == userId)
+				.toList();
 	}
 
 
