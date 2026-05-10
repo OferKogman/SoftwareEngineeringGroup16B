@@ -493,16 +493,14 @@ public class UserService {
 			}
 			int userID=authenticationService.extractIdFromUserToken(sessionToken);
 			User user = userRepository.getUserByID(userID);
-
+			if (user == null) {
+				logger.warn("User with ID {0} not found for forfeiting ownership", userID);
+				return Result.makeFail("User not found.");
+			}
+			logger.info("Session token verified successfully.");
 			Integer assignerID;
 			synchronized(lock)
 			{
-				if (user == null) {
-					logger.warn("User with ID {0} not found for forfeiting ownership", userID);
-					return Result.makeFail("User not found.");
-				}
-				logger.info("Session token verified successfully.");
-
 				if(!user.isOwnerOfCompany(companyID))
 				{
 					logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
@@ -532,6 +530,7 @@ public class UserService {
 		}
 	}
 	public Result<Boolean> removeOwnerManager(int targetID, int companyID, String sessionToken) {
+		Object lock = getCompanyLock(companyID);
 		try {
 			//auth
 			logger.info("Verifying session token for removing manager with id {0} for company {1}.", targetID,companyID);
@@ -546,13 +545,6 @@ public class UserService {
 				return Result.makeFail("User not found.");
 			}
 			logger.info("Session token verified successfully.");
-
-			if(!user.isOwnerOfCompany(companyID))
-			{
-				logger.warn("user {0} is not owner for comapny {1}, thus he cant remove manager there",userID,companyID);
-				return Result.makeFail("user is not owner");
-			}
-			
 			logger.info("retrieving target user {0} to remove manager from company {1} by user {2}",targetID,companyID,userID);
 			User target=userRepository.getUserByID(targetID);
 			if(target==null)
@@ -560,19 +552,27 @@ public class UserService {
 				logger.warn("target user {0} was not found to remove him from the compny {1} by user {2}.",targetID,companyID,userID);
 				return Result.makeFail("target user was not found");
 			}
-
-			if(target.getRole(companyID)==null)
+			synchronized(lock)
 			{
-				logger.warn("target user {0} is not personal in the company {1} to remove them by user {2}",targetID,companyID,userID);
-				return Result.makeFail("target user is not personal in company");
-			}
+				if(!user.isOwnerOfCompany(companyID))
+				{
+					logger.warn("user {0} is not owner for comapny {1}, thus he cant remove manager there",userID,companyID);
+					return Result.makeFail("user is not owner");
+				}
 
-			if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(target, user, companyID))
-			{
-				logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant remove them",userID,targetID,companyID);
-				return Result.makeFail("User didn't apoint target so no permission to remove");
+				if(target.getRole(companyID)==null)
+				{
+					logger.warn("target user {0} is not personal in the company {1} to remove them by user {2}",targetID,companyID,userID);
+					return Result.makeFail("target user is not personal in company");
+				}
+
+				if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(target, user, companyID))
+				{
+					logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant remove them",userID,targetID,companyID);
+					return Result.makeFail("User didn't apoint target so no permission to remove");
+				}
+				companyHierarchyDomainService.removeUserFromCompany(target, companyID);
 			}
-			companyHierarchyDomainService.removeUserFromCompany(target, companyID);
 			logger.info("target {0} was removed from company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
 
