@@ -36,7 +36,7 @@ public class ReserveService {
             //2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for user {}", userId);
-            if (eventRepo.getEventByID(eventID).HasLotteryPolicy()) {
+            if (eventRepo.getEventByID(eventID).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveSeats: User {} did not provide lottery keypass", userId);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
@@ -84,7 +84,7 @@ public class ReserveService {
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for user {}", userId);
-            if (eventRepo.getEventByID(eventID).HasLotteryPolicy()) {
+            if (eventRepo.getEventByID(eventID).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: User {} did not provide lottery keypass", userId);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
