@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
+import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueueImp;
 
 public class ReserveService {
@@ -16,18 +18,8 @@ public class ReserveService {
     private final IVenueRepositoryImp veuneRepo = IVenueRepositoryImp.getInstance();
     private final OrderRepository orderRepo = OrderRepository.getInstance();
     private final VirtualQueueImp queueImp = VirtualQueueImp.getInstance();
-    // search criteria, selected event, selected tickts
 
-    /*
-        1. System - Checks user passed the queue.
-        2. System - validates the user won the lottery if required.
-        3. System - validates selected seats exist.
-        4. System - validates selected seats are available.
-        5. System - removes selected seats from stock.
-        6. System - creates an active order for the user with the selected tickets.
-
-    */
-    public Result<String> reserveSeats(int userId, String segmentId, List<String> seatIds, int eventID, String venueId) {
+    public Result<String> reserveSeats(int userId, String segmentId, List<String> seatIds, int eventID, String venueId, String sTocken) {
         // 0. log everything
 
         logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for user {}", userId);
@@ -46,8 +38,16 @@ public class ReserveService {
             veuneRepo.reserveTickets(venueId, segmentId, seatIds, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for user {}", userId);
 
+            // 5.5 calculate price of the order
+            Venue venue = veuneRepo.getVenueByID(venueId);
+            Segment segment = venue.getSegmentByID(segmentId);
+            double pricePerSeat = segment.getPrice(eventID);
+            // @TODO: Implement price calculation logic
+            // @TODO check purchase policy
+            double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
+
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, seatIds);
+            Order order = new Order(segmentId, seatIds, sTocken, priceAfterPurchasePolicy, eventID, userId);
             orderRepo.addOrder(order);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), userId);
             return Result.makeOk("new OrderId: " + order.getOrderId());
@@ -62,7 +62,7 @@ public class ReserveService {
         }
     }
     
-    public Result<String> reserveFieldSeats(int userId, String segmentId, int amount, int eventID, String venueId) {
+    public Result<String> reserveFieldSeats(int userId, String segmentId, int amount, int eventID, String venueId, String sTocken) {
            // 0. log everything
 
         logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Attempting to reserve seats for user {}", userId);
@@ -82,8 +82,17 @@ public class ReserveService {
             veuneRepo.reserveTickets(venueId, segmentId, amount, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for user {}", userId);
 
+            // 5.5 calculate price of the order
+             // 5.5 calculate price of the order
+            Venue venue = veuneRepo.getVenueByID(venueId);
+            Segment segment = venue.getSegmentByID(segmentId);
+            double pricePerSeat = segment.getPrice(eventID);
+            // @TODO: Implement price calculation logic
+            // @TODO check purchase policy
+            double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
+
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, amount);
+            Order order = new Order(segmentId, amount, sTocken, priceAfterPurchasePolicy, eventID, userId);
             orderRepo.addOrder(order);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for user {}", order.getOrderId(), userId);
             return Result.makeOk("new OrderId: " + order.getOrderId());
@@ -101,7 +110,7 @@ public class ReserveService {
 
     private void cancelOrder(String orderId) { // to call when order is expired
         // Logic to cancel the order, e.g., release reserved seats
-        orderRepo.removeOrder(orderId);
+        orderRepo.cancelOrder(orderId);
     }
     
 }

@@ -1,17 +1,19 @@
 package com.group16b.DomainLayer.Venue;
 
-abstract class Segment {
+abstract public class Segment {
 	private final String segmentID;
 
 	Segment(String segmentID) {
 		this.segmentID = segmentID;
 	}
 
-	String getSegmentID() {
+	public String getSegmentID() {
 		return segmentID;
 	}
 
-	abstract void reserve(ReservationRequest request);
+	public abstract void reserve(ReservationRequest request);
+	public abstract void cancelReservation(ReservationRequest request);
 
-	abstract String getSegmentType();
+	public abstract String getSegmentType();
+	public abstract double getPrice(int eventID);
 }

@@ -26,8 +26,9 @@ public class OrderRepository implements IOrderRepository {
 	}
 
 	@Override
-	public boolean removeOrder(String orderId) {
+	public boolean cancelOrder(String orderId) {
 		if (this.orders.containsKey(orderId)) {
+			Order order = this.orders.get(orderId);
 			this.orders.remove(orderId);
 			return true;
 		}

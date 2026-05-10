@@ -11,17 +11,25 @@ class ActiveOrder implements OrderState {
 	}
 
 	@Override
-	public List<String> getTickets() {
+	public boolean isActive() {
+		validateTime();
+		return true;
+	}
 
+	@Override
+	public List<String> getTickets() {
 		throw new IllegalStateException("Cannot get tickets from an active order");
-		// return null; // can only get tickets from completed order
+	}
+
+	@Override
+	public void setTickets(List<String> tickets) {
+		throw new IllegalStateException("Cannot set tickets for an active order");
 	}
 
 	@Override
 	public CompletedOrder completeOrder() {
 		validateTime();
-		List<String> tickets = List.of(); // Generate tickets based on seats
-		return new CompletedOrder(tickets);
+		return new CompletedOrder();
 	}
 
 	private void validateTime() {
@@ -30,5 +38,6 @@ class ActiveOrder implements OrderState {
 			throw new IllegalStateException("This Order is Expired.");
 		}
 	}
+
 
 }

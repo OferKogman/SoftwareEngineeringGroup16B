@@ -21,6 +21,10 @@ public class FieldSeg extends Segment {
 	protected int getStock(int eventID) {
 		return stock.get(eventID);
 	}
+	
+	public double getPrice(int eventID) {
+		throw new UnsupportedOperationException("Price calculation is not implemented yet.");
+	}
 
 	protected void addStock(int eventID, Integer quantity) {
 		while (true) {
@@ -53,8 +57,13 @@ public class FieldSeg extends Segment {
 		}
 	}
 	@Override
-	protected void reserve(ReservationRequest request) {
+	public void reserve(ReservationRequest request) {
 		removeStock(request.getEventID(), request.getQuantity());
+	}
+
+	@Override
+	public void cancelReservation(ReservationRequest request) {
+		addStock(request.getEventID(), request.getQuantity());
 	}
 
 
@@ -63,7 +72,7 @@ public class FieldSeg extends Segment {
 	}
 
 	@Override
-	String getSegmentType() {
+	public String getSegmentType() {
 		return "F";
 	}
 }
