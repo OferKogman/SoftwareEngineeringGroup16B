@@ -70,10 +70,16 @@ public class UserService {
 				return Result.makeFail("New password cannot be the same as the old password.");
 			} // else, user is not null and old password is correct and new password is
 				// different from old password
-			user.changePassword(oldPassword, newPassword, sessionToken);
+			try{
+			user.changePassword(oldPassword, newPassword);
 			userRepository.updateUser(user);
 			logger.info("Password changed successfully");
 			return Result.makeOk(true);
+			}
+			catch (IllegalArgumentException e) {
+				logger.error("Failed to change password: " + e.getMessage());
+				return Result.makeFail(e.getMessage());
+			}
 		}
 		catch (JwtException e) {
 			logger.error("JWT authentication error during event deactivation: " + e.getMessage());

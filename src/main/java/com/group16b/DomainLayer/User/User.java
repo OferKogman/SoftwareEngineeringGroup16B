@@ -27,7 +27,7 @@ public class User {
 	private final Map<CompanyAssigmentKey, Manager> userInvites; // Key: companyID, Value: List of Managers who invited the user
 
 	private final ReentrantLock userInvitesLock;
-	
+
 	public User(String email, String password) {
 		this.email = email;
 		setPassword(password);
@@ -55,13 +55,10 @@ public class User {
 		}
 	}
 	
-	public void changePassword(String oldPassword, String newPassword, String sessionToken) {
-		IAuthenticationService authenticationService = new AuthenticationServiceJWTImpl(sessionToken, sessionToken);
+	public void changePassword(String oldPassword, String newPassword) {
+		
 		if (!confirmPassword(oldPassword)) {
 			throw new IllegalArgumentException("Old password is incorrect.");
-		}
-		if (!authenticationService.authenticate(sessionToken)) {
-			throw new IllegalArgumentException("Invalid session token.");
 		}
 		setPassword(newPassword);
 		
