@@ -1,11 +1,15 @@
 package com.group16b.DomainLayer.Event;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
-import com.group16b.DomainLayer.Policies.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
 public class Event {
 	private static int IDCounter = 1;
@@ -19,8 +23,8 @@ public class Event {
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
-	private DiscountPolicy discountPolicy;
-	private PurchasePolicy purchasePolicy;
+	private Set<DiscountPolicy> discountPolicy;
+	private Set<PurchasePolicy> purchasePolicy;
 	private double price;
 	private double rating;
 
@@ -37,8 +41,8 @@ public class Event {
 		validateCategory(eventRecord.category());
 		this.category = eventRecord.category();
 		this.productionCompanyID = eventRecord.pcID();
-		this.discountPolicy = eventRecord.discountPolicy();
-		this.purchasePolicy = eventRecord.purchasePolicy();
+		this.discountPolicy = Collections.synchronizedSet(new HashSet<>());
+		this.purchasePolicy = Collections.synchronizedSet(new HashSet<>());
 		validatePrice(eventRecord.price());
 		this.price = eventRecord.price();
 		validateRating(eventRecord.rating());
@@ -114,20 +118,28 @@ public class Event {
 		return productionCompanyID;
 	}
 
-	public DiscountPolicy getEventDiscountPolicy() {
+	public Set<DiscountPolicy> getEventDiscountPolicy() {
 		return discountPolicy;
 	}
 
-	public void setEventDiscountPolicy(DiscountPolicy dp) {
-		this.discountPolicy = dp;
+	public void addEventDiscountPolicy(DiscountPolicy dp) {
+		discountPolicy.add(dp);
 	}
 
-	public PurchasePolicy getEventPurchasePolicy() {
+	public void removeEventDiscountPolicy(DiscountPolicy dp) {
+		discountPolicy.remove(dp);
+	}
+
+	public Set<PurchasePolicy> getEventPurchasePolicy() {
 		return purchasePolicy;
 	}
 
-	public void setEventPurchasePolicy(PurchasePolicy pp) {
-		this.purchasePolicy = pp;
+	public void addEventPurchasePolicy(PurchasePolicy pp) {
+		purchasePolicy.add(pp);
+	}
+
+	public void removeEventPurchasePolicy(PurchasePolicy pp) {
+		purchasePolicy.remove(pp);
 	}
 
 	public double getEventPrice() {
@@ -141,7 +153,12 @@ public class Event {
 	public double getEventRating() {
 		return rating;
 	}
-	
+
+	public boolean HasLotteryPolicy() {
+		return purchasePolicy.stream().anyMatch(pp -> {
+                    return pp instanceof LotteryPolicy;
+                });
+	}
 
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {

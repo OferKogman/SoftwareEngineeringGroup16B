@@ -5,6 +5,8 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
@@ -18,6 +20,7 @@ public class ReserveService {
     private final IVenueRepositoryImp veuneRepo = IVenueRepositoryImp.getInstance();
     private final OrderRepository orderRepo = OrderRepository.getInstance();
     private final VirtualQueueImp queueImp = VirtualQueueImp.getInstance();
+    private final IEventRepository eventRepo = IEventRepositoryMapImpl.getInstance();
 
     public Result<String> reserveSeats(int userId, String segmentId, List<String> seatIds, int eventID, String venueId, String sTocken) {
         // 0. log everything
@@ -26,11 +29,17 @@ public class ReserveService {
         try {
             //1. System - Checks user passed the queue.
             if(!queueImp.isUserPassedQueue(userId, eventID)){
-                throw new IllegalArgumentException("ApplicationLayer.ReserveService.reserveSeats: user did not pass the queue");
+                logger.error("ApplicationLayer.ReserveService.reserveSeats: user did not pass the queue");
+                return Result.makeFail("user did not pass the queue");
             }
             logger.info("ApplicationLayer.ReserveService.reserveSeats: User {} is passed the queue", userId);
-            //2. System - validates the user won the lottery if required.
-            // TODO: Implement lottery validation logic
+            //2. System - validates the event does NOT have a lottery policy.
+
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for user {}", userId);
+            if (eventRepo.getEventByID(eventID).HasLotteryPolicy()) {
+                logger.error("ApplicationLayer.ReserveService.reserveSeats: User {} did not provide lottery keypass", userId);
+                return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
+            }
 
             //3. System - validates selected seats exist.
             //4. System - validates selected seats are available.
@@ -43,7 +52,7 @@ public class ReserveService {
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
             // @TODO: Implement price calculation logic
-            // @TODO check purchase policy
+            // @TODO check purchase policy //already checked lottery policy
             double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
 
             //6. System - creates an active order for the user with the selected tickets.
@@ -73,8 +82,12 @@ public class ReserveService {
             }
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: User {} is passed the queue", userId);
 
-            //2. System - validates the user won the lottery if required.
-            // TODO: Implement lottery validation logic
+            //2. System - validates the event does NOT have a lottery policy.
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for user {}", userId);
+            if (eventRepo.getEventByID(eventID).HasLotteryPolicy()) {
+                logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: User {} did not provide lottery keypass", userId);
+                return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
+            }
 
             //3. System - validates selected seats exist.
             //4. System - validates selected seats are available.

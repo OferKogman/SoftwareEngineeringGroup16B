@@ -3,7 +3,7 @@ package com.group16b.ApplicationLayer.Records;
 import java.time.LocalDateTime;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
-import com.group16b.DomainLayer.Policies.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
 public record EventRecord(String venueID,
 		String name,
