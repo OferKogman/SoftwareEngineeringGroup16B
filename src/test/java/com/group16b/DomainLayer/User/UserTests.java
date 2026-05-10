@@ -26,17 +26,64 @@ public class UserTests {
     void testAddingAssigningOwnerRequestAndAccepting()
     {
         User user = new User( "testuser", "hashedpassword");
-        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
         assertNull(user.getRole(0));
         user.addInvite(0, 0, new Owner(0));
         user.addInvite(0, 1, new Owner(1));
         user.addInvite(1, 1, new Owner(1));
         assertNull(user.getRole(0));
-        assertDoesNotThrow(() -> user.acceptOwnerInvite(0, 0));
+        assertDoesNotThrow(() -> user.acceptInvite(0, 0));
         assertEquals(Owner.class, user.getRole(0).getClass());
-        assertThrows(RuntimeException.class, () -> user.acceptOwnerInvite(0, 0));
-        assertDoesNotThrow(() -> user.acceptOwnerInvite(1, 1));
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertDoesNotThrow(() -> user.acceptInvite(1, 1));
     }
+    @Test
+    void testPromotionInviteAcceptance()
+    {
+        User user = new User( "testuser", "hashedpassword");
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertNull(user.getRole(0));
+        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 2, new Owner(0));
+        user.addInvite(0, 3, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        assertDoesNotThrow(() -> user.acceptInvite(0, 0));
+        assertEquals(Manager.class, user.getRole(0).getClass());
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 1));
+        assertDoesNotThrow(() -> user.acceptInvite(0, 2));
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 3));
+    }
+
+    @Test
+    void testAddingInvites()
+    {
+        User user = new User( "testuser", "hashedpassword");
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertNull(user.getRole(0));
+        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        assertDoesNotThrow(() -> user.acceptInvite(0, 0));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class))));
+        assertDoesNotThrow( () -> user.addInvite(0, 1, new Owner(0)));
+        assertDoesNotThrow(()->user.acceptInvite(0, 1));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 0, new Owner(0)));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class))));
+    }
+
+    @Test
+    void testRejectingInvites()
+    {
+        User user = new User( "testuser", "hashedpassword");
+        assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
+        assertNull(user.getRole(0));
+        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 1, new Owner(0));
+        assertDoesNotThrow(() -> user.rejectInvite(0, 0));
+        assertNull(user.getRole(0));
+        assertDoesNotThrow(() -> user.rejectInvite(0, 1));
+        assertNull(user.getRole(0));
+    }
+
 
     @Test
     void testCheckingForUserRolePermissionsOwnerSuccess()
