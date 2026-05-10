@@ -433,6 +433,124 @@ public class UserServiceTests {
        
         assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
     }
+
+    //------------------------------------------------------------------------------------------
+    //     REMOVE PERSONAL FROM COMPANY TESTS
+    //------------------------------------------------------------------------------------------
+
+    @Test
+    void testRemoveManagerFromCompanySuccess()
+    {
+        int userID = 1;
+        int companyID = 1;
+        int targetID = 2;
+        User mockUser = mock(User.class);
+        User mockTarget=mock(User.class);
+        Manager mockRole=mock(Manager.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
+        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
+        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
+        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
+
+        assertTrue(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+    }
+
+    @Test
+    void testRemoveManagerFromCompanyTargetNotUnderFail()
+    {
+        int userID = 1;
+        int companyID = 1;
+        int targetID = 2;
+        User mockUser = mock(User.class);
+        User mockTarget=mock(User.class);
+        Manager mockRole=mock(Manager.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
+        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
+        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(false);
+        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
+
+        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+    }
+
+    @Test
+    void testRemoveManagerFromCompanyUserNotOwnerFail()
+    {
+        int userID = 1;
+        int companyID = 1;
+        int targetID = 2;
+        User mockUser = mock(User.class);
+        User mockTarget=mock(User.class);
+        Manager mockRole=mock(Manager.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
+        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
+        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
+        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
+        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
+
+        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+    }
     
+    @Test
+    void testRemoveManagerFromCompanyTargetNotPersonalFail()
+    {
+        int userID = 1;
+        int companyID = 1;
+        int targetID = 2;
+        User mockUser = mock(User.class);
+        User mockTarget=mock(User.class);
+        Manager mockRole=mock(Manager.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(true);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
+        when(mockTarget.getRole(companyID)).thenReturn(null);
+        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
+        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
+
+        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+    }
+
+    @Test
+    void testRemoveManagerFromCompanyAuthFail()
+    {
+        int userID = 1;
+        int companyID = 1;
+        int targetID = 2;
+        User mockUser = mock(User.class);
+        User mockTarget=mock(User.class);
+        Manager mockRole=mock(Manager.class);
+        when(mockAuthService.authenticate(anyString())).thenReturn(false);
+        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
+        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
+        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
+        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
+
+        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+    }
 
 }
