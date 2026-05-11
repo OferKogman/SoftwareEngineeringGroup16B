@@ -253,7 +253,7 @@ public class CompanyHierarchyService {
             }
 			logger.info("user {0} have succesfully rejected an invite to company {1} by user {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
-            
+
 		} catch (IllegalArgumentException e) {
 			logger.error("Failed to reject invite: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
@@ -341,23 +341,10 @@ public class CompanyHierarchyService {
 			}
 			synchronized(lock)
 			{
-				if(!user.isOwnerOfCompany(companyID))
-				{
-					logger.warn("user {0} is not owner for comapny {1}, thus he cant remove manager there",userID,companyID);
-					return Result.makeFail("user is not owner");
-				}
+				Result<Boolean> canManage=canManage(user, target, companyID);
+                if(!canManage.isSuccess())
+                    return canManage;
 
-				if(target.getRole(companyID)==null)
-				{
-					logger.warn("target user {0} is not personal in the company {1} to remove them by user {2}",targetID,companyID,userID);
-					return Result.makeFail("target user is not personal in company");
-				}
-
-				if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(target, user, companyID))
-				{
-					logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant remove them",userID,targetID,companyID);
-					return Result.makeFail("User didn't apoint target so no permission to remove");
-				}
 				companyHierarchyDomainService.removeUserFromCompany(target, companyID);
 			}
 			logger.info("target {0} was removed from company {1} by user {2}",targetID,companyID,userID);
@@ -401,24 +388,10 @@ public class CompanyHierarchyService {
 			}
 			synchronized(lock)
 			{
-				if(!user.isOwnerOfCompany(companyID))
-				{//potentially save time before expensive hierarchy traversal
-					logger.warn("user {0} is not owner for comapny {1}, thus he cant update manager permissions there",userID,companyID);
-					return Result.makeFail("user is not owner");
-				}
-
-				if(target.getRole(companyID)==null)
-				{//same here, simply save time
-					logger.warn("target user {0} is not personal in the company {1} to have their manager permissions updated by user {2}",targetID,companyID,userID);
-					return Result.makeFail("target user is not personal in company");
-				}
-
-				if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(target, user, companyID))
-				{
-					logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he update their permissions them",userID,targetID,companyID);
-					return Result.makeFail("User didn't apoint target so no permission to update permissions");
-				}
-				companyHierarchyDomainService.updateManagerPermissionsForCompny(user, companyID, newPermissions);
+				Result<Boolean> canManage=canManage(user, target, companyID);
+                if(!canManage.isSuccess())
+                    return canManage;
+				companyHierarchyDomainService.updateManagerPermissionsForCompny(target, companyID, newPermissions);
 			}
 			logger.info("target {0} have had their manager permissions updated in company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
@@ -436,6 +409,30 @@ public class CompanyHierarchyService {
 		}
 	}
 
+    //checks if bigDog can manage smallDog inside a company
+    private Result<Boolean> canManage(User bigDog, User smallDog, int companyID)
+    {
+        int userID=bigDog.getUserID();
+        int targetID=smallDog.getUserID();
+        if(!bigDog.isOwnerOfCompany(companyID))
+        {//potentially save time before expensive hierarchy traversal
+            logger.warn("user {0} is not owner for comapny {1}, thus he cant manage anyone there",userID,companyID);
+            return Result.makeFail("user is not owner");
+        }
+
+        if(smallDog.getRole(companyID)==null)
+        {//same here, simply save time
+            logger.warn("target user {0} is not personal in the company {1} so the cannot be manager there by user {2}",targetID,companyID,userID);
+            return Result.makeFail("target user is not personal in company");
+        }
+
+        if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(smallDog, bigDog, companyID))
+        {
+            logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant manage them",userID,targetID,companyID);
+            return Result.makeFail("User didn't apoint target so no permission to manage them");
+        }
+        return Result.makeOk(null);
+    }
 
     private Object getCompanyLock(int companyID) {
 		return companyLocks.computeIfAbsent(companyID, id -> new Object());
