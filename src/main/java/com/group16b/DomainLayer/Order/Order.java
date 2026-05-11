@@ -1,11 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.List;
-
-import com.group16b.ApplicationLayer.Records.PaymentInfo;
-
 
 public class Order {
 	private final String orderId;
@@ -96,7 +92,45 @@ public class Order {
 	public boolean isActive() {
 		return state.isActive();
 	}
-	public boolean isBelongsToUser(String subjectID) {
+	public boolean isBelongsToSubject(String subjectID) {
 		return this.subjectID.equals(subjectID);
 	}	
+
+
+	public void updateSeats(List<String> newSeatIds) {
+		if (orderType == OrderType.FIELD) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+		if (newSeatIds == null || newSeatIds.isEmpty()) {
+			throw new IllegalArgumentException("New seat IDs list cannot be null or empty");
+		}
+		this.seats = List.copyOf(newSeatIds);
+		this.numOfTickets = newSeatIds.size();
+	}
+	public void updateNumOfTickets(int newNumOfTickets) {
+		if (orderType == OrderType.SEAT) {
+			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
+		}
+		if (newNumOfTickets <= 0) {
+			throw new IllegalArgumentException("New number of tickets must be greater than zero");
+		}
+		this.numOfTickets = newNumOfTickets;
+	}
+
+	
+
+	public String encodeStocken(String sTocken) {
+		try{
+			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+			messageDigest.update(sTocken.getBytes());
+			String stringHash = new String(messageDigest.digest());
+			return stringHash;
+		} catch (Exception e) {
+			throw new RuntimeException("Error hashing password: " + e.getMessage());
+		}
+	}
+
+	
+	
+
 }

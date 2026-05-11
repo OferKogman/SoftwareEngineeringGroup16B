@@ -21,6 +21,7 @@ public class ChosenSeatingSeg extends Segment {
 		reserveSeats(request.getSeatIds(), request.getEventID());
 	}
 
+
 	@Override
 	public void cancelReservation(ReservationRequest request) {
 		returnSeats(request.getSeatIds(), request.getEventID());

@@ -9,9 +9,10 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
@@ -19,7 +20,7 @@ import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImp;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
@@ -27,8 +28,8 @@ import io.jsonwebtoken.JwtException;
 public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
-    private final VenueRepositoryMapImp veuneRepo = VenueRepositoryMapImp.getInstance();
-    private final OrderRepositoryMapImpl orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final IVenueRepository veuneRepo = VenueRepositoryMapImpl.getInstance();
+    private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IVirtualQueueRepository queueImp = VirtualQueueRepositoryMapImpl.getInstance();
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
@@ -127,6 +128,11 @@ public class ReserveService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
+
+            if (authenticationService.extractRoleFromToken(sessionToken).equals("Admin")){
+                return Result.makeFail("Admin can't reserve Tickets");
+            }
+			String subjectId = authenticationService.extractSubjectFromToken(sessionToken);
 			String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);

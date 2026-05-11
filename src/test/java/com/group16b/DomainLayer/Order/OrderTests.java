@@ -173,13 +173,13 @@ class OrderTests {
     void isBelongsToUser_sameToken_shouldReturnTrue() {
         Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
 
-        assertTrue(order.isBelongsToUser("token123"));
+        assertTrue(order.isBelongsToSubject("10"));
     }
 
     @Test
     void isBelongsToUser_differentToken_shouldReturnFalse() {
         Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
 
-        assertFalse(order.isBelongsToUser("wrongToken"));
+        assertFalse(order.isBelongsToSubject("wrongSubject"));
     }
 }
