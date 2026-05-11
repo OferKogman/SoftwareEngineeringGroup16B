@@ -29,11 +29,11 @@ public class PurchasePolicyService {
     public Result<LotteryPolicy> createLotteryPolicy(String sessionToken, int eventID, int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
         logger.info("Received request to create lottery policy for event ID: {} by session token: {}", eventID, sessionToken); 
         logger.info("Validating session token: {}", sessionToken);
-        if (!authenticationService.authenticate(sessionToken)) {
+        if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-        User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+        User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
         logger.info("Checking user permissions for userID: {}", user.getUserID());
         user.validatePermissions(eventRepo.getEventByID(eventID).getEventProductionCompanyID(), ManagerPermissions.PURCHASE_POLICY);
         logger.info("User has necessary permissions to create lottery policy for event ID: {}", eventID);
@@ -52,11 +52,11 @@ public class PurchasePolicyService {
         try{
             logger.info("Received request to enroll in lottery for event ID: {} by session token: {}", eventID, sessionToken);
             logger.info("Validating session token: {}", sessionToken);
-            if (!authenticationService.authenticate(sessionToken)) {
+            if (!authenticationService.validateToken(sessionToken)) {
                 logger.warn("Invalid session token provided for lottery enrollment.");
                 return Result.makeFail("Invalid session token.");
             }
-            User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+            User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 
             logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
             //@TODO: implement purchase policy checks for lottery enrollment

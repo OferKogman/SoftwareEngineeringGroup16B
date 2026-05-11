@@ -358,8 +358,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockAssigner=mock(User.class);
         Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
@@ -379,8 +379,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockAssigner=mock(User.class);
         Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
@@ -400,8 +400,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockAssigner=mock(User.class);
         Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
@@ -421,8 +421,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockAssigner=mock(User.class);
         Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(false);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(false);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
@@ -447,8 +447,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockTarget=mock(User.class);
         Manager mockRole=mock(Manager.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
@@ -470,8 +470,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockTarget=mock(User.class);
         Manager mockRole=mock(Manager.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
@@ -493,8 +493,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockTarget=mock(User.class);
         Manager mockRole=mock(Manager.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
@@ -516,8 +516,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockTarget=mock(User.class);
         Manager mockRole=mock(Manager.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(true);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
@@ -539,8 +539,8 @@ public class UserServiceTests {
         User mockUser = mock(User.class);
         User mockTarget=mock(User.class);
         Manager mockRole=mock(Manager.class);
-        when(mockAuthService.authenticate(anyString())).thenReturn(false);
-        when(mockAuthService.extractIdFromUserToken(anyString())).thenReturn(userID);
+        when(mockAuthService.validateToken(anyString())).thenReturn(false);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
