@@ -25,6 +25,7 @@ import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
@@ -33,16 +34,15 @@ import io.jsonwebtoken.JwtException;
 
 public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+	private final IAuthenticationService authenticationService;
+    private final ITicketGateway ticketGateway = new TicketGateway();
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
-    private final ITicketGateway ticketGateway = new TicketGateway();
-	private final IAuthenticationService authenticationService;
-	private final IUserRepository userRepository;
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 
-    public OrderService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+    public OrderService(IAuthenticationService authenticationService) {
 		this.authenticationService = authenticationService;
-		this.userRepository = userRepository;
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
@@ -72,7 +72,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for completion.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if (authenticationService.extractRoleFromToken(sTocken) == "Admin") {
+            if ("Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
 				logger.warn("Invalid session token provided for completion.");
 				return Result.makeFail("Invalid session token.");
 			}
@@ -88,7 +88,7 @@ public class OrderService {
 			}
 
 			// 2. System - calculates price of tickets according to company and event policies.
-			double price = order.getSumOrderprice(); // @TODO: implement price calculation logic
+			double price = order.getTotalOrderprice(); // TODO: implement price calculation logic
 
 
 			// 3. System - charges the user for the designed price.
@@ -109,7 +109,7 @@ public class OrderService {
 			// 4. System - creates Tickets for each of the tickets.
 			List<TicketDTO> tikketDTOs = new ArrayList<>();
 			for (int i = 0; i < order.getNumOfTickets(); i++) {
-				TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), String.valueOf(userId), order.getSegmentId(), order.getSeats().get(i), price); // @TODO: implement actual ticket generation logic
+				TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), String.valueOf(userId), order.getSegmentId(), order.getSeats().get(i), price); // TODO: implement actual ticket generation logic
 				tikketDTOs.add(ticketDTO);
             }
 			order.CompleteOrder();
@@ -122,18 +122,21 @@ public class OrderService {
 
 		} catch (IllegalStateException e) { 
 			logger.error("UserService.CompleteActiveOrder: Failed to generate tickets for order {} for user {}: {}", orderID, userId, e.getMessage());
-			cancelPayment(paymentInfo); // @TODO: implement payment cancellation logic
-			_cancelOrder(orderID); // @TODO: implement order cancellation logic
+			cancelPayment(paymentInfo); 
+			_cancelOrder(orderID);
 			return Result.makeFail(e.getMessage());
 		}catch (Exception e) {
-			cancelPayment(paymentInfo); // @TODO: implement payment cancellation logic
-			_cancelOrder(orderID); // @TODO: implement order cancellation logic
+			cancelPayment(paymentInfo);
+			_cancelOrder(orderID); 
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 
 	}
     
-	private void cancelPayment(PaymentInfo paymentInfo) {} 
+	private void cancelPayment(PaymentInfo paymentInfo) {
+		// TODO: implement payment cancellation logic
+		throw new UnsupportedOperationException("Payment cancellation is not implemented yet.");
+	} 
 
 	private void _cancelOrder(String orderID) {
 		Order order = orderRepo.getOrder(orderID);
@@ -175,11 +178,12 @@ public class OrderService {
 				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
 				return Result.makeFail("Invalid session token.");
 			}
-            if (authenticationService.extractRoleFromToken(sessionToken) != "Signed") {
-				logger.warn("Only user can get order history.");
-				return Result.makeFail("Only user can get order history.");
-			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+            if ("Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+			} else {
+                logger.warn("Only user can get order history.");
+                return Result.makeFail("Only user can get order history.");
+                    }
+			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
@@ -223,7 +227,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if (authenticationService.extractRoleFromToken(sTocken) == "Admin") {
+            if ("Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
@@ -279,8 +283,6 @@ public class OrderService {
             logger.error("Failed to change seats for order {}: " + e.getMessage(), orderId);
             return Result.makeFail(e.getMessage());
         }
-        
-        
         catch (Exception e) {
             logger.error("Unexpected error during changing seats: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
@@ -300,7 +302,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for edit.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if (authenticationService.extractRoleFromToken(sTocken) == "Admin") {
+            if ("Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
 				logger.warn("Invalid session token provided for edit.");
 				return Result.makeFail("Invalid session token.");
 			}

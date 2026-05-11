@@ -7,14 +7,15 @@ public class Manager extends Member {
 	private Set<ManagerPermissions> permissions;
 	private final RoleType roleType;
 
-	protected Manager(Integer assignerID, Set<ManagerPermissions> permissions, RoleType role) {
+	protected Manager(int userID, Integer assignerID, Set<ManagerPermissions> permissions, RoleType role) {
+		super(userID);
 		this.assignerID = assignerID;
 		this.permissions = Set.copyOf(permissions);
 		this.roleType = role;
 	}
 
-	public Manager(Integer assignerID, Set<ManagerPermissions> permissions) {
-		this(assignerID,permissions,RoleType.MANAGER);
+	public Manager(int userID, Integer assignerID, Set<ManagerPermissions> permissions) {
+		this(userID, assignerID,permissions,RoleType.MANAGER);
 	}
 
 	public Integer getAssignerID() {

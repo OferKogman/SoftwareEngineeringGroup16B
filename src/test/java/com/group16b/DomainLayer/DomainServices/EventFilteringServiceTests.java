@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.DomainServices;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +28,8 @@ public class EventFilteringServiceTests {
      IVenueRepository venueRepository = mock(IVenueRepository.class);
      IProductionCompanyPolicyRepository productionCompanyPolicyRepository = mock(IProductionCompanyPolicyRepository.class);
      EventFilteringService eventFilteringService;
-     List<Integer> compID = List.of(1);
-     List<String> names = List.of("Rock Legends");
+     List<Integer> compID = new ArrayList<>(List.of(1));
+     List<String> names = new ArrayList<>(List.of("Rock Legends"));
 
      Event mockEvent(int eventID, String name, String artist, String category, String keyword, double price, LocalDateTime startTime, LocalDateTime endTime, double rating, int productionCompanyID, String venueID, boolean status) {
         Event event = mock(Event.class);
@@ -51,7 +52,7 @@ public class EventFilteringServiceTests {
      LocalDateTime now = LocalDateTime.of(2026, 5, 9, 18, 0);
     
     @BeforeEach
-     void setup() {
+     void setup() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         lowRatingEvent = mockEvent(
             101,
             "Jazz Evening",
@@ -129,30 +130,39 @@ public class EventFilteringServiceTests {
         when(pcp2.getRating()).thenReturn(5.0);
         when(productionCompanyPolicyRepository.getProductionCompanyByID(1)).thenReturn(pcp1);
         when(productionCompanyPolicyRepository.getProductionCompanyByID(2)).thenReturn(pcp2);
-        eventFilteringService = new EventFilteringService(eventRepository, venueRepository, productionCompanyPolicyRepository);
+        eventFilteringService = new EventFilteringService();
+        Field eventRepo = eventFilteringService.getClass().getDeclaredField("eventRepository");
+        eventRepo.setAccessible(true);
+        eventRepo.set(eventFilteringService, eventRepository);
+        Field venueRepo = eventFilteringService.getClass().getDeclaredField("venueRepository");
+        venueRepo.setAccessible(true);
+        venueRepo.set(eventFilteringService, venueRepository);
+        Field prodCompRepo = eventFilteringService.getClass().getDeclaredField("productionCompanyPolicyRepository");
+        prodCompRepo.setAccessible(true);
+        prodCompRepo.set(eventFilteringService, productionCompanyPolicyRepository);
     }
 
     @Test
     void SuccessfulSearchEventsCompanyIDOverridesRating() {
         List<Event> results = eventFilteringService.searchEvents(
-            null, null, null, null, null, null, null, null, null, compID, null, List.of(4.0)
+            null, null, null, null, null, null, null, null, null, compID, null, new ArrayList<>(List.of(4.0))
         );
-        assertEquals(List.of(lowRatingEvent, wrongVenueEvent), results);
+        assertEquals(new ArrayList<>(List.of(lowRatingEvent, wrongVenueEvent)), results);
     }
 
     @Test
     void SuccessfulSearchEventsNoCompanyIDFiltersByRating() {
         List<Event> results = eventFilteringService.searchEvents(
-            null, null, null, null, null, null, null, null, null, null, null, List.of(4.0)
+            null, null, null, null, null, null, null, null, null, null, null, new ArrayList<>(List.of(4.0))
         );
-        assertEquals(List.of(wrongCompanyEvent), results);
+        assertEquals(new ArrayList<>(List.of(wrongCompanyEvent)), results);
     }
 
     @Test
     void FailureSearchEventsInvalidRatingSize() {
         try {
             eventFilteringService.searchEvents(
-                null, null, null, null, null, null, null, null, null, null, null, List.of(4.0, 5.0)
+                null, null, null, null, null, null, null, null, null, null, null, new ArrayList<>(List.of(4.0, 5.0))
             );
         }
         catch (IllegalArgumentException e) {
@@ -165,15 +175,16 @@ public class EventFilteringServiceTests {
         List<Event> results = eventFilteringService.searchEvents(
             names, null, null, null, null, null, null, null, null, null, null, null
         );
-        assertEquals(List.of(), results);
+        assertEquals(new ArrayList<>(), results);
     }
 
     @Test 
     void SuccessfulSearchEventsLocationFilter() {
-        List<Location> locations = List.of(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
+        List<Location> locations = new ArrayList<>();
+        locations.add(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
         List<Event> results = eventFilteringService.searchEvents(
             null, null, null, null, null, null, null, null, null, null, locations, null
         );
-        assertEquals(List.of(lowRatingEvent, wrongVenueEvent), results);
+        assertEquals(new ArrayList<>(List.of(lowRatingEvent, wrongVenueEvent)), results);
     }
 }

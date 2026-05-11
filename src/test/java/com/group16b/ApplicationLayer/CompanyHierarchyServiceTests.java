@@ -1,8 +1,8 @@
 package com.group16b.ApplicationLayer;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,7 +18,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
@@ -32,11 +31,14 @@ public class CompanyHierarchyServiceTests {
     CompanyHierarchyDomainService mockCompanyHierarchyDomainService;
 
     @BeforeEach
-    void setUp() {
-        mockAuthService = mock(IAuthenticationService.class);
+    void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockUserRepository = mock(IUserRepository.class);
+        mockAuthService = mock(IAuthenticationService.class);
         mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
-        userService = new CompanyHierarchyService(mockAuthService, mockUserRepository,mockCompanyHierarchyDomainService);
+        userService = new CompanyHierarchyService(mockAuthService, mockCompanyHierarchyDomainService);
+        Field userRepo = userService.getClass().getDeclaredField("userRepository");
+        userRepo.setAccessible(true);
+        userRepo.set(userService, mockUserRepository);
     }
 
     //good
@@ -330,7 +332,7 @@ int userID = 1;
     //    ACCEPT INVITE ASSIGMENT TESTS
     //----------------------------------------------------------------------
 
-        @Test
+    @Test
     void testAcceptInviteAssignmentSuccess() {
         int userID = 1;
         int companyID = 1;

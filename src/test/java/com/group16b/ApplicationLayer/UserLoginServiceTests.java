@@ -1,5 +1,7 @@
 package com.group16b.ApplicationLayer;
 
+import java.lang.reflect.Field;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -15,7 +17,6 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.ApplicationLayer.UserLoginService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
@@ -27,10 +28,13 @@ public class UserLoginServiceTests {
     private UserLoginService userLoginService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockUserRepository = mock(IUserRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
-        userLoginService = new UserLoginService(mockUserRepository, mockTokenService);
+        userLoginService = new UserLoginService(mockTokenService);
+        Field userRepo = userLoginService.getClass().getDeclaredField("userRepository");
+        userRepo.setAccessible(true);
+        userRepo.set(userLoginService, mockUserRepository);
     }
 
 

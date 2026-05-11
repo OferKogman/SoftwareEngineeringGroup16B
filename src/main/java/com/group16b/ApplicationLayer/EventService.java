@@ -25,6 +25,11 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
@@ -33,24 +38,17 @@ public class EventService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
 	private final IAuthenticationService authenticationService;
     private final ILocatoinService locationService;
-	private final IUserRepository userRepository;
-	private final IVenueRepository venueRepository;
-	private final IEventRepository eventRepository;
-	private final IVirtualQueueRepository queueRepository;
-    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository;
     private final EventFilteringService eventFilteringService;
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+	private final IVirtualQueueRepository queueRepository = VirtualQueueRepositoryMapImpl.getInstance();
+    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
 
-	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, IUserRepository userRepository,
-			IVenueRepository venueRepository, IEventRepository eventRepository, IProductionCompanyPolicyRepository productionCompanyPolicyRepository,
-			EventFilteringService eventFilteringService, IVirtualQueueRepository queueRepository) {
+	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
-		this.userRepository = userRepository;
-		this.venueRepository = venueRepository;
-		this.eventRepository = eventRepository;
-		this.productionCompanyPolicyRepository = productionCompanyPolicyRepository;
-		this.queueRepository = queueRepository;
 	}
 
 	// need to make event active manually
@@ -61,7 +59,7 @@ public class EventService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			logger.info("Validating user permissions for event creation.");
@@ -69,7 +67,7 @@ public class EventService {
 			logger.info("User permissions validated successfully.");
 
 			logger.info("Attempting to create event: " + eventRecord.name());
-			Event event = new Event(eventRecord);
+			Event event = new Event(eventRecord, user.getUserID());
 			logger.info("Creating queue for the new event");
 			VirtualQueue q = new VirtualQueue(event.getEventID());
 			logger.info("Verifying venue availability.");
@@ -86,7 +84,7 @@ public class EventService {
 		} catch (JwtException e) {
 			logger.error("JWT authentication error during event creation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
+		}catch (Exception e) {
 			logger.error("Unexpected error during event creation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}

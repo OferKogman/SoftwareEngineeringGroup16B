@@ -6,7 +6,7 @@ import java.util.List;
 class CompletedOrder implements OrderState {
 	private List<String> tickets;
 
-	CompletedOrder() {}
+	public CompletedOrder() {}
 
 
 	

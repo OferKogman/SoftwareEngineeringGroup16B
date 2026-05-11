@@ -10,7 +10,6 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
 
 public class Event {
 	private static int IDCounter = 1;
@@ -28,8 +27,10 @@ public class Event {
 	private Set<PurchasePolicy> purchasePolicy;
 	private double price;
 	private double rating;
+	private final int ownerId;
+	private final DiscountPolicy discountPolicyLock = null; // TODO: accualy immplement the discount policy!
 
-	public Event(EventRecord eventRecord) {
+	public Event(EventRecord eventRecord, int ownerId) {
 		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
 		validateName(eventRecord.name());
@@ -48,6 +49,7 @@ public class Event {
 		this.price = eventRecord.price();
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
+		this.ownerId = ownerId;
 	}
 
 	public int getEventID() {
@@ -203,6 +205,9 @@ public class Event {
 		if (rating < 0 || rating > 5) {
 			throw new IllegalArgumentException("Event rating must be between 0 and 5.");
 		}
+	}
+	public DiscountPolicy getDiscountPolicyLock() {
+		return discountPolicyLock;
 	}
 
 	@Override

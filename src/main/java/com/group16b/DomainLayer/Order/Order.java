@@ -1,6 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 public class Order {
@@ -8,13 +9,12 @@ public class Order {
 	private OrderState state;
 	private final String segmentId;
 	private List<String> seats; // seat Ids
-	private double pricesPerSeat;
+	private final double pricesPerSeat;
 	private int numOfTickets;
 	private final OrderType orderType;
 	private static int idCounter = 0;
-	private  double sumOrderprice; // @TODO: calculate price based on the segment and number of tickets.
-	private List<String> tickets; // List of tickets associated with this order
-	private int eventId;
+	private  double totalOrderprice;
+	private final int eventId;
 	private final String subjectID;
 
 
@@ -25,7 +25,7 @@ public class Order {
 		this.numOfTickets = seats.size();
 		this.segmentId = segmentId;
 		this.orderType = OrderType.SEAT;
-		this.sumOrderprice = pricesPerSeat * seats.size();
+		this.totalOrderprice = pricesPerSeat * seats.size();
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
@@ -36,7 +36,7 @@ public class Order {
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
 		this.orderType = OrderType.FIELD;
-		this.sumOrderprice = pricesPerSeat * amount;
+		this.totalOrderprice = pricesPerSeat * amount;
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
@@ -84,8 +84,8 @@ public class Order {
 		return true;
 	}
 
-	public double getSumOrderprice() {
-		return sumOrderprice;
+	public double getTotalOrderprice() {
+		return totalOrderprice;
 	}
 
 	
@@ -106,7 +106,7 @@ public class Order {
 		}
 		this.seats = List.copyOf(newSeatIds);
 		this.numOfTickets = newSeatIds.size();
-		this.sumOrderprice = this.pricesPerSeat * newSeatIds.size();
+		this.totalOrderprice = this.pricesPerSeat * newSeatIds.size();
 	}
 	public void updateNumOfTickets(int newNumOfTickets) {
 		if (orderType == OrderType.SEAT) {
@@ -116,7 +116,7 @@ public class Order {
 			throw new IllegalArgumentException("New number of tickets must be greater than zero");
 		}
 		this.numOfTickets = newNumOfTickets;
-		this.sumOrderprice = this.pricesPerSeat * newNumOfTickets;
+		this.totalOrderprice = this.pricesPerSeat * newNumOfTickets;
 		
 	}
 
@@ -128,8 +128,10 @@ public class Order {
 			messageDigest.update(sTocken.getBytes());
 			String stringHash = new String(messageDigest.digest());
 			return stringHash;
-		} catch (Exception e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Error hashing password: " + e.getMessage());
+		}catch (Exception e) {
+			throw new RuntimeException("An unexpected error occurred while hashing password: " + e.getMessage());
 		}
 	}
 

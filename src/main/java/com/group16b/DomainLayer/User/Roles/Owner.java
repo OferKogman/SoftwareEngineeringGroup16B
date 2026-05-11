@@ -7,14 +7,14 @@ import java.util.List;
 public class Owner extends Manager {
 	private final List<Manager> assignedManagers;
 
-	public Owner(Integer parentID) {
-		super(parentID,EnumSet.allOf(ManagerPermissions.class), RoleType.OWNER);
+	public Owner(int userID, Integer parentID) {
+		super(userID, parentID,EnumSet.allOf(ManagerPermissions.class), RoleType.OWNER);
 		assignedManagers= new ArrayList<>();
 	}
 
-	protected Owner(Integer parentID, RoleType role)
+	protected Owner(int userID, Integer parentID, RoleType role)
 	{
-		super(parentID, EnumSet.allOf(ManagerPermissions.class),role);
+		super(userID, parentID, EnumSet.allOf(ManagerPermissions.class),role);
 		assignedManagers= new ArrayList<>();
 	}
 
