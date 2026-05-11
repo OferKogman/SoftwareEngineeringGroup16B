@@ -21,7 +21,7 @@ public class VirtualQueueRepositoryTests {
     @Test
     void AddAndGetQueueById(){
         VirtualQueue vQueue = mock(VirtualQueue.class);
-        when(vQueue.getId()).thenReturn(67L);
+        when(vQueue.getId()).thenReturn(67);
         
         assertDoesNotThrow(() -> virtualQueueRepository.addVirtualQueue(vQueue));
         
@@ -41,7 +41,7 @@ public class VirtualQueueRepositoryTests {
     @Test
     void AddExistingQueueFail(){
         VirtualQueue vQueue = mock(VirtualQueue.class);
-        when(vQueue.getId()).thenReturn(68L);
+        when(vQueue.getId()).thenReturn(68);
         
         assertDoesNotThrow(() -> virtualQueueRepository.addVirtualQueue(vQueue));
         

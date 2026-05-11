@@ -12,6 +12,8 @@ import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.InfrastructureLayer.AuthServices.AuthenticationServiceJWTImpl;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 
 import java.security.MessageDigest;
@@ -25,6 +27,7 @@ public class User {
 	private final Map<CompanyAssigmentKey, Manager> userInvites; // Key: companyID, Value: List of Managers who invited the user
 
 	private final ReentrantLock userInvitesLock;
+
 	public User(String email, String password) {
 		this.email = email;
 		setPassword(password);
@@ -41,7 +44,7 @@ public class User {
 		return roles.get(companyID);
 	}
 
-	public void setPassword(String newPassword) {
+	private void setPassword(String newPassword) {
 		try {
 			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
 			messageDigest.update(newPassword.getBytes());
@@ -50,6 +53,15 @@ public class User {
 		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
 		}
+	}
+	
+	public void changePassword(String oldPassword, String newPassword) {
+		
+		if (!confirmPassword(oldPassword)) {
+			throw new IllegalArgumentException("Old password is incorrect.");
+		}
+		setPassword(newPassword);
+		
 	}
 
 	public boolean confirmPassword(String password) {
@@ -68,6 +80,9 @@ public class User {
 		roles.put(companyID, role);
 	}
 
+	public void removeRole(int companyID) {
+		roles.remove(companyID);
+	}
 	public HashMap<Integer, Role> getRoles() {
 		return new HashMap<>(this.roles);
 	}
@@ -78,11 +93,11 @@ public class User {
 	// like what if caller is founder, do we return null or this
 	// why do we return user instead of ID, since according to lecture 1, aggragate doesnt contains its own repo
 	// this may also lead to how we model the hierarchy, but ill whoever uses it to figure that out */
-	public User getParentIDForCompany(int companyID) {
+	public Integer getParentIDForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
 			int parentID = ((Manager) role).getAssignerID();
-			return UserRepositoryImpl.getInstance().getUserByID(parentID);
+			return parentID;
 		}
 		return null; // No role for this company, hence no parent
 	}
