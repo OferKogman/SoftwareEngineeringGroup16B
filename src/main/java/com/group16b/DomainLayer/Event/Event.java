@@ -219,4 +219,9 @@ public class Event {
 				", productionCompanyID=" + productionCompanyID +
 				'}';
 	}
+
+
+	public boolean isActiveEvent() {//relevant for venue assignment
+        return active.get(); 
+    }
 }
