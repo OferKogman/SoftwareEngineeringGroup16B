@@ -45,9 +45,9 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 	}
 
 	@Override
-	public List<Order> getOrdersByUserID(int userId) {
+	public List<Order> getOrdersBySubjectID(String subjectID) {
 		return this.orders.values().stream()
-				.filter(order -> order.getUserId() == userId)
+				.filter(order -> order.getSubjectId() == subjectID)
 				.toList();
 	}
 

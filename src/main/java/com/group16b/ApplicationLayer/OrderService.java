@@ -67,9 +67,22 @@ public class OrderService {
 				return Result.makeFail("Order is not active");
 			}
 
+            logger.info("Verifying session token for completion.");
+			if (!authenticationService.validateToken(sTocken)) {
+				logger.warn("Invalid session token provided for completion.");
+				return Result.makeFail("Invalid session token.");
+			}
+            if (authenticationService.extractRoleFromToken(sTocken) == "Admin") {
+				logger.warn("Invalid session token provided for completion.");
+				return Result.makeFail("Invalid session token.");
+			}
+			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
+			logger.info("Session token verified successfully.");
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
+
 				// 1.5 System - verify order belungs to the user.
 			
-			if (!order.isBelongsToUser(sTocken)) {
+			if (!order.isBelongsToSubject(subjectID)) {
 				logger.error("UserService.CompleteActiveOrder: Order {} does not belong to user {}", orderID, userId);
 				return Result.makeFail("Order does not belong to the given user");
 			}
@@ -160,6 +173,10 @@ public class OrderService {
 				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
 				return Result.makeFail("Invalid session token.");
 			}
+            if (authenticationService.extractRoleFromToken(sessionToken) != "Signed") {
+				logger.warn("Only user can get order history.");
+				return Result.makeFail("Only user can get order history.");
+			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			if (user == null) {
@@ -170,7 +187,7 @@ public class OrderService {
 
 			//get orders
 			logger.info("Retrieving orders for user {0}.", userID);
-			List<Order> orders = orderRepo.getOrdersByUserID(userID);
+			List<Order> orders = orderRepo.getOrdersBySubjectID(String.valueOf(userID));
 			List<OrderDTO> orderDTOs = new ArrayList<>();
 			for (Order order : orders) {
 				OrderDTO orderDTO = new OrderDTO(order); 
@@ -190,7 +207,7 @@ public class OrderService {
 		}
 	}
 
-    public Result<List<String>> XchangeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
+    public Result<List<String>> changeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
         
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
@@ -199,13 +216,26 @@ public class OrderService {
                 return Result.makeFail("New seat IDs list cannot be null or empty");
             }
 
+            logger.info("Verifying session token for change.");
+			if (!authenticationService.validateToken(sTocken)) {
+				logger.warn("Invalid session token provided for reservation.");
+				return Result.makeFail("Invalid session token.");
+			}
+            if (authenticationService.extractRoleFromToken(sTocken) == "Admin") {
+				logger.warn("Invalid session token provided for reservation.");
+				return Result.makeFail("Invalid session token.");
+			}
+			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
+			logger.info("Session token verified successfully.");
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
+
             // get order seats. 
             Order order = orderRepo.getOrder(orderId);
             if (order == null) {
                 logger.error("Order {} not found for changing seats.", orderId);
                 return Result.makeFail("Order not found");
             }
-            if (!order.isBelongsToUser(sTocken)) {
+            if (!order.isBelongsToSubject(subjectID)) {
                 logger.error("Order {} does not belong to the user with the provided token for changing seats.", orderId);
                 return Result.makeFail("Order does not belong to the given user");
             }   
@@ -263,13 +293,26 @@ public class OrderService {
                 return Result.makeFail("New number of seats must be greater than zero");
             }
 
+            logger.info("Verifying session token for edit.");
+			if (!authenticationService.validateToken(sTocken)) {
+				logger.warn("Invalid session token provided for edit.");
+				return Result.makeFail("Invalid session token.");
+			}
+            if (authenticationService.extractRoleFromToken(sTocken) == "Admin") {
+				logger.warn("Invalid session token provided for edit.");
+				return Result.makeFail("Invalid session token.");
+			}
+			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
+			logger.info("Session token verified successfully.");
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
+
             // get order seats. 
             Order order = orderRepo.getOrder(orderId);
             if (order == null) {
                 logger.error("Order {} not found for changing seats.", orderId);
                 return Result.makeFail("Order not found");
             }
-            if (!order.isBelongsToUser(sTocken)) {
+            if (!order.isBelongsToSubject(subjectID)) {
                 logger.error("Order {} does not belong to the user with the provided token for changing seats.", orderId);
                 return Result.makeFail("Order does not belong to the given user");
             }   
