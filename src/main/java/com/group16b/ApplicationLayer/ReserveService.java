@@ -42,11 +42,11 @@ public class ReserveService {
 
         try {
             logger.info("Verifying session token for event creation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for user {}", user.getUserID());
             
@@ -114,11 +114,11 @@ public class ReserveService {
 
            try {
             logger.info("Verifying session token for event creation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Attempting to reserve seats for user {}", user.getUserID());
             logger.info("Checking event is active");

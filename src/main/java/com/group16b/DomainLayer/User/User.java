@@ -72,7 +72,7 @@ public class User {
 			return this.password.equals(stringHash);
 		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
-			return false;
+			return false;	
 		}
 	}
 

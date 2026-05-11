@@ -8,17 +8,17 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -56,11 +56,11 @@ public class EventService {
 	public Result<EventDTO> createEvent(EventRecord eventRecord, String sessionToken) {
 		try {
 			logger.info("Verifying session token for event creation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			logger.info("Validating user permissions for event creation.");
@@ -94,11 +94,11 @@ public class EventService {
 	public Result<Boolean> activateEvent(int eventID, String sessionToken) {
 		try {
 			logger.info("Verifying session token for event activation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event activation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
@@ -131,11 +131,11 @@ public class EventService {
 	public Result<Boolean> deactivateEvent(int eventID, String sessionToken) {
 		try {
 			logger.info("Verifying session token for event deactivation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);

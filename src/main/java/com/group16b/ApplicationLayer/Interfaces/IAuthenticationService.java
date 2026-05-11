@@ -1,5 +1,7 @@
 package com.group16b.ApplicationLayer.Interfaces;
 
+import com.group16b.DomainLayer.User.SessionToken;
+
 /*
 the service interface for authentication
 will allow treating admin and user seperetly for security reasons
@@ -7,15 +9,15 @@ will issue the tokens and validate them
 will also act as a parser to extract info from the tokens when needed
 */
 public interface IAuthenticationService {
-	boolean authenticate(String token);
+	boolean validateToken(String token);
 
-	boolean authenticateAdmin(String token);
+	String generateVisitor_GuestToken(SessionToken session);
 
-	String GenerateUserToken(int userID);
+	String generateVisitor_SignedToken(int userID);
 
-	String GenerateAdminToken(int adminID);
+	String generateAdminToken(int adminID);
 
-	int extractIdFromUserToken(String token);
+	String extractRoleFromToken(String token);
 
-	int extractIdFromAdminToken(String token);
+	String extractSubjectFromToken(String token);
 }
