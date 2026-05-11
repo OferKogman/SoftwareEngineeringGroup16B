@@ -19,7 +19,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
 	private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
 	private final long adminExpirationTime = 1000 * 60 * 15; // 15 minutes
 
-	@Value(value = "jwt.secret")
+	@Value(value = "${jwt.secret}")
 	private SecretKey userKey;
     private SecretKey adminKey;
 
