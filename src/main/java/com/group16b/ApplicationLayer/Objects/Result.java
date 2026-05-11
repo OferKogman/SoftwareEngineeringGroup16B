@@ -1,4 +1,4 @@
-package com.group16b.ApplicationLayer;
+package com.group16b.ApplicationLayer.Objects;
 
 public class Result<T> {
 	private final boolean success;

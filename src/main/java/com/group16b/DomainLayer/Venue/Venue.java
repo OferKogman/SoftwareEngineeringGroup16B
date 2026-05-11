@@ -52,7 +52,7 @@ public class Venue {
 		}
 	}
 
-	protected void reserveSeats(ReservationRequest request) {
+	public void reserveSeats(ReservationRequest request) {
 		Segment segment = segments.get(request.getSegmentId());
 		if (segment == null) {
 			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
@@ -60,7 +60,7 @@ public class Venue {
 		segment.reserve(request);
 	}
 	
-	protected void freeSeats(ReservationRequest request) {
+	public void freeSeats(ReservationRequest request) {
 		Segment segment = segments.get(request.getSegmentId());
 		if (segment == null) {
 			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");

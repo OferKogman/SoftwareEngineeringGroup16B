@@ -3,7 +3,6 @@ package com.group16b.DomainLayer.Order;
 import java.security.MessageDigest;
 import java.util.List;
 
-
 public class Order {
 	private final String orderId;
 	private OrderState state;

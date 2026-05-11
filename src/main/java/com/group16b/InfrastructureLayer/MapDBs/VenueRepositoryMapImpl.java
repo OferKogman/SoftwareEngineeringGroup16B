@@ -1,25 +1,25 @@
-package com.group16b.DomainLayer.Venue;
+package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
+import com.group16b.DomainLayer.Venue.IVenueRepository;
+import com.group16b.DomainLayer.Venue.ReservationRequest;
+import com.group16b.DomainLayer.Venue.Venue;
 
-public class IVenueRepositoryImp implements IVenueRepository{
 
-    private final static IVenueRepositoryImp instance = new IVenueRepositoryImp();
+public class VenueRepositoryMapImpl implements IVenueRepository{
+
+    private final static VenueRepositoryMapImpl instance = new VenueRepositoryMapImpl();
 	private Map<String, Venue> venus = new TreeMap<>();
 
-	private IVenueRepositoryImp() {
+	private VenueRepositoryMapImpl() {
 	}
 
-	public static IVenueRepositoryImp getInstance() {
+	public static VenueRepositoryMapImpl getInstance() {
 		return instance;
 	}
-
-
-
-
 
     @Override
     public Venue getVenueByID(String venueID) {

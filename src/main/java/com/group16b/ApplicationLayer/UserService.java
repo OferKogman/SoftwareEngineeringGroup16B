@@ -8,17 +8,32 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
+import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.IVenueRepository;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.TicketGateway;
 
 import io.jsonwebtoken.JwtException;
 
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
+	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+	private final ITicketGateway ticketGateway = new TicketGateway();
+
 	private final IAuthenticationService authenticationService;
 	private final IUserRepository userRepository;
 
@@ -98,8 +113,6 @@ public class UserService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-
-
 
 	public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
 		try {

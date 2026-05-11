@@ -1,15 +1,18 @@
-package com.group16b.DomainLayer.VirtualQueue;
+package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.concurrent.ConcurrentHashMap;
 
-public class VirtualQueueRepository implements IVirtualQueueRepository{
-	private final static VirtualQueueRepository instance = new VirtualQueueRepository();
+import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
+import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+
+public class VirtualQueueRepositoryMapImpl implements IVirtualQueueRepository{
+	private final static VirtualQueueRepositoryMapImpl instance = new VirtualQueueRepositoryMapImpl();
 	private final ConcurrentHashMap<Integer, VirtualQueue> queues = new ConcurrentHashMap<>();
 
-	private VirtualQueueRepository() {
+	private VirtualQueueRepositoryMapImpl() {
 	}
 
-	public static VirtualQueueRepository getInstance() {
+	public static VirtualQueueRepositoryMapImpl getInstance() {
 		return instance;
 	}
 
