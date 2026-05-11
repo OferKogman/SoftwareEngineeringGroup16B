@@ -84,7 +84,6 @@ public class UserLoginService {
             }
             
             return res;
-
         } catch (Exception e) {
             logger.error("failed to log out in this session: {}", e.getMessage(), e);
             return Result.makeFail("Failed to log out: " + e.getMessage());
