@@ -8,17 +8,17 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 
 public class EventFilteringService {
 
-    private final IEventRepository eventRepository;
-    private final IVenueRepository venueRepository;
-    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository;
+    private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+    private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
+    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
 
-    public EventFilteringService(IEventRepository eventRepository, IVenueRepository venueRepository, IProductionCompanyPolicyRepository productionCompanyPolicyRepository) {
-        this.eventRepository = eventRepository;
-        this.venueRepository = venueRepository;
-        this.productionCompanyPolicyRepository = productionCompanyPolicyRepository;
+    public EventFilteringService() {
     }
 
     public List<Event> searchEvents(List<String> name, List<String> artist, List<String> category, List<String> keyword, List<Double> minPrice,

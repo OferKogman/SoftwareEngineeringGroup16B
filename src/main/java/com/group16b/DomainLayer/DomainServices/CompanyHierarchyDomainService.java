@@ -3,17 +3,16 @@ package com.group16b.DomainLayer.DomainServices;
 import java.util.Set;
 
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
-import com.group16b.DomainLayer.User.Roles.Role;
+import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class CompanyHierarchyDomainService {
-    private final IUserRepository userRepository;
+    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 
-    public CompanyHierarchyDomainService(IUserRepository userRepository) {
-        this.userRepository = userRepository;
+    public CompanyHierarchyDomainService() {
     }
 
     //check upwards whether the manager is under the owner in the hierarchy, if we reach the top of the hierarchy without finding the owner, return false

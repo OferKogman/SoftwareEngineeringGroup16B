@@ -14,28 +14,29 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.RoleType;
-import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+
 import io.jsonwebtoken.JwtException;
 
 public class CompanyHierarchyService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-    private final IAuthenticationService authenticationService;
-	private final IUserRepository userRepository;
 
+    private final IAuthenticationService authenticationService;
     private final CompanyHierarchyDomainService companyHierarchyDomainService;
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 
 	private final ConcurrentHashMap<Integer, Object> companyLocks = new ConcurrentHashMap<>();
 
-    public CompanyHierarchyService(IAuthenticationService authenticationService, IUserRepository userRepository, CompanyHierarchyDomainService companyHierarchyDomainService) {
+    public CompanyHierarchyService(IAuthenticationService authenticationService, CompanyHierarchyDomainService companyHierarchyDomainService) {
 		this.authenticationService = authenticationService;
-		this.userRepository = userRepository;
 		this.companyHierarchyDomainService=companyHierarchyDomainService;
 	}
 

@@ -6,10 +6,12 @@ public class SystemAdmin {
 	private int id;
 	private String username;
 	private String password;
+	private String email;
 
 	public SystemAdmin(int id, String username, String password, String email) {
 		this.id = id;
 		this.username = username;
+		this.email = email;
 		setPassword(password);
 	}
 
@@ -21,7 +23,7 @@ public class SystemAdmin {
 		return username;
 	}
 	public String getEmail() {
-		return username;
+		return email;
 	}
 
 	private void setPassword(String newPassword) {
