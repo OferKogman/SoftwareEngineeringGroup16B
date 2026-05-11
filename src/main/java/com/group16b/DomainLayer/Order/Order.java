@@ -4,7 +4,7 @@ import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.group16b.ApplicationLayer.PaymentInfo;
+import com.group16b.ApplicationLayer.Records.PaymentInfo;
 
 
 public class Order {

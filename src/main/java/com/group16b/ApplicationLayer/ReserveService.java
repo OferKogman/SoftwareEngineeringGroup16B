@@ -6,31 +6,32 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.Order.OrderRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.User.UserRepositoryImpl;
-import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
-import com.group16b.DomainLayer.VirtualQueue.VirtualQueueRepository;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImp;
+import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
 public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
-    private final IVenueRepositoryImp veuneRepo = IVenueRepositoryImp.getInstance();
-    private final OrderRepository orderRepo = OrderRepository.getInstance();
-    private final IVirtualQueueRepository queueImp = VirtualQueueRepository.getInstance();
-    private final IUserRepository userRepository = UserRepositoryImpl.getInstance();
-    private final IEventRepository eventRepository = IEventRepositoryMapImpl.getInstance();
+    private final VenueRepositoryMapImp veuneRepo = VenueRepositoryMapImp.getInstance();
+    private final OrderRepositoryMapImpl orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final IVirtualQueueRepository queueImp = VirtualQueueRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
     private final IAuthenticationService authenticationService;
 
     public ReserveService(IAuthenticationService authenticationService) {

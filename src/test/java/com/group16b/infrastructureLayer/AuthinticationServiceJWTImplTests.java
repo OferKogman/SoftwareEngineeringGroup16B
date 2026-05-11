@@ -9,7 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.group16b.InfrastructureLayer.AuthServices.AuthenticationServiceJWTImpl;
+import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;

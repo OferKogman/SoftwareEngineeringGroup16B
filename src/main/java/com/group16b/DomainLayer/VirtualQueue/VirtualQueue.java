@@ -22,7 +22,7 @@ public class VirtualQueue {
 		this.passedQueue = new LinkedHashMap<>();
 	}
 
-	protected VirtualQueue(VirtualQueue other) {
+	public VirtualQueue(VirtualQueue other) {
 		this.queueLine = new LinkedList<>(other.queueLine);
 		this.version = other.version;
 		this.id = other.id;
@@ -67,15 +67,15 @@ public class VirtualQueue {
 		passedQueue.remove(stringHash);
 	}
 
-	protected synchronized long getVersion() {
+	public synchronized long getVersion() {
 		return this.version;
 	}
 
-	protected synchronized int getId() {
+	public synchronized int getId() {
 		return this.id;
 	}
 
-	protected synchronized void setVersion(long version) {
+	public synchronized void setVersion(long version) {
 		this.version = version;
 	}
 

@@ -14,7 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Result;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.UserLoginService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.SessionToken;
