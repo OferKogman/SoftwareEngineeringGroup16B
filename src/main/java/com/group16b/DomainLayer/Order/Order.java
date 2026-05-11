@@ -106,6 +106,7 @@ public class Order {
 		}
 		this.seats = List.copyOf(newSeatIds);
 		this.numOfTickets = newSeatIds.size();
+		this.sumOrderprice = this.pricesPerSeat * newSeatIds.size();
 	}
 	public void updateNumOfTickets(int newNumOfTickets) {
 		if (orderType == OrderType.SEAT) {
@@ -115,6 +116,8 @@ public class Order {
 			throw new IllegalArgumentException("New number of tickets must be greater than zero");
 		}
 		this.numOfTickets = newNumOfTickets;
+		this.sumOrderprice = this.pricesPerSeat * newNumOfTickets;
+		
 	}
 
 	
