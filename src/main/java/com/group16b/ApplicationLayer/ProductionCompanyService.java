@@ -15,7 +15,10 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
+import com.group16b.DomainLayer.User.Roles.Owner;
+import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -77,4 +80,80 @@ public class ProductionCompanyService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+
+    public Result<Integer> displayTotalRevenue(String sTocken, int productionCompanyID) {
+        
+        // validate user
+        try {
+            logger.info("ProductionCompanyService.displayTotalRevenue: Calculating total revenue for production company");
+
+            // validate production company token (this is a placeholder, implement actual validation logic)
+            if (!authenticationService.validateToken(sTocken)  ) {
+                logger.error("ProductionCompanyService.displayTotalRevenue: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
+            if (!"Signed".equals(authenticationService.extractRoleFromToken(sTocken))) {
+                logger.error("ProductionCompanyService.displayTotalRevenue: Unauthorized access attempt by non-production company user");
+                return Result.makeFail("Unauthorized access");
+            }
+            User user = userRepo.getUserByID(Integer.getInteger(authenticationService.extractSubjectFromToken(sTocken)));
+            if (user == null) {
+                logger.error("ProductionCompanyService.displayTotalRevenue: User not found for token");
+                return Result.makeFail("User not found");
+            }
+            user.validatePermissions(productionCompanyID, ManagerPermissions.SALES_REPORT);
+            
+            // if user is managaer. look for his father and call the recursion
+            Role userRole = user.getRole(productionCompanyID);
+            if (userRole instanceof Manager manager){
+                int ownerId = manager.getAssignerID();
+                User parentUser = userRepo.getUserByID(ownerId);
+                Role parentRole = parentUser.getRole(productionCompanyID);
+                if (!(parentRole instanceof Owner)) {
+                    logger.error("ProductionCompanyService.displayTotalRevenue: Parent user with ID {} is not an owner", parentUser.getUserID());
+                    return Result.makeFail("Parent user is not an owner");
+                }
+                int totalRevenue = getAllrevinue(user.getUserID(), productionCompanyID, 0);
+                return Result.makeOk(totalRevenue);
+            }
+            // if user is owner/founder, call the recursion directly
+            else if (userRole instanceof Owner) {
+                int totalRevenue = getAllrevinue(user.getUserID(), productionCompanyID, 0);
+                return Result.makeOk(totalRevenue);
+            }
+            else{
+                logger.error("ProductionCompanyService.displayTotalRevenue: User with ID {} does not have a valid role for revenue calculation", user.getUserID());
+                return Result.makeFail("User does not have a valid role for revenue calculation");
+            }
+            
+        } catch (Exception e) {
+            logger.error("ProductionCompanyService.displayTotalRevenue: An unexpected error occurred while calculating total revenue", e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        
+        }
+    }
+
+    private int getAllrevinue(int userId, int productionCompanyID, int totalRevenue) {
+        List<Order> userOrders = orderRepo.getAllCompletedOrders();
+            userOrders = userOrders.stream()
+                    .filter(order -> order.isBelongsToSubject(userId + ""))
+                    .collect(Collectors.toList());
+        for (Order order : userOrders) {
+                totalRevenue += order.getTotalOrderprice();
+        }
+
+        Role userRole = userRepo.getUserByID(userId).getRole(productionCompanyID);
+        if (userRole instanceof Owner owner){
+            List<Manager> managers = owner.getAssignedManagers();
+            if (managers == null || managers.isEmpty()) {
+                return totalRevenue;
+            }
+            for (Manager manager : managers) {
+                totalRevenue = getAllrevinue(manager.getUserId(), productionCompanyID, totalRevenue);
+            }
+        }
+
+        return totalRevenue;
+    }
+
 }
