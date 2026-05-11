@@ -10,7 +10,6 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
 
 public class Event {
 	private static int IDCounter = 1;
@@ -28,8 +27,9 @@ public class Event {
 	private Set<PurchasePolicy> purchasePolicy;
 	private double price;
 	private double rating;
+	private final int ownerId;
 
-	public Event(EventRecord eventRecord) {
+	public Event(EventRecord eventRecord, int ownerId) {
 		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
 		validateName(eventRecord.name());
@@ -48,6 +48,7 @@ public class Event {
 		this.price = eventRecord.price();
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
+		this.ownerId = ownerId;
 	}
 
 	public int getEventID() {
