@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Policies;
+package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 public abstract class Discount {
     private double discountPercentage;
