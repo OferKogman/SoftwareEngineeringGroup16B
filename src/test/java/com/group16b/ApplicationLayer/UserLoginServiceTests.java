@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.ApplicationLayer.UserLoginService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
@@ -28,9 +27,8 @@ public class UserLoginServiceTests {
 
     @BeforeEach
     void setUp() {
-        mockUserRepository = mock(IUserRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
-        userLoginService = new UserLoginService(mockUserRepository, mockTokenService);
+        userLoginService = new UserLoginService(mockTokenService);
     }
 
 

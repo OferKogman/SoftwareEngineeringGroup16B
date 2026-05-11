@@ -1,14 +1,13 @@
 package com.group16b.DomainLayer.Order;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 
 
@@ -117,7 +116,7 @@ class OrderTests {
         assertEquals(OrderType.SEAT, order.getOrderType());
         assertEquals("segment1", order.getSegmentId());
         assertEquals(2, order.getNumOfTickets());
-        assertEquals(100.0, order.getSumOrderprice());
+        assertEquals(100.0, order.getTotalOrderprice());
         assertEquals(7, order.getEventId());
         assertEquals(seats, order.getSeats());
         assertTrue(order.isActive());
@@ -130,7 +129,7 @@ class OrderTests {
         assertEquals(OrderType.FIELD, order.getOrderType());
         assertEquals("field1", order.getSegmentId());
         assertEquals(3, order.getNumOfTickets());
-        assertEquals(120.0, order.getSumOrderprice());
+        assertEquals(120.0, order.getTotalOrderprice());
         assertEquals(7, order.getEventId());
         assertTrue(order.isActive());
     }

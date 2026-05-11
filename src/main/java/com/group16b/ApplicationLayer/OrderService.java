@@ -88,7 +88,7 @@ public class OrderService {
 			}
 
 			// 2. System - calculates price of tickets according to company and event policies.
-			double price = order.getSumOrderprice(); // @TODO: implement price calculation logic
+			double price = order.getTotalOrderprice(); // @TODO: implement price calculation logic
 
 
 			// 3. System - charges the user for the designed price.

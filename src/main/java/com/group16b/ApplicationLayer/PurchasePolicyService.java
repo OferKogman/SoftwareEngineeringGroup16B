@@ -22,7 +22,7 @@ public class PurchasePolicyService {
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 
-    public PurchasePolicyService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+    public PurchasePolicyService(IAuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
     }
     

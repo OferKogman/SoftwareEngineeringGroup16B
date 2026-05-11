@@ -2,7 +2,6 @@ package com.group16b.ApplicationLayer;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
-import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,7 +17,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
@@ -34,9 +32,8 @@ public class CompanyHierarchyServiceTests {
     @BeforeEach
     void setUp() {
         mockAuthService = mock(IAuthenticationService.class);
-        mockUserRepository = mock(IUserRepository.class);
         mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
-        userService = new CompanyHierarchyService(mockAuthService, mockUserRepository,mockCompanyHierarchyDomainService);
+        userService = new CompanyHierarchyService(mockAuthService, mockCompanyHierarchyDomainService);
     }
 
     //good

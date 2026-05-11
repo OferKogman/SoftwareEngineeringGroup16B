@@ -16,7 +16,6 @@ import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.TicketGateway;
 
 import io.jsonwebtoken.JwtException;
 
@@ -27,14 +26,15 @@ public class UserService {
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-	private final ITicketGateway ticketGateway = new TicketGateway();
+	private final ITicketGateway ticketGateway;
 
 	private final IAuthenticationService authenticationService;
 
 	
 
-	public UserService(IAuthenticationService authenticationService) {
+	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway) {
 		this.authenticationService = authenticationService;
+		this.ticketGateway = ticketGateway;
 	}
 
 	public Result<UserDTO> registerUser(String email, String password) {

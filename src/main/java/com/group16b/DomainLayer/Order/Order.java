@@ -12,7 +12,7 @@ public class Order {
 	private int numOfTickets;
 	private final OrderType orderType;
 	private static int idCounter = 0;
-	private  double sumOrderprice; // @TODO: calculate price based on the segment and number of tickets.
+	private  double totalOrderprice; // @TODO: calculate price based on the segment and number of tickets.
 	private List<String> tickets; // List of tickets associated with this order
 	private int eventId;
 	private final String subjectID;
@@ -25,7 +25,7 @@ public class Order {
 		this.numOfTickets = seats.size();
 		this.segmentId = segmentId;
 		this.orderType = OrderType.SEAT;
-		this.sumOrderprice = pricesPerSeat * seats.size();
+		this.totalOrderprice = pricesPerSeat * seats.size();
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
@@ -36,7 +36,7 @@ public class Order {
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
 		this.orderType = OrderType.FIELD;
-		this.sumOrderprice = pricesPerSeat * amount;
+		this.totalOrderprice = pricesPerSeat * amount;
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
@@ -84,8 +84,8 @@ public class Order {
 		return true;
 	}
 
-	public double getSumOrderprice() {
-		return sumOrderprice;
+	public double getTotalOrderprice() {
+		return totalOrderprice;
 	}
 
 	
@@ -106,7 +106,7 @@ public class Order {
 		}
 		this.seats = List.copyOf(newSeatIds);
 		this.numOfTickets = newSeatIds.size();
-		this.sumOrderprice = this.pricesPerSeat * newSeatIds.size();
+		this.totalOrderprice = this.pricesPerSeat * newSeatIds.size();
 	}
 	public void updateNumOfTickets(int newNumOfTickets) {
 		if (orderType == OrderType.SEAT) {
@@ -116,7 +116,7 @@ public class Order {
 			throw new IllegalArgumentException("New number of tickets must be greater than zero");
 		}
 		this.numOfTickets = newNumOfTickets;
-		this.sumOrderprice = this.pricesPerSeat * newNumOfTickets;
+		this.totalOrderprice = this.pricesPerSeat * newNumOfTickets;
 		
 	}
 

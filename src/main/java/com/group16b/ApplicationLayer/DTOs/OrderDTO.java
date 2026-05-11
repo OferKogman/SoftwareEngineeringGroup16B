@@ -25,7 +25,7 @@ public class OrderDTO {
         this.pricesPerSeat = order.getPricesPerSeat();
         this.numOfTickets = order.getNumOfTickets();
         this.orderType = order.getOrderType().toString();
-        this.sumOrderPrice = order.getSumOrderprice();
+        this.sumOrderPrice = order.getTotalOrderprice();
         this.eventId = order.getEventId();
         this.subjectID = order.getSubjectId();
     }
