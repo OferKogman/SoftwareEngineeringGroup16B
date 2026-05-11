@@ -2,61 +2,90 @@ package com.group16b.InfrastructureLayer.AuthServices;
 
 import java.util.Date;
 
-import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import io.jsonwebtoken.*;
-import org.springframework.beans.factory.annotation.Value;
-import io.jsonwebtoken.security.Keys;
 import javax.crypto.SecretKey;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.DomainLayer.User.SessionToken;
+
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
 
 public class AuthenticationServiceJWTImpl implements IAuthenticationService {
 
 	private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
 	private final long adminExpirationTime = 1000 * 60 * 15; // 15 minutes
 
-	private final SecretKey Userkey;
-	private final SecretKey Adminkey;
+	@Value(value = "jwt.secret")
+	private SecretKey userKey;
+    private SecretKey adminKey;
 
-	public AuthenticationServiceJWTImpl(@Value("${jwt.userSecret}") String userSecret,
-			@Value("${jwt.adminSecret}") String adminSecret) {
-		this.Userkey = Keys.hmacShaKeyFor(userSecret.getBytes());
-		this.Adminkey = Keys.hmacShaKeyFor(adminSecret.getBytes());
-	}
+    public AuthenticationServiceJWTImpl(@Value("${jwt.secret}") String userSecret, @Value("${jwt.secret}") String adminSecret) {
+        this.userKey = Keys.hmacShaKeyFor(userSecret.getBytes());
+        this.adminKey = Keys.hmacShaKeyFor(adminSecret.getBytes());
+    }
 
-	public String GenerateUserToken(int userID) {
-		return Jwts.builder()
-				.setSubject(String.valueOf(userID))
-				.setIssuedAt(new Date(System.currentTimeMillis()))
-				.setExpiration(new Date(System.currentTimeMillis() + userExpirationTime))
-				.signWith(Userkey)
-				.compact();
-	}
+    private String createToken(String subject, String role, long expirationMillis, SecretKey key) {
+        return Jwts.builder()
+                .setSubject(subject)//subject is either id or sessionToken for guest
+                .claim("role", role)//Guest, Signed, Admin
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
+                .signWith(key)
+                .compact();
+    }
 
-	public String GenerateAdminToken(int adminID) {
-		return Jwts.builder()
-				.setSubject(String.valueOf(adminID))
-				.setIssuedAt(new Date(System.currentTimeMillis()))
-				.setExpiration(new Date(System.currentTimeMillis() + adminExpirationTime))
-				.signWith(Adminkey)
-				.compact();
-	}
+    //attempt to recieve data from admin or user, the two possible keys for token
+    private Claims getAllClaims(String token) {
+        try {
+            return Jwts.parserBuilder()
+                    .setSigningKey(userKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        } catch (JwtException e1) {//isnt of user type so we will try admin type
+            return Jwts.parserBuilder()
+                .setSigningKey(adminKey)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+        } 
+    }
+	
+	public String generateVisitor_GuestToken(SessionToken session) {
+        return createToken(session.getValue(), "Guest", userExpirationTime, userKey);
+    }
 
-	public boolean authenticate(String token) {
-		Jwts.parserBuilder().setSigningKey(Userkey).build().parseClaimsJws(token);
-		return true;
-	}
+    public String generateVisitor_SignedToken(int userID) {
+        return createToken(String.valueOf(userID), "Signed", userExpirationTime, userKey);
+    }
 
-	public boolean authenticateAdmin(String token) {
-		Jwts.parserBuilder().setSigningKey(Adminkey).build().parseClaimsJws(token);
-		return true;
-	}
+    public String generateAdminToken(int adminID) {
+        return createToken(String.valueOf(adminID), "Admin", adminExpirationTime, adminKey);
+    }
 
-	public int extractIdFromUserToken(String token) {
-		Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(Userkey).build().parseClaimsJws(token);
-		return Integer.parseInt(claims.getBody().getSubject());
-	}
 
-	public int extractIdFromAdminToken(String token) {
-		Jws<Claims> claims = Jwts.parserBuilder().setSigningKey(Adminkey).build().parseClaimsJws(token);
-		return Integer.parseInt(claims.getBody().getSubject());
-	}
+    @Override
+    public boolean validateToken(String token) {
+        try {
+            getAllClaims(token);
+            return true;
+        } catch (JwtException e) {
+            return false;
+        }
+    }
+
+    public String extractRoleFromToken(String token) {
+        Claims claims = getAllClaims(token);
+        return claims.get("role", String.class);
+    }
+
+    public String extractSubjectFromToken(String token) {
+        Claims claims = getAllClaims(token);
+        return claims.getSubject();
+    }
+
 }

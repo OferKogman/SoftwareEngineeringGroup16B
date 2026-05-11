@@ -53,11 +53,11 @@ public class UserService {
 	public Result<Boolean> updateUserPassword(String sessionToken, String oldPassword, String newPassword) {
 		try {
 			logger.info("Verifying session token for event deactivation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 			logger.info("Validating old password");
 			if (!user.confirmPassword(oldPassword)) {
@@ -87,11 +87,11 @@ public class UserService {
 	public Result<Boolean> deleteUser(String sessionToken) {
 		try {
 			logger.info("Verifying session token for event deactivation.");
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 			return Result.makeOk(true);
 		}
@@ -218,11 +218,11 @@ public class UserService {
 		try {
 			//auth
 			logger.info("Verifying session token for Owner assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			//get perms
@@ -275,11 +275,11 @@ public class UserService {
 		try {
 			//auth
 			logger.info("Verifying session token for Manager assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for Manager assignment of user {0} to company {1} by user {2}.", targetID, companyID, userID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			//get perms
@@ -329,11 +329,11 @@ public class UserService {
 		try {
 			//auth
 			logger.info("Verifying session token for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for accepting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			User assigner = userRepository.getUserByID(assignerID);
@@ -382,11 +382,11 @@ public class UserService {
 		try {
 			//auth
 			logger.info("Verifying session token for rejecting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for rejecting invite assignment to company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 			if(!userRepository.userExists(assignerID))
 			{
@@ -429,11 +429,11 @@ public class UserService {
 		try {
 			//auth
 			logger.info("Verifying session token for retrieving orders of user {0}.", userID);
-			if (!authenticationService.authenticate(sessionToken)) {
+			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for retrieving orders of user {0}.", userID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(authenticationService.extractIdFromUserToken(sessionToken));
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");

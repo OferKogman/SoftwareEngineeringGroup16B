@@ -1,6 +1,7 @@
 package com.group16b.infrastructureLayer;
 
-import java.beans.Transient;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import java.util.Date;
 
 import javax.crypto.SecretKey;
@@ -8,9 +9,12 @@ import javax.crypto.SecretKey;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import com.group16b.InfrastructureLayer.AuthServices.AuthenticationServiceJWTImpl;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 public class AuthinticationServiceJWTImplTests {
@@ -28,30 +32,25 @@ public class AuthinticationServiceJWTImplTests {
 	@Test
 	public void testUserTokenGenerationAndAuthentication() {
 		int userID = 42;
-		String token = authService.GenerateUserToken(userID);
-		Assertions.assertNotNull(token, "Generated token should not be null");
-		Assertions.assertTrue(authService.authenticate(token), "Token should be valid");
-		Assertions.assertEquals(userID, authService.extractIdFromUserToken(token),
-				"Extracted user ID should match the original");
+		String token = authService.generateVisitor_SignedToken(userID);
+		Assertions.assertNotNull(token, "generated token should not be null");
+		Assertions.assertTrue(authService.validateToken(token), "Token should be valid");
+		Assertions.assertEquals(userID, Integer.valueOf(authService.extractSubjectFromToken(token)));
 	}
 
 	@Test
 	public void testAdminTokenGenerationAndAuthentication() {
 		int adminID = 1;
-		String token = authService.GenerateAdminToken(adminID);
-		Assertions.assertNotNull(token, "Generated token should not be null");
-		Assertions.assertTrue(authService.authenticateAdmin(token), "Token should be valid");
-		Assertions.assertEquals(adminID, authService.extractIdFromAdminToken(token),
-				"Extracted admin ID should match the original");
+		String token = authService.generateAdminToken(adminID);
+		Assertions.assertNotNull(token, "generated token should not be null");
+		Assertions.assertTrue(authService.validateToken(token), "Token should be valid");
+		Assertions.assertEquals(adminID, Integer.valueOf(authService.extractSubjectFromToken(token)));
 	}
 
 	@Test
 	public void testInvalidTokenAuthentication() {
 		String invalidToken = "invalid.token.string";
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(invalidToken),
-				"Invalid token should not be authenticated");
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(invalidToken),
-				"Invalid token should not be authenticated as admin");
+		assertEquals(false, authService.validateToken(invalidToken));
 	}
 
 	@Test
@@ -62,8 +61,7 @@ public class AuthinticationServiceJWTImplTests {
 				.setExpiration(new Date(System.currentTimeMillis() - 1000 * 60 * 30)) // Expired 30 minutes ago
 				.signWith(Keys.hmacShaKeyFor(userSecret.getBytes()))
 				.compact();
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(expiredToken),
-				"Expired token should not be authenticated");
+		assertEquals(false, authService.validateToken(expiredToken));
 	}
 
 	@Test
@@ -74,41 +72,32 @@ public class AuthinticationServiceJWTImplTests {
 				.setExpiration(new Date(System.currentTimeMillis() - 1000 * 60 * 30)) // Expired 30 minutes ago
 				.signWith(Keys.hmacShaKeyFor(adminSecret.getBytes()))
 				.compact();
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(expiredToken),
-				"Expired token should not be authenticated as admin");
+		assertEquals(false, authService.validateToken(expiredToken));
 	}
 
 	@Test
 	public void testUserTokenTampering() {
 		int userID = 42;
-		String token = authService.GenerateUserToken(userID);
+		String token = authService.generateVisitor_SignedToken(userID);
 		// Tamper with the token by changing a character
 		String tamperedToken = token.substring(0, token.length() - 1) + "X";
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(tamperedToken),
-				"Tampered token should not be authenticated");
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(tamperedToken),
-				"Tampered token should not be authenticated as admin");
+		assertEquals(false, authService.validateToken(tamperedToken));
 	}
 
 	@Test
 	public void testAdminTokenTampering() {
 		int adminID = 1;
-		String token = authService.GenerateAdminToken(adminID);
+		String token = authService.generateAdminToken(adminID);
 		// Tamper with the token by changing a character
 		String tamperedToken = token.substring(0, token.length() - 1) + "X";
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(tamperedToken),
-				"Tampered token should not be authenticated");
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(tamperedToken),
-				"Tampered token should not be authenticated as admin");
+		assertEquals(false, authService.validateToken(tamperedToken));
 	}
 
 	@Test
 	public void testExtractIdFromInvalidToken() {
 		String invalidToken = "invalid.token.string";
-		Assertions.assertThrows(JwtException.class, () -> authService.extractIdFromUserToken(invalidToken),
-				"Extracting ID from invalid token should throw an exception");
-		Assertions.assertThrows(JwtException.class, () -> authService.extractIdFromAdminToken(invalidToken),
-				"Extracting ID from invalid token should throw an exception");
+		Assertions.assertThrows(JwtException.class, () -> 
+            authService.extractSubjectFromToken(invalidToken));
 	}
 
 	@Test
@@ -121,9 +110,7 @@ public class AuthinticationServiceJWTImplTests {
 				.setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60))
 				.signWith(otherey)
 				.compact();
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticate(token),
-				"Token with wrong secret key should not be authenticated");
-		Assertions.assertThrows(JwtException.class, () -> authService.authenticateAdmin(token),
-				"Token with wrong secret key should not be authenticated as admin");
+				
+		assertEquals(false, authService.validateToken(token));
 	}
 }
