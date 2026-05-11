@@ -1,4 +1,4 @@
-package com.group16b.InfrastructureLayer.AuthServices;
+package com.group16b.InfrastructureLayer;
 
 import java.util.Date;
 

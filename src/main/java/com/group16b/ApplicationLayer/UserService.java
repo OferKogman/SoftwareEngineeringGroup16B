@@ -2,34 +2,37 @@ package com.group16b.ApplicationLayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.group16b.ApplicationLayer.DTOs.OrderDTO;
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.Event.Event;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
+import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
-import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.Order.OrderRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
-import com.group16b.DomainLayer.Venue.IVenueRepositoryImp;
-import com.group16b.DomainLayer.Venue.ReservationRequest;
-import com.group16b.DomainLayer.Venue.Segment;
-import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.TicketGateway;
 
 import io.jsonwebtoken.JwtException;
 
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
-	private final OrderRepository orderRepo = OrderRepository.getInstance();
-	private final IVenueRepository venueRepo = IVenueRepositoryImp.getInstance();
-	private final IEventRepository eventRepo = IEventRepositoryMapImpl.getInstance();
+
+	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+	private final ITicketGateway ticketGateway = new TicketGateway();
 
 	private final IAuthenticationService authenticationService;
 	private final IUserRepository userRepository;

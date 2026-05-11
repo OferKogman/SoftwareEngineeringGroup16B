@@ -1,18 +1,21 @@
-package com.group16b.DomainLayer.Event;
+package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-public class IEventRepositoryMapImpl implements IEventRepository {
-	private final static IEventRepositoryMapImpl instance = new IEventRepositoryMapImpl();
+import com.group16b.DomainLayer.Event.Event;
+import com.group16b.DomainLayer.Event.IEventRepository;
+
+public class EventRepositoryMapImpl implements IEventRepository {
+	private final static EventRepositoryMapImpl instance = new EventRepositoryMapImpl();
 	private Map<Integer, Event> events = new TreeMap<>();
 
-	private IEventRepositoryMapImpl() {
+	private EventRepositoryMapImpl() {
 	}
 
-	public static IEventRepositoryMapImpl getInstance() {
+	public static EventRepositoryMapImpl getInstance() {
 		return instance;
 	}
 

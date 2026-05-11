@@ -52,12 +52,20 @@ public class Venue {
 		}
 	}
 
-	protected void reserveSeats(ReservationRequest request) {
+	public void reserveSeats(ReservationRequest request) {
 		Segment segment = segments.get(request.getSegmentId());
 		if (segment == null) {
 			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
 		}
 		segment.reserve(request);
+	}
+	
+	public void freeSeats(ReservationRequest request) {
+		Segment segment = segments.get(request.getSegmentId());
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
+		}
+		segment.cancelReservation(request);
 	}
 	
 

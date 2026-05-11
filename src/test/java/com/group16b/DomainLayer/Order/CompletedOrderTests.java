@@ -5,7 +5,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class CompletedOrderTest {
+class CompletedOrderTests {
 
     @Test
     void isActive_shouldReturnFalse() {
