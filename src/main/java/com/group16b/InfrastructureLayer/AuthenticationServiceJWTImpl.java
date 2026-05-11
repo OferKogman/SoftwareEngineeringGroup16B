@@ -88,4 +88,12 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
         return claims.getSubject();
     }
 
+    @Override
+    public boolean isUserToken(String token){
+        try {
+            return this.extractRoleFromToken(token).equals("User");
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
