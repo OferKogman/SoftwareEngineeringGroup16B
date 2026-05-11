@@ -60,5 +60,13 @@ public class Venue {
 		segment.reserve(request);
 	}
 	
+	protected void freeSeats(ReservationRequest request) {
+		Segment segment = segments.get(request.getSegmentId());
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
+		}
+		segment.cancelReservation(request);
+	}
+	
 
 }
