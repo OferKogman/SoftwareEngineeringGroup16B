@@ -6,7 +6,7 @@ class ActiveOrder implements OrderState {
 	private final long creationTime;
     private static final long ORDER_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
 
-	protected ActiveOrder() {
+	public ActiveOrder() {
 		this.creationTime = System.currentTimeMillis();
 	}
 

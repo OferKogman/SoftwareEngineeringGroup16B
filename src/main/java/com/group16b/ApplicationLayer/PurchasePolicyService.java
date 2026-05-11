@@ -11,8 +11,8 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 
 public class PurchasePolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
@@ -60,7 +60,7 @@ public class PurchasePolicyService {
             User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 
             logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
-            //@TODO: implement purchase policy checks for lottery enrollment
+            //TODO: implement purchase policy checks for lottery enrollment
             logger.info("User passed purchase policy checks for lottery enrollment");
 
             //check event is active
