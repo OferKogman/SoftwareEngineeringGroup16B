@@ -10,12 +10,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class OrderRepositoryMapImplTests {
     private OrderRepositoryMapImpl orderRepository;
@@ -130,5 +129,20 @@ class OrderRepositoryMapImplTests {
         assertFalse(result.contains(user1OrderA));
         assertFalse(result.contains(user1OrderB));
 
+    }
+
+    @Test
+    void getAllCompletedOrders_returnsOnlyCompletedOrders() {
+        // Assuming you have a way to mark orders as completed in your Order class
+        when(user1OrderA.isActive()).thenReturn(false);
+        when(user1OrderB.isActive()).thenReturn(true);
+        when(user2Order.isActive()).thenReturn(false);
+
+        List<Order> result = orderRepository.getAllCompletedOrders();
+
+        assertEquals(2, result.size());
+        assertTrue(result.contains(user1OrderA));
+        assertFalse(result.contains(user1OrderB));
+        assertTrue(result.contains(user2Order));
     }
 }
