@@ -11,7 +11,8 @@ public class OrderDTO {
     private final String orderType;
     private final double sumOrderPrice;
     private final int eventId;
-    private final int userId;
+    private final String subjectID;
+
     public OrderDTO(Order order){
         if (order == null) {
             throw new IllegalArgumentException("Order cannot be null");
@@ -26,7 +27,7 @@ public class OrderDTO {
         this.orderType = order.getOrderType().toString();
         this.sumOrderPrice = order.getSumOrderprice();
         this.eventId = order.getEventId();
-        this.userId = order.getUserId();
+        this.subjectID = order.getSubjectId();
     }
 
     public String getOrderId() {
@@ -50,8 +51,8 @@ public class OrderDTO {
     public int getEventId() {
         return eventId;
     }
-    public int getUserId() {
-        return userId;
+    public String getSubjectId() {
+        return subjectID;
     }
     
 }

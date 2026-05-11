@@ -29,18 +29,16 @@ public class VirtualQueue {
 		this.passedQueue = new LinkedHashMap<>();
 	}
 
-	public synchronized boolean addToQueue(String sessionToken) throws NoSuchAlgorithmException {
-		MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-		messageDigest.update(sessionToken.getBytes());
-		String stringHash = new String(messageDigest.digest());
-		if (queueLine.contains(stringHash))
+	public synchronized boolean addToQueue(String subjectID) throws NoSuchAlgorithmException {
+		popFirstIn();
+		if (queueLine.contains(subjectID) || passedQueue.containsKey(subjectID))
 			return false;
-		queueLine.add(stringHash);
+		queueLine.add(subjectID);
 		this.version++;
 		return true;
 	}
 
-	public synchronized void popFirstIn() {
+	private synchronized void popFirstIn() {
 		if (queueLine.isEmpty()) {
 			throw new IllegalStateException("Queue is empty");
 		}
@@ -59,12 +57,9 @@ public class VirtualQueue {
 		passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
 	}
 
-	public synchronized void removePassed(String sessionToken) throws NoSuchAlgorithmException {
-		MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-		messageDigest.update(sessionToken.getBytes());
-		String stringHash = new String(messageDigest.digest());
+	public synchronized void removePassed(String subjectID) throws NoSuchAlgorithmException {
 		this.version++;
-		passedQueue.remove(stringHash);
+		passedQueue.remove(subjectID);
 	}
 
 	public synchronized long getVersion() {
@@ -79,10 +74,7 @@ public class VirtualQueue {
 		this.version = version;
 	}
 
-	public synchronized boolean isUserPassedQueue(String sessionToken) throws NoSuchAlgorithmException {
-		MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-		messageDigest.update(sessionToken.getBytes());
-		String stringHash = new String(messageDigest.digest());
-		return passedQueue.containsKey(stringHash);
+	public synchronized boolean isUserPassedQueue(String subjectID) throws NoSuchAlgorithmException {
+		return passedQueue.containsKey(subjectID);
 	}
 }

@@ -147,8 +147,8 @@ public class UserService {
 			}
 
 				// 1.5 System - verify order belungs to the user.
-			
-			if (!order.isBelongsToUser(sTocken)) {
+			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
+			if (!order.isBelongsToUser(subjectID)) {
 				logger.error("UserService.CompleteActiveOrder: Order {} does not belong to user {}", orderID, userId);
 				return Result.makeFail("Order does not belong to the given user");
 			}
@@ -467,6 +467,10 @@ public class UserService {
 				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
 				return Result.makeFail("Invalid session token.");
 			}
+			if(authenticationService.extractRoleFromToken(sessionToken) == "Admin") {
+				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
+				return Result.makeFail("Invalid session token.");
+			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			if (user == null) {
@@ -477,7 +481,7 @@ public class UserService {
 
 			//get orders
 			logger.info("Retrieving orders for user {0}.", userID);
-			List<Order> orders = orderRepo.getOrdersByUserID(userID);
+			List<Order> orders = orderRepo.getOrdersBySubjectID(String.valueOf(userID));
 			List<OrderDTO> orderDTOs = new ArrayList<>();
 			for (Order order : orders) {
 				OrderDTO orderDTO = new OrderDTO(order); 
