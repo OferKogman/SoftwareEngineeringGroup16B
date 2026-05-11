@@ -1,4 +1,5 @@
 package com.group16b.ApplicationLayer;
+import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
@@ -30,11 +31,14 @@ public class CompanyHierarchyServiceTests {
     CompanyHierarchyDomainService mockCompanyHierarchyDomainService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockUserRepository = mock(IUserRepository.class);
         mockAuthService = mock(IAuthenticationService.class);
         mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
         userService = new CompanyHierarchyService(mockAuthService, mockCompanyHierarchyDomainService);
+        Field userRepo = userService.getClass().getDeclaredField("userRepository");
+        userRepo.setAccessible(true);
+        userRepo.set(userService, mockUserRepository);
     }
 
     //good
@@ -328,7 +332,7 @@ int userID = 1;
     //    ACCEPT INVITE ASSIGMENT TESTS
     //----------------------------------------------------------------------
 
-        @Test
+    @Test
     void testAcceptInviteAssignmentSuccess() {
         int userID = 1;
         int companyID = 1;
