@@ -9,8 +9,4 @@ public abstract class Role {
 	public int getUserID() {
 		return this.userID;
 	}
-
-	public int getUserId(){
-		return -1;
-	}
 }
