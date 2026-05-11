@@ -6,17 +6,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Event.IEventRepositoryMapImpl;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.DomainLayer.User.User;
 
 public class PurchasePolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
     
-    private final IEventRepository eventRepo = IEventRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final IAuthenticationService authenticationService;
 	private final IUserRepository userRepository;
 

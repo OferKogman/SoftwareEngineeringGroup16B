@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 
 
 import static org.junit.jupiter.api.Assertions.*;
-public class ActiveOrderTest {
+public class ActiveOrderTests {
 
     @Test
     void getTickets_shouldThrowWhenOrderIsStillActive() {

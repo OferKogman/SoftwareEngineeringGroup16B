@@ -1,21 +1,24 @@
-package com.group16b.DomainLayer.SystemAdmin;
+package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class ISystemAdminRepositoryMapImpl implements ISystemAdminRepository {
+import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
+import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+
+public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	private Map<Integer, SystemAdmin> systemAdminsById;
 	private Map<String, SystemAdmin> systemAdminsByUsername;
 
-	private static final ISystemAdminRepositoryMapImpl instance = new ISystemAdminRepositoryMapImpl();
+	private static final SystemAdminRepositoryMapImpl instance = new SystemAdminRepositoryMapImpl();
 
-	private ISystemAdminRepositoryMapImpl() {
+	private SystemAdminRepositoryMapImpl() {
 		this.systemAdminsById = new HashMap<>();
 		this.systemAdminsByUsername = new HashMap<>();
 	}
 
 	// singleton pattern to ensure only one instance of the repository exists
-	public static synchronized ISystemAdminRepositoryMapImpl getInstance() {
+	public static synchronized SystemAdminRepositoryMapImpl getInstance() {
 		return instance;
 	}
 

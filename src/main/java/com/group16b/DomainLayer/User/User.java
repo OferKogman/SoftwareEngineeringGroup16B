@@ -12,7 +12,7 @@ import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
-import com.group16b.InfrastructureLayer.AuthServices.AuthenticationServiceJWTImpl;
+import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 

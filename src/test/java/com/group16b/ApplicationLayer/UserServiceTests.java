@@ -1,4 +1,4 @@
-package com.group16b.ServiceLayer;
+package com.group16b.ApplicationLayer;
 import java.util.Collections;
 import java.util.concurrent.locks.ReentrantLock;
 

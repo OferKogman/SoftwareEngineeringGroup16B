@@ -1,19 +1,22 @@
-package com.group16b.DomainLayer.User;
+package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class UserRepositoryImpl implements IUserRepository {
+import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.User;
 
-	private static UserRepositoryImpl instance;
+public class UserRepositoryMapImpl implements IUserRepository {
+
+	private static UserRepositoryMapImpl instance;
 	private Map<Integer, User> users = new HashMap<>();
 
-	private UserRepositoryImpl() {
+	private UserRepositoryMapImpl() {
 	}
 
-	public static synchronized UserRepositoryImpl getInstance() {
+	public static synchronized UserRepositoryMapImpl getInstance() {
 		if (instance == null) {
-			instance = new UserRepositoryImpl();
+			instance = new UserRepositoryMapImpl();
 		}
 		return instance;
 	}

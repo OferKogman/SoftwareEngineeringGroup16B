@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.SystemAdmin;
+package com.group16b.infrastructureLayer.MapDBs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -6,12 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ISystemAdminRepositoryMapImplTests {
-	ISystemAdminRepositoryMapImpl repository;
+import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
+
+public class SystemAdminRepositoryMapImplTests {
+	SystemAdminRepositoryMapImpl repository;
 
 	@BeforeEach
 	void setUp() {
-		repository = ISystemAdminRepositoryMapImpl.getInstance();
+		repository = SystemAdminRepositoryMapImpl.getInstance();
 	}
 
 	@Test
@@ -44,8 +47,8 @@ public class ISystemAdminRepositoryMapImplTests {
 
 	@Test
 	void testSingletonInstance() {
-		ISystemAdminRepositoryMapImpl instance1 = ISystemAdminRepositoryMapImpl.getInstance();
-		ISystemAdminRepositoryMapImpl instance2 = ISystemAdminRepositoryMapImpl.getInstance();
+		SystemAdminRepositoryMapImpl instance1 = SystemAdminRepositoryMapImpl.getInstance();
+		SystemAdminRepositoryMapImpl instance2 = SystemAdminRepositoryMapImpl.getInstance();
 		assertEquals(instance1, instance2);
 	}
 

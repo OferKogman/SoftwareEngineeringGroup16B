@@ -1,17 +1,20 @@
-package com.group16b.DomainLayer.Order;
+package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.HashMap;
 import java.util.List;
 
-public class OrderRepository implements IOrderRepository {
-	private final HashMap<String, Order> orders;
-	private final static OrderRepository instance = new OrderRepository();
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Order.Order;
 
-	public OrderRepository() {
+public class OrderRepositoryMapImpl implements IOrderRepository {
+	private final HashMap<String, Order> orders;
+	private final static OrderRepositoryMapImpl instance = new OrderRepositoryMapImpl();
+
+	public OrderRepositoryMapImpl() {
 		this.orders = new HashMap<>();
 	}
 
-	public static OrderRepository getInstance() {
+	public static OrderRepositoryMapImpl getInstance() {
 		return instance;
 	}
 

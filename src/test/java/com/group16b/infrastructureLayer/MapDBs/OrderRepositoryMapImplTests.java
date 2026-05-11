@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Order;
+package com.group16b.infrastructureLayer.MapDBs;
 
 import java.util.List;
 
@@ -10,11 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.group16b.DomainLayer.Order.Order;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class OrderRepositoryTest {
-    private OrderRepository orderRepository;
+class OrderRepositoryMapImplTests {
+    private OrderRepositoryMapImpl orderRepository;
     private Order user1OrderA;
     private Order user1OrderB;
     private Order user2Order;
@@ -22,7 +26,7 @@ class OrderRepositoryTest {
     @BeforeEach
     void setUp() {
 
-        orderRepository = new OrderRepository();
+        orderRepository = new OrderRepositoryMapImpl();
 
         user1OrderA = mock(Order.class);
 
@@ -51,7 +55,7 @@ class OrderRepositoryTest {
 
     @Test
     void addOrder_shouldReturnTrueAndStoreOrder() {
-        OrderRepository repository = new OrderRepository();
+        OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
         Order order = new Order("segment1", List.of("A-1"), "token123", 50.0, 7, 10);
 
         assertTrue(repository.addOrder(order));
@@ -60,7 +64,7 @@ class OrderRepositoryTest {
 
     @Test
     void addOrder_sameOrderTwice_shouldReturnFalseSecondTime() {
-        OrderRepository repository = new OrderRepository();
+        OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
         Order order = new Order("segment1", List.of("A-1"), "token123", 50.0, 7, 10);
 
         assertTrue(repository.addOrder(order));
@@ -69,7 +73,7 @@ class OrderRepositoryTest {
 
     @Test
     void cancelOrder_existingOrder_shouldRemoveAndReturnTrue() {
-        OrderRepository repository = new OrderRepository();
+        OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
         Order order = new Order("segment1", List.of("A-1"), "token123", 50.0, 7, 10);
         repository.addOrder(order);
 
@@ -79,14 +83,14 @@ class OrderRepositoryTest {
 
     @Test
     void cancelOrder_missingOrder_shouldReturnFalse() {
-        OrderRepository repository = new OrderRepository();
+        OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
 
         assertFalse(repository.cancelOrder("missing_order"));
     }
 
     @Test
     void getOrder_missingOrder_shouldReturnNull() {
-        OrderRepository repository = new OrderRepository();
+        OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
 
         assertNull(repository.getOrder("missing_order"));
     }
