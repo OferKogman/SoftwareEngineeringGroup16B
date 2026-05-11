@@ -25,6 +25,7 @@ import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
@@ -33,16 +34,15 @@ import io.jsonwebtoken.JwtException;
 
 public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+	private final IAuthenticationService authenticationService;
+    private final ITicketGateway ticketGateway = new TicketGateway();
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
-    private final ITicketGateway ticketGateway = new TicketGateway();
-	private final IAuthenticationService authenticationService;
-	private final IUserRepository userRepository;
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 
-    public OrderService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+    public OrderService(IAuthenticationService authenticationService) {
 		this.authenticationService = authenticationService;
-		this.userRepository = userRepository;
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {

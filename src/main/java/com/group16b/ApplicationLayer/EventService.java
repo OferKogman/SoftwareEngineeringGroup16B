@@ -25,6 +25,11 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
@@ -33,24 +38,17 @@ public class EventService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
 	private final IAuthenticationService authenticationService;
     private final ILocatoinService locationService;
-	private final IUserRepository userRepository;
-	private final IVenueRepository venueRepository;
-	private final IEventRepository eventRepository;
-	private final IVirtualQueueRepository queueRepository;
-    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository;
     private final EventFilteringService eventFilteringService;
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+	private final IVirtualQueueRepository queueRepository = VirtualQueueRepositoryMapImpl.getInstance();
+    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
 
-	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, IUserRepository userRepository,
-			IVenueRepository venueRepository, IEventRepository eventRepository, IProductionCompanyPolicyRepository productionCompanyPolicyRepository,
-			EventFilteringService eventFilteringService, IVirtualQueueRepository queueRepository) {
+	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
-		this.userRepository = userRepository;
-		this.venueRepository = venueRepository;
-		this.eventRepository = eventRepository;
-		this.productionCompanyPolicyRepository = productionCompanyPolicyRepository;
-		this.queueRepository = queueRepository;
 	}
 
 	// need to make event active manually

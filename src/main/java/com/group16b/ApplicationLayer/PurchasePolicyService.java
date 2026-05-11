@@ -11,19 +11,19 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class PurchasePolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
     
-    private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final IAuthenticationService authenticationService;
-	private final IUserRepository userRepository;
+    private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 
     public PurchasePolicyService(IAuthenticationService authenticationService, IUserRepository userRepository) {
         this.authenticationService = authenticationService;
-        this.userRepository = userRepository;
     }
     
 

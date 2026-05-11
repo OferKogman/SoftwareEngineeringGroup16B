@@ -1,33 +1,22 @@
 package com.group16b.ApplicationLayer;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.DomainLayer.Event.Event;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.TicketGateway;
-import com.group16b.ApplicationLayer.DTOs.OrderDTO;
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
-import com.group16b.ApplicationLayer.Records.PaymentInfo;
-
 
 import io.jsonwebtoken.JwtException;
 
@@ -37,16 +26,15 @@ public class UserService {
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final ITicketGateway ticketGateway = new TicketGateway();
 
 	private final IAuthenticationService authenticationService;
-	private final IUserRepository userRepository;
 
 	
 
-	public UserService(IAuthenticationService authenticationService, IUserRepository userRepository) {
+	public UserService(IAuthenticationService authenticationService) {
 		this.authenticationService = authenticationService;
-		this.userRepository = userRepository;
 	}
 
 	public Result<UserDTO> registerUser(String email, String password) {
