@@ -201,9 +201,6 @@ public class ReserveService {
     }
 
 
-    private void cancelOrder(String orderId) { // to call when order is expired
-        // Logic to cancel the order, e.g., release reserved seats
-        orderRepo.cancelOrder(orderId);
-    }
+    
     
 }
