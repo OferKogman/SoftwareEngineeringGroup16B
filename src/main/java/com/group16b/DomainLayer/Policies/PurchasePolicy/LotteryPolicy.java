@@ -11,7 +11,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class LotteryPolicy implements PurchasePolicy {
     
-    private int lotteryID;
     private String lotteryName;
     private int winnerAmount;
     private LocalDateTime lotteryRegistrationDueDate;
@@ -20,7 +19,6 @@ public class LotteryPolicy implements PurchasePolicy {
     private Map<String, Integer> usedCodes;
 
     public LotteryPolicy(int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
-        this.lotteryID = lotteryID;
         this.lotteryName = lotteryName;
         this.winnerAmount = winnerAmount;
         validateDate(lotteryRegistrationDueDate);
@@ -28,11 +26,7 @@ public class LotteryPolicy implements PurchasePolicy {
         this.participants = ConcurrentHashMap.newKeySet();
         this.winnersAndCodes = new ConcurrentHashMap<>();
         this.usedCodes = new ConcurrentHashMap<>();
-    }
-
-    public int getLotteryID() {
-        return lotteryID;
-    }   
+    }  
 
     public String getLotteryName() {
         return lotteryName;

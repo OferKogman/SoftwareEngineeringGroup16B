@@ -1,6 +1,8 @@
 package com.group16b.DomainLayer.Policies.PurchasePolicy;
 
+import java.lang.reflect.Field;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import org.junit.jupiter.api.Test;
@@ -75,6 +77,31 @@ public class LotteryPolicyTests {
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
             assert(e.getMessage().equals("User is already enrolled in the lottery."));
+        }
+    }
+
+    @Test 
+    public void FailureValidateLotteryCodeBeenUsed() {
+        try{
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusMinutes(1));
+            Field field = LotteryPolicy.class.getDeclaredField("winnersAndCodes");
+            field.setAccessible(true);
+            field.set(lotteryPolicy, Map.of("invalid_code", 1));
+            lotteryPolicy.validateLotteryCode("invalid_code");
+            lotteryPolicy.validateLotteryCode("invalid_code");
+            throw new Exception("Expected exception was not thrown.");
+        } catch (Exception e) {
+            assert(e.getMessage().equals("Lottery code has already been used."));
+        }
+    }
+
+    public void FailureValidateLotteryInvalidLotteryCode() {
+        try{
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusMinutes(1));
+            lotteryPolicy.validateLotteryCode("invalid_code");
+            throw new Exception("Expected exception was not thrown.");
+        } catch (Exception e) {
+            assert(e.getMessage().equals("Invalid lottery code."));
         }
     }
 }
