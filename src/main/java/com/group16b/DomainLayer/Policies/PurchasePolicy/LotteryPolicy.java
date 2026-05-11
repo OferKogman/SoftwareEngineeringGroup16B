@@ -1,7 +1,12 @@
 package com.group16b.DomainLayer.Policies.PurchasePolicy;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class LotteryPolicy implements PurchasePolicy {
@@ -11,6 +16,7 @@ public class LotteryPolicy implements PurchasePolicy {
     private int winnerAmount;
     private LocalDateTime lotteryRegistrationDueDate;
     private Set<Integer> participants;
+    private Map<String, Integer> winnersAndCodes;
 
     public LotteryPolicy(int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
         this.lotteryID = lotteryID;
@@ -19,6 +25,7 @@ public class LotteryPolicy implements PurchasePolicy {
         validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
         this.participants = ConcurrentHashMap.newKeySet();
+        this.winnersAndCodes = new ConcurrentHashMap<>();
     }
 
     public int getLotteryID() {
@@ -64,8 +71,19 @@ public class LotteryPolicy implements PurchasePolicy {
         participants.add(userID);
     }
 
-    public void handleLotteryResults() {
-        // Implementation for handling lottery results
+    public synchronized void handleLotteryResults() {
+        List<Integer> winners = new ArrayList<>(participants);
+
+        Collections.shuffle(winners);
+
+        winners = winners.subList(0, Math.min(winnerAmount, winners.size()));
+
+        for(Integer winnerID : winners) {
+            String uniqueCode = UUID.randomUUID().toString();
+            winnersAndCodes.put(uniqueCode, winnerID);
+        }
+
+        //TODO: Notify winners with their unique codes
     }
 
     private void validateDate(LocalDateTime lotteryRegistrationDueDate) {
