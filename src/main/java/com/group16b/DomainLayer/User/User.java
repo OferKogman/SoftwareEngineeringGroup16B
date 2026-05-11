@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
@@ -83,14 +84,20 @@ public class User {
 
 	//*
 	// this method really needs a redesign or at least clarity notes
-	// like what if caller is founder, do we return null or this
-	// why do we return user instead of ID, since according to lecture 1, aggragate doesnt contains its own repo
-	// this may also lead to how we model the hierarchy, but ill whoever uses it to figure that out */
+	// if caller is founder return -1, if no role return null
+	// why do we return user instead of ID, since according to lecture 1, aggragate doesnt contains its own repo */
 	public Integer getParentIDForCompany(int companyID) {
 		Role role = roles.get(companyID);
 		if (role != null && role instanceof Manager) {
 			int parentID = ((Manager) role).getAssignerID();
 			return parentID;
+		}
+		if (role != null && role instanceof Owner) {
+			int parentID = ((Owner) role).getAssignerID();
+			return parentID;
+		}
+		if (role != null && role instanceof Founder) {
+			return -1;
 		}
 		return null; // No role for this company, hence no parent
 	}
