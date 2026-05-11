@@ -123,11 +123,11 @@ public class OrderService {
 		} catch (IllegalStateException e) { 
 			logger.error("UserService.CompleteActiveOrder: Failed to generate tickets for order {} for user {}: {}", orderID, userId, e.getMessage());
 			cancelPayment(paymentInfo); // @TODO: implement payment cancellation logic
-			cancelOrder(orderID); // @TODO: implement order cancellation logic
+			_cancelOrder(orderID); // @TODO: implement order cancellation logic
 			return Result.makeFail(e.getMessage());
 		}catch (Exception e) {
 			cancelPayment(paymentInfo); // @TODO: implement payment cancellation logic
-			cancelOrder(orderID); // @TODO: implement order cancellation logic
+			_cancelOrder(orderID); // @TODO: implement order cancellation logic
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 
@@ -135,32 +135,34 @@ public class OrderService {
     
 	private void cancelPayment(PaymentInfo paymentInfo) {} 
 
-	private void cancelOrder(String orderID) {
+	private void _cancelOrder(String orderID) {
 		Order order = orderRepo.getOrder(orderID);
-		if (order != null) {
-			orderRepo.cancelOrder(orderID);
+		if (order == null) {
+			logger.error("UserService._cancelOrder: Order {} not found while attempting to cancel order {}", orderID, orderID);
+			return;
 		}
+		orderRepo.cancelOrder(orderID);
 		Event event = eventRepo.getEventByID(order.getEventId());
 		if (event == null) {
-			logger.error("UserService.cancelOrder: Event {} not found while attempting to cancel order {}", order.getEventId(), orderID);
+			logger.error("UserService._cancelOrder: Event {} not found while attempting to cancel order {}", order.getEventId(), orderID);
 			return;
 		}
 
 		Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
 		if (venue == null) {
-			logger.error("UserService.cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
+			logger.error("UserService._cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
 			return;
 		}
 		Segment segment = venue.getSegmentByID(order.getSegmentId());
 		if (segment == null) {
-			logger.error("UserService.cancelOrder: Segment {} not found while attempting to cancel order {}", order.getSegmentId(), orderID);
+			logger.error("UserService._cancelOrder: Segment {} not found while attempting to cancel order {}", order.getSegmentId(), orderID);
 			return;
 		}
 
         switch (segment.getSegmentType()) {
             case "S" -> segment.cancelReservation(ReservationRequest.forSeats(order.getEventId(), order.getSeats(), order.getSegmentId()));
             case "F" -> segment.cancelReservation(ReservationRequest.forField(order.getEventId(), order.getNumOfTickets(), order.getSegmentId()));
-            default -> logger.error("UserService.cancelOrder: Unknown segment type {} for segment {} while attempting to cancel order {}", segment.getSegmentType(), segment.getSegmentID(), orderID);
+            default -> logger.error("UserService._cancelOrder: Unknown segment type {} for segment {} while attempting to cancel order {}", segment.getSegmentType(), segment.getSegmentID(), orderID);
         }
 
 	}
@@ -380,5 +382,28 @@ public class OrderService {
         List<String> result = new ArrayList<>(original);
         result.removeAll(toRemove);
         return result;
+    }
+
+	public Result<Boolean> cancelOrder(String orderId) { // to call when order is expired
+		try {
+			logger.info("Attempting to cancel order {}.", orderId);
+			Order order = orderRepo.getOrder(orderId);
+			if (order == null) {
+				logger.error("Order {} not found for cancellation.", orderId);
+				return Result.makeFail("Order not found");
+			}
+			if (!order.isActive()) {
+				logger.error("Order {} is not active for cancellation.", orderId);
+				return Result.makeFail("Order is not active");
+			}
+			_cancelOrder(orderId);
+        return Result.makeOk(true);
+		} catch (IllegalArgumentException e) {
+			logger.error("Failed to cancel order {}: " + e.getMessage(), orderId);
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("Unexpected error during cancelling order {}: " + e.getMessage(), orderId);
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
     }
 }
