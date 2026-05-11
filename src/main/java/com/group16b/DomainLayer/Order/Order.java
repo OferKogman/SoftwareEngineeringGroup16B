@@ -1,11 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.List;
-
-import com.group16b.ApplicationLayer.Records.PaymentInfo;
-
 
 public class Order {
 	private final String orderId;
@@ -102,6 +98,27 @@ public class Order {
 	public boolean isBelongsToUser(String sTocken) {
 		String encodedUserId = encodeStocken(String.valueOf(sTocken));
 		return this.incodedSTocken.equals(encodedUserId);
+	}
+
+
+	public void updateSeats(List<String> newSeatIds) {
+		if (orderType == OrderType.FIELD) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+		if (newSeatIds == null || newSeatIds.isEmpty()) {
+			throw new IllegalArgumentException("New seat IDs list cannot be null or empty");
+		}
+		this.seats = List.copyOf(newSeatIds);
+		this.numOfTickets = newSeatIds.size();
+	}
+	public void updateNumOfTickets(int newNumOfTickets) {
+		if (orderType == OrderType.SEAT) {
+			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
+		}
+		if (newNumOfTickets <= 0) {
+			throw new IllegalArgumentException("New number of tickets must be greater than zero");
+		}
+		this.numOfTickets = newNumOfTickets;
 	}
 
 	

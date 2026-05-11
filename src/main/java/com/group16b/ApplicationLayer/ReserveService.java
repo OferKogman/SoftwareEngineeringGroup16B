@@ -9,9 +9,10 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
@@ -19,7 +20,7 @@ import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImp;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
@@ -27,8 +28,8 @@ import io.jsonwebtoken.JwtException;
 public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
-    private final VenueRepositoryMapImp veuneRepo = VenueRepositoryMapImp.getInstance();
-    private final OrderRepositoryMapImpl orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final IVenueRepository veuneRepo = VenueRepositoryMapImpl.getInstance();
+    private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IVirtualQueueRepository queueImp = VirtualQueueRepositoryMapImpl.getInstance();
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
@@ -47,9 +48,13 @@ public class ReserveService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+            if (authenticationService.extractRoleFromToken(sessionToken).equals("Admin")){
+                return Result.makeFail("Admin can't reserve Seats");
+            }
+			String subjectId = authenticationService.extractSubjectFromToken(sessionToken);
+
 			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for user {}", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for user {}", subjectId);
             
             logger.info("Checking event is active");
             Event event = eventRepository.getEventByID(eventID);
@@ -68,19 +73,19 @@ public class ReserveService {
                 logger.error("User did not pass the queue");
                 return Result.makeFail("User did not pass the queue");
             }
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: User {} is passed the queue", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: User {} is passed the queue", subjectId);
             //2. System - validates the event does NOT have a lottery policy.
 
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for user {}", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for user {}", subjectId);
             if (eventRepository.getEventByID(eventID).getLotteryPolicy() != null) {
-                logger.error("ApplicationLayer.ReserveService.reserveSeats: User {} did not provide lottery keypass", user.getUserID());
+                logger.error("ApplicationLayer.ReserveService.reserveSeats: User {} did not provide lottery keypass", subjectId);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
             //3. System - validates selected seats exist.
             //4. System - validates selected seats are available.
             //5. System - removes selected seats from stock.
             veuneRepo.reserveTickets(venueId, segmentId, seatIds, eventID);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for user {}", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for user {}", subjectId);
 
             // 5.5 calculate price of the order
             Venue venue = veuneRepo.getVenueByID(venueId);
@@ -91,9 +96,9 @@ public class ReserveService {
             double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
 
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, seatIds, sessionToken, priceAfterPurchasePolicy, eventID, user.getUserID());
+            Order order = new Order(segmentId, seatIds, sessionToken, priceAfterPurchasePolicy, eventID, Integer.getInteger(subjectId));
             orderRepo.addOrder(order);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectId);
             return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (IllegalArgumentException e) {
@@ -113,15 +118,19 @@ public class ReserveService {
     public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId, String sessionToken) {
            // 0. log everything
 
-           try {
+        try {
             logger.info("Verifying session token for event creation.");
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+
+            if (authenticationService.extractRoleFromToken(sessionToken).equals("Admin")){
+                return Result.makeFail("Admin can't reserve Tickets");
+            }
+			String subjectId = authenticationService.extractSubjectFromToken(sessionToken);
 			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Attempting to reserve seats for user {}", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Attempting to reserve seats for user {}", subjectId);
             logger.info("Checking event is active");
             Event event = eventRepository.getEventByID(eventID);
             if (!event.getEventStatus()) {
@@ -140,12 +149,12 @@ public class ReserveService {
                 logger.error("User did not pass the queue");
                 return Result.makeFail("User did not pass the queue");
             }
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: User {} is passed the queue", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: User {} is passed the queue", subjectId);
 
             //2. System - validates the event does NOT have a lottery policy.
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for user {}", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for user {}", subjectId);
             if (eventRepository.getEventByID(eventID).getLotteryPolicy() != null) {
-                logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: User {} did not provide lottery keypass", user.getUserID());
+                logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: User {} did not provide lottery keypass", subjectId);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
 
@@ -153,7 +162,7 @@ public class ReserveService {
             //4. System - validates selected seats are available.
             //5. System - removes selected seats from stock.
             veuneRepo.reserveTickets(venueId, segmentId, amount, eventID);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for user {}", user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for user {}", subjectId);
 
             // 5.5 calculate price of the order
              // 5.5 calculate price of the order
@@ -165,9 +174,9 @@ public class ReserveService {
             double priceAfterPurchasePolicy = pricePerSeat; // @TODO: Implement purchase policy logic
 
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, amount, sessionToken, priceAfterPurchasePolicy, eventID, user.getUserID());
+            Order order = new Order(segmentId, amount, sessionToken, priceAfterPurchasePolicy, eventID, Integer.getInteger(subjectId));
             orderRepo.addOrder(order);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for user {}", order.getOrderId(), user.getUserID());
+            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for user {}", order.getOrderId(),subjectId);
             return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (IllegalArgumentException e) {
