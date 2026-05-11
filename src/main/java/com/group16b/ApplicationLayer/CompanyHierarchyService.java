@@ -32,7 +32,8 @@ public class CompanyHierarchyService {
 	}
 
     public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
-		try {
+		Object lock = getCompanyLock(companyID);
+        try {
 			//auth
 			logger.info("Verifying session token for Owner assignment of user {0} to company {1}.", targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
@@ -42,35 +43,44 @@ public class CompanyHierarchyService {
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
+            if(user==null)
+            {
+                logger.warn("User with id {0} was not found",userID);
+                return Result.makeFail("user not found");
+            }
 
-			//get perms
-			logger.info("Validating user permissions for owner assignment.");
-			user.validatePermissions(companyID, Owner.class);
-			logger.info("User permissions validated successfully.");
-
-			//get target user
+            //get target user
 			logger.info("retrieving target user for Owner assignment.");
 			User targetUser = userRepository.getUserByID(targetID);
 			if (targetUser==null) {
 				logger.warn("Target user with ID {0} not found for Owner assignment.", targetID);
 				return Result.makeFail("Target user not found.");
 			}
+            
+            synchronized(lock)
+            {
+                //get perms
+                logger.info("Validating user permissions for owner assignment.");
+                if(!user.isOwnerOfCompany(companyID))
+                {
+                    logger.warn("user {0} is not owner of company {1} and thus cant invite target {2} to be owner",userID,companyID,targetID);
+                    return Result.makeFail("User not owner");
+                }
+                logger.info("User permissions validated successfully.");
 
-			//ensure not owner already
-			logger.info("ensuring target isnt already an owner for company.");
-			targetUser.getUserInvitesLock().lock();
-			try {
-				//add invite to target user
-				logger.info("Adding owner assignment invite to target user.");
-				targetUser.addInvite(companyID, userID, new Owner(userID));
-			}
-			catch (IllegalArgumentException e) {
-				logger.error("Failed to add owner assignment invite: " + e.getMessage());
-				return Result.makeFail(e.getMessage());
-			}
-			finally {
-				targetUser.getUserInvitesLock().unlock();
-			}
+
+                //ensure not owner already
+                logger.info("ensuring target isnt already an owner for company.");
+                if(targetUser.isOwnerOfCompany(companyID))
+                {
+                    logger.warn("target {0} is already an owner of company {1} when trying to send invite by user {2}",targetID,companyID,userID);
+                    return Result.makeFail("Target already owner");
+                }
+
+                //add invite to target user
+                logger.info("Adding owner assignment invite to target user.");
+                targetUser.addInvite(companyID, userID, new Owner(userID));
+            }
 			logger.info("user {0} have been succesfully invited to be an owner in company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
 
@@ -91,7 +101,8 @@ public class CompanyHierarchyService {
 
 	
 	public Result<Boolean> assignManagerToCompany(int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
-		try {
+		Object lock = getCompanyLock(companyID);
+        try {
 			//auth
 			logger.info("Verifying session token for Manager assignment of user {0} to company {1}.", targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
@@ -101,34 +112,48 @@ public class CompanyHierarchyService {
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
-
-			//get perms
-			logger.info("Validating user permissions for manager assignment.");
-			user.validatePermissions(companyID, Owner.class);
-			logger.info("User permissions validated successfully.");
-
-			//get target user
-			logger.info("retrieving target user for Manager assignment.");
-			User targetUser = userRepository.getUserByID(targetID);
+            if(user==null)
+            {
+                logger.warn("user with ID {0} not found for Manager assignment.", userID);
+				return Result.makeFail("user not found.");
+            }
+            //get target user
+            logger.info("retrieving target user for Manager assignment.");
+            User targetUser = userRepository.getUserByID(targetID);
 			if (targetUser==null) {
 				logger.warn("Target user with ID {0} not found for Manager assignment.", targetID);
 				return Result.makeFail("Target user not found.");
 			}
 
-			//send invite
-			logger.info("ensuring target isnt already an owner for company.");
-			targetUser.getUserInvitesLock().lock();
-			try {
-				logger.info("Adding manager assignment invite to target user.");
-				targetUser.addInvite(companyID, userID, new Manager(userID, permissions));
-			}
-			catch (IllegalArgumentException e) {
-				logger.error("Failed to add manager assignment invite: " + e.getMessage());
-				return Result.makeFail(e.getMessage());
-			}
-			finally {
-				targetUser.getUserInvitesLock().unlock();
-			}
+            logger.info("ensuring permissions are valid for sending invite to target {0}");
+            if(permissions==null || permissions.isEmpty())
+            {
+                logger.warn("cant assing manager with empty or null set of permissions");
+                return Result.makeFail("Cant assign manager with empty permissions!");
+            }
+            synchronized(lock)
+            {
+                //get perms
+                logger.info("Validating user permissions for manager assignment.");
+                if(!user.isOwnerOfCompany(companyID))
+                {
+                    logger.warn("user {0} is not owner of company {1} and thus cant invite target {2} to be manager",userID,companyID,targetID);
+                    return Result.makeFail("User not owner");
+                }
+                logger.info("User permissions validated successfully.");
+
+                //send invite
+                logger.info("ensuring target isnt already a manager for company.");
+                if(targetUser.getRole(companyID)!=null)
+                {
+                    logger.warn("target {0} is already an manager of company {1} when trying to send invite by user {2}",targetID,companyID,userID);
+                    return Result.makeFail("Target already manager");
+                }
+
+                logger.info("Adding manager assignment invite to target user.");
+                targetUser.addInvite(companyID, userID, new Manager(userID, permissions));
+
+            }
 			logger.info("user {0} have been succesfully invited to be a manager in company {1} by user {2}",targetID,companyID,userID);
 			return Result.makeOk(true);
 
@@ -169,6 +194,7 @@ public class CompanyHierarchyService {
 				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
 				return Result.makeFail("Assigner user not found.");
 			}
+
 			synchronized(companyLock)
 			{
 				if(!assigner.isOwnerOfCompany(companyID))
@@ -179,20 +205,10 @@ public class CompanyHierarchyService {
 				
 				//check that invite exists and accept it
 				logger.info("accepting invite assignment invite for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-				user.getUserInvitesLock().lock();
-				try {
-					user.acceptInvite(companyID, assignerID);
-					assigner.addAssignee(companyID, (Manager) user.getRole(companyID));
-					logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-				} 
-				catch (IllegalArgumentException e) {
-					logger.error("Failed to accept invite: " + e.getMessage());
-					user.removeRole(companyID);//just in case
-					return Result.makeFail(e.getMessage());
-				}
-				finally {
-					user.getUserInvitesLock().unlock();
-				}
+                user.acceptInvite(companyID, assignerID);
+                assigner.addAssignee(companyID, (Manager) user.getRole(companyID));
+                logger.info("Invite assignment invite accepted successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+
 			}
 			logger.info("user {0} have succesfully accepted an invite to company {1} by user {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
@@ -211,7 +227,8 @@ public class CompanyHierarchyService {
 		}
 	}
 	public Result<Boolean> rejectInviteToCompany( int companyID, int assignerID, String sessionToken) {
-		try {
+		Object companyLock = getCompanyLock(companyID);
+        try {
 			//auth
 			logger.info("Verifying session token for rejecting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
 			if (!authenticationService.validateToken(sessionToken)) {
@@ -220,29 +237,23 @@ public class CompanyHierarchyService {
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
-			if(!userRepository.userExists(assignerID))
+            if(user==null)
 			{
-				logger.warn("Assigner user with ID {0} not found for rejecting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
-				return Result.makeFail("Assigner user not found.");
+				logger.warn("user {0} was not found, maybe deleted",userID);
+				return Result.makeFail("user not found");
 			}
+			logger.info("Session token verified successfully.");
+            synchronized(companyLock)
+            {
+                //check that invite exists and reject it
+                logger.info("rejecting invite assignment for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
+                user.rejectInvite(companyID, assignerID);
+                logger.info("invite rejected successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 
-			//check that invite exists and reject it
-			logger.info("rejecting invite assignment for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			user.getUserInvitesLock().lock();
-			try {
-				user.rejectInvite(companyID, assignerID);
-				logger.info("invite rejected successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-			} 
-			catch (IllegalArgumentException e) {
-				logger.error("Failed to reject invite: " + e.getMessage());
-				return Result.makeFail(e.getMessage());
-			}
-			finally {
-				user.getUserInvitesLock().unlock();
-			}
+            }
 			logger.info("user {0} have succesfully rejected an invite to company {1} by user {2}",userID,companyID,assignerID);
 			return Result.makeOk(true);
+            
 		} catch (IllegalArgumentException e) {
 			logger.error("Failed to reject invite: " + e.getMessage());
 			return Result.makeFail(e.getMessage());

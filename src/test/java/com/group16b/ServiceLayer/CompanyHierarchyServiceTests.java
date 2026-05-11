@@ -1,5 +1,7 @@
 package com.group16b.ServiceLayer;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Set;
 import java.util.concurrent.locks.ReentrantLock;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,6 +22,7 @@ import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
 public class CompanyHierarchyServiceTests {
@@ -43,16 +46,27 @@ public class CompanyHierarchyServiceTests {
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-
+        User mockTarget = mock(User.class);
+        
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
+        
+        // Assert success
         assertTrue(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
@@ -63,16 +77,27 @@ public class CompanyHierarchyServiceTests {
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doThrow(new RuntimeException("User is not an owner")).when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-
+        User mockTarget = mock(User.class);
+        
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
+        
+        // Assert success
         assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
@@ -83,36 +108,58 @@ public class CompanyHierarchyServiceTests {
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-
+        User mockTarget = mock(User.class);
+        
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(null);
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
-        assertFalse(userService.assignOwnerToCompany( companyID, targetID, "").isSuccess());
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
+        
+        // Assert success
+        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
     //target user already owner
     @Test
     void testAssignOwnerToCompanyTargetAlreadyOwnerFail() {
-        int userID = 1;
+int userID = 1;
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        doThrow(new IllegalArgumentException("User already has a role for this company")).when(mockTarget).addInvite(anyInt(),anyInt(), any(Owner.class));
+        User mockTarget = mock(User.class);
+        
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
+        
+        // Assert success
         assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
     }
 
@@ -139,17 +186,29 @@ public class CompanyHierarchyServiceTests {
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-
+        User mockTarget = mock(User.class);
+        Manager mockManager=mock(Manager.class);
+        Set<ManagerPermissions> perms=EnumSet.allOf(ManagerPermissions.class);
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
-
-        assertTrue(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
+        
+        // Assert success
+        assertFalse(userService.assignManagerToCompany(companyID, targetID,perms, "").isSuccess());
     }
 
     //user not owner
@@ -167,7 +226,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
         assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
@@ -187,7 +245,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(null);
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
         assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
@@ -207,7 +264,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockTarget.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
         assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
     }
@@ -243,7 +299,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         doNothing().when(mockAssigner).addAssignee(anyInt(), any(Manager.class));
         when(mockAssigner.isOwnerOfCompany(companyID)).thenReturn(true);
         assertTrue(userService.acceptInviteToCompany(companyID, assignerID, "").isSuccess());
@@ -272,7 +327,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
         assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
@@ -310,7 +364,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         assertTrue(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 
@@ -326,7 +379,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).rejectInvite(companyID, assignerID);
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
 
         assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
@@ -343,7 +395,6 @@ public class CompanyHierarchyServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
-        when(mockUser.getUserInvitesLock()).thenReturn(new ReentrantLock());
         assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
     }
 

@@ -1,8 +1,6 @@
 package com.group16b.DomainLayer.User;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -12,8 +10,6 @@ import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
-import com.group16b.InfrastructureLayer.AuthServices.AuthenticationServiceJWTImpl;
-import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 
 import java.security.MessageDigest;
@@ -26,14 +22,11 @@ public class User {
 	private HashMap<Integer, Role> roles; // Key: companyID, Value: Role
 	private final Map<CompanyAssigmentKey, Manager> userInvites; // Key: companyID, Value: List of Managers who invited the user
 
-	private final ReentrantLock userInvitesLock;
-
 	public User(String email, String password) {
 		this.email = email;
 		setPassword(password);
 		this.roles = new HashMap<>();
 		this.userInvites = new ConcurrentHashMap<>();
-		this.userInvitesLock = new ReentrantLock();
 	}
 
 	public String getEmail() {
@@ -223,8 +216,5 @@ public class User {
 	public boolean isOwnerOfCompany(int companyID) {
 		Role role = getRole(companyID);
 		return role != null && role instanceof Owner;
-	}
-	public ReentrantLock getUserInvitesLock() {
-		return userInvitesLock;
 	}
 }
