@@ -8,5 +8,6 @@ public interface IOrderRepository {
 	Order getOrder(String orderId);
 	boolean cancelOrder(String orderId);
 	List<Order> getOrdersBySubjectID(String subjectID);
+	List<Order> getAllCompletedOrders();
 
 }

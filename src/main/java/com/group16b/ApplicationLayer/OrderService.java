@@ -208,7 +208,7 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-
+	// TODO: change price of order
     public Result<List<String>> changeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
         
         try {
@@ -286,7 +286,7 @@ public class OrderService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
-
+	// TODO change price of order
     public Result<Integer> changeNumOfSeatsInFieldOrder(String orderId, String sTocken, int newSeatsNum){
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort

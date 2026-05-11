@@ -29,6 +29,14 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 		return true;
 	}
 
+	public List<Order> getAllCompletedOrders() {
+		return this.orders.values().stream()
+				.filter(order -> !order.isActive())
+				.toList();
+	}
+
+	
+
 	@Override
 	public boolean cancelOrder(String orderId) {
 		if (this.orders.containsKey(orderId)) {
