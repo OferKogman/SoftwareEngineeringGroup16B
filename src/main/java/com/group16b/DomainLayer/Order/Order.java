@@ -1,6 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 public class Order {
@@ -8,13 +9,12 @@ public class Order {
 	private OrderState state;
 	private final String segmentId;
 	private List<String> seats; // seat Ids
-	private double pricesPerSeat;
+	private final double pricesPerSeat;
 	private int numOfTickets;
 	private final OrderType orderType;
 	private static int idCounter = 0;
-	private  double totalOrderprice; // @TODO: calculate price based on the segment and number of tickets.
-	private List<String> tickets; // List of tickets associated with this order
-	private int eventId;
+	private  double totalOrderprice;
+	private final int eventId;
 	private final String subjectID;
 
 
@@ -128,8 +128,10 @@ public class Order {
 			messageDigest.update(sTocken.getBytes());
 			String stringHash = new String(messageDigest.digest());
 			return stringHash;
-		} catch (Exception e) {
+		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException("Error hashing password: " + e.getMessage());
+		}catch (Exception e) {
+			throw new RuntimeException("An unexpected error occurred while hashing password: " + e.getMessage());
 		}
 	}
 
