@@ -28,9 +28,9 @@ public class UserTests {
         User user = new User( "testuser", "hashedpassword");
         assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
         assertNull(user.getRole(0));
-        user.addInvite(0, 0, new Owner(0));
-        user.addInvite(0, 1, new Owner(1));
-        user.addInvite(1, 1, new Owner(1));
+        user.addInvite(0, 0, new Owner(0, 0));
+        user.addInvite(0, 1, new Owner(0, 1));
+        user.addInvite(1, 1, new Owner(0, 1));
         assertNull(user.getRole(0));
         assertDoesNotThrow(() -> user.acceptInvite(0, 0));
         assertEquals(Owner.class, user.getRole(0).getClass());
@@ -43,10 +43,10 @@ public class UserTests {
         User user = new User( "testuser", "hashedpassword");
         assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
         assertNull(user.getRole(0));
-        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
-        user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
-        user.addInvite(0, 2, new Owner(0));
-        user.addInvite(0, 3, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 0, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 1, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 2, new Owner(0, 0));
+        user.addInvite(0, 3, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
         assertDoesNotThrow(() -> user.acceptInvite(0, 0));
         assertEquals(Manager.class, user.getRole(0).getClass());
         assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
@@ -61,13 +61,13 @@ public class UserTests {
         User user = new User( "testuser", "hashedpassword");
         assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
         assertNull(user.getRole(0));
-        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 0, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
         assertDoesNotThrow(() -> user.acceptInvite(0, 0));
-        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class))));
-        assertDoesNotThrow( () -> user.addInvite(0, 1, new Owner(0)));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class))));
+        assertDoesNotThrow( () -> user.addInvite(0, 1, new Owner(0, 0)));
         assertDoesNotThrow(()->user.acceptInvite(0, 1));
-        assertThrows(RuntimeException.class, () -> user.addInvite(0, 0, new Owner(0)));
-        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, EnumSet.allOf(ManagerPermissions.class))));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 0, new Owner(0, 0)));
+        assertThrows(RuntimeException.class, () -> user.addInvite(0, 1, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class))));
     }
 
     @Test
@@ -76,8 +76,8 @@ public class UserTests {
         User user = new User( "testuser", "hashedpassword");
         assertThrows(RuntimeException.class, () -> user.acceptInvite(0, 0));
         assertNull(user.getRole(0));
-        user.addInvite(0, 0, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
-        user.addInvite(0, 1, new Owner(0));
+        user.addInvite(0, 0, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
+        user.addInvite(0, 1, new Owner(0, 0));
         assertDoesNotThrow(() -> user.rejectInvite(0, 0));
         assertNull(user.getRole(0));
         assertDoesNotThrow(() -> user.rejectInvite(0, 1));
@@ -89,7 +89,7 @@ public class UserTests {
     void testCheckingForUserRolePermissionsOwnerSuccess()
     {
         User user1 = new User( "testuser", "hashedpassword");
-        user1.addRole(1, new Owner(0));
+        user1.addRole(1, new Owner(0, 0));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Owner.class));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Manager.class));
         assertThrows(IllegalArgumentException.class, () -> user1.validatePermissions(1, Founder.class));
@@ -98,7 +98,7 @@ public class UserTests {
     void testCheckingForUserRolePermissionsFounderSuccess()
     {
         User user1 = new User( "testuser", "hashedpassword");
-        user1.addRole(1, new Founder());
+        user1.addRole(1, new Founder(0));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Founder.class));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Owner.class));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Manager.class));
@@ -107,7 +107,7 @@ public class UserTests {
     void testCheckingForUserRolePermissionsManagerSuccess()
     {
         User user1 = new User( "testuser", "hashedpassword");
-        user1.addRole(1, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        user1.addRole(1, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
         assertDoesNotThrow(() -> user1.validatePermissions(1, Manager.class));
         assertThrows(IllegalArgumentException.class, () -> user1.validatePermissions(1, Owner.class));
         assertThrows(IllegalArgumentException.class, () -> user1.validatePermissions(1, Founder.class));
@@ -126,7 +126,7 @@ public class UserTests {
     void testForSinglePermissionManager()
     {
         User user1 = new User( "testuser", "hashedpassword");
-        user1.addRole(1, new Manager(0, EnumSet.of(ManagerPermissions.EVENT_INVENTORY)));
+        user1.addRole(1, new Manager(0, 0, EnumSet.of(ManagerPermissions.EVENT_INVENTORY)));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.EVENT_INVENTORY));
         assertThrows(IllegalArgumentException.class, () -> user1.validatePermissions(1, ManagerPermissions.PURCHASE_POLICY));
     }
@@ -134,7 +134,7 @@ public class UserTests {
     void testForSinglePermissionOwnerSuccessForAll()
     {
         User user1 = new User( "testuser", "hashedpassword");
-        user1.addRole(1, new Owner(0));
+        user1.addRole(1, new Owner(0, 0));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.EVENT_INVENTORY));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.PURCHASE_POLICY));
         assertDoesNotThrow(() -> user1.validatePermissions(1, ManagerPermissions.VENUE_CONFIGURATION));
@@ -148,8 +148,8 @@ public class UserTests {
     {
         User ownerUser = new User( "owneruser", "hashedpassword");
         User managerUser = new User( "manageruser", "hashedpassword");
-        ownerUser.addRole(1, new Owner(0));
-        managerUser.addRole(1, new Manager(0, EnumSet.allOf(ManagerPermissions.class)));
+        ownerUser.addRole(1, new Owner(0, 0));
+        managerUser.addRole(1, new Manager(0, 0, EnumSet.allOf(ManagerPermissions.class)));
         assertEquals(0, ((Owner) ownerUser.getRole(1)).getAssignedManagers().size());
         assertDoesNotThrow(() -> ownerUser.addAssignee(1, (Manager) managerUser.getRole(1)));
         assertEquals(1, ((Owner) ownerUser.getRole(1)).getAssignedManagers().size());
