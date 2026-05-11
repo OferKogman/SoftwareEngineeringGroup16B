@@ -34,13 +34,13 @@ class OrderRepositoryMapImplTests {
 
         user2Order = mock(Order.class);
 
-        when(user1OrderA.getUserId()).thenReturn(1);
+        when(user1OrderA.getSubjectId()).thenReturn("1");
         when(user1OrderA.getOrderId()).thenReturn("order_1");
 
-        when(user1OrderB.getUserId()).thenReturn(1);
+        when(user1OrderB.getSubjectId()).thenReturn("1");
         when(user1OrderB.getOrderId()).thenReturn("order_2");
         
-        when(user2Order.getUserId()).thenReturn(2);
+        when(user2Order.getSubjectId()).thenReturn("2");
         when(user2Order.getOrderId()).thenReturn("order_3");
 
         // Use your real repository add/save/create method here.
@@ -56,7 +56,7 @@ class OrderRepositoryMapImplTests {
     @Test
     void addOrder_shouldReturnTrueAndStoreOrder() {
         OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
-        Order order = new Order("segment1", List.of("A-1"), "token123", 50.0, 7, 10);
+        Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
 
         assertTrue(repository.addOrder(order));
         assertSame(order, repository.getOrder(order.getOrderId()));
@@ -65,7 +65,7 @@ class OrderRepositoryMapImplTests {
     @Test
     void addOrder_sameOrderTwice_shouldReturnFalseSecondTime() {
         OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
-        Order order = new Order("segment1", List.of("A-1"), "token123", 50.0, 7, 10);
+        Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
 
         assertTrue(repository.addOrder(order));
         assertFalse(repository.addOrder(order));
@@ -74,7 +74,7 @@ class OrderRepositoryMapImplTests {
     @Test
     void cancelOrder_existingOrder_shouldRemoveAndReturnTrue() {
         OrderRepositoryMapImpl repository = new OrderRepositoryMapImpl();
-        Order order = new Order("segment1", List.of("A-1"), "token123", 50.0, 7, 10);
+        Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
         repository.addOrder(order);
 
         assertTrue(repository.cancelOrder(order.getOrderId()));
@@ -99,7 +99,7 @@ class OrderRepositoryMapImplTests {
 
     void getOrdersByUserID_existingUserWithOrders_returnsOnlyThatUsersOrders() {
 
-        List<Order> result = orderRepository.getOrdersByUserID(1);
+        List<Order> result = orderRepository.getOrdersBySubjectID("1");
 
         assertEquals(2, result.size());
         assertTrue(result.contains(user1OrderA));
@@ -112,7 +112,7 @@ class OrderRepositoryMapImplTests {
 
     void getOrdersByUserID_userWithNoOrders_returnsEmptyList() {
 
-        List<Order> result = orderRepository.getOrdersByUserID(999);
+        List<Order> result = orderRepository.getOrdersBySubjectID("999");
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
@@ -123,7 +123,7 @@ class OrderRepositoryMapImplTests {
 
     void getOrdersByUserID_doesNotReturnOrdersOfOtherUsers() {
 
-        List<Order> result = orderRepository.getOrdersByUserID(2);
+        List<Order> result = orderRepository.getOrdersBySubjectID("2");
 
         assertEquals(1, result.size());
         assertTrue(result.contains(user2Order));

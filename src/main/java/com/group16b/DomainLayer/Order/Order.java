@@ -1,11 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
 import java.security.MessageDigest;
-import java.util.ArrayList;
 import java.util.List;
-
-import com.group16b.ApplicationLayer.Records.PaymentInfo;
-
 
 public class Order {
 	private final String orderId;
@@ -16,37 +12,34 @@ public class Order {
 	private int numOfTickets;
 	private final OrderType orderType;
 	private static int idCounter = 0;
-	private final String incodedSTocken;
 	private  double sumOrderprice; // @TODO: calculate price based on the segment and number of tickets.
 	private List<String> tickets; // List of tickets associated with this order
 	private int eventId;
-	private final int userId;
+	private final String subjectID;
 
 
-	public Order(String segmentId, List<String> seats, String STocken, double pricesPerSeat, int eventId, int userId) {
+	public Order(String segmentId, List<String> seats, double pricesPerSeat, int eventId, String subjectID) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.seats = List.copyOf(seats);
 		this.numOfTickets = seats.size();
 		this.segmentId = segmentId;
-		this.incodedSTocken = encodeStocken(STocken);
 		this.orderType = OrderType.SEAT;
 		this.sumOrderprice = pricesPerSeat * seats.size();
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
-		this.userId = userId;
+		this.subjectID = subjectID;
 	}
-	public Order(String segmentId, int amount, String STocken, double pricesPerSeat, int eventId, int userId) {
+	public Order(String segmentId, int amount, double pricesPerSeat, int eventId, String subjectID) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
-		this.incodedSTocken = encodeStocken(STocken);
 		this.orderType = OrderType.FIELD;
 		this.sumOrderprice = pricesPerSeat * amount;
 		this.pricesPerSeat = pricesPerSeat;
 		this.eventId = eventId;
-		this.userId = userId;
+		this.subjectID = subjectID;
 		}
 
 	public String getOrderId() {
@@ -55,8 +48,8 @@ public class Order {
 	public int getEventId() {
 		return eventId;
 	}
-	public int getUserId() {
-		return userId;
+	public String getSubjectId() {
+		return this.subjectID;
 	}
 
 	public OrderState getState() {
@@ -99,9 +92,29 @@ public class Order {
 	public boolean isActive() {
 		return state.isActive();
 	}
-	public boolean isBelongsToUser(String sTocken) {
-		String encodedUserId = encodeStocken(String.valueOf(sTocken));
-		return this.incodedSTocken.equals(encodedUserId);
+	public boolean isBelongsToSubject(String subjectID) {
+		return this.subjectID.equals(subjectID);
+	}	
+
+
+	public void updateSeats(List<String> newSeatIds) {
+		if (orderType == OrderType.FIELD) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+		if (newSeatIds == null || newSeatIds.isEmpty()) {
+			throw new IllegalArgumentException("New seat IDs list cannot be null or empty");
+		}
+		this.seats = List.copyOf(newSeatIds);
+		this.numOfTickets = newSeatIds.size();
+	}
+	public void updateNumOfTickets(int newNumOfTickets) {
+		if (orderType == OrderType.SEAT) {
+			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
+		}
+		if (newNumOfTickets <= 0) {
+			throw new IllegalArgumentException("New number of tickets must be greater than zero");
+		}
+		this.numOfTickets = newNumOfTickets;
 	}
 
 	

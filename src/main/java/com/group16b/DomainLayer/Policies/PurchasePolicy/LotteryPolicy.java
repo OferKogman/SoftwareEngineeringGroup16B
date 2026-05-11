@@ -17,6 +17,7 @@ public class LotteryPolicy implements PurchasePolicy {
     private LocalDateTime lotteryRegistrationDueDate;
     private Set<Integer> participants;
     private Map<String, Integer> winnersAndCodes;
+    private Map<String, Integer> usedCodes;
 
     public LotteryPolicy(int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
         this.lotteryID = lotteryID;
@@ -26,6 +27,7 @@ public class LotteryPolicy implements PurchasePolicy {
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
         this.participants = ConcurrentHashMap.newKeySet();
         this.winnersAndCodes = new ConcurrentHashMap<>();
+        this.usedCodes = new ConcurrentHashMap<>();
     }
 
     public int getLotteryID() {
@@ -84,6 +86,30 @@ public class LotteryPolicy implements PurchasePolicy {
         }
 
         //TODO: Notify winners with their unique codes
+    }
+
+    public synchronized void validateLotteryCode(String code) {
+        if(usedCodes.containsKey(code)) {
+            throw new IllegalArgumentException("Lottery code has already been used.");
+        }
+        if(!winnersAndCodes.containsKey(code)) {
+            throw new IllegalArgumentException("Invalid lottery code.");
+        }
+        Integer winnerID = winnersAndCodes.get(code);
+        usedCodes.put(code, winnerID);
+    }
+
+    public synchronized void useCode(String code) {
+        winnersAndCodes.remove(code);
+    }
+
+    public synchronized void renewLotteryCode(String code) {
+        if(winnersAndCodes.containsKey(code) && usedCodes.containsKey(code)) {
+            Integer userID = winnersAndCodes.get(code);
+            winnersAndCodes.remove(code);
+            winnersAndCodes.put(code, userID);
+            usedCodes.remove(code);
+        }
     }
 
     private void validateDate(LocalDateTime lotteryRegistrationDueDate) {

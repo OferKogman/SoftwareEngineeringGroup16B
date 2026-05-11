@@ -8,5 +8,6 @@ public interface IVenueRepository {
 
 	void reserveTickets(String venueId, String segmentId, List<String> seatIds, int eventID);
 	void reserveTickets(String venueId, String segmentId, int quantity, int eventID);
-
+	void freeTickets(String venueId, String segmentId, List<String> seatIds, int eventID);
+	void freeTickets(String venueId, String segmentId, int quantity, int eventID);
 }
