@@ -22,4 +22,9 @@ public class ProductionCompanyPolicyRepositoryMapImpl implements IProductionComp
         // Implementation for retrieving production company by ID
         return null;
     }
+
+    public void removeProductionCompany(int productionCompanyId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'removeProductionCompany'");
+    }
 }

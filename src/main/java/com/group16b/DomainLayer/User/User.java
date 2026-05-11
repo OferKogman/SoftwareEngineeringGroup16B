@@ -224,4 +224,5 @@ public class User {
 		Role role = getRole(companyID);
 		return role != null && role instanceof Owner;
 	}
+
 }
