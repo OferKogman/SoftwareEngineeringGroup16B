@@ -13,7 +13,8 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
-
+import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.ApplicationLayer.Objects.Result;
 import io.jsonwebtoken.JwtException;
 
 public class CompanyHierarchyService {
@@ -391,6 +392,11 @@ public class CompanyHierarchyService {
 				Result<Boolean> canManage=canManage(user, target, companyID);
                 if(!canManage.isSuccess())
                     return canManage;
+                if(((Manager)target.getRole(companyID)).getRoleType()!=RoleType.MANAGER)
+                {
+                    logger.warn("user {0} tried to update the permissions of target {1} in company {2}, but target is owner",userID,targetID,companyID);
+                    return Result.makeFail("Cannot change permissions of an owner");
+                }
 				companyHierarchyDomainService.updateManagerPermissionsForCompny(target, companyID, newPermissions);
 			}
 			logger.info("target {0} have had their manager permissions updated in company {1} by user {2}",targetID,companyID,userID);
