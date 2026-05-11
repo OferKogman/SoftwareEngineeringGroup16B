@@ -202,13 +202,14 @@ int userID = 1;
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         
         // Mock target user: Ensure the target is NOT already an owner
-        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
+        when(mockTarget.getRole(companyID)).thenReturn(null);
+
         
         // Mock addInvite to do nothing (success case)
-        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Manager.class));
         
         // Assert success
-        assertFalse(userService.assignManagerToCompany(companyID, targetID,perms, "").isSuccess());
+        assertTrue(userService.assignManagerToCompany(companyID, targetID,perms, "").isSuccess());
     }
 
     //user not owner
@@ -218,16 +219,30 @@ int userID = 1;
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doThrow(new RuntimeException("User is not an owner")).when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-
+        User mockTarget = mock(User.class);
+        Manager mockManager=mock(Manager.class);
+        Set<ManagerPermissions> perms=EnumSet.allOf(ManagerPermissions.class);
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.getRole(companyID)).thenReturn(null);
 
-        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Manager.class));
+        
+        // Assert success
+        assertFalse(userService.assignManagerToCompany(companyID, targetID,perms, "").isSuccess());
     }
 
     //target user not found
@@ -237,16 +252,30 @@ int userID = 1;
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-
+        User mockTarget = mock(User.class);
+        Manager mockManager=mock(Manager.class);
+        Set<ManagerPermissions> perms=EnumSet.allOf(ManagerPermissions.class);
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(null);
-        when(mockUserRepository.userExists(targetID)).thenReturn(false);
+        when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.getRole(companyID)).thenReturn(null);
 
-        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Manager.class));
+        
+        // Assert success
+        assertFalse(userService.assignManagerToCompany(companyID, targetID,perms, "").isSuccess());
     }
 
     //target user already owner
@@ -256,16 +285,30 @@ int userID = 1;
         int companyID = 1;
         int targetID = 2;
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        doThrow(new IllegalArgumentException("User already has a role for this company")).when(mockTarget).addInvite(anyInt(),anyInt(), any(Manager.class));
+        User mockTarget = mock(User.class);
+        Manager mockManager=mock(Manager.class);
+        Set<ManagerPermissions> perms=EnumSet.allOf(ManagerPermissions.class);
+        // Mock authentication
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+        
+        // Mock user repository
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
+        
+        // Mock user permissions: Ensure the assigning user is an owner
+        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
+        
+        // Mock target user: Ensure the target is NOT already an owner
+        when(mockTarget.getRole(companyID)).thenReturn(mockManager);
 
-        assertFalse(userService.assignManagerToCompany(companyID, targetID, Collections.emptySet(), "").isSuccess());
+        
+        // Mock addInvite to do nothing (success case)
+        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Manager.class));
+        
+        // Assert success
+        assertFalse(userService.assignManagerToCompany(companyID, targetID,perms, "").isSuccess());
     }
 
 
