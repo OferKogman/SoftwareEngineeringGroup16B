@@ -16,14 +16,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.UserService;
+import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
-public class UserServiceTests {
-    UserService userService;
+public class CompanyHierarchyServiceTests {
+    CompanyHierarchyService userService;
     IAuthenticationService mockAuthService;
     IUserRepository mockUserRepository;
     CompanyHierarchyDomainService mockCompanyHierarchyDomainService;
@@ -33,7 +33,7 @@ public class UserServiceTests {
         mockAuthService = mock(IAuthenticationService.class);
         mockUserRepository = mock(IUserRepository.class);
         mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
-        userService = new UserService(mockAuthService, mockUserRepository,mockCompanyHierarchyDomainService);
+        userService = new CompanyHierarchyService(mockAuthService, mockUserRepository,mockCompanyHierarchyDomainService);
     }
 
     //good
