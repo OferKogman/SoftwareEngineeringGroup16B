@@ -1,9 +1,11 @@
 package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -71,6 +73,6 @@ public class EventRepositoryMapImpl implements IEventRepository {
 				(endTime == null || endTime.isEmpty() || !event.getEventStartTime().isAfter(endTime.get(0))) &&
 				(eventRating == null || eventRating.isEmpty() || event.getEventRating() >= eventRating.get(0)) &&
 				(productionCompanyID == null || productionCompanyID.isEmpty() || productionCompanyID.contains(event.getEventProductionCompanyID()))
-		).toList();
+		).collect(Collectors.toCollection(ArrayList::new));
     }
 }

@@ -31,6 +31,7 @@ public class CompanyHierarchyServiceTests {
 
     @BeforeEach
     void setUp() {
+        mockUserRepository = mock(IUserRepository.class);
         mockAuthService = mock(IAuthenticationService.class);
         mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
         userService = new CompanyHierarchyService(mockAuthService, mockCompanyHierarchyDomainService);
