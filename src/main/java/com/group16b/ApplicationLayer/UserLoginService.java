@@ -45,15 +45,20 @@ public class UserLoginService {
         }
 
         User member = userRepository.getUserByID(userID);
+        try{
+            if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
+                logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);
+                return Result.makeFail("Invalid user ID or password + email");
+            }
 
-        if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
-            logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);
-            return Result.makeFail("Invalid user ID or password + email");
+            String token = tokenService.generateVisitor_SignedToken(userID);
+            logger.info("user ID {} successfully logged in", userID);
+            
+            return Result.makeOk(token);
         }
-
-        String token = tokenService.generateVisitor_SignedToken(userID);
-        logger.info("user ID {} successfully logged in", userID);
-        
-        return Result.makeOk(token);
+        catch (Exception e) {
+            logger.error("Login failed for user ID {}. Error: ", userID, e.getMessage(), e);
+            return Result.makeFail("Failed to login: " + e.getMessage());
+        }
     }
 }
