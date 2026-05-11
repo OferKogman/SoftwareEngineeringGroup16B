@@ -149,7 +149,7 @@ public class ProductionCompanyService {
                 return totalRevenue;
             }
             for (Manager manager : managers) {
-                totalRevenue = getAllrevinue(manager.getUserId(), productionCompanyID, totalRevenue);
+                totalRevenue = getAllrevinue(manager.getUserID(), productionCompanyID, totalRevenue);
             }
         }
 

@@ -15,7 +15,7 @@ class SystemAdminTests {
 
 	@BeforeEach
 	void setUp() {
-		admin = new SystemAdmin(1, "admin", "hashedpassword");
+		admin = new SystemAdmin(1, "admin", "password", "email");
 	}
 
 	@Test
