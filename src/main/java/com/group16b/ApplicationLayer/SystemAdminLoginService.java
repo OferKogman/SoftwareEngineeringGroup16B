@@ -30,16 +30,21 @@ public class SystemAdminLoginService {
             return Result.makeFail("Invalid admin ID");
         }
 
+        try{
+            if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
+                logger.warn("Login failed: invalid password and email attempt for user ID {}", adminID);
+                return Result.makeFail("Invalid user ID or password + email");
+            }
 
-        if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
-            logger.warn("Login failed: invalid password and email attempt for user ID {}", adminID);
-            return Result.makeFail("Invalid user ID or password + email");
+            String token = tokenService.generateVisitor_SignedToken(adminID);
+            logger.info("admin ID {} successfully logged in", adminID);
+            
+            return Result.makeOk(token);
         }
-
-        String token = tokenService.generateVisitor_SignedToken(adminID);
-        logger.info("admin ID {} successfully logged in", adminID);
-        
-        return Result.makeOk(token);
+        catch (Exception e) {
+            logger.error("Login failed for admin ID {}. Error: ", adminID, e.getMessage(), e);
+            return Result.makeFail("Failed to login: " + e.getMessage());
+        }
     }
 
 }
