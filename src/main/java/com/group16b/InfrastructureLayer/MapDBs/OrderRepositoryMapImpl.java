@@ -1,17 +1,17 @@
 package com.group16b.InfrastructureLayer.MapDBs;
 
-import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 
 public class OrderRepositoryMapImpl implements IOrderRepository {
-	private final HashMap<String, Order> orders;
+	private final ConcurrentHashMap<String, Order> orders;
 	private final static OrderRepositoryMapImpl instance = new OrderRepositoryMapImpl();
 
 	public OrderRepositoryMapImpl() {
-		this.orders = new HashMap<>();
+		this.orders = new ConcurrentHashMap<>();
 	}
 
 	public static OrderRepositoryMapImpl getInstance() {
@@ -29,6 +29,7 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 		return true;
 	}
 
+    @Override
 	public List<Order> getAllCompletedOrders() {
 		return this.orders.values().stream()
 				.filter(order -> !order.isActive())
@@ -40,7 +41,6 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 	@Override
 	public boolean cancelOrder(String orderId) {
 		if (this.orders.containsKey(orderId)) {
-			Order order = this.orders.get(orderId);
 			this.orders.remove(orderId);
 			return true;
 		}
@@ -55,7 +55,7 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 	@Override
 	public List<Order> getOrdersBySubjectID(String subjectID) {
 		return this.orders.values().stream()
-				.filter(order -> order.getSubjectId() == subjectID)
+				.filter(order -> order.getSubjectId().equals(subjectID))
 				.toList();
 	}
 

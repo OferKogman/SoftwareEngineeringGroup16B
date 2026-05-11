@@ -60,7 +60,7 @@ public class PurchasePolicyService {
             User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 
             logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
-            //@TODO: implement purchase policy checks for lottery enrollment
+            //TODO: implement purchase policy checks for lottery enrollment
             logger.info("User passed purchase policy checks for lottery enrollment");
 
             //check event is active

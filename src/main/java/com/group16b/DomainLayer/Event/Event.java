@@ -28,6 +28,7 @@ public class Event {
 	private double price;
 	private double rating;
 	private final int ownerId;
+	private final DiscountPolicy discountPolicyLock = null; // TODO: accualy immplement the discount policy!
 
 	public Event(EventRecord eventRecord, int ownerId) {
 		this.eventID = IDCounter++;
@@ -204,6 +205,9 @@ public class Event {
 		if (rating < 0 || rating > 5) {
 			throw new IllegalArgumentException("Event rating must be between 0 and 5.");
 		}
+	}
+	public DiscountPolicy getDiscountPolicyLock() {
+		return discountPolicyLock;
 	}
 
 	@Override

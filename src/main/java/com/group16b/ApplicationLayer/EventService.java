@@ -59,7 +59,7 @@ public class EventService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			logger.info("Validating user permissions for event creation.");
@@ -84,7 +84,7 @@ public class EventService {
 		} catch (JwtException e) {
 			logger.error("JWT authentication error during event creation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
+		}catch (Exception e) {
 			logger.error("Unexpected error during event creation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
