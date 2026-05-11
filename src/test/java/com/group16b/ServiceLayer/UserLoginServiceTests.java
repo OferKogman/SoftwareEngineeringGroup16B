@@ -62,15 +62,17 @@ public class UserLoginServiceTests {
     void loginMember_ValidCredentials_ReturnsOkResult() {
         int userID = 1;
         String correctPassword = "myPassword";
+        String correctMail = "myEmail";
         
         User mockUser = mock(User.class);
         when(mockUser.confirmPassword(correctPassword)).thenReturn(true); 
+        when(mockUser.getEmail()).thenReturn(correctMail);
 
         when(mockUserRepository.userExists(userID)).thenReturn(true);
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
 
-        Result<String> result = userLoginService.loginMember(userID, correctPassword);
+        Result<String> result = userLoginService.loginMember(userID, correctPassword, correctMail);
 
         assertTrue(result.isSuccess());
         assertEquals("mock.member.token", result.getValue());
@@ -80,17 +82,41 @@ public class UserLoginServiceTests {
     void loginMember_WrongPassword_ReturnsFailResult() {
         int userID = 1;
         String wrongPassword = "wrongPassword";
+        String mail = "someEmail";
         
         User mockUser = mock(User.class);
         when(mockUser.confirmPassword(wrongPassword)).thenReturn(false); 
+        when(mockUser.getEmail()).thenReturn(mail);
 
         when(mockUserRepository.userExists(userID)).thenReturn(true);
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
 
-        Result<String> result = userLoginService.loginMember(userID, wrongPassword);
+        Result<String> result = userLoginService.loginMember(userID, wrongPassword, mail);
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid user ID or password", result.getError());
+        assertEquals("Invalid user ID or password + email", result.getError());
+    }
+
+    
+    @Test
+    void loginMember_WrongEmail_ReturnsFailResult() {
+        int userID = 1;
+        String correctPassword = "myPassword";
+        String correctMail = "myEmail";
+        String wrongMail = "my$Email";
+        
+        User mockUser = mock(User.class);
+        when(mockUser.confirmPassword(correctPassword)).thenReturn(true); 
+        when(mockUser.getEmail()).thenReturn(correctMail);
+
+        when(mockUserRepository.userExists(userID)).thenReturn(true);
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
+
+        Result<String> result = userLoginService.loginMember(userID, correctPassword, wrongMail);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid user ID or password + email", result.getError());
     }
 
     @Test
@@ -98,10 +124,10 @@ public class UserLoginServiceTests {
         int nonExistentUserID = 999;
         when(mockUserRepository.userExists(nonExistentUserID)).thenReturn(false);
 
-        Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword");
+        Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword", "someMail");
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid user ID or password", result.getError());
+        assertEquals("Invalid user ID", result.getError());
         
         verify(mockUserRepository, never()).getUserByID(anyInt());
         verify(mockTokenService, never()).generateVisitor_SignedToken(anyInt());

@@ -35,19 +35,19 @@ public class UserLoginService {
         }
     }
 
-    public Result<String> loginMember(int userID, String password) {
+    public Result<String> loginMember(int userID, String password, String email) {
         logger.info("Attempting login for user ID: ...", userID);
         
         if (!userRepository.userExists(userID)) {
             logger.warn("Login failed: user ID {} does not exist!", userID);
-            return Result.makeFail("Invalid user ID or password");
+            return Result.makeFail("Invalid user ID");
         }
 
         User member = userRepository.getUserByID(userID);
 
-        if (!member.confirmPassword(password)) {
-            logger.warn("Login failed: invalid password attempt for user ID {}", userID);
-            return Result.makeFail("Invalid user ID or password");
+        if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
+            logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);
+            return Result.makeFail("Invalid user ID or password + email");
         }
 
         String token = tokenService.generateVisitor_SignedToken(userID);
