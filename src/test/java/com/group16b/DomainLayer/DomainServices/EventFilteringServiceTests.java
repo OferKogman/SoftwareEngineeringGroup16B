@@ -129,7 +129,7 @@ public class EventFilteringServiceTests {
         when(pcp2.getRating()).thenReturn(5.0);
         when(productionCompanyPolicyRepository.getProductionCompanyByID(1)).thenReturn(pcp1);
         when(productionCompanyPolicyRepository.getProductionCompanyByID(2)).thenReturn(pcp2);
-        eventFilteringService = new EventFilteringService(eventRepository, venueRepository, productionCompanyPolicyRepository);
+        eventFilteringService = new EventFilteringService();
     }
 
     @Test
