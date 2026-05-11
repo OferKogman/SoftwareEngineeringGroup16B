@@ -1,8 +1,11 @@
 package com.group16b.DomainLayer.DomainServices;
 
+import java.util.Set;
+
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
 
@@ -53,6 +56,16 @@ public class CompanyHierarchyDomainService {
         Owner parentRole=(Owner)parent.getRole(companyID);
         parentRole.removeManager(userRole);
         user.removeRole(companyID);
+    }
+
+    /*
+    updates manager prems for a company
+    preconditons: User have a role is a manager in the company, perms are not empty, perms is not null
+    */
+    public void updateManagerPermissionsForCompny(User user, int companyID, Set<ManagerPermissions> newPerms)
+    {
+            Manager manager=(Manager)user.getRole(companyID);
+            manager.updatePermissions(newPerms);
     }
 
 }

@@ -7,8 +7,6 @@ public class Manager extends Member {
 	private Set<ManagerPermissions> permissions;
 	private final RoleType roleType;
 
-	protected final Object lock=new Object();
-
 	protected Manager(Integer assignerID, Set<ManagerPermissions> permissions, RoleType role) {
 		this.assignerID = assignerID;
 		this.permissions = Set.copyOf(permissions);
@@ -20,9 +18,7 @@ public class Manager extends Member {
 	}
 
 	public Integer getAssignerID() {
-		synchronized(lock){
 			return assignerID;
-		}
 	}
 
 	public RoleType getRoleType() {
@@ -30,15 +26,20 @@ public class Manager extends Member {
 	}
 
 	public Set<ManagerPermissions> getPermissions() {
-		return permissions;
+		return Set.copyOf(permissions);
 	}
 	
+	//self exlanatory
+	public void updatePermissions(Set<ManagerPermissions> perms)
+	{
+		if(perms==null || perms.isEmpty())
+			throw new IllegalArgumentException("new permissions cannot be empty!");
+		this.permissions=Set.copyOf(perms);
+	}
+
 	protected void setParent(Integer newID)
 	{
-		synchronized(lock)
-		{
 			assignerID=newID;
-		}
 	}
 
 
