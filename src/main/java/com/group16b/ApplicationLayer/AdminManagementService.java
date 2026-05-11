@@ -16,12 +16,11 @@ import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 
 public class AdminManagementService {
-        private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
 
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IAuthenticationService authenticationService;
-
 
     public AdminManagementService(IAuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
