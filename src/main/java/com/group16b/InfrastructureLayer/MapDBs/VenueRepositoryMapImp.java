@@ -21,10 +21,6 @@ public class VenueRepositoryMapImp implements IVenueRepository{
 		return instance;
 	}
 
-
-
-
-
     @Override
     public Venue getVenueByID(String venueID) {
         // TODO Auto-generated method stub

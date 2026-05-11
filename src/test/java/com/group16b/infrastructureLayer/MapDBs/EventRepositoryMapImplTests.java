@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Event;
+package com.group16b.infrastructureLayer.MapDBs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -14,9 +14,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import com.group16b.DomainLayer.Event.Event;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 
-public class IEventRepositoryMapImplTests {
+public class EventRepositoryMapImplTests {
 	static EventRepositoryMapImpl repository;
 	static Event matchingEvent, wrongName, wrongArtist, wrongCategory, wrongKeyword, tooCheap, tooExpensive, tooEarly, tooLate, lowRating, wrongProductionCompany;
 	static LocalDateTime now = LocalDateTime.of(2026, 5, 9, 18, 0);

@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.SystemAdmin;
+package com.group16b.infrastructureLayer.MapDBs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -6,9 +6,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 
-public class ISystemAdminRepositoryMapImplTests {
+public class SystemAdminRepositoryMapImplTests {
 	SystemAdminRepositoryMapImpl repository;
 
 	@BeforeEach

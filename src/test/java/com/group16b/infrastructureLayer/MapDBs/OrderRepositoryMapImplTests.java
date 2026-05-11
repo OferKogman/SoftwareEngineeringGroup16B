@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Order;
+package com.group16b.infrastructureLayer.MapDBs;
 
 import java.util.List;
 
@@ -11,12 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.DomainLayer.Order.Order;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class OrderRepositoryTest {
+class OrderRepositoryMapImplTests {
     private OrderRepositoryMapImpl orderRepository;
     private Order user1OrderA;
     private Order user1OrderB;

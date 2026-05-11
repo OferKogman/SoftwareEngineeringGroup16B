@@ -1,8 +1,9 @@
-package com.group16b.DomainLayer.VirtualQueue;
+package com.group16b.infrastructureLayer.MapDBs;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -11,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class VirtualQueueRepositoryTests {
+public class VirtualQueueRepositoryMapImplTests {
     
     VirtualQueueRepositoryMapImpl virtualQueueRepository;
     
