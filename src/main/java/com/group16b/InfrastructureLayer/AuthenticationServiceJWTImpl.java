@@ -19,7 +19,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
 	private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
 	private final long adminExpirationTime = 1000 * 60 * 15; // 15 minutes
 
-	@Value(value = "jwt.secret")
+	@Value(value = "{jwt.secret}")
 	private SecretKey userKey;
     private SecretKey adminKey;
 
@@ -86,6 +86,33 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     public String extractSubjectFromToken(String token) {
         Claims claims = getAllClaims(token);
         return claims.getSubject();
+    }
+
+    @Override
+    public boolean isUserToken(String token){
+        try {
+            return this.extractRoleFromToken(token).equals("User");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isGuestToken(String token){
+        try {
+            return this.extractRoleFromToken(token).equals("Guest");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isAdminToken(String token){
+        try {
+            return this.extractRoleFromToken(token).equals("Admin");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
 }

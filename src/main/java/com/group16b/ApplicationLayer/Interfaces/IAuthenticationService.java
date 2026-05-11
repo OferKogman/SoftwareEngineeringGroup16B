@@ -20,4 +20,10 @@ public interface IAuthenticationService {
 	String extractRoleFromToken(String token);
 
 	String extractSubjectFromToken(String token);
+
+	boolean isUserToken(String token);
+
+	boolean isGuestToken(String token);
+
+	boolean isAdminToken(String token);
 }
