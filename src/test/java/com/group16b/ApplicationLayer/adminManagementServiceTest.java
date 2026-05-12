@@ -72,7 +72,7 @@ public class adminManagementServiceTest {
         invalidToken = "invalidToken";
 
         adminManagementService = new AdminManagementService(mockTokenService);
-        Field adminRepo = adminManagementService.getClass().getDeclaredField("systemAdminRepository");
+        Field adminRepo = adminManagementService.getClass().getDeclaredField("SystemAdminRepositoryMapImpl");
         adminRepo.setAccessible(true);
         adminRepo.set(adminManagementService, mockSystemAdminRepository);
         sessionToken = "validToken";
