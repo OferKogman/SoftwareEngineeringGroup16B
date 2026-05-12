@@ -25,6 +25,7 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
@@ -34,6 +35,7 @@ public class AdminManagementService {
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
+    private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
 
     public AdminManagementService(IAuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
