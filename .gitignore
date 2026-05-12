@@ -27,6 +27,8 @@ dist/
 build/
 out/
 target/
+.vscode/
+.idea/
 
 # Mac .DS_Store
 .DS_Store

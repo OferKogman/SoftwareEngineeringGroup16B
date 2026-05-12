@@ -52,7 +52,7 @@ public class OrderService {
 		this.authenticationService = authenticationService;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
+    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
 		logger.info("UserService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
 		/*
 			1. System - check active order status.
@@ -106,8 +106,6 @@ public class OrderService {
 				return Result.makeFail("User not found");
 			}
 
-			
-			PaymentService paymentService = new PaymentService();
 			if (!paymentService.processPayment(paymentInfo, price)) {
 				return Result.makeFail("Payment failed");
 			}
@@ -137,12 +135,10 @@ public class OrderService {
 			_cancelOrder(orderID); 
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
-
 	}
     
 	private void cancelPayment(PaymentInfo paymentInfo) {
 		// TODO: implement payment cancellation logic
-		throw new UnsupportedOperationException("Payment cancellation is not implemented yet.");
 	} 
 
 	private void _cancelOrder(String orderID) {
@@ -219,7 +215,7 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-	// TODO: change price of order
+	
     public Result<List<String>> changeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
         
         try {
@@ -317,7 +313,7 @@ public class OrderService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
-	// TODO change price of order
+	
     public Result<Integer> changeNumOfSeatsInFieldOrder(String orderId, String sTocken, int newSeatsNum){
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort

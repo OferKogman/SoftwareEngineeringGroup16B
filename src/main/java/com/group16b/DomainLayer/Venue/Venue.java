@@ -43,6 +43,7 @@ public class Venue {
 		if (events.putIfAbsent(startTime, eventID) != null) {
 			throw new IllegalArgumentException("Venue is already reserved for requested date !");
 		}
+		// TODO: add event to segments' stock. and create the Seats
 	}
 
 	protected void cancelEvent(LocalDateTime date, int eventID) {
