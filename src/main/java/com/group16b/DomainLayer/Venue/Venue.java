@@ -122,8 +122,8 @@ public class Venue {
         }
     }
 	
-	protected void cancelEvent(LocalDateTime date, int eventID) {
-		if (!scheduledEvents.remove(date, eventID)) {
+	public void cancelEvent(LocalDateTime starTime, int eventID) {
+		if (!scheduledEvents.remove(starTime, eventID)) {
 			throw new IllegalArgumentException("Venue is not reserved for this event at requested date !");
 		}
 	}
