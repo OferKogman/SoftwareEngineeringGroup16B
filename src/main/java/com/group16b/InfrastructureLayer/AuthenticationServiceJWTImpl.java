@@ -96,4 +96,23 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
             return false;
         }
     }
+
+    @Override
+    public boolean isGuestToken(String token){
+        try {
+            return this.extractRoleFromToken(token).equals("Guest");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean isAdminToken(String token){
+        try {
+            return this.extractRoleFromToken(token).equals("Admin");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
 }

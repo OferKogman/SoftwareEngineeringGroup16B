@@ -59,8 +59,21 @@ public class EventService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!authenticationService.isUserToken(sessionToken)) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
+			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+			}
 			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
+
+			if(productionCompanyPolicyRepository.getProductionCompanyByID(eventRecord.pcID()) == null) {
+				logger.warn("Invalid production company ID provided for event creation.");
+				return Result.makeFail("Invalid production company ID. Please provide a valid production company ID to create an event.");
+			}
 
 			logger.info("Validating user permissions for event creation.");
 			user.validatePermissions(eventRecord.pcID(), Owner.class);
@@ -96,6 +109,11 @@ public class EventService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event activation.");
 				return Result.makeFail("Invalid session token.");
+			}
+
+			if(!authenticationService.isUserToken(sessionToken)) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
 			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
@@ -133,6 +151,11 @@ public class EventService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
+			}
+
+			if(!authenticationService.isUserToken(sessionToken)) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
 			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
@@ -179,6 +202,67 @@ public class EventService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+	
+	public Result<EventDTO> editEvent(Map<String, Object> editParams, int eventID, String sessionToken) {
+        try {
+			logger.info("Verifying session token for event editing.");
+			if (!authenticationService.validateToken(sessionToken)) {
+				logger.warn("Invalid session token provided for event editing.");
+				return Result.makeFail("Invalid session token.");
+			}
+
+			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
+			}
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			logger.info("Session token verified successfully.");
+
+			Event event = eventRepository.getEventByID(eventID);
+
+			logger.info("Validating user permissions for event activation.");
+			user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
+			logger.info("User permissions validated successfully.");
+
+            logger.info("Attempting to edit event with ID: " + eventID);
+			if (getEditParam(editParams, "name", String.class) != null) {
+				event.setEventName(getEditParam(editParams, "name", String.class));
+			}
+			if (getEditParam(editParams, "artist", String.class) != null) {
+				event.setEventArtist(getEditParam(editParams, "artist", String.class));
+			}
+			if (getEditParam(editParams, "category", String.class) != null) {
+				event.setEventCategory(getEditParam(editParams, "category", String.class));
+			}
+			if (getEditParam(editParams, "startTime", java.time.LocalDateTime.class) != null && getEditParam(editParams, "endTime", java.time.LocalDateTime.class) != null) {
+				event.setEventNewTime(getEditParam(editParams, "startTime", java.time.LocalDateTime.class), getEditParam(editParams, "endTime", java.time.LocalDateTime.class));
+			} else if (getEditParam(editParams, "startTime", java.time.LocalDateTime.class) != null || getEditParam(editParams, "endTime", java.time.LocalDateTime.class) != null) {
+				return Result.makeFail("Must edit both start and end time together to update event time !");
+			}
+			if (getEditParam(editParams, "venue", String.class) != null) {
+				Venue oldVenue = venueRepository.getVenueByID(event.getEventVenueID());
+				oldVenue.cancelEvent(event.getEventStartTime(),event.getEventID());
+				String newVenueID = getEditParam(editParams, "venue", String.class);
+				Venue newVenue = venueRepository.getVenueByID(newVenueID);
+				newVenue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), event.getEventID());
+				event.setEventString(newVenueID);
+			}
+			if (getEditParam(editParams, "eventRating", Double.class) != null) {
+				event.setEventRating(getEditParam(editParams, "eventRating", Double.class));
+			}
+			eventRepository.updateEvent(event);
+			logger.info("Event edited successfully with ID: " + eventID);
+            return Result.makeOk(new EventDTO(event));
+        }
+        catch (IllegalArgumentException e) {
+            logger.error(e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+		catch (Exception e) {
+            logger.error("Unexpected error during event search: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
 
     public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
         try {
@@ -191,7 +275,11 @@ public class EventService {
                     locations.add(locationService.search(locationName));
                 }
             }
-            List<Integer> pcID = getParam(searchParams, "productionCompany", String.class).stream().map(name -> productionCompanyPolicyRepository.getProductionCompanyByName(name).getProductionCompanyID()).toList();
+            List<String> pcName = getParam(searchParams, "productionCompany", String.class);
+			List<Integer> pcID = null;
+			if(pcName != null) {
+				pcID = pcName.stream().map(name -> productionCompanyPolicyRepository.getProductionCompanyByName(name).getProductionCompanyID()).toList();
+			}
             List<EventDTO> results = eventFilteringService.searchEvents(
                 getParam(searchParams, "name", String.class),
                 getParam(searchParams, "artist", String.class),
@@ -239,5 +327,16 @@ public class EventService {
             }
             return (T) val;
         }).toList();
+    }
+
+	@SuppressWarnings("unchecked")
+    private <T> T getEditParam(Map<String, Object> params, String key, Class<T> type) {
+        if (!params.containsKey(key)) {
+            return null;
+        }
+        if (!type.isInstance(params.get(key))) {
+            throw new IllegalArgumentException("Invalid type for parameter '" + key + "'. Expected: " + type.getSimpleName());
+        }
+        return (T) params.get(key);
     }
 }

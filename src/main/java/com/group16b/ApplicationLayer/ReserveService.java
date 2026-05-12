@@ -54,7 +54,7 @@ public class ReserveService {
                 queueRemovePassed(q, subjectID);
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+            if (authenticationService.isAdminToken(sessionToken)) {
 				logger.warn("Invalid session token provided for reservation.");
                 queueRemovePassed(q, subjectID);
 				return Result.makeFail("Invalid session token.");
@@ -161,12 +161,12 @@ public class ReserveService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+            if (authenticationService.isAdminToken(sessionToken)) {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
 
-            if (authenticationService.extractRoleFromToken(sessionToken).equals("Admin")){
+            if (authenticationService.isAdminToken(sessionToken)){
                 return Result.makeFail("Admin can't reserve Tickets");
             }
 			subjectID = authenticationService.extractSubjectFromToken(sessionToken);
@@ -275,7 +275,7 @@ public class ReserveService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+            if (authenticationService.isAdminToken(sessionToken)) {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
@@ -388,12 +388,12 @@ public class ReserveService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+            if (authenticationService.isAdminToken(sessionToken)) {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
 
-            if (authenticationService.extractRoleFromToken(sessionToken).equals("Admin")){
+            if (authenticationService.isAdminToken(sessionToken)){
                 return Result.makeFail("Admin can't reserve Tickets");
             }
 			subjectID = authenticationService.extractSubjectFromToken(sessionToken);

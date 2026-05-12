@@ -22,4 +22,8 @@ public interface IAuthenticationService {
 	String extractSubjectFromToken(String token);
 
 	boolean isUserToken(String token);
+
+	boolean isGuestToken(String token);
+
+	boolean isAdminToken(String token);
 }
