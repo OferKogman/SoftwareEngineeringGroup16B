@@ -31,7 +31,7 @@ public class UserLoginServiceTests {
     void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockUserRepository = mock(IUserRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
-        userLoginService = new UserLoginService(mockTokenService, mockUserRepository);
+        userLoginService = new UserLoginService(mockTokenService);
         Field userRepo = userLoginService.getClass().getDeclaredField("userRepository");
         userRepo.setAccessible(true);
         userRepo.set(userLoginService, mockUserRepository);

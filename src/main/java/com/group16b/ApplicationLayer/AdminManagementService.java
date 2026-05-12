@@ -1,6 +1,8 @@
 package com.group16b.ApplicationLayer;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -9,6 +11,7 @@ import org.slf4j.LoggerFactory;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
@@ -16,17 +19,21 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
-
+    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+    private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
 
@@ -172,6 +179,44 @@ public class AdminManagementService {
             return Result.makeFail("Error occurred while closing production company with ID " + productionCompanyId);
         }
 
+    }
+
+    public Result<String> removeUser(int userID, String sessionToken){
+        try {
+            logger.info("Attempting to remove the user subscription of user ID {}", userID);
+            if (!authenticationService.validateToken(sessionToken)  ) {
+                logger.error("Invalid token");
+                return Result.makeFail("Invalid token");
+            }
+
+            if (!authenticationService.isAdminToken(sessionToken)) {
+                logger.error("Must be in an active admive session to remove user");
+                return Result.makeFail("Unauthorized access");
+            }
+            
+            if(!userRepository.userExists(userID)){
+                logger.error("user to remove doesn't exist! given ID: {}", userID);
+                return Result.makeFail("Invalid ID");    
+            }
+
+            User userToRemove = userRepository.getUserByID(userID);
+            for (Map.Entry<Integer, Role> entry : userToRemove.getRoles().entrySet()) {
+                int companyID = entry.getKey();
+                Role companyRole = entry.getValue();
+                if(userToRemove.isFounderOfCompany(companyID)){
+                    closeProductionCompany(companyID, sessionToken);//Cannot simply delete and give to someone else this role - whole company goes kapoot        
+                } else if(companyRole != null){
+                    companyHierarchyDomainService.removeUserFromCompany(userToRemove, companyID);
+                }
+            }
+
+            userRepository.deleteUser(userID);
+            
+            return Result.makeOk("User with ID: " + userID + ", , has been removed");
+        } catch (Exception e) {
+            logger.error("System error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred while saving the layout.");
+        }    
     }
 
     private void deactivateEvents(List<Event> events) {

@@ -44,8 +44,7 @@ public class OrderService {
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyPolicyRepository productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
 
 
@@ -53,7 +52,7 @@ public class OrderService {
 		this.authenticationService = authenticationService;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
+    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
 		logger.info("UserService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
 		/*
 			1. System - check active order status.
@@ -84,10 +83,6 @@ public class OrderService {
 				logger.warn("Invalid session token provided for completion.");
 				return Result.makeFail("Invalid session token.");
 			}
-			if(!authenticationService.isUserToken(sTocken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
-			}
 			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
@@ -105,14 +100,12 @@ public class OrderService {
 
 			// 3. System - charges the user for the designed price.
 			logger.info("UserService.CompleteActiveOrder: user {} is attempting to pay {} for order {}", userId, price, orderID);
-			User user = userRepository.getUserByID(userId);
+			User user = userRepo.getUserByID(userId);
 			if (user == null) {
 				logger.error("UserService.CompleteActiveOrder: User {} not found while attempting to complete order {}", userId, orderID);
 				return Result.makeFail("User not found");
 			}
 
-			
-			PaymentService paymentService = new PaymentService();
 			if (!paymentService.processPayment(paymentInfo, price)) {
 				return Result.makeFail("Payment failed");
 			}
@@ -142,12 +135,10 @@ public class OrderService {
 			_cancelOrder(orderID); 
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
-
 	}
     
 	private void cancelPayment(PaymentInfo paymentInfo) {
 		// TODO: implement payment cancellation logic
-		throw new UnsupportedOperationException("Payment cancellation is not implemented yet.");
 	} 
 
 	private void _cancelOrder(String orderID) {
@@ -191,12 +182,11 @@ public class OrderService {
 				return Result.makeFail("Invalid session token.");
 			}
             if (!authenticationService.isUserToken(sessionToken)) {
-			} else {
                 logger.warn("Only user can get order history.");
                 return Result.makeFail("Only user can get order history.");
-                    }
+            }
 			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepo.getUserByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");
@@ -224,7 +214,7 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-	// TODO: change price of order
+	
     public Result<List<String>> changeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
         
         try {
@@ -243,10 +233,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			if(!authenticationService.isUserToken(sTocken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
-			}
+
 			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
@@ -326,7 +313,7 @@ public class OrderService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
-	// TODO change price of order
+	
     public Result<Integer> changeNumOfSeatsInFieldOrder(String orderId, String sTocken, int newSeatsNum){
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
@@ -470,7 +457,7 @@ public class OrderService {
     }
 
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepository.getEventByID(eventID);
+        Event event = eventRepo.getEventByID(eventID);
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
         Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.getDiscountPolicyByID(event.getEventProductionCompanyID());
 
@@ -490,7 +477,7 @@ public class OrderService {
             return priceAfterDiscountPolicy;
     }
     private boolean validatePurchasePolicy(int eventID) {
-        Event event = eventRepository.getEventByID(eventID);
+        Event event = eventRepo.getEventByID(eventID);
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
         Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.getPurchasePolicyByID(event.getEventProductionCompanyID());
 

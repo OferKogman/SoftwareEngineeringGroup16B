@@ -6,6 +6,7 @@ import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
+import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
@@ -45,15 +46,19 @@ public class CompanyHierarchyDomainService {
     }
 
     //will remove a user from a company irarchy
-    //PRECONDITIONS: user is a manager in the company, user is not owner of the company
+    //PRECONDITIONS: user is not founder of the company
     //this should only be called after ensuring that the callee have high enough clearance
     public void removeUserFromCompany(User user, int companyID)
     {   
-        int parentID= user.getParentIDForCompany(companyID);
-        User parent=userRepository.getUserByID(parentID);
-        Manager userRole=(Manager)user.getRole(companyID);
-        Owner parentRole=(Owner)parent.getRole(companyID);
-        parentRole.removeManager(userRole);
+        Role userRole = user.getRole(companyID);
+        if(userRole instanceof Manager){ 
+            int parentID= user.getParentIDForCompany(companyID);
+            User parent=userRepository.getUserByID(parentID);
+            if (parent != null) {
+                Role parentRole = parent.getRole(companyID);
+                ((Owner)parentRole).removeManager((Manager)userRole);
+            }   
+        }
         user.removeRole(companyID);
     }
 

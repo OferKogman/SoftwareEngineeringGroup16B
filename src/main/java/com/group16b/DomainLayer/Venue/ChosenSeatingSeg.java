@@ -46,7 +46,7 @@ public class ChosenSeatingSeg extends Segment {
 
 	@Override
 	public double getPrice(int eventID) {
-		throw new UnsupportedOperationException("Price calculation is not implemented yet.");
+		return 0.0;
 	}
 
 	void reserveSeats(List<String> seatIds, int eventID) {

@@ -1,6 +1,5 @@
 package com.group16b.DomainLayer.VirtualQueue;
 
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -29,18 +28,19 @@ public class VirtualQueue {
 		this.passedQueue = new LinkedHashMap<>();
 	}
 
-	public synchronized boolean addToQueue(String subjectID) throws NoSuchAlgorithmException {
+	public synchronized boolean addToQueue(String subjectID) {
 		popFirstIn();
 		if (queueLine.contains(subjectID) || passedQueue.containsKey(subjectID))
 			return false;
 		queueLine.add(subjectID);
 		this.version++;
+		popFirstIn();
 		return true;
 	}
 
 	private synchronized void popFirstIn() {
 		if (queueLine.isEmpty()) {
-			throw new IllegalStateException("Queue is empty");
+			return;
 		}
 		for (Map.Entry<String, Long> entry : passedQueue.entrySet()) {
 			long currentTime = System.currentTimeMillis();
@@ -57,7 +57,7 @@ public class VirtualQueue {
 		passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
 	}
 
-	public synchronized void removePassed(String subjectID) throws NoSuchAlgorithmException {
+	public synchronized void removePassed(String subjectID) {
 		this.version++;
 		passedQueue.remove(subjectID);
 	}
