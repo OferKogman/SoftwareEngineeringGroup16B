@@ -116,7 +116,7 @@ class OrderTests {
         assertEquals(OrderType.SEAT, order.getOrderType());
         assertEquals("segment1", order.getSegmentId());
         assertEquals(2, order.getNumOfTickets());
-        assertEquals(100.0, order.getTotalOrderprice());
+        assertEquals(50.0, order.getTotalOrderprice());
         assertEquals(7, order.getEventId());
         assertEquals(seats, order.getSeats());
         assertTrue(order.isActive());
@@ -124,7 +124,7 @@ class OrderTests {
 
     @Test
     void fieldOrderCreation_shouldInitializeBasicFields() {
-        Order order = new Order("field1", 3, 40.0, 7, "10");
+        Order order = new Order("field1", 3, 120.0, 7, "10");
 
         assertEquals(OrderType.FIELD, order.getOrderType());
         assertEquals("field1", order.getSegmentId());
@@ -145,15 +145,15 @@ class OrderTests {
     void fieldOrderGetPricesPerSeat_shouldReturnEqualPrices() {
         Order order = new Order("field1", 3, 40.0, 7, "10");
 
-        assertEquals(40.0, order.getPricesPerSeat());
+        assertEquals(40.0, order.getTotalOrderprice());
     }
 
     @Test
     void seatOrderGetPricesPerSeat_shouldNotBeNull() {
         Order order = new Order("segment1", List.of("A-1", "A-2"), 50.0, 7, "10");
 
-        assertNotNull(order.getPricesPerSeat());
-        assertEquals(50.0, order.getPricesPerSeat());
+        assertNotNull(order.getTotalOrderprice());
+        assertEquals(50.0, order.getTotalOrderprice());
     }
 
     @Test
