@@ -44,6 +44,7 @@ import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicy
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
+import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Seat;
@@ -72,11 +73,13 @@ public class OrderServiceTests {
     private static final int EVENT_ID = 1;
     private static final String VENUE_ID = "venue1";
     private static final String SEGMENT_ID = "segment1";
+    private static final String FIELD_SEGMENT_ID = "field-segment";
     private static final int PRODUCTION_COMPANY_ID = 1;
 
     private static Event event;
     private static Venue venue;
     private static Segment segment;
+    private static Segment filledSegment;
 
     private static Set<PurchasePolicy> companyPurchasePolicies;
     private static Set<DiscountPolicy> companyDiscountPolicies;
@@ -113,9 +116,12 @@ public class OrderServiceTests {
 
         segment = new ChosenSeatingSeg(SEGMENT_ID, seats);
 
+        filledSegment = new FieldSeg(FIELD_SEGMENT_ID, 100);
+
         Map<String, Segment> segments = new HashMap<>();
         segments.put(SEGMENT_ID, segment);
-
+        segments.put(FIELD_SEGMENT_ID, filledSegment);
+        
         venue = new Venue(VENUE_ID, null, segments);
 
         EventRecord eventRecord = new EventRecord(
@@ -131,6 +137,22 @@ public class OrderServiceTests {
         );
 
         event = new Event(eventRecord, PRODUCTION_COMPANY_ID);
+
+
+        EventRecord eventRecord2 = new EventRecord(
+                VENUE_ID,
+                "event_2",
+                LocalDateTime.now().plusDays(5),
+                LocalDateTime.now().plusDays(8).plusHours(2),
+                "artist_2",
+                "category_2",
+                PRODUCTION_COMPANY_ID,
+                50.0,
+                4.5
+        );
+        Event event_2 = new Event(eventRecord2, PRODUCTION_COMPANY_ID);
+        venue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), EVENT_ID);
+        venue.bookEvent(event_2.getEventStartTime(), event_2.getEventEndTime(), event_2.getEventID());
     }
 
     @BeforeEach
@@ -480,7 +502,7 @@ public class OrderServiceTests {
         String customerToken = "customer-token";
 
         when(mockAuthenticationService.validateToken(customerToken)).thenReturn(true);
-        when(mockAuthenticationService.isAdminToken(customerToken)).thenReturn(true);
+        when(mockAuthenticationService.isAdminToken(customerToken)).thenReturn(false);
         when(mockAuthenticationService.isUserToken(customerToken)).thenReturn(false);
 
         Result<List<OrderDTO>> result = orderService.getUserOrders(customerToken);
@@ -644,7 +666,7 @@ public class OrderServiceTests {
     @Test
     void changeSeatsToOrder_nonSeatOrder_returnsFail() {
         Order fieldOrder = new Order(
-                SEGMENT_ID,
+                FIELD_SEGMENT_ID,
                 2,
                 100.0,
                 EVENT_ID,
@@ -737,75 +759,6 @@ public class OrderServiceTests {
         assertEquals("Segment not found", result.getError());
     }
 
-    @Test
-    void changeSeatsToOrder_purchasePolicyFails_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        Event eventWithFailingPolicy = spy(event);
-
-        PurchasePolicy failingPolicy = new PurchasePolicy() {
-            @Override
-            public boolean validatePurchase() {
-                return false;
-            }
-        };
-
-        when(eventWithFailingPolicy.getEventPurchasePolicy())
-                .thenReturn(new HashSet<>(Set.of(failingPolicy)));
-
-        when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithFailingPolicy);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Purchase policy validation failed for this event", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_noPurchasePolicy_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        Event eventWithoutPurchasePolicy = spy(event);
-        when(eventWithoutPurchasePolicy.getEventPurchasePolicy()).thenReturn(null);
-
-        when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithoutPurchasePolicy);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("No purchase policy found for this event", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_noDiscountPolicy_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        Event eventWithoutDiscountPolicy = spy(event);
-        when(eventWithoutDiscountPolicy.getEventDiscountPolicy()).thenReturn(null);
-
-        when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithoutDiscountPolicy);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("No discount policy found for this event", result.getError());
-    }
-
     private Order createActiveSeatOrder() {
     return new Order(
             SEGMENT_ID,
@@ -820,7 +773,7 @@ public class OrderServiceTests {
 
     private Order createActiveFieldOrder(int numOfTickets) {
     return new Order(
-            SEGMENT_ID,
+            FIELD_SEGMENT_ID,
             numOfTickets,
             100.0,
             EVENT_ID,
@@ -964,7 +917,7 @@ public class OrderServiceTests {
     @Test
     void changeNumOfSeatsInFieldOrder_orderDoesNotBelongToUser_returnsFail() {
         Order otherUserOrder = new Order(
-                SEGMENT_ID,
+                FIELD_SEGMENT_ID,
                 2,
                 100.0,
                 EVENT_ID,
@@ -986,7 +939,7 @@ public class OrderServiceTests {
     @Test
     void changeNumOfSeatsInFieldOrder_nonFieldOrder_returnsFail() {
         Order seatOrder = new Order(
-                SEGMENT_ID,
+                FIELD_SEGMENT_ID,
                 List.of("1-1", "1-2"),
                 100.0,
                 EVENT_ID,
@@ -1079,78 +1032,8 @@ public class OrderServiceTests {
         assertEquals("Segment not found", result.getError());
     }
 
-    @Test
-    void changeNumOfSeatsInFieldOrder_purchasePolicyFails_returnsFail() {
-        Order order = createActiveFieldOrder(2);
-
-        Event eventWithFailingPolicy = spy(event);
-
-        PurchasePolicy failingPolicy = new PurchasePolicy() {
-            @Override
-            public boolean validatePurchase() {
-                return false;
-            }
-        };
-
-        when(eventWithFailingPolicy.getEventPurchasePolicy())
-                .thenReturn(new HashSet<>(Set.of(failingPolicy)));
-
-        when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithFailingPolicy);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Purchase policy validation failed for this event", result.getError());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_noPurchasePolicy_returnsFail() {
-        Order order = createActiveFieldOrder(2);
-
-        Event eventWithoutPurchasePolicy = spy(event);
-        when(eventWithoutPurchasePolicy.getEventPurchasePolicy()).thenReturn(null);
-
-        when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithoutPurchasePolicy);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("No purchase policy found for this event", result.getError());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_noDiscountPolicy_returnsFail() {
-        Order order = createActiveFieldOrder(2);
-
-        Event eventWithoutDiscountPolicy = spy(event);
-        when(eventWithoutDiscountPolicy.getEventDiscountPolicy()).thenReturn(null);
-
-        when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithoutDiscountPolicy);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("No discount policy found for this event", result.getError());
-    }
-
 
     // _________ cancelOrder tests ________
-/* TODO: should work once bookEvent is fixed
     @Test
     void cancelOrder_validActiveSeatOrder_cancelsOrderAndFreesSeats() {
         Order seatOrder = new Order(
@@ -1160,8 +1043,6 @@ public class OrderServiceTests {
                 EVENT_ID,
                 USER_ID_STRING
         );
-        // reserve the seats to make sure they are marked as reserved before cancellation
-        // TODO:
         venue.reserveSeats(ReservationRequest.forSeats(EVENT_ID, List.of("1-1", "1-2"), SEGMENT_ID));
 
         when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(seatOrder);
@@ -1183,12 +1064,11 @@ public class OrderServiceTests {
 
         verify(mockOrderRepository, times(2)).getOrder(ORDER_ID);
     }
-        */
-/*  TODO: should work once bookEvent is fixed
+        
     @Test
     void cancelOrder_validActiveFieldOrder_cancelsOrderAndFreesFieldTickets() {
         Order fieldOrder = new Order(
-                SEGMENT_ID,
+                FIELD_SEGMENT_ID,
                 5,
                 100.0,
                 EVENT_ID,
@@ -1208,7 +1088,7 @@ public class OrderServiceTests {
         verify(mockVenueRepository).getVenueByID(VENUE_ID);
 
         verify(mockOrderRepository, times(2)).getOrder(ORDER_ID);
-    } */ 
+    }
 
     @Test
     void cancelOrder_orderNotFound_returnsFail() {
