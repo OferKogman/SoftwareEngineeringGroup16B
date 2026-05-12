@@ -48,7 +48,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.viewSalesHistory: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Signed".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (!authenticationService.isUserToken(sTocken)) {
                 logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
@@ -92,7 +92,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.displayTotalRevenue: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Signed".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (!authenticationService.isUserToken(sTocken)) {
                 logger.error("ProductionCompanyService.displayTotalRevenue: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }

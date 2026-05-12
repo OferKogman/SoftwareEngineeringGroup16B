@@ -80,9 +80,13 @@ public class OrderService {
 				logger.warn("Invalid session token provided for completion.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (authenticationService.isAdminToken(sTocken)) {
 				logger.warn("Invalid session token provided for completion.");
 				return Result.makeFail("Invalid session token.");
+			}
+			if(!authenticationService.isUserToken(sTocken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
 			logger.info("Session token verified successfully.");
@@ -186,7 +190,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+            if (!authenticationService.isUserToken(sessionToken)) {
 			} else {
                 logger.warn("Only user can get order history.");
                 return Result.makeFail("Only user can get order history.");
@@ -235,9 +239,13 @@ public class OrderService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (authenticationService.isAdminToken(sTocken)) {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
+			}
+			if(!authenticationService.isUserToken(sTocken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
 			logger.info("Session token verified successfully.");
@@ -332,7 +340,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for edit.");
 				return Result.makeFail("Invalid session token.");
 			}
-            if ("Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (authenticationService.isAdminToken(sTocken)) {
 				logger.warn("Invalid session token provided for edit.");
 				return Result.makeFail("Invalid session token.");
 			}

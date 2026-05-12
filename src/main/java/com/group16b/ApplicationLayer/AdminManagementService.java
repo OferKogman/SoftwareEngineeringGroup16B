@@ -42,7 +42,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.viewAllPurchesHistory: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (!authenticationService.isAdminToken(sTocken)) {
                 logger.error("AdminManagementService.viewAllPurchesHistory: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
@@ -67,7 +67,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (!authenticationService.isAdminToken(sTocken)) {
                 logger.error("AdminManagementService.viewPurchesHistoryByCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
@@ -103,7 +103,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Admin".equals(authenticationService.extractRoleFromToken(sTocken))) {
+            if (!authenticationService.isAdminToken(sTocken)) {
                 logger.error("AdminManagementService.viewPurchesHistoryByUser: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
@@ -134,7 +134,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.closeProductionCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Admin".equals(authenticationService.extractRoleFromToken(sToken))) {
+            if (!authenticationService.isAdminToken(sToken)) {
                 logger.error("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
@@ -191,7 +191,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.registerNewAdmin: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!"Admin".equals(authenticationService.extractRoleFromToken(sToken))) {
+            if (!authenticationService.isAdminToken(sToken)) {
                 logger.error("AdminManagementService.registerNewAdmin: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }

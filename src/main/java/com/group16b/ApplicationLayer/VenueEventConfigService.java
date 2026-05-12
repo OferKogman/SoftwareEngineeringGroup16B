@@ -42,7 +42,7 @@ public class VenueEventConfigService {
                 return Result.makeFail("Authentication failed. Please log in again.");
             }
             
-            if(!authService.extractRoleFromToken(sessionToken).equals("User")){
+            if(!authService.isUserToken(sessionToken)){
                 logger.warn("Expected a user session token");
                 return Result.makeFail("Authentication failed. Please log in again.");    
             }
