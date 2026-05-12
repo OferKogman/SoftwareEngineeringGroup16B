@@ -41,7 +41,7 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderState;
 
-public class adminManagementServiceTest {
+public class AdminManagementServiceTest {
     static private AdminManagementService adminManagementService;
     static private IAuthenticationService mockTokenService;
     static private ISystemAdminRepository mockSystemAdminRepository;
@@ -72,7 +72,7 @@ public class adminManagementServiceTest {
         invalidToken = "invalidToken";
 
         adminManagementService = new AdminManagementService(mockTokenService);
-        Field adminRepo = adminManagementService.getClass().getDeclaredField("SystemAdminRepositoryMapImpl");
+        Field adminRepo = adminManagementService.getClass().getDeclaredField("systemAdminRepository");
         adminRepo.setAccessible(true);
         adminRepo.set(adminManagementService, mockSystemAdminRepository);
         sessionToken = "validToken";

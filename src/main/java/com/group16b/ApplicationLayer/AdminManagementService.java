@@ -20,6 +20,7 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
@@ -27,6 +28,7 @@ public class AdminManagementService {
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IAuthenticationService authenticationService;
+    private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
 
     public AdminManagementService(IAuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
