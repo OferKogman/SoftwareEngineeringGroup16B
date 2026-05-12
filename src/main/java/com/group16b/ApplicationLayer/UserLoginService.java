@@ -8,17 +8,17 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class UserLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserLoginService.class);
 
-    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepository;
     private final IAuthenticationService tokenService;
 
-    public UserLoginService(IAuthenticationService tokenService) {
+    public UserLoginService(IAuthenticationService tokenService, IUserRepository userRepository) {
         this.tokenService = tokenService;
+        this.userRepository = userRepository;
     }
 
     public Result<String> createGuestSession() {
@@ -57,8 +57,36 @@ public class UserLoginService {
             return Result.makeOk(token);
         }
         catch (Exception e) {
-            logger.error("Login failed for user ID {}. Error: ", userID, e.getMessage(), e);
+            logger.error("Login failed for user ID {}. Error: {}", userID, e.getMessage(), e);
             return Result.makeFail("Failed to login: " + e.getMessage());
         }
+    }
+
+    public Result<String> logOutMember(String sessionToken) {
+        try {
+            int recievedID = Integer.valueOf(tokenService.extractSubjectFromToken(sessionToken));
+            logger.info("Attempting log out user ID: {}...", recievedID);
+            
+            if (!tokenService.isUserToken(sessionToken)) {
+                logger.warn("Logout failed: the session want of user for ID {}", recievedID);
+                return Result.makeFail("Invalid ID for logout");
+            }
+
+            if (!userRepository.userExists(recievedID)) {
+                logger.warn("Logout failed: user ID {} of the token does not exist!", recievedID);
+                return Result.makeFail("Invalid user ID");
+            }
+
+            Result<String> res = this.createGuestSession();
+
+            if(res.isSuccess()){
+                logger.info("user ID {} successfully logged out", recievedID);                
+            }
+            
+            return res;
+        } catch (Exception e) {
+            logger.error("failed to log out in this session: {}", e.getMessage(), e);
+            return Result.makeFail("Failed to log out: " + e.getMessage());
+        }   
     }
 }
