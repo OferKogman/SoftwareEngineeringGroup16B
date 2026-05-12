@@ -1,7 +1,7 @@
 package com.group16b.DomainLayer.ProductionCompanyPolicy;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
-import com.group16b.DomainLayer.Policies.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

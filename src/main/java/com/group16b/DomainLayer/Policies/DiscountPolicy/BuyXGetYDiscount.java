@@ -1,11 +1,10 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
-public class BuyXGetYDiscount extends ConditionalDiscount {
+public class BuyXGetYDiscount implements DiscountPolicy {
     private int x;
     private int y;
     private int ticketCount;
-    public BuyXGetYDiscount(double discountPercentage, double discountAmount, int x, int y, int ticketCount) {
-        super(discountPercentage, discountAmount);
+    public BuyXGetYDiscount(int x, int y, int ticketCount) {
         if(x<1){
             throw new IllegalArgumentException("You can't buy less than 1 ticket");
         }

@@ -1,12 +1,12 @@
-package com.group16b.DomainLayer.Policies;
+package com.group16b.DomainLayer.Policies.PurchasePolicy;
 
-public class PurchasePolicy {
+public class DefaultPurchasePolicy implements PurchasePolicy {
     private int maxTicketsPerTransaction;
     private int minTicketsPerTransaction;
     private int minAge;
     private boolean noSingleSeatLeft;
 
-    public PurchasePolicy(int maxTicketsPerTransaction, int minTicketsPerTransaction, int minAge, boolean noSingleSeatLeft){
+    public DefaultPurchasePolicy(int maxTicketsPerTransaction, int minTicketsPerTransaction, int minAge, boolean noSingleSeatLeft){
         if (maxTicketsPerTransaction<=0){
             throw new IllegalArgumentException("Maximum ticket limit must be greater than 0.");
         }
@@ -72,9 +72,9 @@ public class PurchasePolicy {
         this.noSingleSeatLeft = noSingleSeatLeft;
     }
 
-    public boolean isAllowed(int age, int ticketCount, int seatsRemainingInSection){
-        return (age >= this.minAge && ticketCount >= this.minTicketsPerTransaction && ticketCount <= this.maxTicketsPerTransaction && (!this.noSingleSeatLeft || seatsRemainingInSection - ticketCount != 1));
+    public boolean validatePurchase(){ //int age, int ticketCount, int seatsRemainingInSection
+        //return (age >= this.minAge && ticketCount >= this.minTicketsPerTransaction && ticketCount <= this.maxTicketsPerTransaction && (!this.noSingleSeatLeft || seatsRemainingInSection - ticketCount != 1));
+        return true;
     }
-
 
 }
