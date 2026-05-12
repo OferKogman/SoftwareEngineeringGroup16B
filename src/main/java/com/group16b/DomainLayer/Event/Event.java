@@ -85,6 +85,7 @@ public class Event {
 	}
 
 	public void setEventName(String name) {
+		validateName(name);
 		this.name = name;
 	}
 
@@ -98,6 +99,8 @@ public class Event {
 
 	public void setEventNewTime(LocalDateTime startTime, LocalDateTime endTime) {
 		validateDates(startTime, endTime);
+		this.startTime = startTime;
+		this.endTime = endTime;
 	}
 
 	public String getEventArtist() {
@@ -105,6 +108,7 @@ public class Event {
 	}
 
 	public void setEventArtist(String artist) {
+		validateArtist(artist);
 		this.artist = artist;
 	}
 
@@ -113,6 +117,7 @@ public class Event {
 	}
 
 	public void setEventCategory(String category) {
+		validateCategory(category);
 		this.category = category;
 	}
 
@@ -153,11 +158,17 @@ public class Event {
 	}
 
 	public void setEventPrice(double price) {
+		validatePrice(price);
 		this.price = price;
 	}
 
 	public double getEventRating() {
 		return rating;
+	}
+
+	public void setEventRating(double rating) {
+		validateRating(rating);
+		this.rating = rating;
 	}
 
 	public LotteryPolicy getLotteryPolicy() {
