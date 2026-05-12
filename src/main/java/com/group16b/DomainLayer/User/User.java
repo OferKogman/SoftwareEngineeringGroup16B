@@ -16,6 +16,7 @@ import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 import java.security.MessageDigest;
 
 public class User {
+	private static int idCounter = 1;
 
 	private int userID;
 	private String email;
@@ -24,6 +25,7 @@ public class User {
 	private final Map<CompanyAssigmentKey, Manager> userInvites; // Key: companyID, Value: List of Managers who invited the user
 
 	public User(String email, String password) {
+		this.userID = idCounter++;
 		this.email = email;
 		setPassword(password);
 		this.roles = new HashMap<>();
@@ -224,4 +226,5 @@ public class User {
 		Role role = getRole(companyID);
 		return role != null && role instanceof Owner;
 	}
+
 }

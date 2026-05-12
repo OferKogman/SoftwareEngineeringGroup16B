@@ -3,8 +3,9 @@ package com.group16b.DomainLayer.Venue;
 import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import com.group16b.ApplicationLayer.DTOs.SeatDTO;
 
-class Seat {
+public class Seat {
 	private final String seatId;
 	private final int row;
 	private final int number;
@@ -18,15 +19,24 @@ class Seat {
 		stock = new ConcurrentHashMap<Integer, Boolean>();
 	}
 
-	protected String getSeatId() {
+	public Seat(SeatDTO seatDTO, String seatID){
+		this.seatId = seatID;
+		this.row = seatDTO.getRow();
+		this.number = seatDTO.getNumber();
+		
+		this.stock = new ConcurrentHashMap<>();
+		stock.putAll(seatDTO.getStock());
+	}
+
+	public String getSeatId() {
 		return seatId;
 	}
 
-	protected int getRow() {
+	public int getRow() {
 		return row;
 	}
 
-	protected int getNumber() {
+	public int getNumber() {
 		return number;
 	}
 
@@ -74,5 +84,9 @@ class Seat {
 
 	protected void addEvent(int eventID) {
 		stock.putIfAbsent(eventID, false);
+	}
+
+	public ConcurrentMap<Integer, Boolean> getStock(){
+		return stock;
 	}
 }

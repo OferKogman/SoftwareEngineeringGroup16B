@@ -1,5 +1,7 @@
 package com.group16b.DomainLayer.Venue;
 
+import com.group16b.ApplicationLayer.DTOs.LocationDTO;
+
 public class Location {
     private String name;
     private String houseNumber;
@@ -19,6 +21,17 @@ public class Location {
         this.country = country;
         this.latitude = latitude;
         this.longitude = longitude;
+    }
+
+    public Location(LocationDTO locationDTO){
+        this.name = locationDTO.getName();
+        this.houseNumber = locationDTO.getHouseNumber();
+        this.street = locationDTO.getStreet();
+        this.city = locationDTO.getCity();
+        this.state = locationDTO.getState();
+        this.country = locationDTO.getCountry();
+        this.latitude = locationDTO.getLatitude();
+        this.longitude = locationDTO.getLongitude();        
     }
 
     public String getName() {

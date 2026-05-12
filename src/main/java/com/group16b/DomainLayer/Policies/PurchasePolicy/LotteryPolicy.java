@@ -112,4 +112,9 @@ public class LotteryPolicy implements PurchasePolicy {
         }
     }
 
+    @Override
+    public boolean validatePurchase() {
+        return true;
+    }
+
 }

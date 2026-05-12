@@ -31,7 +31,7 @@ public class UserLoginServiceTests {
     void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockUserRepository = mock(IUserRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
-        userLoginService = new UserLoginService(mockTokenService);
+        userLoginService = new UserLoginService(mockTokenService, mockUserRepository);
         Field userRepo = userLoginService.getClass().getDeclaredField("userRepository");
         userRepo.setAccessible(true);
         userRepo.set(userLoginService, mockUserRepository);
@@ -135,6 +135,67 @@ public class UserLoginServiceTests {
         
         verify(mockUserRepository, never()).getUserByID(anyInt());
         verify(mockTokenService, never()).generateVisitor_SignedToken(anyInt());
+    }
+
+    @Test
+    void logOutMember_SuccessfulLogout_ReturnsNewGuestToken() {
+        String validToken = "valid.user.token";
+        String newGuestToken = "new.guest.token";
+        int userID = 123;
+        
+        when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(userID));
+        when(mockUserRepository.userExists(userID)).thenReturn(true);
+        when(mockTokenService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockTokenService.generateVisitor_GuestToken(any(SessionToken.class))).thenReturn(newGuestToken);
+
+        Result<String> result = userLoginService.logOutMember(validToken);
+
+        assertTrue(result.isSuccess());
+        assertEquals(newGuestToken, result.getValue());
+    }
+
+    @Test
+    void logOutMember_TokenIsNotUserToken_ReturnsFailResult() {
+        String guestToken = "guest.token";
+        int guestID = 0; 
+        
+        when(mockTokenService.extractRoleFromToken(guestToken)).thenReturn("Guest");
+        when(mockTokenService.extractSubjectFromToken(guestToken)).thenReturn(String.valueOf(guestID));//shouldnt be relevant won;t parse subject since incorrect role
+        when(mockUserRepository.userExists(guestID)).thenReturn(true);//should crash regardless since irrelevant token
+
+        Result<String> result = userLoginService.logOutMember(guestToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid ID for logout", result.getError());
+    }
+
+    @Test
+    void logOutMember_UserDoesNotExistInDB_ReturnsFailResult() {
+        String validToken = "valid.user.token";
+        int nonExistentID = 999;
+        
+        when(mockTokenService.isUserToken(validToken)).thenReturn(true);
+        when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(nonExistentID));
+        when(mockUserRepository.userExists(nonExistentID)).thenReturn(false);
+
+        Result<String> result = userLoginService.logOutMember(validToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid user ID", result.getError());
+    }
+
+    @Test
+    void logOutMember_MalformedTokenException_ReturnsFailResult() {
+        String badToken = "malformed.token";
+        
+        when(mockTokenService.extractSubjectFromToken(badToken))
+                .thenThrow(new RuntimeException("Invalid token signature"));
+
+        Result<String> result = userLoginService.logOutMember(badToken);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("Failed to log out: Invalid token signature"));
     }
 
 }

@@ -33,6 +33,17 @@ public class EventRepositoryMapImpl implements IEventRepository {
 	}
 
 	@Override
+	public void updateEvent(Event event){
+		if (event == null) {
+			throw new IllegalArgumentException("Event cannot be null");
+		}
+
+		if (events.replace(event.getEventID(), event) == null) {
+            throw new IllegalArgumentException("Event with this ID doesn't exist");
+        }	
+	}
+
+	@Override
 	public Event getEventByID(int eventID) {
 		Event e = events.get(eventID);
 		if (e == null) {

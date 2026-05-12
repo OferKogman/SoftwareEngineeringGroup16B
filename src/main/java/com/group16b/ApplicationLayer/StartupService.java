@@ -10,6 +10,7 @@ import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
 
@@ -31,6 +32,7 @@ public class StartupService {
         logger.info("Initializing infrastructures...");
         AuthenticationServiceJWTImpl authService = new AuthenticationServiceJWTImpl("mySuperSecretKeyForUsers123456789", "mySuperSecretKeyForAdmins123456789");
         LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
+        UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
         PaymentService paymentService = new PaymentService();
         TicketGateway ticketGateway = new TicketGateway();
 
@@ -48,7 +50,7 @@ public class StartupService {
         purchaseHistoryService = new PurchaseHistoryService();
         purchasePolicyService = new PurchasePolicyService(authService);
         reserveService = new ReserveService(authService);
-        userLoginService = new UserLoginService(authService);
+        userLoginService = new UserLoginService(authService, userRepositoryMapImpl);
         userService = new UserService(authService, ticketGateway);
 
         logger.info("Adding default system admin...");
