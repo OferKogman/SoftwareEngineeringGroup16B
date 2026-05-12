@@ -57,4 +57,9 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 		return systemAdminsByUsername.get(username);
 	}
 
+	@Override
+	public boolean doesSystemAdminExist(int adminID){
+		return systemAdminsById.containsKey(adminID);
+	}
+
 }

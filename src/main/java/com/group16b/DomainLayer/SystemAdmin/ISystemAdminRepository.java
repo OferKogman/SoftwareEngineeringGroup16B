@@ -29,4 +29,6 @@ public interface ISystemAdminRepository {
 	 * found
 	 */
 	public SystemAdmin getSystemAdminByUsername(String username);
+
+	public boolean doesSystemAdminExist(int adminID);
 }
