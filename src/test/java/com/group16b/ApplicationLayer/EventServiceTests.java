@@ -149,6 +149,81 @@ public class EventServiceTests {
         assertEquals("Event with ID 500 not found", eventService.viewEvent(500).getError());
     }
 
+    @Test //2.2.3.i
+    public void EditEvents_Success() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("name", "Updated Event");
+        assertEquals(new EventDTO(e1), eventService.editEvent(editParams, e1.getEventID(), "user1").getValue());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterName_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("name", 123);
+        assertEquals("Invalid type for parameter 'name'. Expected: String", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterArtist_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("artist", 123);
+        assertEquals("Invalid type for parameter 'artist'. Expected: String", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterCategory_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("category", 123);
+        assertEquals("Invalid type for parameter 'category'. Expected: String", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterStartTime_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("startTime", "not_a_date");
+        editParams.put("endTime", LocalDateTime.now().plusDays(1));
+        assertEquals("Invalid type for parameter 'startTime'. Expected: LocalDateTime", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void SearchEvents_InvalidParameterOnlyStartTime_Failure() {
+        LocalDateTime now = LocalDateTime.now();
+        when(mockEventRepository.searchEvents(null, null, null, null, null, null, null, List.of(now, now.plusDays(1)), null, null)).thenThrow(new IllegalArgumentException("End time filter must have exactly one value."));
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("startTime", now.plusDays(1));
+        assertEquals("Must edit both start and end time together to update event time !", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterEndTime_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("startTime", LocalDateTime.now());
+        editParams.put("endTime", "not_a_date");
+        assertEquals("Invalid type for parameter 'endTime'. Expected: LocalDateTime", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void SearchEvents_InvalidParameterOnlyEndTime_Failure() {
+        LocalDateTime now = LocalDateTime.now();
+        when(mockEventRepository.searchEvents(null, null, null, null, null, null, null, List.of(now, now.plusDays(1)), null, null)).thenThrow(new IllegalArgumentException("End time filter must have exactly one value."));
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("endTime", now.plusDays(1));
+        assertEquals("Must edit both start and end time together to update event time !", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterEventRating_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("eventRating", "not_a_double");
+        assertEquals("Invalid type for parameter 'eventRating'. Expected: Double", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
+
+    @Test
+    public void EditEvents_InvalidParameterVenue_Failure() {
+        Map<String, Object> editParams = new TreeMap<>();
+        editParams.put("venue", 123);
+        assertEquals("Invalid type for parameter 'venue'. Expected: String", eventService.editEvent(editParams, e1.getEventID(), "user1").getError());
+    }
 
     @Test //2.2.3.i
     public void SearchEvents_Success() {
