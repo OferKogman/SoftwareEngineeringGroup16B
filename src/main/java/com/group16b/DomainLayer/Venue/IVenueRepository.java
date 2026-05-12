@@ -5,7 +5,8 @@ import java.util.List;
 public interface IVenueRepository {
 
 	Venue getVenueByID(String venueID);
-	void saveVenue(String venueID, Venue venue);
+
+	void addVenue(String venueID, Venue venue);
 	void reserveTickets(String venueId, String segmentId, List<String> seatIds, int eventID);
 	void reserveTickets(String venueId, String segmentId, int quantity, int eventID);
 	void freeTickets(String venueId, String segmentId, List<String> seatIds, int eventID);

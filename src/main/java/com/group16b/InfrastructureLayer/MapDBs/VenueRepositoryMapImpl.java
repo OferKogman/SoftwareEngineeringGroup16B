@@ -80,4 +80,10 @@ public class VenueRepositoryMapImpl implements IVenueRepository{
         venue.reserveSeats(ReservationRequest.forField(eventID, quantity, segmentId));
     }
 
+    @Override
+    public void addVenue(String venueID, Venue venue) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'addVenue'");
+    }
+
 }

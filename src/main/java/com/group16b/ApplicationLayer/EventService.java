@@ -1,6 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.io.IOException;
+import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +60,17 @@ public class EventService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
+			}
 			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
+
+			if(productionCompanyPolicyRepository.getProductionCompanyByID(eventRecord.pcID()) == null) {
+				logger.warn("Invalid production company ID provided for event creation.");
+				return Result.makeFail("Invalid production company ID. Please provide a valid production company ID to create an event.");
+			}
 
 			logger.info("Validating user permissions for event creation.");
 			user.validatePermissions(eventRecord.pcID(), Owner.class);
@@ -96,6 +106,11 @@ public class EventService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event activation.");
 				return Result.makeFail("Invalid session token.");
+			}
+
+			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
 			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
@@ -133,6 +148,11 @@ public class EventService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
+			}
+
+			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
 			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
@@ -179,6 +199,8 @@ public class EventService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+	
+	//@TODO add edit event
 
     public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
         try {
@@ -191,7 +213,11 @@ public class EventService {
                     locations.add(locationService.search(locationName));
                 }
             }
-            List<Integer> pcID = getParam(searchParams, "productionCompany", String.class).stream().map(name -> productionCompanyPolicyRepository.getProductionCompanyByName(name).getProductionCompanyID()).toList();
+            List<String> pcName = getParam(searchParams, "productionCompany", String.class);
+			List<Integer> pcID = null;
+			if(pcName != null) {
+				pcID = pcName.stream().map(name -> productionCompanyPolicyRepository.getProductionCompanyByName(name).getProductionCompanyID()).toList();
+			}
             List<EventDTO> results = eventFilteringService.searchEvents(
                 getParam(searchParams, "name", String.class),
                 getParam(searchParams, "artist", String.class),

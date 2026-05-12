@@ -2,6 +2,7 @@ package com.group16b.ApplicationLayer;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +15,8 @@ import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -21,6 +24,7 @@ import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
@@ -33,6 +37,7 @@ public class ReserveService {
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IVirtualQueueRepository queueImp = VirtualQueueRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+    private final IProductionCompanyPolicyRepository productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
     private final IAuthenticationService authenticationService;
 
     public ReserveService(IAuthenticationService authenticationService) {
@@ -61,7 +66,7 @@ public class ReserveService {
                 logger.error("Event is inactive");
                 return Result.makeFail("Event is inactive");
             }
-            // TODO: check purchase policy
+
             //2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
@@ -89,14 +94,18 @@ public class ReserveService {
             Venue venue = veuneRepo.getVenueByID(venueId);
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
-            DiscountPolicy discountPolicy = event.getDiscountPolicyLock();
+            
 
-            // TODO: check purchase policy //already checked lottery policy
-            double priceAfterPurchasePolicy = discountPolicy.calculateDiscount(pricePerSeat);
+            if (!validatePurchasePolicy(eventID)) {
+                logger.error("Purchase policy validation failed for event {}", eventID);
+                return Result.makeFail("Purchase policy validation failed for this event");
+            }
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
 
 
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, seatIds, priceAfterPurchasePolicy, eventID, subjectID);
+            Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
             orderRepo.addOrder(order);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
@@ -145,7 +154,6 @@ public class ReserveService {
                 logger.error("Event is inactive");
                 return Result.makeFail("Event is inactive");
             }
-            // TODO: check purchase policy
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for {}", subjectID);
@@ -176,14 +184,22 @@ public class ReserveService {
             Venue venue = veuneRepo.getVenueByID(venueId);
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
-            DiscountPolicy discountPolicy = event.getDiscountPolicyLock();
+            Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
+            if (discountPolicy == null) {
+                logger.error("No discount policy found for event {}", eventID);
+                return Result.makeFail("No discount policy found for this event");
+            }
 
-            //TODO: check purchase policy //already checked lottery policy
-            double priceAfterPurchasePolicy = discountPolicy.calculateDiscount(pricePerSeat);
+            if (!validatePurchasePolicy(eventID)) {
+                logger.error("Purchase policy validation failed for event {}", eventID);
+                return Result.makeFail("Purchase policy validation failed for this event");
+            }
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, amount);
 
 
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, amount, priceAfterPurchasePolicy, eventID, subjectID);
+            Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
             orderRepo.addOrder(order);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
@@ -206,7 +222,6 @@ public class ReserveService {
         }
     }
     
-
     public Result<String> reserveSeatsWithLottery(String segmentId, List<String> seatIds, int eventID, String venueId, String lotteryCode, String sessionToken) {
         // 0. log everything
         LotteryPolicy lotteryPolicy = null;
@@ -236,7 +251,7 @@ public class ReserveService {
                 logger.error("Event is inactive");
                 return Result.makeFail("Event is inactive");
             }
-            // TODO: check purchase policy
+            
             
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
@@ -269,14 +284,17 @@ public class ReserveService {
             Venue venue = veuneRepo.getVenueByID(venueId);
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
-            
-            DiscountPolicy discountPolicy = event.getDiscountPolicyLock();
-            // TODO: check purchase policy //already checked lottery policy
-            double priceAfterPurchasePolicy = discountPolicy.calculateDiscount(pricePerSeat);
+
+            if (!validatePurchasePolicy(eventID)) {
+                logger.error("Purchase policy validation failed for event {}", eventID);
+                return Result.makeFail("Purchase policy validation failed for this event");
+            }
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
 
 
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, seatIds, priceAfterPurchasePolicy, eventID, subjectID);
+            Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
             orderRepo.addOrder(order);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
@@ -340,9 +358,11 @@ public class ReserveService {
                 logger.error("Event is inactive");
                 return Result.makeFail("Event is inactive");
             }
-            DiscountPolicy discountPolicy = event.getDiscountPolicyLock();
-            // TODO: check purchase policy
-
+            Segment segment = veuneRepo.getVenueByID(venueId).getSegmentByID(segmentId);
+            if (segment == null) {
+                logger.error("Segment with ID {} not found in venue {}", segmentId, venueId);
+                return Result.makeFail("Segment not found");
+            }            
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
@@ -365,23 +385,20 @@ public class ReserveService {
             }
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
 
-
-            //3. System - validates selected seats exist.
-            //4. System - validates selected seats are available.
-            //5. System - removes selected seats from stock.
             veuneRepo.reserveTickets(venueId, segmentId, amount, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
 
-            // 5.5 calculate price of the order
-             // 5.5 calculate price of the order
-            Venue venue = veuneRepo.getVenueByID(venueId);
-            Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
-            // purchase policy //already checked lottery policy
-            double priceAfterPurchasePolicy = discountPolicy.calculateDiscount(pricePerSeat);
+
+            if (!validatePurchasePolicy(eventID)) {
+                logger.error("Purchase policy validation failed for event {}", eventID);
+                return Result.makeFail("Purchase policy validation failed for this event");
+            }
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, amount);
 
             //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, amount, priceAfterPurchasePolicy, eventID, subjectID);
+            Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
             orderRepo.addOrder(order);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
@@ -412,6 +429,51 @@ public class ReserveService {
             }
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+
+    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
+        Event event = eventRepository.getEventByID(eventID);
+        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.getDiscountPolicyByID(event.getEventProductionCompanyID());
+
+            if (discountPolicy == null) {
+                logger.error("No discount policy found for event {}", eventID);
+                throw new IllegalArgumentException("No discount policy found for this event");
+            }
+            if (companyDiscountPolicy == null) {
+                logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+                throw new IllegalArgumentException("No discount policy found for this event's production company");}
+            discountPolicy.addAll(companyDiscountPolicy);
+
+            double priceAfterDiscountPolicy = pricePerSeat * amount;
+            for (DiscountPolicy dp : discountPolicy) {
+                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+            }
+            return priceAfterDiscountPolicy;
+    }
+    private boolean validatePurchasePolicy(int eventID) {
+        Event event = eventRepository.getEventByID(eventID);
+        Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.getPurchasePolicyByID(event.getEventProductionCompanyID());
+
+            if (purchasePolicy == null) {
+                logger.error("No purchase policy found for event {}", eventID);
+                throw new IllegalArgumentException("No purchase policy found for this event");
+            }
+            if (companyPurchasePolicy == null) {
+                logger.error("No purchase policy found for production company {}", event.getEventProductionCompanyID());
+                throw new IllegalArgumentException("No purchase policy found for this event's production company");
+            }
+
+            purchasePolicy.addAll(companyPurchasePolicy);
+            for (PurchasePolicy pp : purchasePolicy) {
+                if (!pp.validatePurchase()) {
+                    logger.error("User did not meet purchase policy requirements");
+                    return false;
+                }
+            }
+            return true;
     }
     
 }

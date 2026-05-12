@@ -2,6 +2,7 @@ package com.group16b.ApplicationLayer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,9 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderType;
+import com.group16b.DomainLayer.Policies.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -25,6 +29,7 @@ import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
@@ -40,6 +45,9 @@ public class OrderService {
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+    private final IProductionCompanyPolicyRepository productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
+
 
     public OrderService(IAuthenticationService authenticationService) {
 		this.authenticationService = authenticationService;
@@ -275,8 +283,30 @@ public class OrderService {
             logger.info("Freeing old seats {} for order {}.", seatsToRemove, orderId);
             venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
 
+			int eventID = order.getEventId();
+			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+			if (venue == null) {
+				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
+				return Result.makeFail("Venue not found");
+			}
+			Segment segment = venue.getSegmentByID(order.getSegmentId());
+			if (segment == null) {
+				logger.error("Segment {} not found for changing seats for order {}.", order.getSegmentId(), orderId);
+				return Result.makeFail("Segment not found");
+			}
+
+			double pricePerSeat = segment.getPrice(eventID);
+			if (!validatePurchasePolicy(event.getEventID())) {
+                logger.error("Purchase policy validation failed for event {}", eventID);
+                return Result.makeFail("Purchase policy validation failed for this event");
+            }
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatIds.size());
+
+
+
             logger.info("Updating order {} with new seats {}.", orderId, newSeatIds);
-            order.updateSeats(newSeatIds);
+            order.updateSeats(newSeatIds, priceAfterDiscountPolicy);
 
             return Result.makeOk(newSeatIds);
         } catch (IllegalArgumentException e) {
@@ -354,7 +384,29 @@ public class OrderService {
             }
 
             logger.info("Updating order {} with new seats {}.", orderId, newSeatsNum);
-            order.updateNumOfTickets(newSeatsNum);
+			int eventID = order.getEventId();
+			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+			if (venue == null) {
+				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
+				return Result.makeFail("Venue not found");
+			}
+			Segment segment = venue.getSegmentByID(order.getSegmentId());
+			if (segment == null) {
+				logger.error("Segment {} not found for changing seats for order {}.", order.getSegmentId(), orderId);
+				return Result.makeFail("Segment not found");
+			}
+
+			double pricePerSeat = segment.getPrice(eventID);
+			if (!validatePurchasePolicy(event.getEventID())) {
+                logger.error("Purchase policy validation failed for event {}", eventID);
+                return Result.makeFail("Purchase policy validation failed for this event");
+            }
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatsNum);
+
+
+			order.updateNumOfTickets(newSeatsNum, priceAfterDiscountPolicy);
+
 
             return Result.makeOk(newSeatsNum);
 
@@ -407,5 +459,49 @@ public class OrderService {
 			logger.error("Unexpected error during cancelling order {}: " + e.getMessage(), orderId);
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
+    }
+
+    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
+        Event event = eventRepository.getEventByID(eventID);
+        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.getDiscountPolicyByID(event.getEventProductionCompanyID());
+
+            if (discountPolicy == null) {
+                logger.error("No discount policy found for event {}", eventID);
+                throw new IllegalArgumentException("No discount policy found for this event");
+            }
+            if (companyDiscountPolicy == null) {
+                logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+                throw new IllegalArgumentException("No discount policy found for this event's production company");}
+            discountPolicy.addAll(companyDiscountPolicy);
+
+            double priceAfterDiscountPolicy = pricePerSeat * amount;
+            for (DiscountPolicy dp : discountPolicy) {
+                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+            }
+            return priceAfterDiscountPolicy;
+    }
+    private boolean validatePurchasePolicy(int eventID) {
+        Event event = eventRepository.getEventByID(eventID);
+        Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.getPurchasePolicyByID(event.getEventProductionCompanyID());
+
+            if (purchasePolicy == null) {
+                logger.error("No purchase policy found for event {}", eventID);
+                throw new IllegalArgumentException("No purchase policy found for this event");
+            }
+            if (companyPurchasePolicy == null) {
+                logger.error("No purchase policy found for production company {}", event.getEventProductionCompanyID());
+                throw new IllegalArgumentException("No purchase policy found for this event's production company");
+            }
+
+            purchasePolicy.addAll(companyPurchasePolicy);
+            for (PurchasePolicy pp : purchasePolicy) {
+                if (!pp.validatePurchase()) {
+                    logger.error("User did not meet purchase policy requirements");
+                    return false;
+                }
+            }
+            return true;
     }
 }
