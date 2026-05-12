@@ -6,10 +6,9 @@ public class OrderDTO {
 
     private final String orderId;
     private final String segmentId;
-    private final double pricesPerSeat;
     private final int numOfTickets;
     private final String orderType;
-    private final double sumOrderPrice;
+    private final double tocalOrderPrice;
     private final int eventId;
     private final String subjectID;
 
@@ -22,10 +21,9 @@ public class OrderDTO {
         }
         this.orderId = order.getOrderId();
         this.segmentId = order.getSegmentId();
-        this.pricesPerSeat = order.getPricesPerSeat();
         this.numOfTickets = order.getNumOfTickets();
         this.orderType = order.getOrderType().toString();
-        this.sumOrderPrice = order.getTotalOrderprice();
+        this.tocalOrderPrice = order.getTotalOrderprice();
         this.eventId = order.getEventId();
         this.subjectID = order.getSubjectId();
     }
@@ -36,17 +34,15 @@ public class OrderDTO {
     public String getSegmentId() {
         return segmentId;
     }
-    public double getPricesPerSeat() {
-        return pricesPerSeat;
-    }
+
     public int getNumOfTickets() {
         return numOfTickets;
     }
     public String getOrderType() {
         return orderType;
     }
-    public double getSumOrderPrice() {
-        return sumOrderPrice;
+    public double getTocalOrderPrice() {
+        return tocalOrderPrice;
     }
     public int getEventId() {
         return eventId;

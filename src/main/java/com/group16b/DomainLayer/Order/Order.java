@@ -9,7 +9,6 @@ public class Order {
 	private OrderState state;
 	private final String segmentId;
 	private List<String> seats; // seat Ids
-	private final double pricesPerSeat;
 	private int numOfTickets;
 	private final OrderType orderType;
 	private static int idCounter = 0;
@@ -18,26 +17,24 @@ public class Order {
 	private final String subjectID;
 
 
-	public Order(String segmentId, List<String> seats, double pricesPerSeat, int eventId, String subjectID) {
+	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.seats = List.copyOf(seats);
 		this.numOfTickets = seats.size();
 		this.segmentId = segmentId;
 		this.orderType = OrderType.SEAT;
-		this.totalOrderprice = pricesPerSeat * seats.size();
-		this.pricesPerSeat = pricesPerSeat;
+		this.totalOrderprice = totalPrice;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
 	}
-	public Order(String segmentId, int amount, double pricesPerSeat, int eventId, String subjectID) {
+	public Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID) {
 		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
 		this.orderType = OrderType.FIELD;
-		this.totalOrderprice = pricesPerSeat * amount;
-		this.pricesPerSeat = pricesPerSeat;
+		this.totalOrderprice = totalPrice;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
 		}
@@ -67,9 +64,6 @@ public class Order {
 		return seats;
 	}
 
-	public double getPricesPerSeat() {
-		return pricesPerSeat;
-	}
 
 	public int getNumOfTickets() {
 		return numOfTickets;
@@ -97,7 +91,7 @@ public class Order {
 	}	
 
 
-	public void updateSeats(List<String> newSeatIds) {
+	public void updateSeats(List<String> newSeatIds, double newTotalPrice) {
 		if (orderType == OrderType.FIELD) {
 			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
 		}
@@ -106,9 +100,9 @@ public class Order {
 		}
 		this.seats = List.copyOf(newSeatIds);
 		this.numOfTickets = newSeatIds.size();
-		this.totalOrderprice = this.pricesPerSeat * newSeatIds.size();
+		this.totalOrderprice = newTotalPrice;
 	}
-	public void updateNumOfTickets(int newNumOfTickets) {
+	public void updateNumOfTickets(int newNumOfTickets, double newTotalPrice) {
 		if (orderType == OrderType.SEAT) {
 			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
 		}
@@ -116,8 +110,7 @@ public class Order {
 			throw new IllegalArgumentException("New number of tickets must be greater than zero");
 		}
 		this.numOfTickets = newNumOfTickets;
-		this.totalOrderprice = this.pricesPerSeat * newNumOfTickets;
-		
+		this.totalOrderprice = newTotalPrice;
 	}
 
 	
