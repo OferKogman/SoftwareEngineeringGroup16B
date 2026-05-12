@@ -52,7 +52,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            User user = userRepo.getUserByID(Integer.getInteger(authenticationService.extractSubjectFromToken(sTocken)));
+            User user = userRepo.getUserByID(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
 
             user.validatePermissions(productionCompanyID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
@@ -96,7 +96,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.displayTotalRevenue: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            User user = userRepo.getUserByID(Integer.getInteger(authenticationService.extractSubjectFromToken(sTocken)));
+            User user = userRepo.getUserByID(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
             if (user == null) {
                 logger.error("ProductionCompanyService.displayTotalRevenue: User not found for token");
                 return Result.makeFail("User not found");
