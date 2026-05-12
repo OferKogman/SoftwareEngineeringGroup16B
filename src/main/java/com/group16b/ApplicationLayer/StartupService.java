@@ -21,7 +21,6 @@ public class StartupService {
     private EventService eventService;
     private OrderService orderService;
     private ProductionCompanyService productionCompanyService;
-    private PurchaseHistoryService purchaseHistoryService;
     private PurchasePolicyService purchasePolicyService;
     private ReserveService reserveService;
     private UserLoginService userLoginService;
@@ -47,7 +46,6 @@ public class StartupService {
         eventService = new EventService(authService, locationService, eventFilteringService);
         orderService = new OrderService(authService);
         productionCompanyService = new ProductionCompanyService(authService);
-        purchaseHistoryService = new PurchaseHistoryService();
         purchasePolicyService = new PurchasePolicyService(authService);
         reserveService = new ReserveService(authService);
         userLoginService = new UserLoginService(authService, userRepositoryMapImpl);
