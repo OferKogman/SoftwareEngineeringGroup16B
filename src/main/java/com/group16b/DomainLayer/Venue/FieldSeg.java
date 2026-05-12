@@ -34,7 +34,7 @@ public class FieldSeg extends Segment {
 	}
 	
 	public double getPrice(int eventID) {
-		throw new UnsupportedOperationException("Price calculation is not implemented yet.");
+		return 0;
 	}
 
 	protected void addStock(int eventID, Integer quantity) {

@@ -8,17 +8,17 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class UserLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserLoginService.class);
 
-    private final IUserRepository userRepository;
+    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private final IAuthenticationService tokenService;
 
-    public UserLoginService(IAuthenticationService tokenService, IUserRepository userRepository) {
+    public UserLoginService(IAuthenticationService tokenService) {
         this.tokenService = tokenService;
-        this.userRepository = userRepository;
     }
 
     public Result<String> createGuestSession() {
