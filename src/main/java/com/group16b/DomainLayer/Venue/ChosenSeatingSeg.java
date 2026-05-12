@@ -2,13 +2,29 @@ package com.group16b.DomainLayer.Venue;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.group16b.ApplicationLayer.DTOs.ChosenSeatingSegDTO;
+import com.group16b.ApplicationLayer.DTOs.SeatDTO;
+
 
 public class ChosenSeatingSeg extends Segment {
 	protected final Map<String, Seat> seats;
+	private int IDforSeat = 0;
 
-	ChosenSeatingSeg(String segmentID, Map<String, Seat> seats) {
+	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats) {
 		super(segmentID);
 		this.seats = seats;
+	}
+
+	public ChosenSeatingSeg(ChosenSeatingSegDTO seatingSegDTO, String segmentID){
+		super(segmentID);
+		this.seats = new ConcurrentHashMap<>();
+
+		for (Map.Entry<String, SeatDTO> entry : seatingSegDTO.getSeats().entrySet()) {
+            seats.put(entry.getKey(), new Seat(entry.getValue(), IDforSeat+""));
+			IDforSeat++;
+        }
 	}
 
 	@Override
@@ -59,5 +75,10 @@ public class ChosenSeatingSeg extends Segment {
 				seat.returnSeat(eventID);
 			}
 		}
+	}
+
+	@Override
+	public Map<String, Seat> getMap(){
+		return seats;
 	}
 }

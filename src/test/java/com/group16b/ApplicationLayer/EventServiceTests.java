@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.mock;
@@ -16,6 +18,7 @@ import static org.mockito.Mockito.when;
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
@@ -376,7 +379,9 @@ public class EventServiceTests {
     @Test
     public void CreateEvent_VenueIsUnavailable_Failure() {
         EventRecord record = new EventRecord("venue1", "event2", e1.getEventStartTime(), e1.getEventEndTime(), "artist2", "category2", 1, 67.0, 4.5);
-        assertEquals("Venue is already reserved for requested date !", eventService.createEvent(record, "user1").getError());
+        Result<EventDTO> result = eventService.createEvent(record, "user1");
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().startsWith("Venue is already booked during this time frame!"));
     }
 
     //update event //2.4.1.2

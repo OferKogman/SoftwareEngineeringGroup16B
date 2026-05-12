@@ -1,9 +1,11 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.util.Map;
+
 abstract public class Segment {
 	private final String segmentID;
 
-	Segment(String segmentID) {
+	public Segment(String segmentID) {
 		this.segmentID = segmentID;
 	}
 
@@ -16,4 +18,5 @@ abstract public class Segment {
 
 	public abstract String getSegmentType();
 	public abstract double getPrice(int eventID);
+	public abstract Map<?, ?> getMap();
 }

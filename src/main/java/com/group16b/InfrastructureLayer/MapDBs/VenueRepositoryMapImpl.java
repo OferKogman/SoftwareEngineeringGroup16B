@@ -2,7 +2,7 @@ package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
@@ -12,7 +12,7 @@ import com.group16b.DomainLayer.Venue.Venue;
 public class VenueRepositoryMapImpl implements IVenueRepository{
 
     private final static VenueRepositoryMapImpl instance = new VenueRepositoryMapImpl();
-	private Map<String, Venue> venus = new TreeMap<>();
+	private Map<String, Venue> venus = new ConcurrentHashMap<>();
 
 	private VenueRepositoryMapImpl() {
 	}
@@ -22,9 +22,27 @@ public class VenueRepositoryMapImpl implements IVenueRepository{
 	}
 
     @Override
+    public void addVenue(String venueID, Venue venue) {
+        if (venueID == null || venueID.trim().isEmpty()) {
+            throw new IllegalArgumentException("Venue ID cannot be null or empty.");
+        }
+        
+        if (venue == null) {
+            throw new IllegalArgumentException("Cannot save a null Venue.");
+        }
+
+        if (venus.putIfAbsent(venueID, venue) != null) {
+            throw new IllegalArgumentException("A venue with ID '" + venueID + "' already exists in the database.");
+        }
+    }
+
+    @Override
     public Venue getVenueByID(String venueID) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getVenueByID'");
+        if (venueID == null || venueID.trim().isEmpty()) {
+            throw new IllegalArgumentException("Venue ID cannot be null or empty.");
+        }
+        
+        return venus.get(venueID);
     }
 
     @Override
@@ -60,12 +78,6 @@ public class VenueRepositoryMapImpl implements IVenueRepository{
             throw new IllegalArgumentException("Venue with ID " + venueId + " not found");
         }
         venue.reserveSeats(ReservationRequest.forField(eventID, quantity, segmentId));
-    }
-
-    @Override
-    public void addVenue(String venueID, Venue venue) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'addVenue'");
     }
 
 }
