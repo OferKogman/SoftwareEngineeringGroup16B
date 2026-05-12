@@ -84,25 +84,5 @@ public class UserService {
 		}
 	}
 
-	public Result<Boolean> deleteUser(String sessionToken) {
-		try {
-			logger.info("Verifying session token for event deactivation.");
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event deactivation.");
-				return Result.makeFail("Invalid session token.");
-			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
-			logger.info("Session token verified successfully.");
-			return Result.makeOk(true);
-		}
-		catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
-	}
-
 	
 }

@@ -227,4 +227,9 @@ public class User {
 		return role != null && role instanceof Owner;
 	}
 
+	public boolean isFounderOfCompany(int companyID) {
+		Role role = getRole(companyID);
+		return role != null && role instanceof Founder;
+	}
+
 }
