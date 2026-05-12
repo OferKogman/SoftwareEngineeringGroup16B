@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
@@ -30,7 +31,7 @@ public class VenueEventConfigService {
         this.authService = authService;
     }
 
-    public Result<String> configureLayoutAndInventory(String sessionToken, int companyID, int eventID, Venue newVenueLayout, LocalDateTime startTime, LocalDateTime endTime) {
+    public Result<String> configureLayoutAndInventory(String sessionToken, int companyID, int eventID, VenueDTO newVenueLayoutDTO, LocalDateTime startTime, LocalDateTime endTime) {
         
         logger.info("Attempting to configure venue layout for event {}", eventID);
 
@@ -63,6 +64,7 @@ public class VenueEventConfigService {
                 return Result.makeFail("Permission denied. You must be an owner or manager of this company.");
             }
 
+            Venue newVenueLayout = new Venue(newVenueLayoutDTO);
             newVenueLayout.bookEvent(startTime, endTime, eventID);
 
             venueRepository.saveVenue(newVenueLayout.getName(), newVenueLayout);

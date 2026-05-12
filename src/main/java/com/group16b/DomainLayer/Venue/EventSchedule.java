@@ -2,6 +2,8 @@ package com.group16b.DomainLayer.Venue;
 
 import java.time.LocalDateTime;
 
+import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
+
 public class EventSchedule {
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
@@ -16,6 +18,11 @@ public class EventSchedule {
         
         this.startTime = startTime;
         this.endTime = endTime;
+    }
+
+    public EventSchedule(EventScheduleDTO eventScheduleDTO){
+        this.startTime = eventScheduleDTO.getStartTime();
+        this.endTime = eventScheduleDTO.getEndTime();    
     }
 
     public LocalDateTime getStartTime() {

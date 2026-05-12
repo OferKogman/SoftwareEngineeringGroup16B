@@ -4,17 +4,53 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.group16b.ApplicationLayer.DTOs.ChosenSeatingSegDTO;
+import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
+import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
+import com.group16b.ApplicationLayer.DTOs.SegmentDTO;
+import com.group16b.ApplicationLayer.DTOs.VenueDTO;
+
 public class Venue {
 	private volatile String name;
 	private final Location location;
 	private final Map<String, Segment> segments;
 	private final Map<Integer, EventSchedule> scheduledEvents;
+	private int IDForSeg = 0;
 
-	protected Venue(String name, Location location, Map<String, Segment> segments) {
+	public Venue(String name, Location location, Map<String, Segment> segments) {
 		this.name = name;
 		this.location = location;
 		this.segments = segments;
 		this.scheduledEvents = new ConcurrentHashMap<>();
+	}
+
+	public Venue(VenueDTO venueDTO){
+		this.name = venueDTO.getName();
+		this.location = new Location(venueDTO.getLocation());
+		this.segments = new ConcurrentHashMap<>();
+
+		for(Map.Entry<String, SegmentDTO> entry: venueDTO.getSegments().entrySet()){
+            if(entry.getValue().getSegmentType().equals("S")){
+                segments.put(entry.getKey(), new ChosenSeatingSeg((ChosenSeatingSegDTO)entry.getValue(), IDForSeg+""));
+				IDForSeg++;
+            } else if(entry.getValue().getSegmentType().equals("F")){
+                segments.put(entry.getKey(), new FieldSeg((FieldSegDTO)entry.getValue(), IDForSeg+"")); 
+				IDForSeg++;   
+            }
+        }
+
+        this.scheduledEvents = new ConcurrentHashMap<>();
+        for(Map.Entry<Integer, EventScheduleDTO> entry: venueDTO.getEventsSchedules().entrySet()){
+            scheduledEvents.put(entry.getKey(), new EventSchedule(entry.getValue()));
+        }
+	}
+
+	public Map<String, Segment> getSegments(){
+		return segments;
+	}
+
+	public Map<Integer, EventSchedule> getScheduledEvents(){
+		return scheduledEvents;
 	}
 
 	public String getName() {
@@ -60,11 +96,11 @@ public class Venue {
 
 		// initialize stock
 		// use start time n end time for event
-		if (scheduledEvents.putIfAbsent(eventID, new EventSchedule(startTime, endTime)) != null) {
-			throw new IllegalArgumentException("Venue is already reserved for requested date !");
-		}
-        
-		EventSchedule newSchedule = new EventSchedule(startTime, endTime);
+		if (scheduledEvents.containsKey(eventID)) {
+            throw new IllegalArgumentException("Venue is already reserved for this event ID!");
+        }
+
+        EventSchedule newSchedule = new EventSchedule(startTime, endTime);
         for (EventSchedule existingSchedule : scheduledEvents.values()) {
             if (newSchedule.overlapsWith(existingSchedule)) {
                 throw new IllegalArgumentException(

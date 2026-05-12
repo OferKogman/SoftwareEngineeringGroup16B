@@ -2,6 +2,8 @@ package com.group16b.DomainLayer.Venue;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.Map;
+import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
 
 public class FieldSeg extends Segment {
 	private final int size;
@@ -14,7 +16,16 @@ public class FieldSeg extends Segment {
 		stock = new ConcurrentHashMap<Integer, Integer>();
 	}
 
-	protected int getFieldSize() {
+	public FieldSeg(FieldSegDTO fieldSegDTO, String segmentID){
+		super(segmentID);
+		this.size = fieldSegDTO.getSize();
+
+		this.stock = new ConcurrentHashMap<>();
+		stock.putAll(fieldSegDTO.getStocks());
+
+	}
+
+	public int getFieldSize() {
 		return size;
 	}
 
@@ -74,5 +85,10 @@ public class FieldSeg extends Segment {
 	@Override
 	public String getSegmentType() {
 		return "F";
+	}
+
+	@Override
+	public Map<Integer, Integer> getMap(){
+		return stock;
 	}
 }
