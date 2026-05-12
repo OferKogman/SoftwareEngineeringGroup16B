@@ -67,7 +67,7 @@ public class VenueEventConfigService {
             Venue newVenueLayout = new Venue(newVenueLayoutDTO);
             newVenueLayout.bookEvent(startTime, endTime, eventID);
 
-            venueRepository.saveVenue(newVenueLayout.getName(), newVenueLayout);
+            venueRepository.addVenue(newVenueLayout.getName(), newVenueLayout);
 
             targetEvent.setEventString(newVenueLayout.getName()); 
             eventRepository.updateEvent(targetEvent);

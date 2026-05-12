@@ -22,7 +22,7 @@ public class VenueRepositoryMapImpl implements IVenueRepository{
 	}
 
     @Override
-    public void saveVenue(String venueID, Venue venue) {
+    public void addVenue(String venueID, Venue venue) {
         if (venueID == null || venueID.trim().isEmpty()) {
             throw new IllegalArgumentException("Venue ID cannot be null or empty.");
         }
@@ -78,12 +78,6 @@ public class VenueRepositoryMapImpl implements IVenueRepository{
             throw new IllegalArgumentException("Venue with ID " + venueId + " not found");
         }
         venue.reserveSeats(ReservationRequest.forField(eventID, quantity, segmentId));
-    }
-
-    @Override
-    public void addVenue(String venueID, Venue venue) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'addVenue'");
     }
 
 }

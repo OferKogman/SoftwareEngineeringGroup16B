@@ -115,7 +115,7 @@ public class VenueEventConfigServiceTests {
         
         verify(mockEvent, times(1)).setEventString(venueName);
         // We verify that the repository actually received ANY fully constructed Venue object!
-        verify(mockVenueRepository, times(1)).saveVenue(eq(venueName), any(Venue.class));
+        verify(mockVenueRepository, times(1)).addVenue(eq(venueName), any(Venue.class));
         verify(mockEventRepository, times(1)).updateEvent(mockEvent);
     }
 
@@ -194,7 +194,7 @@ public class VenueEventConfigServiceTests {
 
         assertFalse(result.isSuccess());
         assertEquals("Permission denied. You must be an owner or manager of this company.", result.getError());
-        verify(mockVenueRepository, never()).saveVenue(anyString(), any(Venue.class));
+        verify(mockVenueRepository, never()).addVenue(anyString(), any(Venue.class));
     }
 
     @Test
@@ -276,7 +276,6 @@ public class VenueEventConfigServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
 
-        // Trigger the Exception naturally by providing a bad end time (Start time AFTER End time)
         LocalDateTime badEndTime = startTime.minusHours(5);
 
         Result<String> result = configService.configureLayoutAndInventory(
@@ -284,7 +283,7 @@ public class VenueEventConfigServiceTests {
 
         assertFalse(result.isSuccess());
         assertTrue(result.getError().contains("Event start time must be before end time!"));
-        verify(mockVenueRepository, never()).saveVenue(anyString(), any());
+        verify(mockVenueRepository, never()).addVenue(anyString(), any());
     }
 
     @Test
@@ -293,7 +292,6 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
         
-        // This will force Integer.valueOf() to crash with a NumberFormatException
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn("invalid_id_format");
 
         Result<String> result = configService.configureLayoutAndInventory(
@@ -314,13 +312,11 @@ public class VenueEventConfigServiceTests {
         when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
         when(mockUserRepository.getUserByID(userID).isOwnerOfCompany(companyID)).thenReturn(true);
 
-        // Action: Pass NULL for the DTO
         Result<String> result = configService.configureLayoutAndInventory(
                 validToken, companyID, eventID, null, startTime, endTime);
 
         assertFalse(result.isSuccess());
         
-        // THE FIX: Use your original expected error string!
         assertEquals("An unexpected system error occurred while saving the layout.", result.getError());
     }
 }
