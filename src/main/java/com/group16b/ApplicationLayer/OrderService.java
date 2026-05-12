@@ -83,10 +83,6 @@ public class OrderService {
 				logger.warn("Invalid session token provided for completion.");
 				return Result.makeFail("Invalid session token.");
 			}
-			if(!authenticationService.isUserToken(sTocken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
-			}
 			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
@@ -186,10 +182,9 @@ public class OrderService {
 				return Result.makeFail("Invalid session token.");
 			}
             if (!authenticationService.isUserToken(sessionToken)) {
-			} else {
                 logger.warn("Only user can get order history.");
                 return Result.makeFail("Only user can get order history.");
-                    }
+            }
 			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepo.getUserByID(userID);
 			if (user == null) {
@@ -238,10 +233,7 @@ public class OrderService {
 				logger.warn("Invalid session token provided for reservation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			if(!authenticationService.isUserToken(sTocken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
-			}
+
 			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
 			logger.info("Session token verified successfully.");
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);

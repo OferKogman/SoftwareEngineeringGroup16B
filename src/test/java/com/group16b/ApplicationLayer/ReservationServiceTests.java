@@ -178,7 +178,9 @@ public class ReservationServiceTests {
 
 
         when(mockAuthenticationService.validateToken(SESSION_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.extractRoleFromToken(SESSION_TOKEN)).thenReturn("User");
+        when(mockAuthenticationService.isUserToken(SESSION_TOKEN)).thenReturn(true);
+        when(mockAuthenticationService.isAdminToken(SESSION_TOKEN)).thenReturn(false);
+
         when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID);
         when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
         when(mockQueueRepository.findVirtualQueueById(EVENT_ID)).thenReturn(queue);
@@ -226,7 +228,8 @@ public class ReservationServiceTests {
         String adminToken = "admin-token";
 
         when(mockAuthenticationService.validateToken(adminToken)).thenReturn(true);
-        when(mockAuthenticationService.extractRoleFromToken(adminToken)).thenReturn("Admin");
+        when(mockAuthenticationService.isAdminToken(adminToken)).thenReturn(true);
+        when(mockAuthenticationService.isUserToken(adminToken)).thenReturn(false);
 
         Result<String> result = reserveService.reserveSeats(
                 SEGMENT_ID,
@@ -422,7 +425,8 @@ public class ReservationServiceTests {
         String adminToken = "admin-token";
 
         when(mockAuthenticationService.validateToken(adminToken)).thenReturn(true);
-        when(mockAuthenticationService.extractRoleFromToken(adminToken)).thenReturn("Admin");
+        when(mockAuthenticationService.isAdminToken(adminToken)).thenReturn(true);
+        when(mockAuthenticationService.isUserToken(adminToken)).thenReturn(false);
 
         Result<String> result = reserveService.reserveFieldSeats(
                 FIELD_SEGMENT_ID,

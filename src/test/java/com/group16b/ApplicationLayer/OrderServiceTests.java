@@ -154,11 +154,13 @@ public class OrderServiceTests {
         injectField(orderService, "productionCompanyRepo", mockProductionCompanyRepository);
 
         when(mockAuthenticationService.validateToken(SESSION_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.extractRoleFromToken(SESSION_TOKEN)).thenReturn("Signed");
+        when(mockAuthenticationService.isUserToken(SESSION_TOKEN)).thenReturn(true);
         when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID_STRING);
 
         when(mockAuthenticationService.validateToken(ADMIN_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.extractRoleFromToken(ADMIN_TOKEN)).thenReturn("Admin");
+        when(mockAuthenticationService.isAdminToken(ADMIN_TOKEN)).thenReturn(true);
+        when(mockAuthenticationService.isUserToken(ADMIN_TOKEN)).thenReturn(false);
+
 
         when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
@@ -444,6 +446,7 @@ public class OrderServiceTests {
         order1.CompleteOrder();
         order2.CompleteOrder();
         when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+
         when(mockOrderRepository.getOrdersBySubjectID(USER_ID_STRING))
                 .thenReturn(List.of(order1, order2));
 
@@ -477,7 +480,8 @@ public class OrderServiceTests {
         String customerToken = "customer-token";
 
         when(mockAuthenticationService.validateToken(customerToken)).thenReturn(true);
-        when(mockAuthenticationService.extractRoleFromToken(customerToken)).thenReturn("Admin");
+        when(mockAuthenticationService.isAdminToken(customerToken)).thenReturn(true);
+        when(mockAuthenticationService.isUserToken(customerToken)).thenReturn(false);
 
         Result<List<OrderDTO>> result = orderService.getUserOrders(customerToken);
 
