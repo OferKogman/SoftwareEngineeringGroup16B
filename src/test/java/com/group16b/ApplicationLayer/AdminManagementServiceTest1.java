@@ -41,7 +41,7 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderState;
 
-public class AdminManagementServiceTest {
+public class AdminManagementServiceTest1 {
     static private AdminManagementService adminManagementService;
     static private IAuthenticationService mockTokenService;
     static private ISystemAdminRepository mockSystemAdminRepository;
