@@ -67,50 +67,7 @@ public class SystemAdmin {
 		}
 	}
 
-	public void closeProductionCompany(int productionCompanyId) {
-		ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
-		ProductionCompanyPolicy company = productionCompanyRepo.getProductionCompanyByID(productionCompanyId);
-		
-		if(company == null) {
-			System.out.println("Production company with ID " + productionCompanyId + " does not exist.");
-			return;
-		}
 
-		EventRepositoryMapImpl eventRepo = EventRepositoryMapImpl.getInstance();
-		List<Integer> productionCompanyIDs = new LinkedList<>();
-		productionCompanyIDs.add(productionCompanyId);
-
-		List<Event> companyEvents = eventRepo.searchEvents(null, null, null, null, null, null, null, null, null, productionCompanyIDs);
-		List<User> companyUsers = company.getAssociatedUsers();
-		try{
-			if(!companyEvents.isEmpty()) {
-				deactivateEvents(companyEvents);
-			}
-
-			if(!companyUsers.isEmpty()) {
-				deactivateUsers(companyUsers, productionCompanyId);
-			}
-			productionCompanyRepo.removeProductionCompany(productionCompanyId);
-		}
-		catch(Exception e) {
-			System.out.println("Error closing production company: " + e.getMessage());
-		}
-
-	}
-
-
-
-	private void deactivateEvents(List<Event> events) {
-		for (Event e : events) {
-			e.deactivateEvent();
-		}
-	}
-
-	private void deactivateUsers(List<User> users, int productionCompanyId) {
-		for (User u : users) {
-			u.removeRole(productionCompanyId);
-		}
-	}
 
 
 }
