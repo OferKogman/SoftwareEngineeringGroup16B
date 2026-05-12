@@ -94,4 +94,15 @@ public class EventDTO {
 	public double getEventRating() {
 		return this.rating;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == this)
+			return true;
+		if (!(o instanceof EventDTO)) {
+			return false;
+		}
+		EventDTO event = (EventDTO) o;
+		return eventID == event.eventID;
+	}
 }

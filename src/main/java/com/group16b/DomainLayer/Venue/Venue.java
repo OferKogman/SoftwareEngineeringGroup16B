@@ -10,7 +10,7 @@ public class Venue {
 	private final Map<String, Segment> segments;
 	private final Map<LocalDateTime, Integer> events;
 
-	protected Venue(String name, Location location, Map<String, Segment> segments) {
+	public Venue(String name, Location location, Map<String, Segment> segments) {
 		this.name = name;
 		this.location = location;
 		this.segments = segments;
