@@ -73,7 +73,7 @@ public class VenueEventConfigServiceTests {
                 "New York", "NY", "USA", 40.75, -73.99
         );
         
-    Map<String, Seat> dummySeats = new ConcurrentHashMap<>();
+        Map<String, Seat> dummySeats = new ConcurrentHashMap<>();
         ChosenSeatingSeg dummySeg = new ChosenSeatingSeg("VIP", dummySeats);
         
         Map<String, Segment> dummySegments = new ConcurrentHashMap<>();
@@ -96,6 +96,8 @@ public class VenueEventConfigServiceTests {
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
@@ -127,6 +129,7 @@ public class VenueEventConfigServiceTests {
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
@@ -181,6 +184,7 @@ public class VenueEventConfigServiceTests {
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
@@ -205,6 +209,7 @@ public class VenueEventConfigServiceTests {
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
@@ -229,6 +234,7 @@ public class VenueEventConfigServiceTests {
         VenueDTO validDTO = createValidVenueDTO();
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(false);
@@ -248,6 +254,7 @@ public class VenueEventConfigServiceTests {
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
@@ -269,6 +276,7 @@ public class VenueEventConfigServiceTests {
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
@@ -291,6 +299,7 @@ public class VenueEventConfigServiceTests {
         VenueDTO validDTO = createValidVenueDTO();
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn("invalid_id_format");
 
@@ -305,6 +314,7 @@ public class VenueEventConfigServiceTests {
     void configureLayoutAndInventory_NullVenueLayout_TriggersSystemException_ReturnsFailResult() {
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);

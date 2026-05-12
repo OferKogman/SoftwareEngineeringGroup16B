@@ -104,6 +104,7 @@ public class EventServiceTests {
         when(mockUserRepository.getUserByID(user.getUserID())).thenReturn(user);
         when(mockTokenService.validateToken("user1")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
+        when(mockTokenService.isUserToken("user1")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getUserID()));
         
         user.addRole(1, new Founder(user.getUserID()));
@@ -112,6 +113,7 @@ public class EventServiceTests {
         when(mockUserRepository.getUserByID(user2.getUserID())).thenReturn(user2);
         when(mockTokenService.validateToken("user2")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
+        when(mockTokenService.isUserToken("user2")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getUserID()));
 
         when(mockEventRepository.getEventByID(500)).thenThrow(new IllegalArgumentException("Event with ID 500 not found"));

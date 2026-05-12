@@ -1,9 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Deque;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -48,6 +46,10 @@ public class CompanyHierarchyService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
+			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
@@ -118,6 +120,11 @@ public class CompanyHierarchyService {
 				logger.warn("Invalid session token provided for Manager assignment of user {0} to company {1}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+			}
+
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
@@ -189,6 +196,10 @@ public class CompanyHierarchyService {
 				logger.warn("Invalid session token provided for accepting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			if(user==null)
@@ -244,6 +255,10 @@ public class CompanyHierarchyService {
 				logger.warn("Invalid session token provided for rejecting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
             if(user==null)
@@ -286,6 +301,10 @@ public class CompanyHierarchyService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for forfeiten ownership for company {0}.", companyID);
 				return Result.makeFail("Invalid session token.");
+			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
@@ -334,6 +353,10 @@ public class CompanyHierarchyService {
 				logger.warn("Invalid session token provided for removing manager with id {0} for company {1}.", targetID,companyID);
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
 			if (user == null) {
@@ -380,6 +403,10 @@ public class CompanyHierarchyService {
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for changing manager permissions for target id {0} for company {1}.", targetID,companyID);
 				return Result.makeFail("Invalid session token.");
+			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			User user = userRepository.getUserByID(userID);
@@ -430,8 +457,12 @@ public class CompanyHierarchyService {
 				logger.warn("Invalid session token provided for viewing company hierarchy for company {}.",companyID);
 				return Result.makeFail("Invalid session token.");
 			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			if (authenticationService.extractRoleFromToken(sessionToken) != "Signed") {
+			if (!authenticationService.isUserToken(sessionToken)) {
 				logger.warn("Only user can access this command",companyID);
 				return Result.makeFail("Invalid session token.");
 			}

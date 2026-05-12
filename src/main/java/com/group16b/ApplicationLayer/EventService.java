@@ -1,7 +1,6 @@
 package com.group16b.ApplicationLayer;
 
 import java.io.IOException;
-import java.io.PipedOutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -60,9 +59,13 @@ public class EventService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+			if(!authenticationService.isUserToken(sessionToken)) {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
+			}
+			if(!authenticationService.isUserToken(sessionToken)){
+				logger.warn("Only USERS are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
@@ -108,7 +111,7 @@ public class EventService {
 				return Result.makeFail("Invalid session token.");
 			}
 
-			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+			if(!authenticationService.isUserToken(sessionToken)) {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
@@ -150,7 +153,7 @@ public class EventService {
 				return Result.makeFail("Invalid session token.");
 			}
 
-			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+			if(!authenticationService.isUserToken(sessionToken)) {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
