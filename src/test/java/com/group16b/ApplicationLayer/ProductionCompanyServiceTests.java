@@ -50,7 +50,7 @@ public class ProductionCompanyServiceTests {
 
         productionCompanyService = new ProductionCompanyService(mockAuthService);
 
-        //Inject Repository Mocks using Reflection - bypassing singletons
+        //Inject Repository Mocks using Reflection - bypassing singletons initializations(user, event order)
         Field orderField = ProductionCompanyService.class.getDeclaredField("orderRepo");
         orderField.setAccessible(true);
         orderField.set(productionCompanyService, mockOrderRepo);

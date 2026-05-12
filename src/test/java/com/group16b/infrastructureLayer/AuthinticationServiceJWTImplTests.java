@@ -84,13 +84,16 @@ public class AuthinticationServiceJWTImplTests {
 	}
 
 	@Test
-	public void testAdminTokenTampering() {
-		int adminID = 1;
-		String token = authService.generateAdminToken(adminID);
-		// Tamper with the token by changing a character
-		String tamperedToken = token.substring(0, token.length() - 1) + "X";
-		assertEquals(false, authService.validateToken(tamperedToken));
-	}
+    public void testAdminTokenTampering() {
+        String validAdminToken = authService.generateAdminToken(1);
+        String hackerToken = authService.generateAdminToken(999); 
+
+        String[] adminParts = validAdminToken.split("\\.");
+        String[] hackerParts = hackerToken.split("\\.");
+
+        String tamperedToken = hackerParts[0] + "." + hackerParts[1] + "." + adminParts[2];
+        assertEquals(false, authService.validateToken(tamperedToken));
+    }
 
 	@Test
 	public void testExtractIdFromInvalidToken() {
