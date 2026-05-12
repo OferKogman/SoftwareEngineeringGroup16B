@@ -44,8 +44,7 @@ public class OrderService {
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyPolicyRepository productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
 
 
@@ -101,7 +100,7 @@ public class OrderService {
 
 			// 3. System - charges the user for the designed price.
 			logger.info("UserService.CompleteActiveOrder: user {} is attempting to pay {} for order {}", userId, price, orderID);
-			User user = userRepository.getUserByID(userId);
+			User user = userRepo.getUserByID(userId);
 			if (user == null) {
 				logger.error("UserService.CompleteActiveOrder: User {} not found while attempting to complete order {}", userId, orderID);
 				return Result.makeFail("User not found");
@@ -192,7 +191,7 @@ public class OrderService {
                 return Result.makeFail("Only user can get order history.");
                     }
 			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepo.getUserByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");
@@ -462,7 +461,7 @@ public class OrderService {
     }
 
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepository.getEventByID(eventID);
+        Event event = eventRepo.getEventByID(eventID);
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
         Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.getDiscountPolicyByID(event.getEventProductionCompanyID());
 
@@ -482,7 +481,7 @@ public class OrderService {
             return priceAfterDiscountPolicy;
     }
     private boolean validatePurchasePolicy(int eventID) {
-        Event event = eventRepository.getEventByID(eventID);
+        Event event = eventRepo.getEventByID(eventID);
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
         Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.getPurchasePolicyByID(event.getEventProductionCompanyID());
 

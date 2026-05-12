@@ -3,7 +3,7 @@ package com.group16b.DomainLayer.Venue;
 abstract public class Segment {
 	private final String segmentID;
 
-	Segment(String segmentID) {
+	public Segment(String segmentID) {
 		this.segmentID = segmentID;
 	}
 

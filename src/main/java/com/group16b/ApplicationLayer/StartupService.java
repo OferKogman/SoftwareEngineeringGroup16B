@@ -9,23 +9,28 @@ import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
 
 public class StartupService {
-    private static Logger logger = LoggerFactory.getLogger(StartupService.class);
-    private AdminManagementService adminManagementService;
-    private CompanyHierarchyService companyHierarchyService;
-    private EventService eventService;
-    private OrderService orderService;
-    private ProductionCompanyService productionCompanyService;
-    private PurchaseHistoryService purchaseHistoryService;
-    private PurchasePolicyService purchasePolicyService;
-    private ReserveService reserveService;
-    private UserLoginService userLoginService;
-    private UserService userService;
+    private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
+    private final AdminManagementService adminManagementService;
+    private final CompanyHierarchyService companyHierarchyService;
+    private final EventService eventService;
+    private final OrderService orderService;
+    private final ProductionCompanyService productionCompanyService;
+    private final PurchaseHistoryService purchaseHistoryService;
+    private final PurchasePolicyService purchasePolicyService;
+    private final ReserveService reserveService;
+    private final UserLoginService userLoginService;
+    private final UserService userService;
 
 
     public StartupService() {
@@ -33,6 +38,11 @@ public class StartupService {
         AuthenticationServiceJWTImpl authService = new AuthenticationServiceJWTImpl("mySuperSecretKeyForUsers123456789", "mySuperSecretKeyForAdmins123456789");
         LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
         UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
+        VenueRepositoryMapImpl venueRepositoryMapImpl = VenueRepositoryMapImpl.getInstance();
+        OrderRepositoryMapImpl orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
+        EventRepositoryMapImpl eventRepositoryMapImpl = EventRepositoryMapImpl.getInstance();
+        VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = VirtualQueueRepositoryMapImpl.getInstance();
+        ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepositoryMapImpl = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
         PaymentService paymentService = new PaymentService();
         TicketGateway ticketGateway = new TicketGateway();
 
@@ -50,7 +60,7 @@ public class StartupService {
         purchaseHistoryService = new PurchaseHistoryService();
         purchasePolicyService = new PurchasePolicyService(authService);
         reserveService = new ReserveService(authService);
-        userLoginService = new UserLoginService(authService, userRepositoryMapImpl);
+        userLoginService = new UserLoginService(authService);
         userService = new UserService(authService, ticketGateway);
 
         logger.info("Adding default system admin...");

@@ -4,37 +4,37 @@ import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-class Seat {
+public class Seat {
 	private final String seatId;
 	private final int row;
 	private final int number;
 
 	private final ConcurrentMap<Integer, Boolean> stock;
 
-	protected Seat(int row, int number) {
+	public Seat(int row, int number) {
 		this.seatId = row + "-" + number;
 		this.row = row;
 		this.number = number;
 		stock = new ConcurrentHashMap<Integer, Boolean>();
 	}
 
-	protected String getSeatId() {
+	public String getSeatId() {
 		return seatId;
 	}
 
-	protected int getRow() {
+	public int getRow() {
 		return row;
 	}
 
-	protected int getNumber() {
+	public int getNumber() {
 		return number;
 	}
 
-	protected boolean getStock(Integer eventID) {
+	public boolean getStock(Integer eventID) {
 		return stock.get(eventID);
 	}
 
-	protected boolean reserveSeat(int eventID) {
+	public boolean reserveSeat(int eventID) {
 		while (true) {
 			Boolean reserved = stock.get(eventID);
 			if (reserved == null) {
@@ -49,7 +49,7 @@ class Seat {
 		}
 	}
 	
-	protected boolean isSeatReserved(int eventID) {
+	public boolean isSeatReserved(int eventID) {
 		Boolean reserved = stock.get(eventID);
 		if (reserved == null) {
 			throw new IllegalArgumentException("this event is not in this venue.");
@@ -57,7 +57,7 @@ class Seat {
 		return reserved;
 	}
 
-	protected void returnSeat(int eventID) {
+	public void returnSeat(int eventID) {
 		while (true) {
 			Boolean reserved = stock.get(eventID);
 			if (reserved == null) {
@@ -72,7 +72,7 @@ class Seat {
 		}
 	}
 
-	protected void addEvent(int eventID) {
+	public void addEvent(int eventID) {
 		stock.putIfAbsent(eventID, false);
 	}
 }
