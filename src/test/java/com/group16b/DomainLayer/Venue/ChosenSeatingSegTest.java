@@ -1,14 +1,13 @@
 package com.group16b.DomainLayer.Venue;
-import java.util.List;
-import java.util.Map;
-import org.junit.jupiter.api.Test;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 public class ChosenSeatingSegTest {
@@ -168,4 +167,26 @@ public class ChosenSeatingSegTest {
         assertEquals("S", segment.getSegmentType());
     }
 
+    @Test
+    void cancelReservation_unreservedSeat_shouldThrow() {
+        int eventID = 100;
+        ChosenSeatingSeg segment = createSegmentWithTwoSeats(eventID);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> segment.cancelReservation(ReservationRequest.forSeats(eventID, List.of("1-1"), "S1")),
+                "Should throw if trying to cancel a seat that is not actually reserved"
+        );
+    }
+
+    @Test
+    void reserve_emptySeatList_shouldNotChangeAnything() {
+        int eventID = 100;
+        ChosenSeatingSeg segment = createSegmentWithTwoSeats(eventID);
+
+        assertDoesNotThrow(() -> segment.reserve(ReservationRequest.forSeats(eventID, List.of(), "S1")));
+        
+        assertFalse(segment.seats.get("1-1").isSeatReserved(eventID));
+        assertFalse(segment.seats.get("1-2").isSeatReserved(eventID));
+    }
 }

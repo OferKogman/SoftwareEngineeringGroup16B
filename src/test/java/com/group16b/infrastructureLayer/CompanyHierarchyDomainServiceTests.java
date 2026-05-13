@@ -30,10 +30,8 @@ public class CompanyHierarchyDomainServiceTests {
 
     @BeforeEach
     void setUp() throws Exception {
-        // 1. Initialize the mock object that your test methods configure
         mockRepo = mock(UserRepositoryMapImpl.class);
         
-        // 2. Instantiate the service
         domainService = new CompanyHierarchyDomainService();
 
         // 3. THE DYNAMIC BRIDGE:
@@ -47,7 +45,7 @@ public class CompanyHierarchyDomainServiceTests {
             return null;
         });
 
-        // 4. Inject the bridge using the same Reflection you used in the ApplicationLayer tests
+        //Inject the bridge using the same Reflection you used in the ApplicationLayer tests
         Field userRepo = domainService.getClass().getDeclaredField("userRepository");
         userRepo.setAccessible(true);
         userRepo.set(domainService, bridgeRepo);

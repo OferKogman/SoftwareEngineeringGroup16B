@@ -53,6 +53,14 @@ public class FieldSeg extends Segment {
 		}
 	}
 
+	@Override
+	public void setStockForEvent(int eventID, int newStock){
+		if(!this.stock.containsKey(eventID)){
+			throw new IllegalArgumentException("cannot modify segments unrelated to event");	
+		}
+		stock.put(eventID, newStock);//maybe add a maximum number?
+	}
+
 	protected void removeStock(int eventID, Integer quantity) {
 		while (true) {
 			Integer currQty = stock.get(eventID);
@@ -81,6 +89,7 @@ public class FieldSeg extends Segment {
 	protected void addEvent(int eventID) {
 		stock.putIfAbsent(eventID, size);
 	}
+
 
 	@Override
 	public String getSegmentType() {

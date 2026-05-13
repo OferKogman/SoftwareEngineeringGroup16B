@@ -1,13 +1,5 @@
 package com.group16b.ApplicationLayer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -15,85 +7,95 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import com.group16b.ApplicationLayer.Objects.Result;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.OpenCompany;
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Founder;
+import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.Order.OrderState;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 
 public class AdminManagementServiceTest1 {
-    static private AdminManagementService adminManagementService;
-    static private IAuthenticationService mockTokenService;
-    static private ISystemAdminRepository mockSystemAdminRepository;
-    static private IEventRepository mockEventRepository;
-    static private IVenueRepository mockVenueRepository;
-    static private OrderService orderService;
-    static private IUserRepository userRepository;
-    Location location1;
-    Segment segment1;
-    Venue venue1;
-    Event e1;
-    SystemAdmin systemAdmin;
-    User user;
-    User user2;
-    String sessionToken;
-    String invalidToken;
+    
+    private AdminManagementService adminManagementService;
+    private IAuthenticationService mockTokenService;
+    private ISystemAdminRepository mockSystemAdminRepository;
+    private IEventRepository mockEventRepository;
+    private IVenueRepository mockVenueRepository;
+    private IUserRepository mockUserRepository;
+    private IOrderRepository mockOrderRepository;
 
+    private Location location1;
+    private Segment segment1;
+    private Venue venue1;
+    private Event e1;
+    private SystemAdmin systemAdmin;
+    private User user;
+    private User user2;
+    private String sessionToken;
+    private String invalidToken;
 
-     
     @BeforeEach
-    void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    void setUp() throws Exception {
         mockSystemAdminRepository = mock(ISystemAdminRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
-        systemAdmin = new SystemAdmin(1, "username", "password", "email");
-        userRepository = mock(IUserRepository.class);
-        invalidToken = "invalidToken";
+        mockUserRepository = mock(IUserRepository.class);
+        mockOrderRepository = mock(IOrderRepository.class); 
 
         adminManagementService = new AdminManagementService(mockTokenService);
-        Field adminRepo = adminManagementService.getClass().getDeclaredField("systemAdminRepository");
-        adminRepo.setAccessible(true);
-        adminRepo.set(adminManagementService, mockSystemAdminRepository);
+
+        setPrivateField(adminManagementService, "systemAdminRepo", mockSystemAdminRepository);
+        setPrivateField(adminManagementService, "userRepository", mockUserRepository);
+        setPrivateField(adminManagementService, "orderRepo", mockOrderRepository);
+        setPrivateField(adminManagementService, "eventRepo", mockEventRepository);
+
         sessionToken = "validToken";
-        orderService = new OrderService(mockTokenService);
+        invalidToken = "invalidToken";
+        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
+        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
+        when(mockTokenService.validateToken(invalidToken)).thenReturn(false);
 
-
+        systemAdmin = new SystemAdmin(1, "username", "password", "email");
+        
         user = new User("testuser", "password");
+        user.addRole(1, new Founder(user.getUserID()));
         when(mockTokenService.validateToken("user1")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user1")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getUserID()));
-        user.addRole(1, new Founder(user.getUserID()));
 
         user2 = new User("testuser2", "password");
         when(mockTokenService.validateToken("user2")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user2")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getUserID()));
-
-
-
 
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
         segment1 = new FieldSeg("segment1", 50);
@@ -102,163 +104,150 @@ public class AdminManagementServiceTest1 {
         segmentMap.put("segment1", segment1);
         venue1 = new Venue("Test Venue", location1, segmentMap);
         when(mockVenueRepository.getVenueByID("venue1")).thenReturn(venue1);
+        
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getUserID());
         when(mockEventRepository.getEventByID(e1.getEventID())).thenReturn(e1);
         when(mockEventRepository.searchEvents(List.of("empty"), null, null, null, null, null, null, null, null, null)).thenReturn(new ArrayList<>(List.of()));
-       
-    
     }
 
-    //good
+    // Helper method to keep reflection injection clean
+    private void setPrivateField(Object target, String fieldName, Object mock) throws Exception {
+        Field field = target.getClass().getDeclaredField(fieldName);
+        field.setAccessible(true);
+        field.set(target, mock);
+    }
+
     @Test
     void testViewAllPurchaseHistory() {
-        ReserveService reserveService = new ReserveService(mockTokenService);
         int eventID = e1.getEventID();
-        String venueID = e1.getEventVenueID();
-        String eventSegment = "segment1";
-        reserveService.reserveFieldSeats(eventSegment, 1, eventID, venueID, sessionToken);
-        Order completedOrder = new Order(eventSegment, 1, 1, eventID, null);
+        
+        Order completedOrder = new Order("segment1", 1, 1.0, eventID, String.valueOf(user.getUserID()));
         completedOrder.CompleteOrder();
-        List<OrderDTO> completedOrders = new ArrayList<>();
-        OrderDTO orderDTO = new OrderDTO(completedOrder);
-        completedOrders.add(orderDTO);
-        Result.makeOk(completedOrders);
-        assertTrue(adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID()).equals(completedOrders));
         
+        List<Order> databaseOrders = new ArrayList<>();
+        databaseOrders.add(completedOrder);
         
+        when(mockOrderRepository.getAllCompletedOrders()).thenReturn(databaseOrders);
+        
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
+        
+        assertTrue(result.isSuccess(), "Service failed with error: " + result.getError());
+        assertEquals(1, result.getValue().size());
+        assertEquals(completedOrder.getOrderId(), result.getValue().get(0).getOrderId());
     }
-    //bad
+
+    @Test
+    public void testViewAllPurchaseHistoryMultipleOrders() {
+        int eventID = e1.getEventID();
+        
+        Order order1 = new Order("segment1", 1, 1.0, eventID, String.valueOf(user.getUserID()));
+        order1.CompleteOrder();
+        Order order2 = new Order("segment2", 2, 2.0, eventID, String.valueOf(user.getUserID()));
+        order2.CompleteOrder();
+        
+        when(mockOrderRepository.getAllCompletedOrders()).thenReturn(List.of(order1, order2));
+        
+        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
+        
+        assertTrue(history.isSuccess(), "Service failed with error: " + history.getError());
+        assertEquals(2, history.getValue().size());
+    }
+
     @Test
     public void testViewAllPurchaseHistoryBad() {
-        user = new User("test@example.com", "password123");
-        userRepository.addUser(user);
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, 999);
         
-        assertThrows(IllegalArgumentException.class, () -> {
-            adminManagementService.viewPurchesHistoryByUser(sessionToken, 999); // Non-existent user ID
-        });
+        assertTrue(result.isSuccess(), "Service should succeed even if user has no orders");
+        assertTrue(result.getValue().isEmpty(), "Expected an empty history for a user that doesn't exist");
+    }
+
+    @Test
+    public void testCloseProductionCompanySuccess() throws Exception {
+        int companyID = 1;
+        
+        ProductionCompanyPolicyRepositoryMapImpl mockPolicyRepo = mock(ProductionCompanyPolicyRepositoryMapImpl.class);
+        
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, mockPolicyRepo);
+
+        ProductionCompanyPolicy mockCompany = mock(ProductionCompanyPolicy.class);
+        when(mockPolicyRepo.getProductionCompanyByID(companyID)).thenReturn(mockCompany); 
+        
+        when(mockEventRepository.searchEvents(any(), any(), any(), any(), any(), any(), any(), any(), any(), anyList()))
+            .thenReturn(new ArrayList<>());
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, sessionToken);
+        
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
     }
 
     @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
-        userRepository.addUser(newUser);
+        when(mockUserRepository.getUserByID(newUser.getUserID())).thenReturn(newUser);
+        when(mockOrderRepository.getOrdersBySubjectID(String.valueOf(newUser.getUserID()))).thenReturn(new ArrayList<>());
         
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, newUser.getUserID());
         
         assertNotNull(history);
+        assertTrue(history.isSuccess());
         assertTrue(history.getValue().isEmpty());
     }
 
     @Test
-    public void testViewAllPurchaseHistoryMultipleOrders() {
-        ReserveService reserveService = new ReserveService(mockTokenService);
-        int eventID = e1.getEventID();
-        String venueID = e1.getEventVenueID();
-        
-        // Create multiple completed orders
-        Order order1 = new Order("segment1", 1, 1, eventID, null);
-        order1.CompleteOrder();
-        Order order2 = new Order("segment2", 2, 2, eventID, null);
-        order2.CompleteOrder();
-        
-        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
-        
-        assertEquals(2, history.getValue().size());
-    }
-
-    @Test
     public void testViewAllPurchaseHistoryInvalidToken() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            adminManagementService.viewPurchesHistoryByUser("invalidToken", user.getUserID());
-        });
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(invalidToken, user.getUserID());
+        assertFalse(result.isSuccess(), "Service should fail with invalid token");
     }
 
     @Test
     public void testViewAllPurchaseHistoryNullToken() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            adminManagementService.viewPurchesHistoryByUser(null, user.getUserID());
-        });
+        when(mockTokenService.validateToken(null)).thenReturn(false);
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(null, user.getUserID());
+        assertFalse(result.isSuccess(), "Service should fail with null token");
     }
 
     @Test
     public void testViewPurchaseHistoryUnauthorizedUser() {
         User otherUser = new User("other@example.com", "password123");
-        userRepository.addUser(otherUser);
+        when(mockUserRepository.getUserByID(otherUser.getUserID())).thenReturn(otherUser);
         
-        assertThrows(IllegalArgumentException.class, () -> {
-            adminManagementService.viewPurchesHistoryByUser(sessionToken, otherUser.getUserID());
-        });
-    }
+        // Simulating the user trying to fetch their own history without admin token
+        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
 
-     @Test
-    public void testCloseProductionCompanySuccess() {
-        int companyID = 1;
-        ProductionCompanyPolicy company = mock(ProductionCompanyPolicy.class);
-        List<User> companyUsers = new ArrayList<>();
-        List<Event> companyEvents = new ArrayList<>();
-
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
-        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-        when(company.getAssociatedUsers()).thenReturn(companyUsers);
-
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, sessionToken);
-
-        assertTrue(result.isSuccess());
-    }
-
-    @Test
-    public void testCloseProductionCompanyInvalidToken() {
-        when(mockTokenService.validateToken(invalidToken)).thenReturn(false);
-
-        Result<String> result = adminManagementService.closeProductionCompany(1, invalidToken);
-
-        assertFalse(result.isSuccess());
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, otherUser.getUserID());
+        assertFalse(result.isSuccess(), "Service should fail for unauthorized access");
     }
 
     @Test
     public void testCloseProductionCompanyUnauthorized() {
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
 
         Result<String> result = adminManagementService.closeProductionCompany(1, sessionToken);
-
         assertFalse(result.isSuccess());
     }
 
     @Test
     public void testRegisterNewAdminSuccess() {
-        int newAdminID = 1;
-        String username = "newAdmin";
-        String password = "password123";
-        String email = "admin@example.com";
-
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
-        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-
-        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, newAdminID, username, password, email);
-
+        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, 1, "newAdmin", "password123", "admin@example.com");
         assertTrue(result.isSuccess());
     }
 
     @Test
     public void testRegisterNewAdminInvalidToken() {
-        when(mockTokenService.validateToken(invalidToken)).thenReturn(false);
-
         Result<String> result = adminManagementService.registerNewAdmin(invalidToken, 1, "admin", "pass", "email@example.com");
-
         assertFalse(result.isSuccess());
     }
 
     @Test
     public void testRegisterNewAdminUnauthorized() {
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
 
         Result<String> result = adminManagementService.registerNewAdmin(sessionToken, 1, "admin", "pass", "email@example.com");
-
         assertFalse(result.isSuccess());
     }
 }

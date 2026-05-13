@@ -22,6 +22,7 @@ import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
+import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
@@ -211,7 +212,7 @@ public class EventService {
 				return Result.makeFail("Invalid session token.");
 			}
 
-			if(!"Signed".equals(authenticationService.extractRoleFromToken(sessionToken))) {
+			if(!authenticationService.isUserToken(sessionToken)) {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
@@ -263,6 +264,43 @@ public class EventService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+
+	public Result<String> editStockInSegmentsForEvent(Map<String, Integer> segmentsAndNewStock,  int eventID, String sessionToken){
+		try{
+			logger.info("Verifying session token for event editing.");
+			if (!authenticationService.validateToken(sessionToken)) {
+				logger.warn("Invalid session token provided for event editing.");
+				return Result.makeFail("Invalid session token.");
+			}
+
+			if(!authenticationService.isUserToken(sessionToken)) {
+				logger.warn("Only signed-in users are allowed to create events.");
+				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
+			}
+			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			logger.info("Session token verified successfully.");
+
+			Event event = eventRepository.getEventByID(eventID);
+
+			logger.info("Validating user permissions for event activation.");
+			user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
+			logger.info("User permissions validated successfully.");
+
+			Venue venue = venueRepository.getVenueByID(event.getEventVenueID());
+
+			logger.info("Attempting to edit event with ID: " + eventID);	
+			
+			for(Map.Entry<String, Integer> entry : segmentsAndNewStock.entrySet()){
+				Segment currSeg = venue.getSegmentByID(entry.getKey());
+				currSeg.setStockForEvent(eventID, entry.getValue());
+			}
+
+			return Result.makeOk("Changed stocks for eventID: " + eventID);
+		}	catch(Exception e){
+			logger.error("Unexpected error during event search: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}	
+	}
 
     public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
         try {
