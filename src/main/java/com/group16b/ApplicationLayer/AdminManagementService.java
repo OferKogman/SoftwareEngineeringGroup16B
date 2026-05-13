@@ -241,8 +241,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.registerNewAdmin: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-
-            ISystemAdminRepository systemAdminRepo = com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl.getInstance();
+            
             boolean checkIfAdminAlreadyExists = systemAdminRepo.getSystemAdminById(newAdminID) != null;
             boolean checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;
             
