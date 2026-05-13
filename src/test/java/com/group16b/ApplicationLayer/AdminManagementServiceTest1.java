@@ -10,7 +10,6 @@ import java.util.TreeMap;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,31 +62,26 @@ public class AdminManagementServiceTest1 {
 
     @BeforeEach
     void setUp() throws Exception {
-        // 1. Initialize Mocks
         mockSystemAdminRepository = mock(ISystemAdminRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
-        mockOrderRepository = mock(IOrderRepository.class); // ADDED: Order Repo Mock
+        mockOrderRepository = mock(IOrderRepository.class); 
 
-        // 2. Initialize Service
         adminManagementService = new AdminManagementService(mockTokenService);
 
-        // 3. Inject ALL Repositories using Reflection
         setPrivateField(adminManagementService, "systemAdminRepo", mockSystemAdminRepository);
         setPrivateField(adminManagementService, "userRepository", mockUserRepository);
         setPrivateField(adminManagementService, "orderRepo", mockOrderRepository);
         setPrivateField(adminManagementService, "eventRepo", mockEventRepository);
 
-        // 4. Setup Tokens
         sessionToken = "validToken";
         invalidToken = "invalidToken";
         when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
         when(mockTokenService.validateToken(invalidToken)).thenReturn(false);
 
-        // 5. Setup Original Data
         systemAdmin = new SystemAdmin(1, "username", "password", "email");
         
         user = new User("testuser", "password");
@@ -136,7 +130,6 @@ public class AdminManagementServiceTest1 {
         List<Order> databaseOrders = new ArrayList<>();
         databaseOrders.add(completedOrder);
         
-        // THE FIX: Tell Mockito to return the dummy data when getAllCompletedOrders() is called!
         when(mockOrderRepository.getAllCompletedOrders()).thenReturn(databaseOrders);
         
         Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
@@ -175,20 +168,15 @@ public class AdminManagementServiceTest1 {
     public void testCloseProductionCompanySuccess() throws Exception {
         int companyID = 1;
         
-        // 1. Create a mock for the Policy Repository
         ProductionCompanyPolicyRepositoryMapImpl mockPolicyRepo = mock(ProductionCompanyPolicyRepositoryMapImpl.class);
         
-        // 2. Inject it using Reflection (Requires the change to AdminManagementService.java mentioned in Step 1!)
         Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
         policyField.setAccessible(true);
         policyField.set(adminManagementService, mockPolicyRepo);
 
-        // 3. Tell the mock to return a dummy company
         ProductionCompanyPolicy mockCompany = mock(ProductionCompanyPolicy.class);
-        // Ensure this method name matches exactly what your getProductionCompanyByID method is called
         when(mockPolicyRepo.getProductionCompanyByID(companyID)).thenReturn(mockCompany); 
         
-        // 4. Because your service calls searchEvents, we must tell Mockito not to panic when that happens
         when(mockEventRepository.searchEvents(any(), any(), any(), any(), any(), any(), any(), any(), any(), anyList()))
             .thenReturn(new ArrayList<>());
         
