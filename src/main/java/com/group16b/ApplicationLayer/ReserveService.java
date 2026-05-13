@@ -65,6 +65,7 @@ public class ReserveService {
             
             logger.info("Checking event is active");
             Event event = eventRepository.getEventByID(eventID);
+            // TODO check event exists
             if (!event.getEventStatus()) {
                 logger.error("Event is inactive");
                 queueRemovePassed(q, subjectID);
