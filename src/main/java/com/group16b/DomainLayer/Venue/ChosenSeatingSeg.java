@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,6 +76,31 @@ public class ChosenSeatingSeg extends Segment {
 				seat.returnSeat(eventID);
 			}
 		}
+	}
+
+	private List<Seat> getSeatsInThisField(int eventID){
+		List<Seat> list = new LinkedList<>();
+		for(Seat seat : seats.values()){
+			if(seat.isSeatReserved(eventID)){
+				list.add(seat);
+			}
+		}
+		return list;
+	}
+
+	@Override
+	public void setStockForEvent(int eventID, int newStock){
+		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
+		if(seatsInEvent.size() <= newStock){
+			throw new IllegalArgumentException("removing too much from the segment: " + segmentID + " for event :" + eventID);
+		}
+
+		int startIndex = newStock;//we only keep the newStock amount of seats in seg
+
+		for (int index = startIndex; index < seatsInEvent.size(); index++) {
+			Seat seat = seatsInEvent.get(index);
+			seat.returnSeat(eventID);
+		}	
 	}
 
 	@Override

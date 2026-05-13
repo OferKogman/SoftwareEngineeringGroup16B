@@ -31,6 +31,7 @@ import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
@@ -147,7 +148,6 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-            ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
             ProductionCompanyPolicy company = productionCompanyRepo.getProductionCompanyByID(productionCompanyId);
             
             if(company == null) {
@@ -155,7 +155,6 @@ public class AdminManagementService {
                 return Result.makeFail("Production company with ID " + productionCompanyId + " does not exist.");
             }
 
-            EventRepositoryMapImpl eventRepo = EventRepositoryMapImpl.getInstance();
             List<Integer> productionCompanyIDs = new LinkedList<>();
             productionCompanyIDs.add(productionCompanyId);
 
