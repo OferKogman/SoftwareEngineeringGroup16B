@@ -11,7 +11,7 @@ import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
@@ -42,7 +42,7 @@ public class StartupService {
         OrderRepositoryMapImpl orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
         EventRepositoryMapImpl eventRepositoryMapImpl = EventRepositoryMapImpl.getInstance();
         VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = VirtualQueueRepositoryMapImpl.getInstance();
-        ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepositoryMapImpl = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
+        ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
         PaymentService paymentService = new PaymentService();
         TicketGateway ticketGateway = new TicketGateway();
 
@@ -52,13 +52,13 @@ public class StartupService {
         
 
         logger.info("Initializing application services...");
-        adminManagementService = new AdminManagementService(authService);
+        adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl);
         companyHierarchyService = new CompanyHierarchyService(authService, companyHierarchyDomainService);
-        eventService = new EventService(authService, locationService, eventFilteringService);
-        orderService = new OrderService(authService);
+        eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl);
+        orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
         productionCompanyService = new ProductionCompanyService(authService);
         purchasePolicyService = new PurchasePolicyService(authService);
-        reserveService = new ReserveService(authService);
+        reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);
         userService = new UserService(authService, ticketGateway);
 
