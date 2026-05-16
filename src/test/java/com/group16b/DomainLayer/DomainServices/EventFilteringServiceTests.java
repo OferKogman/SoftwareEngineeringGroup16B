@@ -16,8 +16,8 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -124,9 +124,9 @@ public class EventFilteringServiceTests {
         Venue v2 = mock(Venue.class);
         when(v2.getLocation()).thenReturn(new Location("B", "B", "B", "B", "B", "B", 0.0, 0.0));
         when(venueRepository.getVenueByID("2")).thenReturn(v2);
-        ProductionCompanyPolicy pcp1 = mock(ProductionCompanyPolicy.class);
+        ProductionCompany pcp1 = mock(ProductionCompany.class);
         when(pcp1.getRating()).thenReturn(3.0);
-        ProductionCompanyPolicy pcp2 = mock(ProductionCompanyPolicy.class);
+        ProductionCompany pcp2 = mock(ProductionCompany.class);
         when(pcp2.getRating()).thenReturn(5.0);
         when(productionCompanyPolicyRepository.getProductionCompanyByID(1)).thenReturn(pcp1);
         when(productionCompanyPolicyRepository.getProductionCompanyByID(2)).thenReturn(pcp2);

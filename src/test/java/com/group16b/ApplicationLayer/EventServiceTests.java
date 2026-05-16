@@ -23,6 +23,7 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Founder;
@@ -56,14 +57,14 @@ public class EventServiceTests {
     static public void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockTokenService = mock(IAuthenticationService.class);
         mockLocationService = mock(ILocatoinService.class);
-        eventFilteringService = new EventFilteringService();
         mockProductionCompanyPolicyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
+        eventFilteringService = new EventFilteringService(mockProductionCompanyPolicyRepository);
         mockVirtualQueueRepository = mock(IVirtualQueueRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
 
-        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService);
+        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository);
 
         Field PCPR = eventService.getClass().getDeclaredField("productionCompanyPolicyRepository");
         PCPR.setAccessible(true);
@@ -97,7 +98,7 @@ public class EventServiceTests {
         VR2.setAccessible(true);
         VR2.set(eventFilteringService, mockVenueRepository);
 
-        when(mockProductionCompanyPolicyRepository.getProductionCompanyByID(1)).thenReturn(new ProductionCompany());
+        when(mockProductionCompanyPolicyRepository.findByID(String.valueOf(1))).thenReturn(mock(ProductionCompany.class));
         when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
 
         user = new User("testuser", "password");

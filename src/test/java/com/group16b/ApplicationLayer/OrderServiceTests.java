@@ -40,7 +40,7 @@ import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyPolicyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;

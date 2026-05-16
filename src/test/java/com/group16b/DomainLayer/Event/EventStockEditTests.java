@@ -21,7 +21,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyPolicyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;

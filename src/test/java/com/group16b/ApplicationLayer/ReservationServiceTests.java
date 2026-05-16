@@ -34,7 +34,7 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyPolicyRepository;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
