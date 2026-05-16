@@ -1,7 +1,10 @@
 package com.group16b.DomainLayer.ProductionCompany;
 
 import java.util.List;
+import java.util.Set;
 
+import com.group16b.DomainLayer.Policies.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.User.User;
 
 public class ProductionCompany {
@@ -47,5 +50,15 @@ public class ProductionCompany {
     public void setVersion(long version)
     {
         this.version=version;
+    }
+
+    public Set<DiscountPolicy> getDiscountPolicy()
+    {
+        return null;
+    }
+
+    public Set<PurchasePolicy> getPurchasePolicy()
+    {
+        return null;
     }
 }
