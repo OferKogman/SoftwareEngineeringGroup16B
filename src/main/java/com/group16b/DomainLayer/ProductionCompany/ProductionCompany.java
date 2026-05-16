@@ -6,7 +6,9 @@ import java.util.Set;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.User.Roles.RoleType;
 
 public class ProductionCompany {
     private int productionCompanyID;
@@ -71,5 +73,32 @@ public class ProductionCompany {
     public Set<PurchasePolicy> getPurchasePolicy()
     {
         return null;
+    }
+
+    private boolean isOwner(int userID)
+    {
+        MembershipNode node=membersNodes.get(userID);
+        if(node==null || node.getRoleType() == RoleType.MANAGER)
+            return false;
+        return true;
+    }
+
+    /*
+    adds an invite to become owner
+    assigner is set to be caller
+    PRE CONDITIONS: target is not already owner, caller is owner
+    */
+    public void AssignOwner(int callerID, int targetID)
+    {
+        if(!isOwner(callerID))
+        {
+            throw new IllegalArgumentException("caller User is not owner in Assign Owner.");
+        }
+        if(isOwner(targetID))
+        {
+            throw new IllegalArgumentException("Target is already owner in Assign Owner.");
+        }
+        MembershipNode newOnwerInvite = MembershipNode.createOwner(callerID, targetID);
+        invites.put(targetID, newOnwerInvite);
     }
 }

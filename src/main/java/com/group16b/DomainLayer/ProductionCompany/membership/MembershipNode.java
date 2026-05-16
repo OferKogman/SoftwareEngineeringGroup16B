@@ -32,9 +32,26 @@ public class MembershipNode {
     {
         return new MembershipNode(userID, assignerID, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
     }
-    public static MembershipNode createOwner(int userID)
+    public static MembershipNode createFounder(int userID)
     {
         return new MembershipNode(userID, null, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
+    }
+
+    public int getUserID()
+    {
+        return userID;
+    }
+    public int getAssgnerID()
+    {
+        return assignerID;
+    }
+    public Set<ManagerPermissions> getPermissions()
+    {
+        return new HashSet<>(permissions);
+    }
+    public RoleType getRoleType()
+    {
+        return roleType;
     }
 
 }
