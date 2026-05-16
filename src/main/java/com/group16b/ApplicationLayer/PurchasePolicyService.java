@@ -34,7 +34,7 @@ public class PurchasePolicyService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-        User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+        User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
         logger.info("Checking user permissions for userID: {}", user.getUserID());
         user.validatePermissions(eventRepo.getEventByID(eventID).getEventProductionCompanyID(), ManagerPermissions.PURCHASE_POLICY);
         logger.info("User has necessary permissions to create lottery policy for event ID: {}", eventID);
@@ -57,7 +57,7 @@ public class PurchasePolicyService {
                 logger.warn("Invalid session token provided for lottery enrollment.");
                 return Result.makeFail("Invalid session token.");
             }
-            User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+            User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 
             logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
             //TODO: implement purchase policy checks for lottery enrollment

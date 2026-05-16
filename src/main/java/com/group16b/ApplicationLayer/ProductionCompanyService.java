@@ -52,7 +52,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            User user = userRepo.getUserByID(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
+            User user = userRepo.getUserByEmail(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
 
             user.validatePermissions(productionCompanyID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
@@ -96,7 +96,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.displayTotalRevenue: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            User user = userRepo.getUserByID(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
+            User user = userRepo.getUserByEmail(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
             if (user == null) {
                 logger.error("ProductionCompanyService.displayTotalRevenue: User not found for token");
                 return Result.makeFail("User not found");
@@ -107,7 +107,7 @@ public class ProductionCompanyService {
             Role userRole = user.getRole(productionCompanyID);
             if (userRole instanceof Manager manager){
                 int ownerId = manager.getAssignerID();
-                User parentUser = userRepo.getUserByID(ownerId);
+                User parentUser = userRepo.getUserByEmail(ownerId);
                 Role parentRole = parentUser.getRole(productionCompanyID);
                 if (!(parentRole instanceof Owner)) {
                     logger.error("ProductionCompanyService.displayTotalRevenue: Parent user with ID {} is not an owner", parentUser.getUserID());
@@ -142,7 +142,7 @@ public class ProductionCompanyService {
                 totalRevenue += order.getTotalOrderprice();
         }
 
-        Role userRole = userRepo.getUserByID(userId).getRole(productionCompanyID);
+        Role userRole = userRepo.getUserByEmail(userId).getRole(productionCompanyID);
         if (userRole instanceof Owner owner){
             List<Manager> managers = owner.getAssignedManagers();
             if (managers == null || managers.isEmpty()) {

@@ -104,7 +104,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true); 
         
         // Action
@@ -136,7 +136,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false); 
         when(mockUser.managerInCompany(companyID)).thenReturn(true); // is a manager instead
         
@@ -191,7 +191,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(null);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(null);
 
         Result<String> result = configService.configureLayoutAndInventory(
                 validToken, companyID, eventID, validDTO, startTime, endTime);
@@ -216,7 +216,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         
         // user exists but is neither owner nor manager
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
@@ -281,7 +281,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
 
         LocalDateTime badEndTime = startTime.minusHours(5);
@@ -319,8 +319,8 @@ public class VenueEventConfigServiceTests {
         
         when(mockEventRepository.EventExists(eventID)).thenReturn(true);
         when(mockEventRepository.getEventByID(eventID)).thenReturn(mock(Event.class));
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
-        when(mockUserRepository.getUserByID(userID).isOwnerOfCompany(companyID)).thenReturn(true);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mock(User.class));
+        when(mockUserRepository.getUserByEmail(userID).isOwnerOfCompany(companyID)).thenReturn(true);
 
         Result<String> result = configService.configureLayoutAndInventory(
                 validToken, companyID, eventID, null, startTime, endTime);

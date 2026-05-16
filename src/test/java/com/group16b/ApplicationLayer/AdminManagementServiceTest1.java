@@ -188,7 +188,7 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
-        when(mockUserRepository.getUserByID(newUser.getUserID())).thenReturn(newUser);
+        when(mockUserRepository.getUserByEmail(newUser.getEmail())).thenReturn(newUser);
         when(mockOrderRepository.getOrdersBySubjectID(String.valueOf(newUser.getUserID()))).thenReturn(new ArrayList<>());
         
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, newUser.getUserID());
@@ -214,7 +214,7 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testViewPurchaseHistoryUnauthorizedUser() {
         User otherUser = new User("other@example.com", "password123");
-        when(mockUserRepository.getUserByID(otherUser.getUserID())).thenReturn(otherUser);
+        when(mockUserRepository.getUserByEmail(otherUser.getEmail())).thenReturn(otherUser);
         
         // Simulating the user trying to fetch their own history without admin token
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);

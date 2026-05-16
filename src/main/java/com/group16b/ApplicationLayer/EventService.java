@@ -68,7 +68,7 @@ public class EventService {
 				logger.warn("Only USERS are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
-			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByEmail(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			if(productionCompanyPolicyRepository.getProductionCompanyByID(eventRecord.pcID()) == null) {
@@ -116,7 +116,7 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
@@ -158,7 +158,7 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
@@ -216,7 +216,7 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
@@ -277,7 +277,7 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);

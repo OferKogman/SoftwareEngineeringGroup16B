@@ -5,7 +5,7 @@ import java.util.Map;
 
 public interface IUserRepository {
 
-	User getUserByID(int userID);
+	User getUserByEmail(String email);
 
 	void registerUser(User user);
 
@@ -13,7 +13,7 @@ public interface IUserRepository {
 
 	void updateUser(User user);
 
-	void deleteUser(int userID);
+	void deleteUser(String email);
 
-	boolean userExists(int userID);
+	boolean userExists(String email);
 }

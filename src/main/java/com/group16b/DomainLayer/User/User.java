@@ -232,4 +232,9 @@ public class User {
 		return role != null && role instanceof Founder;
 	}
 
+    public Long getVersion() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getVersion'");
+    }
+
 }

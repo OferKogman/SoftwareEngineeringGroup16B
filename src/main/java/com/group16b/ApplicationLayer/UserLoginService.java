@@ -44,7 +44,7 @@ public class UserLoginService {
             return Result.makeFail("Invalid user ID");
         }
 
-        User member = userRepository.getUserByID(userID);
+        User member = userRepository.getUserByEmail(userID);
         try{
             if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
                 logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);

@@ -51,7 +51,7 @@ public class UserService {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 			logger.info("Validating old password");
 			if (!user.confirmPassword(oldPassword)) {

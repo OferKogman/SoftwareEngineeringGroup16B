@@ -56,8 +56,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -88,8 +88,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -120,8 +120,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(null);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(null);
         when(mockUserRepository.userExists(targetID)).thenReturn(false);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -152,8 +152,8 @@ int userID = 1;
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -201,8 +201,8 @@ int userID = 1;
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -235,8 +235,8 @@ int userID = 1;
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -269,8 +269,8 @@ int userID = 1;
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(null);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(null);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -303,8 +303,8 @@ int userID = 1;
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         
         // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         
         // Mock user permissions: Ensure the assigning user is an owner
@@ -350,9 +350,9 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.getUserByEmail(assignerID)).thenReturn(mockAssigner);
         doNothing().when(mockAssigner).addAssignee(anyInt(), any(Manager.class));
         when(mockAssigner.isOwnerOfCompany(companyID)).thenReturn(true);
         assertTrue(userService.acceptInviteToCompany(companyID, assignerID, "").isSuccess());
@@ -379,9 +379,9 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
+        when(mockUserRepository.getUserByEmail(assignerID)).thenReturn(mock(User.class));
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
         assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
@@ -397,7 +397,7 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(false);
 
         assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
@@ -418,7 +418,7 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
         assertTrue(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
@@ -434,7 +434,7 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doThrow(new IllegalArgumentException("No invite found")).when(mockUser).rejectInvite(companyID, assignerID);
 
@@ -451,7 +451,7 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(false);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         doNothing().when(mockUser).rejectInvite(companyID, assignerID);
         assertFalse(userService.rejectInviteToCompany( companyID, assignerID, "").isSuccess());
@@ -471,11 +471,11 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.getUserByEmail(assignerID)).thenReturn(mockAssigner);
         when(mockUser.getRole(companyID)).thenReturn(mockOwner);
         when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
        
@@ -493,11 +493,11 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
         when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.getUserByEmail(assignerID)).thenReturn(mockAssigner);
         when(mockUser.getRole(companyID)).thenReturn(mockOwner);
         when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
        
@@ -515,11 +515,11 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockUser.getParentIDForCompany(companyID)).thenReturn(null);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.getUserByEmail(assignerID)).thenReturn(mockAssigner);
         when(mockUser.getRole(companyID)).thenReturn(mockOwner);
         when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
        
@@ -537,11 +537,11 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(false);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.getUserByEmail(assignerID)).thenReturn(mockAssigner);
         when(mockUser.getRole(companyID)).thenReturn(mockOwner);
         when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
        
@@ -564,8 +564,8 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
@@ -588,8 +588,8 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
@@ -612,8 +612,8 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
         when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
@@ -636,8 +636,8 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
@@ -660,8 +660,8 @@ int userID = 1;
         when(mockAuthService.validateToken(anyString())).thenReturn(false);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(targetID)).thenReturn(mockTarget);
         when(mockUserRepository.userExists(targetID)).thenReturn(true);
         when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
         when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);

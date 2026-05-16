@@ -71,9 +71,9 @@ public class CompanyHierarchyDomainServiceTests {
             mockedStatic.when(UserRepositoryMapImpl::getInstance).thenReturn(mockRepo);
             
             // CRITICAL: We must ensure the repo returns managerMid when the loop traverses up
-            when(mockRepo.getUserByID(2)).thenReturn(managerMid);
+            when(mockRepo.getUserByEmail(2)).thenReturn(managerMid);
             // Also return owner just in case the loop checks the last ID via repo
-            when(mockRepo.getUserByID(1)).thenReturn(owner);
+            when(mockRepo.getUserByEmail(1)).thenReturn(owner);
 
             boolean result = domainService.isManagerUnderOwnerTreeTraversal(managerDeep, owner, companyID);
             assertTrue(result, "Should find owner at the top of the hierarchy");
@@ -92,7 +92,7 @@ public class CompanyHierarchyDomainServiceTests {
         
         try (MockedStatic<UserRepositoryMapImpl> mockedStatic = mockStatic(UserRepositoryMapImpl.class)) {
             mockedStatic.when(UserRepositoryMapImpl::getInstance).thenReturn(mockRepo);
-            when(mockRepo.getUserByID(5)).thenReturn(parent);
+            when(mockRepo.getUserByEmail(5)).thenReturn(parent);
             when(parent.getRole(companyID)).thenReturn(parentRole);
 
             domainService.removeUserFromCompany(user, companyID);

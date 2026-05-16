@@ -198,7 +198,7 @@ public class AdminManagementService {
                 return Result.makeFail("Invalid ID");    
             }
 
-            User userToRemove = userRepository.getUserByID(userID);
+            User userToRemove = userRepository.getUserByEmail(userID);
             for (Map.Entry<Integer, Role> entry : userToRemove.getRoles().entrySet()) {
                 int companyID = entry.getKey();
                 Role companyRole = entry.getValue();

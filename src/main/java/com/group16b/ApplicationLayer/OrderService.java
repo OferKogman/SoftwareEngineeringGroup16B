@@ -100,7 +100,7 @@ public class OrderService {
 
 			// 3. System - charges the user for the designed price.
 			logger.info("UserService.CompleteActiveOrder: user {} is attempting to pay {} for order {}", userId, price, orderID);
-			User user = userRepo.getUserByID(userId);
+			User user = userRepo.getUserByEmail(userId);
 			if (user == null) {
 				logger.error("UserService.CompleteActiveOrder: User {} not found while attempting to complete order {}", userId, orderID);
 				return Result.makeFail("User not found");
@@ -186,7 +186,7 @@ public class OrderService {
                 return Result.makeFail("Only user can get order history.");
             }
 			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepo.getUserByID(userID);
+			User user = userRepo.getUserByEmail(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");

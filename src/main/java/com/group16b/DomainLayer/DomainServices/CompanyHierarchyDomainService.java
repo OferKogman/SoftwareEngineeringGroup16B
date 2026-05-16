@@ -40,7 +40,7 @@ public class CompanyHierarchyDomainService {
             if (parentID.equals(owner.getUserID())) {
                 return true;
             }
-            current = userRepository.getUserByID(parentID);
+            current = userRepository.getUserByEmail(parentID);
         }
         return false;
     }
@@ -53,7 +53,7 @@ public class CompanyHierarchyDomainService {
         Role userRole = user.getRole(companyID);
         if(userRole instanceof Manager){ 
             int parentID= user.getParentIDForCompany(companyID);
-            User parent=userRepository.getUserByID(parentID);
+            User parent=userRepository.getUserByEmail(parentID);
             if (parent != null) {
                 Role parentRole = parent.getRole(companyID);
                 ((Owner)parentRole).removeManager((Manager)userRole);
