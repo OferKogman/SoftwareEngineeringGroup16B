@@ -14,9 +14,10 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.IUserRepository;
@@ -24,22 +25,23 @@ import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-    private ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
+    private IRepository<ProductionCompany> productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
 
-    public AdminManagementService(IAuthenticationService authenticationService) {
+    public AdminManagementService(IAuthenticationService authenticationService, IRepository<ProductionCompany> productionCompanyRepository) {
         this.authenticationService = authenticationService;
+        this.productionCompanyRepo=productionCompanyRepository;
     }
 
 
@@ -148,7 +150,7 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-            ProductionCompanyPolicy company = productionCompanyRepo.getProductionCompanyByID(productionCompanyId);
+            ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
             
             if(company == null) {
                 System.out.println("Production company with ID " + productionCompanyId + " does not exist.");
@@ -169,7 +171,7 @@ public class AdminManagementService {
                     deactivateUsers(companyUsers, productionCompanyId);
                     logger.info("AdminManagementService.closeProductionCompany: Deactivated {} users associated with production company ID {}", companyUsers.size(), productionCompanyId);
                 }
-                productionCompanyRepo.removeProductionCompany(productionCompanyId);
+                productionCompanyRepo.delete(String.valueOf(productionCompanyId));
                 logger.info("AdminManagementService.closeProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
             return Result.makeOk("Production company with ID " + productionCompanyId + " has been closed successfully.");
         }
