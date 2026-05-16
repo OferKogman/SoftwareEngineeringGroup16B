@@ -7,7 +7,7 @@ import java.util.List;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public class OwnerDTO extends ManagerDTO{
 

@@ -10,7 +10,7 @@ import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.Roles.Role;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.Records.CompanyAssigmentKey;
 
 import java.security.MessageDigest;

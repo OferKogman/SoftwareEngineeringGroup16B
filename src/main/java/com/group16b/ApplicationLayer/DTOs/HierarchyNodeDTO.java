@@ -4,7 +4,7 @@ import java.util.Set;
 
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public record HierarchyNodeDTO(
         int userID,

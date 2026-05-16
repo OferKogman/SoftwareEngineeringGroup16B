@@ -3,7 +3,7 @@ package com.group16b.DomainLayer.ProductionCompany.membership;
 import java.util.Set;
 
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public class HierarchyNodeData {
     private final int userID;

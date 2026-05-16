@@ -13,7 +13,7 @@ import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -45,10 +45,7 @@ class ProductionCompanyTests {
 
     @Test
     void GivenNonOwnerCaller_WhenAssignOwner_ThenThrowException() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.AssignOwner(2, 3)
-        );
+        assertThrows(IllegalArgumentException.class,() -> company.AssignOwner(2, 3));
     }
 
     @Test
@@ -56,18 +53,14 @@ class ProductionCompanyTests {
         company.AssignOwner(1, 2);
         company.acceptInvite(2, 1);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.AssignOwner(1, 2)
-        );
+        assertThrows(IllegalArgumentException.class,() -> company.AssignOwner(1, 2));
     }
 
     // ---------- Assign Manager ----------
 
     @Test
     void GivenOwnerCaller_WhenAssignManager_ThenInviteCanBeAccepted() {
-        Set<ManagerPermissions> perms =
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+        Set<ManagerPermissions> perms =Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
 
         company.AssignManager(1, 2, perms);
 

@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.User.Roles;
+package com.group16b.DomainLayer.ProductionCompany.membership;
 
 public enum RoleType {
     OWNER,

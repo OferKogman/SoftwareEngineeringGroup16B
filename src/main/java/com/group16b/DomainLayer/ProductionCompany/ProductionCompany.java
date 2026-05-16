@@ -12,7 +12,7 @@ import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public class ProductionCompany {
     private int productionCompanyID;

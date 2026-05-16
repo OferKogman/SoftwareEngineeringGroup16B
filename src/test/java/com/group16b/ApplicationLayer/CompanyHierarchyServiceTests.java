@@ -39,7 +39,7 @@ import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 import io.jsonwebtoken.JwtException;
 
