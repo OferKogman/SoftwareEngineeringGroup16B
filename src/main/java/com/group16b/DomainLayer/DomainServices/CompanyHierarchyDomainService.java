@@ -26,7 +26,7 @@ public class CompanyHierarchyDomainService {
         {//save us runtime by checking this before traversing the tree
             return false;
         }
-        if(manager.getEmail()==owner.getEmail())
+        if(manager.getUserID()==owner.getUserID())
         {
             return false;
         }
@@ -37,7 +37,7 @@ public class CompanyHierarchyDomainService {
             if (parentID == null) {
                 return false; // reached top of hierarchy
             }
-            if (parentID.equals(owner.getEmail())) {
+            if (parentID.equals(owner.getUserID())) {
                 return true;
             }
             current = userRepository.getUserByEmail(parentID);

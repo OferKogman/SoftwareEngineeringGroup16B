@@ -104,7 +104,7 @@ public class User {
 		return null; // No role for this company, hence no parent
 	}
 
-	public int getEmail() {
+	public int getUserID() {
 		return userID;
 	}
 

@@ -35,7 +35,7 @@ public class PurchasePolicyService {
 				return Result.makeFail("Invalid session token.");
 			}
         User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
-        logger.info("Checking user permissions for userID: {}", user.getEmail());
+        logger.info("Checking user permissions for userID: {}", user.getUserID());
         user.validatePermissions(eventRepo.getEventByID(eventID).getEventProductionCompanyID(), ManagerPermissions.PURCHASE_POLICY);
         logger.info("User has necessary permissions to create lottery policy for event ID: {}", eventID);
 
@@ -59,7 +59,7 @@ public class PurchasePolicyService {
             }
             User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 
-            logger.info("Checking if userID: {} passed purchase policy checks", user.getEmail());
+            logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
             //TODO: implement purchase policy checks for lottery enrollment
             logger.info("User passed purchase policy checks for lottery enrollment");
 
@@ -79,8 +79,8 @@ public class PurchasePolicyService {
             }
 
             logger.info("Enrolling in lottery...");
-            lottery.enrollInLottery(eventID, user.getEmail());
-            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getEmail(), eventID);
+            lottery.enrollInLottery(eventID, user.getUserID());
+            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getUserID(), eventID);
             return Result.makeOk(null);
         }
         catch (IllegalStateException e) {

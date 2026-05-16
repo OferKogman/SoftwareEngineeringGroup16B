@@ -110,19 +110,19 @@ public class ProductionCompanyService {
                 User parentUser = userRepo.getUserByEmail(ownerId);
                 Role parentRole = parentUser.getRole(productionCompanyID);
                 if (!(parentRole instanceof Owner)) {
-                    logger.error("ProductionCompanyService.displayTotalRevenue: Parent user with ID {} is not an owner", parentUser.getEmail());
+                    logger.error("ProductionCompanyService.displayTotalRevenue: Parent user with ID {} is not an owner", parentUser.getUserID());
                     return Result.makeFail("Parent user is not an owner");
                 }
-                int totalRevenue = getAllrevinue(user.getEmail(), productionCompanyID, 0);
+                int totalRevenue = getAllrevinue(user.getUserID(), productionCompanyID, 0);
                 return Result.makeOk(totalRevenue);
             }
             // if user is owner/founder, call the recursion directly
             else if (userRole instanceof Owner) {
-                int totalRevenue = getAllrevinue(user.getEmail(), productionCompanyID, 0);
+                int totalRevenue = getAllrevinue(user.getUserID(), productionCompanyID, 0);
                 return Result.makeOk(totalRevenue);
             }
             else{
-                logger.error("ProductionCompanyService.displayTotalRevenue: User with ID {} does not have a valid role for revenue calculation", user.getEmail());
+                logger.error("ProductionCompanyService.displayTotalRevenue: User with ID {} does not have a valid role for revenue calculation", user.getUserID());
                 return Result.makeFail("User does not have a valid role for revenue calculation");
             }
             

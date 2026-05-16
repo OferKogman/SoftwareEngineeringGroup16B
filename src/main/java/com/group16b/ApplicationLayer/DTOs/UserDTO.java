@@ -22,7 +22,7 @@ public class UserDTO {
 	private HashMap<Integer, RoleDTO> roles;
 
     public UserDTO(User user) {
-        this.userID = user.getEmail();
+        this.userID = user.getUserID();
         this.email = user.getEmail();
         this.roles = user.getRoles().entrySet().stream()
             .collect(Collectors.toMap(

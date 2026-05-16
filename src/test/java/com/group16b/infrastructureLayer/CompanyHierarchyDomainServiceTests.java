@@ -57,14 +57,14 @@ public class CompanyHierarchyDomainServiceTests {
         User managerMid = mock(User.class); // ID 2
         User managerDeep = mock(User.class); // ID 3
 
-        when(owner.getEmail()).thenReturn(1);
+        when(owner.getUserID()).thenReturn(1);
         when(owner.isOwnerOfCompany(companyID)).thenReturn(true);
 
         // Chain: Deep (3) -> Mid (2) -> Owner (1)
-        when(managerDeep.getEmail()).thenReturn(3);
+        when(managerDeep.getUserID()).thenReturn(3);
         when(managerDeep.getParentIDForCompany(companyID)).thenReturn(2);
 
-        when(managerMid.getEmail()).thenReturn(2);
+        when(managerMid.getUserID()).thenReturn(2);
         when(managerMid.getParentIDForCompany(companyID)).thenReturn(1);
 
         try (MockedStatic<UserRepositoryMapImpl> mockedStatic = mockStatic(UserRepositoryMapImpl.class)) {
@@ -107,9 +107,9 @@ public class CompanyHierarchyDomainServiceTests {
         User owner = mock(User.class);
         User manager = mock(User.class);
 
-        when(owner.getEmail()).thenReturn(1);
+        when(owner.getUserID()).thenReturn(1);
         when(owner.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(manager.getEmail()).thenReturn(2);
+        when(manager.getUserID()).thenReturn(2);
         when(manager.getParentIDForCompany(companyID)).thenReturn(1);
 
         assertTrue(domainService.isManagerUnderOwnerTreeTraversal(manager, owner, companyID));
@@ -118,7 +118,7 @@ public class CompanyHierarchyDomainServiceTests {
     @Test
     void isManagerUnderOwner_SameUser_ReturnsFalse() {
         User owner = mock(User.class);
-        when(owner.getEmail()).thenReturn(1);
+        when(owner.getUserID()).thenReturn(1);
         when(owner.isOwnerOfCompany(companyID)).thenReturn(true);
 
         assertFalse(domainService.isManagerUnderOwnerTreeTraversal(owner, owner, companyID));

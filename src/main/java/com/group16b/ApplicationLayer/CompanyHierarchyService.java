@@ -533,8 +533,8 @@ public class CompanyHierarchyService {
     //checks if bigDog can manage smallDog inside a company
     private Result<Boolean> canManage(User bigDog, User smallDog, int companyID)
     {
-        int userID=bigDog.getEmail();
-        int targetID=smallDog.getEmail();
+        int userID=bigDog.getUserID();
+        int targetID=smallDog.getUserID();
         if(!bigDog.isOwnerOfCompany(companyID))
         {//potentially save time before expensive hierarchy traversal
             logger.warn("user {0} is not owner for comapny {1}, thus he cant manage anyone there",userID,companyID);
