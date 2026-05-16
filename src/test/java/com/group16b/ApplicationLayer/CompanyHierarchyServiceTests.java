@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -15,8 +17,10 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -51,7 +55,7 @@ public class CompanyHierarchyServiceTests {
 
     //good
     @Test
-    void testAssignOwnerToCompanySuccess() {
+    void GivenValidAuthAndExistingUsersAndCompany_WhenAssignOwnerToCompany_ThenReturnSuccess() {
         int userID = 1;
         int companyID = 1;
         int targetID = 2;
@@ -93,112 +97,146 @@ public class CompanyHierarchyServiceTests {
                 .findByID(String.valueOf(companyID));
     }
 
-    //user not owner
+    //invariant violation
     @Test
-    void testAssignOwnerToCompanyByNonOwnerFail() {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
+    void GivenTargetAlreadyOwner_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
         User mockUser = mock(User.class);
         User mockTarget = mock(User.class);
-        
-        // Mock authentication
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        
-        // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        
-        // Mock user permissions: Ensure the assigning user is an owner
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
-        
-        // Mock target user: Ensure the target is NOT already an owner
-        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
-        
-        // Mock addInvite to do nothing (success case)
-        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
-        
-        // Assert success
-        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID("1"))
+                .thenReturn(mockCompany);
+
+        doThrow(new IllegalArgumentException("Target already owner"))
+                .when(mockCompany).AssignOwner(1, 2);
+
+        Result<Boolean> result =
+                userService.assignOwnerToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
+
+        verify(mockProductionCompanyRepository, never()).save(mockCompany);
+    }
+
+    //user not found
+    @Test
+    void GivenCallerUserNotFound_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1))
+                .thenThrow(new IllegalArgumentException("User not found"));
+
+        Result<Boolean> result =
+                userService.assignOwnerToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
     }
 
     //target user not found
     @Test
-    void testAssignOwnerToCompanyNonExistingTargetFail() {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
-        User mockUser = mock(User.class);
-        User mockTarget = mock(User.class);
-        
-        // Mock authentication
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        
-        // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(null);
-        when(mockUserRepository.userExists(targetID)).thenReturn(false);
-        
-        // Mock user permissions: Ensure the assigning user is an owner
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        
-        // Mock target user: Ensure the target is NOT already an owner
-        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
-        
-        // Mock addInvite to do nothing (success case)
-        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
-        
-        // Assert success
-        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
-    }
+    void GivenTargetUserNotFound_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        String token = "token";
 
-    //target user already owner
-    @Test
-    void testAssignOwnerToCompanyTargetAlreadyOwnerFail() {
-int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
         User mockUser = mock(User.class);
-        User mockTarget = mock(User.class);
-        
-        // Mock authentication
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        
-        // Mock user repository
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        
-        // Mock user permissions: Ensure the assigning user is an owner
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        
-        // Mock target user: Ensure the target is NOT already an owner
-        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(true);
-        
-        // Mock addInvite to do nothing (success case)
-        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
-        
-        // Assert success
-        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2))
+                .thenThrow(new IllegalArgumentException("Target not found"));
+
+        Result<Boolean> result =userService.assignOwnerToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
+    }
+    
+    //company not found
+    @Test
+    void GivenCompanyNotFound_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mock(User.class));
+        when(mockUserRepository.getUserByID(2)).thenReturn(mock(User.class));
+
+        when(mockProductionCompanyRepository.findByID("1"))
+                .thenThrow(new IllegalArgumentException("Company not found"));
+
+        Result<Boolean> result =
+                userService.assignOwnerToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
     }
 
 
+    //auth fail
     @Test
-    void testAssignOwnerToCompanyInvalidSessionFail() {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
+    void GivenInvalidToken_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        when(mockAuthService.validateToken("bad")).thenReturn(false);
 
-        when(mockAuthService.validateToken(anyString())).thenReturn(false);
+        Result<Boolean> result =
+                userService.assignOwnerToCompany(1, 2, "bad");
 
-        assertFalse(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
+        assertFalse(result.isSuccess());
+
+        verifyNoInteractions(mockUserRepository);
+        verifyNoInteractions(mockProductionCompanyRepository);
+    }
+    //not user token
+    @Test
+    void GivenNonUserToken_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        when(mockAuthService.validateToken("token")).thenReturn(true);
+        when(mockAuthService.isUserToken("token")).thenReturn(false);
+
+        Result<Boolean> result = userService.assignOwnerToCompany(1, 2, "token");
+
+        assertFalse(result.isSuccess());
+
+        verifyNoInteractions(mockUserRepository);
+        verifyNoInteractions(mockProductionCompanyRepository);
+    }
+
+    //save fail
+    @Test
+    void GivenOptimisticLockFailure_WhenAssignOwnerToCompany_ThenReturnFailure() {
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        User mockUser = mock(User.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID("1")).thenReturn(mockCompany);
+
+        doThrow(new OptimisticLockingFailureException("version conflict")).when(mockProductionCompanyRepository).save(mockCompany);
+
+        Result<Boolean> result =userService.assignOwnerToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
     }
 
     
