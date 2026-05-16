@@ -40,7 +40,7 @@ import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
-import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
@@ -62,7 +62,7 @@ public class OrderServiceTests {
     private IVenueRepository mockVenueRepository;
     private IEventRepository mockEventRepository;
     private IUserRepository mockUserRepository;
-    private IProductionCompanyPolicyRepository mockProductionCompanyRepository;
+    private IProductionCompanyRepository mockProductionCompanyRepository;
 
     private static final String SESSION_TOKEN = "valid-token";
     private static final String ADMIN_TOKEN = "admin-token";
@@ -164,9 +164,9 @@ public class OrderServiceTests {
         mockEventRepository = mock(IEventRepository.class);
         mockUserRepository = mock(IUserRepository.class);
         mockPaymentService = mock(PaymentService.class);
-        mockProductionCompanyRepository = mock(IProductionCompanyPolicyRepository.class);
+        mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        orderService = new OrderService(mockAuthenticationService);
+        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository);
 
         injectField(orderService, "ticketGateway", mockTicketGateway);
         injectField(orderService, "orderRepo", mockOrderRepository);
@@ -187,10 +187,10 @@ public class OrderServiceTests {
         when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
 
-        when(mockProductionCompanyRepository.getPurchasePolicyByID(PRODUCTION_COMPANY_ID))
+        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)).getPurchasePolicy())
                 .thenReturn(companyPurchasePolicies);
 
-        when(mockProductionCompanyRepository.getDiscountPolicyByID(PRODUCTION_COMPANY_ID))
+        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)).getDiscountPolicy())
                 .thenReturn(companyDiscountPolicies);
     }
 
