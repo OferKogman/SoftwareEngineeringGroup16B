@@ -7,6 +7,7 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.BeanDefinitionDsl.Role;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -19,6 +20,7 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
@@ -70,16 +72,19 @@ public class EventService {
 				logger.warn("Only USERS are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
-			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
+			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			if(productionCompanyRepository.findByID(String.valueOf(eventRecord.pcID())) == null) {
 				logger.warn("Invalid production company ID provided for event creation.");
 				return Result.makeFail("Invalid production company ID. Please provide a valid production company ID to create an event.");
 			}
+			logger.info("retrieving prodction company for event creation");
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRecord.pcID()));
 
 			logger.info("Validating user permissions for event creation.");
-			user.validatePermissions(eventRecord.pcID(), Owner.class);
+			company.validateUserPermissions(userID, RoleType.OWNER);
 			logger.info("User permissions validated successfully.");
 
 			logger.info("Attempting to create event: " + eventRecord.name());
@@ -118,13 +123,17 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
 
+			logger.info("retrieving prodction company for event activation");
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+
 			logger.info("Validating user permissions for event activation.");
-			user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
+			company.validateUserPermissions(userID, RoleType.OWNER);
 			logger.info("User permissions validated successfully.");
 
 			logger.info("Attempting to activate event: " + event.getEventName());
@@ -160,13 +169,17 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
 
+			logger.info("retrieving prodction company for event deactivation");
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+
 			logger.info("Validating user permissions for event deactivation.");
-			user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
+			company.validateUserPermissions(userID, RoleType.OWNER);
 			logger.info("User permissions validated successfully.");
 
 			logger.info("Attempting to deactivate event: " + event.getEventName());
@@ -218,13 +231,17 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
 
+			logger.info("retrieving prodction company for event edition");
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+
 			logger.info("Validating user permissions for event activation.");
-			user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
+			company.validateUserPermissions(userID, RoleType.OWNER);
 			logger.info("User permissions validated successfully.");
 
             logger.info("Attempting to edit event with ID: " + eventID);
@@ -279,13 +296,17 @@ public class EventService {
 				logger.warn("Only signed-in users are allowed to create events.");
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
 			Event event = eventRepository.getEventByID(eventID);
 
+			logger.info("retrieving prodction company for event stock editiong");
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+
 			logger.info("Validating user permissions for event activation.");
-			user.validatePermissions(event.getEventProductionCompanyID(), Owner.class);
+			company.validateUserPermissions(userID, RoleType.OWNER);
 			logger.info("User permissions validated successfully.");
 
 			Venue venue = venueRepository.getVenueByID(event.getEventVenueID());

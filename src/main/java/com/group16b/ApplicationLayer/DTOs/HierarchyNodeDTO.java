@@ -3,7 +3,7 @@ package com.group16b.ApplicationLayer.DTOs;
 import java.util.Set;
 
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
-import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public record HierarchyNodeDTO(

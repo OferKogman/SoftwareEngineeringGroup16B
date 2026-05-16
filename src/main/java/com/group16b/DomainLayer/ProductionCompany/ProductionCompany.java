@@ -229,6 +229,23 @@ public class ProductionCompany {
         return result;
     }
 
+    public void validateUserPermissions(int userID, RoleType type)
+    {
+        MembershipNode node=membersNodes.get(userID);
+        if(node==null || node.getRoleType().isLowerOrEqual(type) && !(node.getRoleType().equals(type)))
+        {
+            throw new IllegalArgumentException("user "+userID+" dont have high enough permissions in company "+this.productionCompanyID);
+        }
+    }
+    public void validateUserPermissions(int userID, ManagerPermissions perm)
+    {
+        MembershipNode node=membersNodes.get(userID);
+        if(node==null || !(node.getPermissions().contains(perm)))
+        {
+            throw new IllegalArgumentException("user "+userID+" dont have high enough permissions in company "+this.productionCompanyID);
+        }
+    }
+
     private boolean isAssignedByOwner(int ownerID, int targetID)
     {
         MembershipNode current = membersNodes.get(targetID);
