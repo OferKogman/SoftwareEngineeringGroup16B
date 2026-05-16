@@ -2,6 +2,7 @@ package com.group16b.DomainLayer.ProductionCompany;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -18,7 +19,7 @@ public class ProductionCompany {
     private String name;
 
     private final HashMap<Integer, MembershipNode> membersNodes=new HashMap<>();
-    private final HashMap<Integer, MembershipNode> invites= new HashMap<>();
+    private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
 
     public ProductionCompany(ProductionCompany other)
     {
@@ -108,7 +109,7 @@ public class ProductionCompany {
             throw new IllegalArgumentException("Target is already owner in Assign Owner.");
         }
         MembershipNode newOnwerInvite = MembershipNode.createOwner(callerID, targetID);
-        invites.put(targetID, newOnwerInvite);
+        invites.put(new InviteKey(targetID, callerID), newOnwerInvite);
     }
 
     public void AssignManager(int callerID, int targetID,Set<ManagerPermissions> perms)
@@ -122,6 +123,53 @@ public class ProductionCompany {
             throw new IllegalArgumentException("Target is already owner in Assign Manager.");
         }
         MembershipNode newManagerInvite = MembershipNode.createManager(callerID, targetID,perms);
-        invites.put(targetID, newManagerInvite);
+        invites.put(new InviteKey(targetID, callerID), newManagerInvite);
+    }
+
+    //if invite is found then accept it and remove all invites with equivalent or lower role
+    public void acceptInvite(int targetID, int assignerID) 
+    {
+        InviteKey key = new InviteKey(targetID, assignerID);
+        MembershipNode invite = invites.get(key);
+
+        if (invite == null) {
+            throw new IllegalArgumentException("Invite not found.");
+        }
+
+        membersNodes.put(targetID, invite);
+
+        RoleType acceptedRole = invite.getRoleType();
+
+        // remove equivalent or lower roles only
+        invites.entrySet().removeIf(e ->
+            e.getKey().targetId == targetID &&
+            e.getValue().getRoleType().isLowerOrEqual(acceptedRole)
+        );
+    }
+
+
+
+    private static class InviteKey {
+        private final int targetId;
+        private final int assignerId;
+
+        public InviteKey(int targetId, int assignerId) {
+            this.targetId = targetId;
+            this.assignerId = assignerId;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof InviteKey)) return false;
+            InviteKey other = (InviteKey) o;
+            return targetId == other.targetId &&
+                   assignerId == other.assignerId;
+        }
+
+        @Override
+        public int hashCode() {
+            return java.util.Objects.hash(targetId, assignerId);
+        }
     }
 }

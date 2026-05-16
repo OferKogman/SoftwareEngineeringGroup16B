@@ -457,66 +457,173 @@ public class CompanyHierarchyServiceTests {
     //----------------------------------------------------------------------
 
     @Test
-    void testAcceptInviteAssignmentSuccess() {
+    void GivenValidInvite_WhenAcceptInviteToCompany_ThenReturnSuccess() {
         int userID = 1;
         int companyID = 1;
         int assignerID = 2;
+        String token = "token";
+
         User mockUser = mock(User.class);
         User mockAssigner = mock(User.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
+
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
         when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
-        doNothing().when(mockAssigner).addAssignee(anyInt(), any(Manager.class));
-        when(mockAssigner.isOwnerOfCompany(companyID)).thenReturn(true);
-        assertTrue(userService.acceptInviteToCompany(companyID, assignerID, "").isSuccess());
+
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
+                .thenReturn(mockCompany);
+
+        doNothing().when(mockCompany).acceptInvite(userID, assignerID);
+        doNothing().when(mockProductionCompanyRepository).save(mockCompany);
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(companyID, assignerID, token);
+
+        assertTrue(result.isSuccess());
+
+        verify(mockCompany).acceptInvite(userID, assignerID);
+        verify(mockProductionCompanyRepository).save(mockCompany);
     }
 
     @Test
-    void testAcceptInviteAssignmentInvalidSessionFail() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
+    void GivenInvalidToken_WhenAcceptInviteToCompany_ThenReturnFail() {
+        when(mockAuthService.validateToken("bad")).thenReturn(false);
 
-        when(mockAuthService.validateToken(anyString())).thenReturn(false);
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, "bad");
 
-        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
+        assertFalse(result.isSuccess());
+
+        verifyNoInteractions(mockUserRepository);
+        verifyNoInteractions(mockProductionCompanyRepository);
     }
 
     @Test
-    void testAcceptInviteAssignmentNoInviteFail() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
+    void GivenNonUserToken_WhenAcceptInviteToCompany_ThenReturnFail() {
+        when(mockAuthService.validateToken("token")).thenReturn(true);
+        when(mockAuthService.isUserToken("token")).thenReturn(false);
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, "token");
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void GivenMissingUser_WhenAcceptInviteToCompany_ThenReturnFail() {
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1))
+                .thenThrow(new IllegalArgumentException("User not found"));
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void GivenMissingAssigner_WhenAcceptInviteToCompany_ThenReturnFail() {
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
         User mockUser = mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mock(User.class));
-        doThrow(new IllegalArgumentException("No invite found")).when(mockUser).acceptInvite(companyID, assignerID);
 
-        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
+        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2))
+                .thenThrow(new IllegalArgumentException("Assigner not found"));
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
     }
 
     @Test
-    void testAcceptInviteAssignmentAssignerNotFoundFail() {
-        int userID = 1;
-        int companyID = 1;
-        int assignerID = 2;
-        User mockUser = mock(User.class);
-        doNothing().when(mockUser).validatePermissions(anyInt(), eq(Owner.class));
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(false);
+    void GivenMissingCompany_WhenAcceptInviteToCompany_ThenReturnFail() {
+        String token = "token";
 
-        assertFalse(userService.acceptInviteToCompany( companyID, assignerID, "").isSuccess());
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mock(User.class));
+        when(mockUserRepository.getUserByID(2)).thenReturn(mock(User.class));
+
+        when(mockProductionCompanyRepository.findByID("1"))
+                .thenThrow(new IllegalArgumentException("Company not found"));
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void GivenInvalidInvite_WhenAcceptInviteToCompany_ThenReturnFail() {
+        String token = "token";
+
+        User mockUser = mock(User.class);
+        User mockAssigner = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockAssigner);
+
+        when(mockProductionCompanyRepository.findByID("1"))
+                .thenReturn(mockCompany);
+
+        doThrow(new IllegalArgumentException("Invite not found"))
+                .when(mockCompany).acceptInvite(1, 2);
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
+
+        verify(mockProductionCompanyRepository, never()).save(mockCompany);
+    }
+
+    @Test
+    void GivenSaveConflict_WhenAcceptInviteToCompany_ThenReturnFail() {
+        String token = "token";
+
+        User mockUser = mock(User.class);
+        User mockAssigner = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockAssigner);
+
+        when(mockProductionCompanyRepository.findByID("1"))
+                .thenReturn(mockCompany);
+
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .when(mockProductionCompanyRepository).save(mockCompany);
+
+        Result<Boolean> result =
+                userService.acceptInviteToCompany(1, 2, token);
+
+        assertFalse(result.isSuccess());
     }
 
 
