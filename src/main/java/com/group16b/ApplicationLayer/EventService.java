@@ -81,7 +81,7 @@ public class EventService {
 			logger.info("User permissions validated successfully.");
 
 			logger.info("Attempting to create event: " + eventRecord.name());
-			Event event = new Event(eventRecord, user.getEmail());
+			Event event = new Event(eventRecord, user.getUserID());
 			logger.info("Creating queue for the new event");
 			VirtualQueue q = new VirtualQueue(event.getEventID());
 			logger.info("Verifying venue availability.");

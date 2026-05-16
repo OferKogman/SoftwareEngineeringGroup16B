@@ -103,7 +103,7 @@ public class ProductionCompanyServiceTests {
         Owner mockOwnerRole = mock(Owner.class);
 
         when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
-        when(mockUser.getEmail()).thenReturn(USER_ID);
+        when(mockUser.getUserID()).thenReturn(USER_ID);
         when(mockUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
         
         doNothing().when(mockUser).validatePermissions(COMPANY_ID, ManagerPermissions.SALES_REPORT);
@@ -133,7 +133,7 @@ public class ProductionCompanyServiceTests {
         Owner mockOwnerRole = mock(Owner.class);
         
         when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockOwnerUser);
-        when(mockOwnerUser.getEmail()).thenReturn(USER_ID);
+        when(mockOwnerUser.getUserID()).thenReturn(USER_ID);
         when(mockOwnerUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
         
         doNothing().when(mockOwnerUser).validatePermissions(COMPANY_ID, ManagerPermissions.SALES_REPORT);
@@ -250,7 +250,7 @@ public class ProductionCompanyServiceTests {
         Owner mockOwnerRole = mock(Owner.class);
 
         when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockManagerUser);
-        when(mockManagerUser.getEmail()).thenReturn(USER_ID);
+        when(mockManagerUser.getUserID()).thenReturn(USER_ID);
         when(mockManagerUser.getRole(COMPANY_ID)).thenReturn(mockManagerRole);
         
         when(mockManagerRole.getAssignerID()).thenReturn(ownerID);
