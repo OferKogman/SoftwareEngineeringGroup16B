@@ -21,7 +21,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
@@ -45,7 +45,7 @@ public class EventStockEditTests {
     private IVenueRepository mockVenueRepo;
     private IEventRepository mockEventRepo;
     private IVirtualQueueRepository mockQueueRepo;
-    private IProductionCompanyPolicyRepository mockPolicyRepo;
+    private IProductionCompanyRepository mockPolicyRepo;
 
     private final String VALID_TOKEN = "valid-session-token";
     private final int USER_ID = 1;
@@ -63,16 +63,16 @@ public class EventStockEditTests {
         mockVenueRepo = mock(IVenueRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockQueueRepo = mock(IVirtualQueueRepository.class);
-        mockPolicyRepo = mock(IProductionCompanyPolicyRepository.class);
+        mockPolicyRepo = mock(IProductionCompanyRepository.class);
 
-        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService);
+        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo);
 
         // 3. Inject Singleton Repositories via Reflection
         setPrivateField(eventService, "userRepository", mockUserRepo);
         setPrivateField(eventService, "venueRepository", mockVenueRepo);
         setPrivateField(eventService, "eventRepository", mockEventRepo);
         setPrivateField(eventService, "queueRepository", mockQueueRepo);
-        setPrivateField(eventService, "productionCompanyPolicyRepository", mockPolicyRepo);
+        setPrivateField(eventService, "productionCompanyRepository", mockPolicyRepo);
 
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);

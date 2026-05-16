@@ -13,12 +13,12 @@ import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+
 
 public class SystemAdmin {
 	private String id;
@@ -77,9 +77,9 @@ public class SystemAdmin {
 		}
 	}
 
-	public void closeProductionCompany(int productionCompanyId) {
-		ProductionCompanyPolicyRepositoryMapImpl productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
-		ProductionCompanyPolicy company = productionCompanyRepo.getProductionCompanyByID(productionCompanyId);
+	/*public void closeProductionCompany(int productionCompanyId) {
+		ProductionCompanyRepositoryMapImpl productionCompanyRepo = ProductionCompanyRepositoryMapImpl.getInstance();
+		ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
 		
 		if(company == null) {
 			System.out.println("Production company with ID " + productionCompanyId + " does not exist.");
@@ -107,6 +107,7 @@ public class SystemAdmin {
 		}
 
 	}
+		*/
 
 
 

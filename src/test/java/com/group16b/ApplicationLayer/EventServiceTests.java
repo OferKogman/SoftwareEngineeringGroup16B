@@ -23,8 +23,8 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.User;
@@ -34,6 +34,7 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 
 public class EventServiceTests {
 
@@ -41,7 +42,7 @@ public class EventServiceTests {
     static private IAuthenticationService mockTokenService;
     static private ILocatoinService mockLocationService;
     static private EventFilteringService eventFilteringService;
-    static private IProductionCompanyPolicyRepository mockProductionCompanyPolicyRepository;
+    static private ProductionCompanyRepositoryMapImpl mockProductionCompanyPolicyRepository;
     static private IUserRepository mockUserRepository;
     static private IVenueRepository mockVenueRepository;
     static private IEventRepository mockEventRepository;
@@ -56,16 +57,16 @@ public class EventServiceTests {
     static public void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockTokenService = mock(IAuthenticationService.class);
         mockLocationService = mock(ILocatoinService.class);
-        eventFilteringService = new EventFilteringService();
-        mockProductionCompanyPolicyRepository = mock(IProductionCompanyPolicyRepository.class);
+        mockProductionCompanyPolicyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
+        eventFilteringService = new EventFilteringService(mockProductionCompanyPolicyRepository);
         mockVirtualQueueRepository = mock(IVirtualQueueRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
 
-        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService);
+        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository);
 
-        Field PCPR = eventService.getClass().getDeclaredField("productionCompanyPolicyRepository");
+        Field PCPR = eventService.getClass().getDeclaredField("productionCompanyRepository");
         PCPR.setAccessible(true);
         PCPR.set(eventService, mockProductionCompanyPolicyRepository);
 
@@ -97,7 +98,7 @@ public class EventServiceTests {
         VR2.setAccessible(true);
         VR2.set(eventFilteringService, mockVenueRepository);
 
-        when(mockProductionCompanyPolicyRepository.getProductionCompanyByID(1)).thenReturn(new ProductionCompanyPolicy());
+        when(mockProductionCompanyPolicyRepository.findByID(String.valueOf(1))).thenReturn(mock(ProductionCompany.class));
         when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
 
         user = new User("testuser", "password");
