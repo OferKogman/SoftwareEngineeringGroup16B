@@ -48,7 +48,7 @@ public class StartupService {
 
         logger.info("Initializing domain services...");
         CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
-        EventFilteringService eventFilteringService = new EventFilteringService();
+        EventFilteringService eventFilteringService = new EventFilteringService(productionCompanyRepositoryMapImpl);
         
 
         logger.info("Initializing application services...");
