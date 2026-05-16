@@ -52,7 +52,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            User user = userRepo.getUserByID(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
+            User user = userRepo.getUserByEmail(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
 
             user.validatePermissions(productionCompanyID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
@@ -96,7 +96,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.displayTotalRevenue: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            User user = userRepo.getUserByID(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
+            User user = userRepo.getUserByEmail(Integer.valueOf((authenticationService.extractSubjectFromToken(sTocken))));
             if (user == null) {
                 logger.error("ProductionCompanyService.displayTotalRevenue: User not found for token");
                 return Result.makeFail("User not found");
@@ -107,22 +107,22 @@ public class ProductionCompanyService {
             Role userRole = user.getRole(productionCompanyID);
             if (userRole instanceof Manager manager){
                 int ownerId = manager.getAssignerID();
-                User parentUser = userRepo.getUserByID(ownerId);
+                User parentUser = userRepo.getUserByEmail(ownerId);
                 Role parentRole = parentUser.getRole(productionCompanyID);
                 if (!(parentRole instanceof Owner)) {
-                    logger.error("ProductionCompanyService.displayTotalRevenue: Parent user with ID {} is not an owner", parentUser.getUserID());
+                    logger.error("ProductionCompanyService.displayTotalRevenue: Parent user with ID {} is not an owner", parentUser.getEmail());
                     return Result.makeFail("Parent user is not an owner");
                 }
-                int totalRevenue = getAllrevinue(user.getUserID(), productionCompanyID, 0);
+                int totalRevenue = getAllrevinue(user.getEmail(), productionCompanyID, 0);
                 return Result.makeOk(totalRevenue);
             }
             // if user is owner/founder, call the recursion directly
             else if (userRole instanceof Owner) {
-                int totalRevenue = getAllrevinue(user.getUserID(), productionCompanyID, 0);
+                int totalRevenue = getAllrevinue(user.getEmail(), productionCompanyID, 0);
                 return Result.makeOk(totalRevenue);
             }
             else{
-                logger.error("ProductionCompanyService.displayTotalRevenue: User with ID {} does not have a valid role for revenue calculation", user.getUserID());
+                logger.error("ProductionCompanyService.displayTotalRevenue: User with ID {} does not have a valid role for revenue calculation", user.getEmail());
                 return Result.makeFail("User does not have a valid role for revenue calculation");
             }
             
@@ -142,7 +142,7 @@ public class ProductionCompanyService {
                 totalRevenue += order.getTotalOrderprice();
         }
 
-        Role userRole = userRepo.getUserByID(userId).getRole(productionCompanyID);
+        Role userRole = userRepo.getUserByEmail(userId).getRole(productionCompanyID);
         if (userRole instanceof Owner owner){
             List<Manager> managers = owner.getAssignedManagers();
             if (managers == null || managers.isEmpty()) {

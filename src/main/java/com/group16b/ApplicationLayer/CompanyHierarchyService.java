@@ -52,7 +52,7 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			logger.info("Session token verified successfully.");
             if(user==null)
             {
@@ -62,7 +62,7 @@ public class CompanyHierarchyService {
 
             //get target user
 			logger.info("retrieving target user for Owner assignment.");
-			User targetUser = userRepository.getUserByID(targetID);
+			User targetUser = userRepository.getUserByEmail(targetID);
 			if (targetUser==null) {
 				logger.warn("Target user with ID {0} not found for Owner assignment.", targetID);
 				return Result.makeFail("Target user not found.");
@@ -126,7 +126,7 @@ public class CompanyHierarchyService {
 			}
 
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			logger.info("Session token verified successfully.");
             if(user==null)
             {
@@ -135,7 +135,7 @@ public class CompanyHierarchyService {
             }
             //get target user
             logger.info("retrieving target user for Manager assignment.");
-            User targetUser = userRepository.getUserByID(targetID);
+            User targetUser = userRepository.getUserByEmail(targetID);
 			if (targetUser==null) {
 				logger.warn("Target user with ID {0} not found for Manager assignment.", targetID);
 				return Result.makeFail("Target user not found.");
@@ -201,7 +201,7 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			if(user==null)
 			{
 				logger.warn("user {0} was not found, maybe deleted",userID);
@@ -209,7 +209,7 @@ public class CompanyHierarchyService {
 			}
 			logger.info("Session token verified successfully.");
 
-			User assigner = userRepository.getUserByID(assignerID);
+			User assigner = userRepository.getUserByEmail(assignerID);
 			if (assigner == null) {
 				logger.warn("Assigner user with ID {0} not found for accepting invite assignment to company {1} by user {2}.", assignerID, companyID, userID);
 				return Result.makeFail("Assigner user not found.");
@@ -260,7 +260,7 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
             if(user==null)
 			{
 				logger.warn("user {0} was not found, maybe deleted",userID);
@@ -307,7 +307,7 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for forfeiting ownership", userID);
 				return Result.makeFail("User not found.");
@@ -358,14 +358,14 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for removing manager", userID);
 				return Result.makeFail("User not found.");
 			}
 			logger.info("Session token verified successfully.");
 			logger.info("retrieving target user {0} to remove manager from company {1} by user {2}",targetID,companyID,userID);
-			User target=userRepository.getUserByID(targetID);
+			User target=userRepository.getUserByEmail(targetID);
 			if(target==null)
 			{
 				logger.warn("target user {0} was not found to remove him from the compny {1} by user {2}.",targetID,companyID,userID);
@@ -409,14 +409,14 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for updating manager permissions", userID);
 				return Result.makeFail("User not found.");
 			}
 			logger.info("Session token verified successfully.");
 			logger.info("retrieving target user {0} to update his permissions from company {1} by user {2}",targetID,companyID,userID);
-			User target=userRepository.getUserByID(targetID);
+			User target=userRepository.getUserByEmail(targetID);
 			if(target==null)
 			{
 				logger.warn("target user {0} was not found to his manager permissions from the compny {1} by user {2}.",targetID,companyID,userID);
@@ -466,7 +466,7 @@ public class CompanyHierarchyService {
 				logger.warn("Only user can access this command",companyID);
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.getUserByEmail(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found", userID);
 				return Result.makeFail("User not found.");
@@ -478,7 +478,7 @@ public class CompanyHierarchyService {
 
 			int newID = user.getParentIDForCompany(companyID);
 			while(newID != -1) {
-				user = userRepository.getUserByID(newID);
+				user = userRepository.getUserByEmail(newID);
 				if (user == null) {
 					logger.warn("User with ID {0} not found error in hierarchy", newID);
 					return Result.makeFail("User not found.");
@@ -486,7 +486,7 @@ public class CompanyHierarchyService {
 				newID = user.getParentIDForCompany(companyID);
 			}
 
-			user = userRepository.getUserByID(userID);
+			user = userRepository.getUserByEmail(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found error in hierarchy", userID);
 				return Result.makeFail("User not found.");
@@ -503,7 +503,7 @@ public class CompanyHierarchyService {
 
 				Owner currentRole = (Owner) currentUser.getRole(companyID);
 				for (Manager childRole : currentRole.getAssignedManagers()) {
-					User childUser = userRepository.getUserByID(childRole.getUserID());
+					User childUser = userRepository.getUserByEmail(childRole.getUserID());
 					if (childUser == null) {
 						logger.warn("Child user with ID {0} not found in hierarchy for company {1}", childRole.getUserID(), companyID);
 						return Result.makeFail("User not found.");
@@ -533,8 +533,8 @@ public class CompanyHierarchyService {
     //checks if bigDog can manage smallDog inside a company
     private Result<Boolean> canManage(User bigDog, User smallDog, int companyID)
     {
-        int userID=bigDog.getUserID();
-        int targetID=smallDog.getUserID();
+        int userID=bigDog.getEmail();
+        int targetID=smallDog.getEmail();
         if(!bigDog.isOwnerOfCompany(companyID))
         {//potentially save time before expensive hierarchy traversal
             logger.warn("user {0} is not owner for comapny {1}, thus he cant manage anyone there",userID,companyID);

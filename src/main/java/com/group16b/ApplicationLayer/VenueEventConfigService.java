@@ -58,7 +58,7 @@ public class VenueEventConfigService {
                 return Result.makeFail("Event is already active and is not in creation process.");
             }
 
-            User actionUser = userRepository.getUserByID(userID);
+            User actionUser = userRepository.getUserByEmail(userID);
             if (actionUser == null || !(actionUser.isOwnerOfCompany(companyID) || actionUser.managerInCompany(companyID))) {
                 logger.warn("Config failed: User {} is not an owner or manager for company {}.", userID, companyID);
                 return Result.makeFail("Permission denied. You must be an owner or manager of this company.");

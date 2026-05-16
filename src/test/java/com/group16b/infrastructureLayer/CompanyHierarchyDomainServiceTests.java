@@ -57,23 +57,23 @@ public class CompanyHierarchyDomainServiceTests {
         User managerMid = mock(User.class); // ID 2
         User managerDeep = mock(User.class); // ID 3
 
-        when(owner.getUserID()).thenReturn(1);
+        when(owner.getEmail()).thenReturn(1);
         when(owner.isOwnerOfCompany(companyID)).thenReturn(true);
 
         // Chain: Deep (3) -> Mid (2) -> Owner (1)
-        when(managerDeep.getUserID()).thenReturn(3);
+        when(managerDeep.getEmail()).thenReturn(3);
         when(managerDeep.getParentIDForCompany(companyID)).thenReturn(2);
 
-        when(managerMid.getUserID()).thenReturn(2);
+        when(managerMid.getEmail()).thenReturn(2);
         when(managerMid.getParentIDForCompany(companyID)).thenReturn(1);
 
         try (MockedStatic<UserRepositoryMapImpl> mockedStatic = mockStatic(UserRepositoryMapImpl.class)) {
             mockedStatic.when(UserRepositoryMapImpl::getInstance).thenReturn(mockRepo);
             
             // CRITICAL: We must ensure the repo returns managerMid when the loop traverses up
-            when(mockRepo.getUserByID(2)).thenReturn(managerMid);
+            when(mockRepo.getUserByEmail(2)).thenReturn(managerMid);
             // Also return owner just in case the loop checks the last ID via repo
-            when(mockRepo.getUserByID(1)).thenReturn(owner);
+            when(mockRepo.getUserByEmail(1)).thenReturn(owner);
 
             boolean result = domainService.isManagerUnderOwnerTreeTraversal(managerDeep, owner, companyID);
             assertTrue(result, "Should find owner at the top of the hierarchy");
@@ -92,7 +92,7 @@ public class CompanyHierarchyDomainServiceTests {
         
         try (MockedStatic<UserRepositoryMapImpl> mockedStatic = mockStatic(UserRepositoryMapImpl.class)) {
             mockedStatic.when(UserRepositoryMapImpl::getInstance).thenReturn(mockRepo);
-            when(mockRepo.getUserByID(5)).thenReturn(parent);
+            when(mockRepo.getUserByEmail(5)).thenReturn(parent);
             when(parent.getRole(companyID)).thenReturn(parentRole);
 
             domainService.removeUserFromCompany(user, companyID);
@@ -107,9 +107,9 @@ public class CompanyHierarchyDomainServiceTests {
         User owner = mock(User.class);
         User manager = mock(User.class);
 
-        when(owner.getUserID()).thenReturn(1);
+        when(owner.getEmail()).thenReturn(1);
         when(owner.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(manager.getUserID()).thenReturn(2);
+        when(manager.getEmail()).thenReturn(2);
         when(manager.getParentIDForCompany(companyID)).thenReturn(1);
 
         assertTrue(domainService.isManagerUnderOwnerTreeTraversal(manager, owner, companyID));
@@ -118,7 +118,7 @@ public class CompanyHierarchyDomainServiceTests {
     @Test
     void isManagerUnderOwner_SameUser_ReturnsFalse() {
         User owner = mock(User.class);
-        when(owner.getUserID()).thenReturn(1);
+        when(owner.getEmail()).thenReturn(1);
         when(owner.isOwnerOfCompany(companyID)).thenReturn(true);
 
         assertFalse(domainService.isManagerUnderOwnerTreeTraversal(owner, owner, companyID));

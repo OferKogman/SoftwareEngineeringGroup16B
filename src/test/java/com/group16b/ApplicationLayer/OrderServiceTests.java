@@ -229,7 +229,7 @@ public class OrderServiceTests {
         TicketDTO ticket2 = mock(TicketDTO.class);
 
         when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(activeSeatOrder);
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+        when(mockUserRepository.getUserByEmail(USER_ID)).thenReturn(user);
 
         when(mockPaymentService.processPayment(paymentInfo, 100.0)).thenReturn(true);
 
@@ -268,7 +268,7 @@ public class OrderServiceTests {
         assertEquals(ticket2, tickets.get(1));
 
         verify(mockOrderRepository).getOrder(ORDER_ID);
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).getUserByEmail(USER_ID);
         verify(mockPaymentService).processPayment(paymentInfo, 100.0);
 
         verify(mockTicketGateway).generateTicket(
@@ -439,7 +439,7 @@ public class OrderServiceTests {
         );
 
         when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(activeOrder);
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(null);
+        when(mockUserRepository.getUserByEmail(USER_ID)).thenReturn(null);
 
         Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
                 USER_ID,
@@ -467,7 +467,7 @@ public class OrderServiceTests {
         Order order2 = new Order(SEGMENT_ID, List.of("1-3"), 50.0, EVENT_ID, USER_ID_STRING);
         order1.CompleteOrder();
         order2.CompleteOrder();
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+        when(mockUserRepository.getUserByEmail(USER_ID)).thenReturn(user);
 
         when(mockOrderRepository.getOrdersBySubjectID(USER_ID_STRING))
                 .thenReturn(List.of(order1, order2));
@@ -480,7 +480,7 @@ public class OrderServiceTests {
         assertTrue(result.isSuccess());
         assertEquals(2, result.getValue().size());
 
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).getUserByEmail(USER_ID);
         verify(mockOrderRepository).getOrdersBySubjectID(USER_ID_STRING);
     }
     @Test
@@ -494,7 +494,7 @@ public class OrderServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Invalid session token.", result.getError());
 
-        verify(mockUserRepository, never()).getUserByID(anyInt());
+        verify(mockUserRepository, never()).getUserByEmail(anyInt());
         verify(mockOrderRepository, never()).getOrdersBySubjectID(anyString());
     }
     @Test
@@ -510,26 +510,26 @@ public class OrderServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Only user can get order history.", result.getError());
 
-        verify(mockUserRepository, never()).getUserByID(anyInt());
+        verify(mockUserRepository, never()).getUserByEmail(anyInt());
         verify(mockOrderRepository, never()).getOrdersBySubjectID(anyString());
     }
     @Test
     void getUserOrders_userNotFound_returnsFail() {
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(null);
+        when(mockUserRepository.getUserByEmail(USER_ID)).thenReturn(null);
 
         Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
 
         assertFalse(result.isSuccess());
         assertEquals("User not found.", result.getError());
 
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).getUserByEmail(USER_ID);
         verify(mockOrderRepository, never()).getOrdersBySubjectID(anyString());
     }
     @Test
     void getUserOrders_noOrders_returnsEmptyListSuccessfully() {
         User user = mock(User.class);
 
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+        when(mockUserRepository.getUserByEmail(USER_ID)).thenReturn(user);
         when(mockOrderRepository.getOrdersBySubjectID(USER_ID_STRING))
                 .thenReturn(List.of());
 
@@ -539,7 +539,7 @@ public class OrderServiceTests {
         assertNotNull(result.getValue());
         assertTrue(result.getValue().isEmpty());
 
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).getUserByEmail(USER_ID);
         verify(mockOrderRepository).getOrdersBySubjectID(USER_ID_STRING);
     }
 

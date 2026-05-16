@@ -8,40 +8,61 @@ import com.group16b.DomainLayer.User.User;
 
 public class UserRepositoryMapImpl implements IUserRepository {
 
-	private static UserRepositoryMapImpl instance;
-	private Map<Integer, User> users = new HashMap<>();
+	private Map<String, User> users = new HashMap<>();
+	private Map<String, Long> versionMap;
 
-	private UserRepositoryMapImpl() {
+	public UserRepositoryMapImpl() {
+		this.users = new HashMap<>();
+		this.versionMap = new HashMap<>();
 	}
 
-	public static synchronized UserRepositoryMapImpl getInstance() {
-		if (instance == null) {
-			instance = new UserRepositoryMapImpl();
-		}
-		return instance;
-	}
+	public UserRepositoryMapImpl(Map<String, User> users) {
+		this.users = users;
+		this.versionMap = new HashMap<>();
+		users.keySet().forEach(userID -> versionMap.put(userID, 0L));
+	}	
 
-	public User getUserByID(int userID) {
-		return users.get(userID);
+	public User getUserByEmail(String email) {
+		return users.get(email);
 	}
 
 	public void registerUser(User user) {
-		users.put(user.getUserID(), user);
+		users.put(user.getEmail(), user);
 	}
 
 	public void addUser(User user) {
-		users.put(user.getUserID(), user);
+		if(user==null) {
+			throw new IllegalArgumentException("User cannot be null");
+		}
+		if(users.containsKey(user.getEmail())) {
+			throw new IllegalArgumentException("User with this ID already exists");
+		}
+		users.put(user.getEmail(), user);
+		versionMap.put(user.getEmail(), 0L);
 	}
 
 	public void updateUser(User user) {
-		users.put(user.getUserID(), user);
+		if(user==null) {
+			throw new IllegalArgumentException("User cannot be null");
+		}
+		Long currentVersion = versionMap.get(user.getEmail());
+		if(currentVersion==null || !userExists(user.getEmail())) {
+			throw new IllegalArgumentException("User does not exist");
+		}
+		if(currentVersion != user.getVersion()) {
+			throw new IllegalArgumentException("User has been modified by another process");
+		}
+		users.put(user.getEmail(), user);
 	}
 
-	public void deleteUser(int userID) {
-		users.remove(userID);
+	public void deleteUser(String getEmail) {
+		if(!userExists(getEmail)) {
+			throw new IllegalArgumentException("User does not exist");
+		}
+		users.remove(getEmail);
 	}
 
-	public boolean userExists(int userID) {
-		return users.containsKey(userID);
+	public boolean userExists(String getEmail) {
+		return users.containsKey(getEmail);
 	}
 }

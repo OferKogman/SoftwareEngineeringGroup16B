@@ -83,7 +83,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_PermissionDenied_Fail() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
         
         doThrow(new IllegalArgumentException("Not allowed")).when(mockUser)
             .validatePermissions(COMPANY_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
@@ -102,8 +102,8 @@ public class ProductionCompanyServiceTests {
         User mockUser = mock(User.class);
         Owner mockOwnerRole = mock(Owner.class);
 
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
-        when(mockUser.getUserID()).thenReturn(USER_ID);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
+        when(mockUser.getEmail()).thenReturn(USER_ID);
         when(mockUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
         
         doNothing().when(mockUser).validatePermissions(COMPANY_ID, ManagerPermissions.SALES_REPORT);
@@ -132,8 +132,8 @@ public class ProductionCompanyServiceTests {
         User mockOwnerUser = mock(User.class);
         Owner mockOwnerRole = mock(Owner.class);
         
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockOwnerUser);
-        when(mockOwnerUser.getUserID()).thenReturn(USER_ID);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockOwnerUser);
+        when(mockOwnerUser.getEmail()).thenReturn(USER_ID);
         when(mockOwnerUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
         
         doNothing().when(mockOwnerUser).validatePermissions(COMPANY_ID, ManagerPermissions.SALES_REPORT);
@@ -149,7 +149,7 @@ public class ProductionCompanyServiceTests {
         when(mockOwnerRole.getAssignedManagers()).thenReturn(managers);
         
         User mockManagerUser = mock(User.class);
-        when(mockUserRepo.getUserByID(managerID)).thenReturn(mockManagerUser);
+        when(mockUserRepo.getUserByEmail(managerID)).thenReturn(mockManagerUser);
         when(mockManagerUser.getRole(COMPANY_ID)).thenReturn(mockManager);
 
         Order ownerOrder = mock(Order.class);
@@ -175,7 +175,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_Success() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
         doNothing().when(mockUser).validatePermissions(COMPANY_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
         // FIX 1: RETURNS_DEEP_STUBS prevents OrderDTO from throwing NullPointerExceptions!
@@ -201,7 +201,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_EventNotFound_SkipsOrder() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
 
         Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         List<Order> orderList = new CopyOnWriteArrayList<>();
@@ -221,7 +221,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_WrongCompany_SkipsOrder() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
 
         Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         Event mockEvent = mock(Event.class);
@@ -249,12 +249,12 @@ public class ProductionCompanyServiceTests {
         Manager mockManagerRole = mock(Manager.class);
         Owner mockOwnerRole = mock(Owner.class);
 
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockManagerUser);
-        when(mockManagerUser.getUserID()).thenReturn(USER_ID);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockManagerUser);
+        when(mockManagerUser.getEmail()).thenReturn(USER_ID);
         when(mockManagerUser.getRole(COMPANY_ID)).thenReturn(mockManagerRole);
         
         when(mockManagerRole.getAssignerID()).thenReturn(ownerID);
-        when(mockUserRepo.getUserByID(ownerID)).thenReturn(mockOwnerUser);
+        when(mockUserRepo.getUserByEmail(ownerID)).thenReturn(mockOwnerUser);
         when(mockOwnerUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
 
         Order mockOrder = mock(Order.class);

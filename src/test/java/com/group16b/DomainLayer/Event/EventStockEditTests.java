@@ -89,7 +89,7 @@ public class EventStockEditTests {
     @Test
     void editStockInSegmentsForEvent_Success() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
         doNothing().when(mockUser).validatePermissions(COMPANY_ID, Owner.class);
 
         Event mockEvent = mock(Event.class);
@@ -141,7 +141,7 @@ public class EventStockEditTests {
     @Test
     void editStockInSegmentsForEvent_PermissionDenied_CaughtByCatchBlock() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.getUserByEmail(USER_ID)).thenReturn(mockUser);
         
         Event mockEvent = mock(Event.class);
         when(mockEventRepo.getEventByID(EVENT_ID)).thenReturn(mockEvent);

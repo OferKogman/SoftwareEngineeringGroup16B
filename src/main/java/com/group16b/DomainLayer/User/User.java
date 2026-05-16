@@ -104,7 +104,7 @@ public class User {
 		return null; // No role for this company, hence no parent
 	}
 
-	public int getUserID() {
+	public int getEmail() {
 		return userID;
 	}
 
@@ -231,5 +231,10 @@ public class User {
 		Role role = getRole(companyID);
 		return role != null && role instanceof Founder;
 	}
+
+    public Long getVersion() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'getVersion'");
+    }
 
 }

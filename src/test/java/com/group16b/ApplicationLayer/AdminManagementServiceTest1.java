@@ -85,17 +85,17 @@ public class AdminManagementServiceTest1 {
         systemAdmin = new SystemAdmin(1, "username", "password", "email");
         
         user = new User("testuser", "password");
-        user.addRole(1, new Founder(user.getUserID()));
+        user.addRole(1, new Founder(user.getEmail()));
         when(mockTokenService.validateToken("user1")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user1")).thenReturn(true);
-        when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getUserID()));
+        when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getEmail()));
 
         user2 = new User("testuser2", "password");
         when(mockTokenService.validateToken("user2")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user2")).thenReturn(true);
-        when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getUserID()));
+        when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getEmail()));
 
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
         segment1 = new FieldSeg("segment1", 50);
@@ -108,7 +108,7 @@ public class AdminManagementServiceTest1 {
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
         
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getUserID());
+        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getEmail());
         when(mockEventRepository.getEventByID(e1.getEventID())).thenReturn(e1);
         when(mockEventRepository.searchEvents(List.of("empty"), null, null, null, null, null, null, null, null, null)).thenReturn(new ArrayList<>(List.of()));
     }
@@ -124,7 +124,7 @@ public class AdminManagementServiceTest1 {
     void testViewAllPurchaseHistory() {
         int eventID = e1.getEventID();
         
-        Order completedOrder = new Order("segment1", 1, 1.0, eventID, String.valueOf(user.getUserID()));
+        Order completedOrder = new Order("segment1", 1, 1.0, eventID, String.valueOf(user.getEmail()));
         completedOrder.CompleteOrder();
         
         List<Order> databaseOrders = new ArrayList<>();
@@ -132,7 +132,7 @@ public class AdminManagementServiceTest1 {
         
         when(mockOrderRepository.getAllCompletedOrders()).thenReturn(databaseOrders);
         
-        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getEmail());
         
         assertTrue(result.isSuccess(), "Service failed with error: " + result.getError());
         assertEquals(1, result.getValue().size());
@@ -143,14 +143,14 @@ public class AdminManagementServiceTest1 {
     public void testViewAllPurchaseHistoryMultipleOrders() {
         int eventID = e1.getEventID();
         
-        Order order1 = new Order("segment1", 1, 1.0, eventID, String.valueOf(user.getUserID()));
+        Order order1 = new Order("segment1", 1, 1.0, eventID, String.valueOf(user.getEmail()));
         order1.CompleteOrder();
-        Order order2 = new Order("segment2", 2, 2.0, eventID, String.valueOf(user.getUserID()));
+        Order order2 = new Order("segment2", 2, 2.0, eventID, String.valueOf(user.getEmail()));
         order2.CompleteOrder();
         
         when(mockOrderRepository.getAllCompletedOrders()).thenReturn(List.of(order1, order2));
         
-        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
+        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getEmail());
         
         assertTrue(history.isSuccess(), "Service failed with error: " + history.getError());
         assertEquals(2, history.getValue().size());
@@ -188,10 +188,10 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
-        when(mockUserRepository.getUserByID(newUser.getUserID())).thenReturn(newUser);
-        when(mockOrderRepository.getOrdersBySubjectID(String.valueOf(newUser.getUserID()))).thenReturn(new ArrayList<>());
+        when(mockUserRepository.getUserByEmail(newUser.getEmail())).thenReturn(newUser);
+        when(mockOrderRepository.getOrdersBySubjectID(String.valueOf(newUser.getEmail()))).thenReturn(new ArrayList<>());
         
-        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, newUser.getUserID());
+        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, newUser.getEmail());
         
         assertNotNull(history);
         assertTrue(history.isSuccess());
@@ -200,26 +200,26 @@ public class AdminManagementServiceTest1 {
 
     @Test
     public void testViewAllPurchaseHistoryInvalidToken() {
-        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(invalidToken, user.getUserID());
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(invalidToken, user.getEmail());
         assertFalse(result.isSuccess(), "Service should fail with invalid token");
     }
 
     @Test
     public void testViewAllPurchaseHistoryNullToken() {
         when(mockTokenService.validateToken(null)).thenReturn(false);
-        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(null, user.getUserID());
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(null, user.getEmail());
         assertFalse(result.isSuccess(), "Service should fail with null token");
     }
 
     @Test
     public void testViewPurchaseHistoryUnauthorizedUser() {
         User otherUser = new User("other@example.com", "password123");
-        when(mockUserRepository.getUserByID(otherUser.getUserID())).thenReturn(otherUser);
+        when(mockUserRepository.getUserByEmail(otherUser.getEmail())).thenReturn(otherUser);
         
         // Simulating the user trying to fetch their own history without admin token
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
 
-        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, otherUser.getUserID());
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, otherUser.getEmail());
         assertFalse(result.isSuccess(), "Service should fail for unauthorized access");
     }
 

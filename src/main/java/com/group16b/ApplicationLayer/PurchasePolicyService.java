@@ -34,8 +34,8 @@ public class PurchasePolicyService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-        User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
-        logger.info("Checking user permissions for userID: {}", user.getUserID());
+        User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+        logger.info("Checking user permissions for userID: {}", user.getEmail());
         user.validatePermissions(eventRepo.getEventByID(eventID).getEventProductionCompanyID(), ManagerPermissions.PURCHASE_POLICY);
         logger.info("User has necessary permissions to create lottery policy for event ID: {}", eventID);
 
@@ -57,9 +57,9 @@ public class PurchasePolicyService {
                 logger.warn("Invalid session token provided for lottery enrollment.");
                 return Result.makeFail("Invalid session token.");
             }
-            User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+            User user = userRepository.getUserByEmail(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
 
-            logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
+            logger.info("Checking if userID: {} passed purchase policy checks", user.getEmail());
             //TODO: implement purchase policy checks for lottery enrollment
             logger.info("User passed purchase policy checks for lottery enrollment");
 
@@ -79,8 +79,8 @@ public class PurchasePolicyService {
             }
 
             logger.info("Enrolling in lottery...");
-            lottery.enrollInLottery(eventID, user.getUserID());
-            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getUserID(), eventID);
+            lottery.enrollInLottery(eventID, user.getEmail());
+            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getEmail(), eventID);
             return Result.makeOk(null);
         }
         catch (IllegalStateException e) {

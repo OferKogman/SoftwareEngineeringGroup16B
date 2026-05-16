@@ -26,7 +26,7 @@ public class CompanyHierarchyDomainService {
         {//save us runtime by checking this before traversing the tree
             return false;
         }
-        if(manager.getUserID()==owner.getUserID())
+        if(manager.getEmail()==owner.getEmail())
         {
             return false;
         }
@@ -37,10 +37,10 @@ public class CompanyHierarchyDomainService {
             if (parentID == null) {
                 return false; // reached top of hierarchy
             }
-            if (parentID.equals(owner.getUserID())) {
+            if (parentID.equals(owner.getEmail())) {
                 return true;
             }
-            current = userRepository.getUserByID(parentID);
+            current = userRepository.getUserByEmail(parentID);
         }
         return false;
     }
@@ -53,7 +53,7 @@ public class CompanyHierarchyDomainService {
         Role userRole = user.getRole(companyID);
         if(userRole instanceof Manager){ 
             int parentID= user.getParentIDForCompany(companyID);
-            User parent=userRepository.getUserByID(parentID);
+            User parent=userRepository.getUserByEmail(parentID);
             if (parent != null) {
                 Role parentRole = parent.getRole(companyID);
                 ((Owner)parentRole).removeManager((Manager)userRole);

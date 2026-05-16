@@ -73,7 +73,7 @@ public class UserLoginServiceTests {
         when(mockUser.getEmail()).thenReturn(correctMail);
 
         when(mockUserRepository.userExists(userID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
 
         Result<String> result = userLoginService.loginMember(userID, correctPassword, correctMail);
@@ -93,7 +93,7 @@ public class UserLoginServiceTests {
         when(mockUser.getEmail()).thenReturn(mail);
 
         when(mockUserRepository.userExists(userID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
 
         Result<String> result = userLoginService.loginMember(userID, wrongPassword, mail);
 
@@ -114,7 +114,7 @@ public class UserLoginServiceTests {
         when(mockUser.getEmail()).thenReturn(correctMail);
 
         when(mockUserRepository.userExists(userID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByEmail(userID)).thenReturn(mockUser);
         when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
 
         Result<String> result = userLoginService.loginMember(userID, correctPassword, wrongMail);
@@ -133,7 +133,7 @@ public class UserLoginServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID", result.getError());
         
-        verify(mockUserRepository, never()).getUserByID(anyInt());
+        verify(mockUserRepository, never()).getUserByEmail(anyInt());
         verify(mockTokenService, never()).generateVisitor_SignedToken(anyInt());
     }
 
