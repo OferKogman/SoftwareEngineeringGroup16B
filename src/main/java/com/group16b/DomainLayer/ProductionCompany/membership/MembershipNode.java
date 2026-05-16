@@ -4,9 +4,8 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.group16b.DomainLayer.User.Roles.Manager;
+
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.Roles.RoleType;
 
 public class MembershipNode {
@@ -22,7 +21,13 @@ public class MembershipNode {
         this.roleType=roleType;
         this.permissions=new HashSet<>(perms);
     }
-
+    public MembershipNode(MembershipNode other)
+    {
+        this.userID=other.userID;
+        this.assignerID=other.assignerID;
+        this.roleType=other.roleType;
+        this.permissions=new HashSet<>(other.permissions);
+    }
     public static MembershipNode createManager(int userID, Integer assignerID,Set<ManagerPermissions> perms)
     {
         return new MembershipNode(userID, assignerID, RoleType.MANAGER, perms);
@@ -34,7 +39,7 @@ public class MembershipNode {
     }
     public static MembershipNode createFounder(int userID)
     {
-        return new MembershipNode(userID, null, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
+        return new MembershipNode(userID, -1, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
     }
 
     public int getUserID()

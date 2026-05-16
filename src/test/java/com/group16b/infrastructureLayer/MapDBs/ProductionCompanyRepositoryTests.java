@@ -22,7 +22,7 @@ private ProductionCompanyRepositoryMapImpl repo;
     }
 
     private ProductionCompany createCompany(int id, String name) {
-        ProductionCompany c = new ProductionCompany(id, name,1.1);
+        ProductionCompany c = new ProductionCompany(id, name,1.1,100);
         c.setVersion(1);
         return c;
     }

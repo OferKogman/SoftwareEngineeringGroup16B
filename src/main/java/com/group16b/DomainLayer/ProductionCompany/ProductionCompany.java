@@ -19,6 +19,7 @@ public class ProductionCompany {
     private double rating;
     private long version;
     private String name;
+    private int founderID;
 
     private final HashMap<Integer, MembershipNode> membersNodes=new HashMap<>();
     private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
@@ -29,13 +30,28 @@ public class ProductionCompany {
         this.rating=other.rating;
         this.version=other.version;
         this.name=other.name;
+        this.founderID=other.founderID;
+        for (Map.Entry<Integer, MembershipNode> entry : other.membersNodes.entrySet()) {
+            this.membersNodes.put(
+                    entry.getKey(),
+                    new MembershipNode(entry.getValue())
+            );
+        }
+        for (Map.Entry<InviteKey, MembershipNode> entry : other.invites.entrySet()) {
+            this.invites.put(
+                    new InviteKey(entry.getKey()),
+                    new MembershipNode(entry.getValue())
+            );
+        }
     }
-    public ProductionCompany(int id, String name, double rating)
+    public ProductionCompany(int id, String name, double rating, int founderID)
     {
         this.rating=rating;
         this.name=name;
         this.productionCompanyID=id;
         this.version=1;
+        this.founderID= founderID;
+        this.membersNodes.put(founderID,MembershipNode.createFounder(founderID));
     }
 
 
@@ -118,7 +134,7 @@ public class ProductionCompany {
         {
             throw new IllegalArgumentException("Target is already owner in Assign Owner.");
         }
-        MembershipNode newOnwerInvite = MembershipNode.createOwner(callerID, targetID);
+        MembershipNode newOnwerInvite = MembershipNode.createOwner(targetID, callerID);
         invites.put(new InviteKey(targetID, callerID), newOnwerInvite);
     }
 
@@ -132,7 +148,7 @@ public class ProductionCompany {
         {
             throw new IllegalArgumentException("Target is already owner in Assign Manager.");
         }
-        MembershipNode newManagerInvite = MembershipNode.createManager(callerID, targetID,perms);
+        MembershipNode newManagerInvite = MembershipNode.createManager(targetID, callerID,perms);
         invites.put(new InviteKey(targetID, callerID), newManagerInvite);
     }
 
@@ -274,6 +290,10 @@ public class ProductionCompany {
         public InviteKey(int targetId, int assignerId) {
             this.targetId = targetId;
             this.assignerId = assignerId;
+        }
+        public InviteKey(InviteKey other) {
+            this.targetId = other.targetId;
+            this.assignerId = other.assignerId;
         }
 
         @Override
