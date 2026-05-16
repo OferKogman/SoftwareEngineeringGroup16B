@@ -16,8 +16,8 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -26,7 +26,7 @@ public class EventFilteringServiceTests {
     
      IEventRepository eventRepository = mock(IEventRepository.class);
      IVenueRepository venueRepository = mock(IVenueRepository.class);
-     IProductionCompanyPolicyRepository productionCompanyPolicyRepository = mock(IProductionCompanyPolicyRepository.class);
+     IProductionCompanyRepository productionCompanyPolicyRepository = mock(IProductionCompanyRepository.class);
      EventFilteringService eventFilteringService;
      List<Integer> compID = new ArrayList<>(List.of(1));
      List<String> names = new ArrayList<>(List.of("Rock Legends"));
@@ -124,13 +124,13 @@ public class EventFilteringServiceTests {
         Venue v2 = mock(Venue.class);
         when(v2.getLocation()).thenReturn(new Location("B", "B", "B", "B", "B", "B", 0.0, 0.0));
         when(venueRepository.getVenueByID("2")).thenReturn(v2);
-        ProductionCompanyPolicy pcp1 = mock(ProductionCompanyPolicy.class);
+        ProductionCompany pcp1 = mock(ProductionCompany.class);
         when(pcp1.getRating()).thenReturn(3.0);
-        ProductionCompanyPolicy pcp2 = mock(ProductionCompanyPolicy.class);
+        ProductionCompany pcp2 = mock(ProductionCompany.class);
         when(pcp2.getRating()).thenReturn(5.0);
-        when(productionCompanyPolicyRepository.getProductionCompanyByID(1)).thenReturn(pcp1);
-        when(productionCompanyPolicyRepository.getProductionCompanyByID(2)).thenReturn(pcp2);
-        eventFilteringService = new EventFilteringService();
+        when(productionCompanyPolicyRepository.findByID("1")).thenReturn(pcp1);
+        when(productionCompanyPolicyRepository.findByID("2")).thenReturn(pcp2);
+        eventFilteringService = new EventFilteringService(productionCompanyPolicyRepository);
         Field eventRepo = eventFilteringService.getClass().getDeclaredField("eventRepository");
         eventRepo.setAccessible(true);
         eventRepo.set(eventFilteringService, eventRepository);

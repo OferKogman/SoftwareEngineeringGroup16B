@@ -27,7 +27,8 @@ import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.IUserRepository;
@@ -38,7 +39,7 @@ import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 
 public class AdminManagementServiceTest1 {
     
@@ -49,6 +50,7 @@ public class AdminManagementServiceTest1 {
     private IVenueRepository mockVenueRepository;
     private IUserRepository mockUserRepository;
     private IOrderRepository mockOrderRepository;
+    private IProductionCompanyRepository mockProductonCompanyRepository;
 
     private Location location1;
     private Segment segment1;
@@ -68,8 +70,9 @@ public class AdminManagementServiceTest1 {
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
         mockOrderRepository = mock(IOrderRepository.class); 
+        mockProductonCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
 
-        adminManagementService = new AdminManagementService(mockTokenService);
+        adminManagementService = new AdminManagementService(mockTokenService,mockProductonCompanyRepository);
 
         setPrivateField(adminManagementService, "systemAdminRepo", mockSystemAdminRepository);
         setPrivateField(adminManagementService, "userRepository", mockUserRepository);
@@ -168,14 +171,13 @@ public class AdminManagementServiceTest1 {
     public void testCloseProductionCompanySuccess() throws Exception {
         int companyID = 1;
         
-        ProductionCompanyPolicyRepositoryMapImpl mockPolicyRepo = mock(ProductionCompanyPolicyRepositoryMapImpl.class);
         
         Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
         policyField.setAccessible(true);
-        policyField.set(adminManagementService, mockPolicyRepo);
+        policyField.set(adminManagementService, mockProductonCompanyRepository);
 
-        ProductionCompanyPolicy mockCompany = mock(ProductionCompanyPolicy.class);
-        when(mockPolicyRepo.getProductionCompanyByID(companyID)).thenReturn(mockCompany); 
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+        when(mockProductonCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany); 
         
         when(mockEventRepository.searchEvents(any(), any(), any(), any(), any(), any(), any(), any(), any(), anyList()))
             .thenReturn(new ArrayList<>());

@@ -20,7 +20,7 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -29,7 +29,6 @@ import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
@@ -45,11 +44,12 @@ public class OrderService {
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
-    private final IProductionCompanyPolicyRepository productionCompanyRepo = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
+    private final IProductionCompanyRepository productionCompanyRepo;
 
 
-    public OrderService(IAuthenticationService authenticationService) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo) {
 		this.authenticationService = authenticationService;
+		this.productionCompanyRepo=productionCompanyRepo;
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
@@ -459,7 +459,7 @@ public class OrderService {
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
         Event event = eventRepo.getEventByID(eventID);
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.getDiscountPolicyByID(event.getEventProductionCompanyID());
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
 
             if (discountPolicy == null) {
                 logger.error("No discount policy found for event {}", eventID);
@@ -479,7 +479,7 @@ public class OrderService {
     private boolean validatePurchasePolicy(int eventID) {
         Event event = eventRepo.getEventByID(eventID);
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
-        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.getPurchasePolicyByID(event.getEventProductionCompanyID());
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
 
             if (purchasePolicy == null) {
                 logger.error("No purchase policy found for event {}", eventID);
