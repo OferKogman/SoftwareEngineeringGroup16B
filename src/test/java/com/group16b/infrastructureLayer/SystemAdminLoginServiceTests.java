@@ -47,9 +47,7 @@ public class SystemAdminLoginServiceTests {
         when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(adminID));
         // 2. Token is confirmed as an admin token
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-        // 3. Admin exists in the repository
-        when(mockSystemAdminRepository.doesSystemAdminExist(adminID)).thenReturn(true);
-        // 4. Generating the guest token works
+        // 3. Generating the guest token works
         when(mockTokenService.generateVisitor_GuestToken(any())).thenReturn(expectedGuestToken);
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
@@ -76,7 +74,7 @@ public class SystemAdminLoginServiceTests {
         assertEquals("Invalid ID for logout", result.getError());
         
         // Verify we never checked the database since it failed early
-        verify(mockSystemAdminRepository, never()).doesSystemAdminExist(anyInt());
+        verify(mockSystemAdminRepository, never()).doesSystemAdminExist(any(String.class));
     }
 
     // -----------------------------------------------------------------
@@ -89,9 +87,6 @@ public class SystemAdminLoginServiceTests {
 
         when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(ghostAdminID));
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-        
-        // The admin token is valid, but the user doesn't exist in the DB anymore
-        when(mockSystemAdminRepository.doesSystemAdminExist(ghostAdminID)).thenReturn(false);
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
 

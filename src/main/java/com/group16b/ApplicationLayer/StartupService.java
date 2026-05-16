@@ -64,9 +64,9 @@ public class StartupService {
         userService = new UserService(authService, ticketGateway);
 
         logger.info("Adding default system admin...");
-        SystemAdminRepositoryMapImpl systemAdminRepository = new SystemAdminRepositoryMapImpl();
+        IRepository<SystemAdmin> systemAdminRepository = new SystemAdminRepositoryMapImpl();
         SystemAdmin systemAdmin = new SystemAdmin("1", "admin", "password", "admin@example.com");
-        systemAdminRepository.addSystemAdmin(systemAdmin);
+        systemAdminRepository.save(systemAdmin);
         logger.info("StartupService initialization complete.");
     }
 }

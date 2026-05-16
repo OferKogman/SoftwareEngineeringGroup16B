@@ -243,7 +243,7 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
             
-            boolean checkIfAdminAlreadyExists = systemAdminRepo.getSystemAdminById(newAdminID) != null;
+            boolean checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
             boolean checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;
             
             if(checkIfAdminAlreadyExists ) {
@@ -255,7 +255,7 @@ public class AdminManagementService {
                 return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
             }
             SystemAdmin newAdmin = new SystemAdmin(newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
-            systemAdminRepo.addSystemAdmin(newAdmin);
+            systemAdminRepo.save(newAdmin);
             logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
             return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
         }
