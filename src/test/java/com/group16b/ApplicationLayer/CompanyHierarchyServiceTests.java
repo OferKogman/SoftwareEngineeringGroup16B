@@ -15,10 +15,15 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
@@ -28,6 +33,7 @@ public class CompanyHierarchyServiceTests {
     CompanyHierarchyService userService;
     IAuthenticationService mockAuthService;
     IUserRepository mockUserRepository;
+    IProductionCompanyRepository mockProductionCompanyRepository;
     CompanyHierarchyDomainService mockCompanyHierarchyDomainService;
 
     @BeforeEach
@@ -35,7 +41,9 @@ public class CompanyHierarchyServiceTests {
         mockUserRepository = mock(IUserRepository.class);
         mockAuthService = mock(IAuthenticationService.class);
         mockCompanyHierarchyDomainService=mock(CompanyHierarchyDomainService.class);
-        userService = new CompanyHierarchyService(mockAuthService, mockCompanyHierarchyDomainService);
+        mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
+
+        userService = new CompanyHierarchyService(mockAuthService, mockCompanyHierarchyDomainService,mockProductionCompanyRepository);
         Field userRepo = userService.getClass().getDeclaredField("userRepository");
         userRepo.setAccessible(true);
         userRepo.set(userService, mockUserRepository);
@@ -47,30 +55,42 @@ public class CompanyHierarchyServiceTests {
         int userID = 1;
         int companyID = 1;
         int targetID = 2;
+
+        String token = "valid-token";
+
         User mockUser = mock(User.class);
         User mockTarget = mock(User.class);
-        
-        // Mock authentication
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        
-        // Mock user repository
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        // AUTH
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
+
+        // USERS EXIST
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        
-        // Mock user permissions: Ensure the assigning user is an owner
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        
-        // Mock target user: Ensure the target is NOT already an owner
-        when(mockTarget.isOwnerOfCompany(companyID)).thenReturn(false);
-        
-        // Mock addInvite to do nothing (success case)
-        doNothing().when(mockTarget).addInvite(eq(companyID), eq(userID), any(Owner.class));
-        
-        // Assert success
-        assertTrue(userService.assignOwnerToCompany(companyID, targetID, "").isSuccess());
+
+        // COMPANY
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
+
+        // SAVE
+        doNothing().when(mockProductionCompanyRepository).save(mockCompany);
+
+        // ACT
+        Result<Boolean> result =userService.assignOwnerToCompany(companyID, targetID, token);
+
+        // ASSERT
+        assertTrue(result.isSuccess());
+
+        // VERIFY BEHAVIOR
+        verify(mockCompany, times(1)).AssignOwner(userID, targetID);
+        verify(mockProductionCompanyRepository, times(1)).save(mockCompany);
+
+        verify(mockUserRepository, times(1)).getUserByID(userID);
+        verify(mockUserRepository, times(1)).getUserByID(targetID);
+        verify(mockProductionCompanyRepository, times(1))
+                .findByID(String.valueOf(companyID));
     }
 
     //user not owner
