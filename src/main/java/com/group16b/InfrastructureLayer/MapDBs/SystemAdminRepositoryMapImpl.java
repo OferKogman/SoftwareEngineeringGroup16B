@@ -1,6 +1,5 @@
 package com.group16b.InfrastructureLayer.MapDBs;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
@@ -10,17 +9,12 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	private Map<Integer, SystemAdmin> systemAdminsById;
 	private Map<String, SystemAdmin> systemAdminsByUsername;
 
-	private static final SystemAdminRepositoryMapImpl instance = new SystemAdminRepositoryMapImpl();
 
-	private SystemAdminRepositoryMapImpl() {
-		this.systemAdminsById = new HashMap<>();
-		this.systemAdminsByUsername = new HashMap<>();
+	private SystemAdminRepositoryMapImpl(Map<Integer, SystemAdmin> systemAdminsById,  Map<String, SystemAdmin> systemAdminsByUsername) {
+		this.systemAdminsById = systemAdminsById;
+		this.systemAdminsByUsername = systemAdminsByUsername;
 	}
 
-	// singleton pattern to ensure only one instance of the repository exists
-	public static synchronized SystemAdminRepositoryMapImpl getInstance() {
-		return instance;
-	}
 
 	/*
 	 * Adds a system admin to the repository.
@@ -61,5 +55,6 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	public boolean doesSystemAdminExist(int adminID){
 		return systemAdminsById.containsKey(adminID);
 	}
+	
 
 }

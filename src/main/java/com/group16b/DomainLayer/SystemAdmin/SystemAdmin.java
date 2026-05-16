@@ -25,12 +25,15 @@ public class SystemAdmin {
 	private String username;
 	private String password;
 	private String email;
+	private long version;
 
 	public SystemAdmin(int id, String username, String password, String email) {
 		this.id = id;
 		this.username = username;
 		this.email = email;
+		version = 0;
 		setPassword(password);
+
 	}
 
 	public int getId() {
@@ -50,6 +53,7 @@ public class SystemAdmin {
 			messageDigest.update(newPassword.getBytes());
 			String stringHash = new String(messageDigest.digest());
 			this.password = stringHash;
+			version++;
 		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
 		}
