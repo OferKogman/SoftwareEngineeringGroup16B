@@ -41,6 +41,7 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
@@ -187,10 +188,18 @@ public class OrderServiceTests {
         when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
 
-        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)).getPurchasePolicy())
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)))
+                .thenReturn(mockCompany);
+
+        when(mockCompany.getPurchasePolicy())
                 .thenReturn(companyPurchasePolicies);
 
-        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)).getDiscountPolicy())
+        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)))
+                .thenReturn(mockCompany);
+
+        when(mockCompany.getDiscountPolicy())
                 .thenReturn(companyDiscountPolicies);
     }
 
