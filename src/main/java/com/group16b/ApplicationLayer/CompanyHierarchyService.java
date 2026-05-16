@@ -1,28 +1,22 @@
 package com.group16b.ApplicationLayer;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import com.group16b.ApplicationLayer.DTOs.UserDTO;
+import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.Owner;
-import com.group16b.DomainLayer.User.Roles.RoleType;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
@@ -413,114 +407,50 @@ public class CompanyHierarchyService {
 		}
 	}
 
-	public Result<Map<UserDTO, UserDTO>> hierarchyTree(int companyID, String sessionToken) {
+	public Result<List<HierarchyNodeDTO>> hierarchyTree(int companyID, String sessionToken) {
 		try {
-			logger.info("Verifying session token for company hierarchy for company {}.", companyID);
+			//auth
+			logger.info("Verifying session token for get hierarchy tree for company {}", companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for viewing company hierarchy for company {}.",companyID);
+				logger.warn("Invalid session token provided for get hierarchy tree for company {}",companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to get hierarchy tree of a company.");
+				return Result.makeFail("Only signed-in users are allowed to get hierarchy tree of a company. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			if (!authenticationService.isUserToken(sessionToken)) {
-				logger.warn("Only user can access this command",companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			User user = userRepository.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found", userID);
-				return Result.makeFail("User not found.");
-			}
+			userRepository.getUserByID(userID);
+
 			logger.info("Session token verified successfully.");
-			logger.info("Validating user has permissions in ", companyID);
+
+			logger.info("trying to retrieve company {} for retrieve hierarchy tree by user {}",companyID,userID);
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+
+			logger.info("trying to get hierarchy tree of company {} by user {}",companyID,userID);
+			List<HierarchyNodeData> hierarchy =company.getHierarchyTree(userID);
+
+			List<HierarchyNodeDTO> dtoResult =hierarchy.stream().map(HierarchyNodeDTO::new).toList();
+
+			logger.info("user {} have succesfully retrieved the hierarchy tree for ccompany {}",userID,companyID);
+
 			
-			user.validatePermissions(companyID, Owner.class);
-
-			int newID = user.getParentIDForCompany(companyID);
-			while(newID != -1) {
-				user = userRepository.getUserByID(newID);
-				if (user == null) {
-					logger.warn("User with ID {0} not found error in hierarchy", newID);
-					return Result.makeFail("User not found.");
-				}
-				newID = user.getParentIDForCompany(companyID);
-			}
-
-			user = userRepository.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found error in hierarchy", userID);
-				return Result.makeFail("User not found.");
-			}
-			
-			Deque<User> toCheck = new ArrayDeque<>();
-			toCheck.push(user);
-
-			Map<UserDTO, UserDTO> result = new TreeMap<>();
-			result.put(null, new UserDTO(user));
-			while(!toCheck.isEmpty()) {
-				User currentUser = toCheck.pop();
-				UserDTO currentUserDTO = new UserDTO(currentUser);
-
-				Owner currentRole = (Owner) currentUser.getRole(companyID);
-				for (Manager childRole : currentRole.getAssignedManagers()) {
-					User childUser = userRepository.getUserByID(childRole.getUserID());
-					if (childUser == null) {
-						logger.warn("Child user with ID {0} not found in hierarchy for company {1}", childRole.getUserID(), companyID);
-						return Result.makeFail("User not found.");
-					}
-
-					result.put(currentUserDTO, new UserDTO(childUser));
-
-					if (childUser.getRole(companyID) instanceof Owner) {
-						toCheck.push(childUser);
-					}
-				}
-			}
-			return Result.makeOk(result);
-			
-		} catch (IllegalArgumentException | IllegalStateException e) {
-			logger.error("Failed to get company hierarchy: " + e.getMessage());
+			return Result.makeOk(dtoResult);
+		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during retrieve hierarchy tree: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during company hierarchy: " + e.getMessage());
+		}
+		catch (JwtException e) {
+			logger.error("JWT authentication error duringretrieve hierarchy tree: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during company hierarchy: " + e.getMessage());
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error during retrieve hierarchy tree: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
 
-    //checks if bigDog can manage smallDog inside a company
-    private Result<Boolean> canManage(User bigDog, User smallDog, int companyID)
-    {
-        int userID=bigDog.getUserID();
-        int targetID=smallDog.getUserID();
-        if(!bigDog.isOwnerOfCompany(companyID))
-        {//potentially save time before expensive hierarchy traversal
-            logger.warn("user {0} is not owner for comapny {1}, thus he cant manage anyone there",userID,companyID);
-            return Result.makeFail("user is not owner");
-        }
-
-        if(smallDog.getRole(companyID)==null)
-        {//same here, simply save time
-            logger.warn("target user {0} is not personal in the company {1} so the cannot be manager there by user {2}",targetID,companyID,userID);
-            return Result.makeFail("target user is not personal in company");
-        }
-
-        if(!companyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(smallDog, bigDog, companyID))
-        {
-            logger.warn("User {0} isn't above target {1} in the hierarchy tree in company {2}, thus he cant manage them",userID,targetID,companyID);
-            return Result.makeFail("User didn't apoint target so no permission to manage them");
-        }
-        return Result.makeOk(null);
-    }
-
-    private Object getCompanyLock(int companyID) {
-		return companyLocks.computeIfAbsent(companyID, id -> new Object());
-	}
-    
 
 }

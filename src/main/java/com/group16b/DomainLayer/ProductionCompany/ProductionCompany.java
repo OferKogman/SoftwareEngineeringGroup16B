@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.ProductionCompany;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,6 +8,7 @@ import java.util.Set;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
@@ -191,6 +193,24 @@ public class ProductionCompany {
         canOwnerManageTarget(ownerID, targetID);
         MembershipNode targetNode = membersNodes.get(targetID);
         targetNode.setPermissions(newPerms);
+    }
+
+    public List<HierarchyNodeData> getHierarchyTree(int requesterID)
+    {
+        if(!isOwner(requesterID)) {
+            throw new IllegalArgumentException("Requester is not owner.");
+        }
+        List<HierarchyNodeData> result = new ArrayList<>();
+        for (Map.Entry<Integer, MembershipNode> entry : membersNodes.entrySet()) {
+            MembershipNode node = entry.getValue();
+            result.add(new HierarchyNodeData(
+                    entry.getKey(),
+                    node.getAssignerID(),
+                    node.getRoleType(),
+                    node.getPermissions()
+            ));
+        }
+        return result;
     }
 
     private boolean isAssignedByOwner(int ownerID, int targetID)

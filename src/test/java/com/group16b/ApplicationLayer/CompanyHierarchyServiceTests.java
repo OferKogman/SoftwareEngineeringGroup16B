@@ -2,8 +2,10 @@ package com.group16b.ApplicationLayer;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,15 +28,18 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
+import com.group16b.DomainLayer.User.Roles.RoleType;
 
 import io.jsonwebtoken.JwtException;
 
@@ -1314,6 +1319,136 @@ public class CompanyHierarchyServiceTests {
                 permissions,
                 "token"
         ).isSuccess());
+        }
+
+
+        @Test
+        void GivenValidRequest_WhenHierarchyTree_ThenReturnSuccess() {
+                int userID = 1;
+                int companyID = 10;
+
+                ProductionCompany mockCompany = mock(ProductionCompany.class);
+                User mockUser = mock(User.class);
+
+                List<HierarchyNodeData> hierarchyData = List.of(
+                        new HierarchyNodeData(
+                                1,
+                                -1,
+                                RoleType.OWNER,
+                                Set.of()
+                        ),
+                        new HierarchyNodeData(
+                                2,
+                                1,
+                                RoleType.MANAGER,
+                                Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
+                        )
+                );
+
+                when(mockAuthService.validateToken(anyString())).thenReturn(true);
+                when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(anyString()))
+                        .thenReturn(String.valueOf(userID));
+
+                when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+
+                when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
+                        .thenReturn(mockCompany);
+
+                when(mockCompany.getHierarchyTree(userID))
+                        .thenReturn(hierarchyData);
+
+                Result<List<HierarchyNodeDTO>> result =
+                        userService.hierarchyTree(companyID, "token");
+
+                assertTrue(result.isSuccess());
+                assertEquals(2, result.getValue().size());
+        }
+
+        @Test
+        void GivenInvalidToken_WhenHierarchyTree_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString())).thenReturn(false);
+
+        assertFalse(userService.hierarchyTree(1, "token").isSuccess());
+        }
+
+        @Test
+        void GivenNonUserToken_WhenHierarchyTree_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(false);
+
+        assertFalse(userService.hierarchyTree(1, "token").isSuccess());
+        }
+
+        @Test
+        void GivenUserNotFound_WhenHierarchyTree_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn("1");
+
+        when(mockUserRepository.getUserByID(1))
+                .thenThrow(new IllegalArgumentException("User not found"));
+
+        assertFalse(userService.hierarchyTree(1, "token").isSuccess());
+        }
+
+        @Test
+        void GivenCompanyNotFound_WhenHierarchyTree_ThenReturnFail() {
+        int userID = 1;
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID))
+                .thenReturn(mock(User.class));
+
+        when(mockProductionCompanyRepository.findByID(anyString()))
+                .thenThrow(new IllegalArgumentException("Company not found"));
+
+        assertFalse(userService.hierarchyTree(1, "token").isSuccess());
+        }
+
+        @Test
+        void GivenHierarchyTreeThrowsException_WhenHierarchyTree_ThenReturnFail() {
+        int userID = 1;
+        int companyID = 10;
+
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID))
+                .thenReturn(mock(User.class));
+
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
+                .thenReturn(mockCompany);
+
+        when(mockCompany.getHierarchyTree(userID))
+                .thenThrow(new IllegalArgumentException("Not owner"));
+
+        assertFalse(userService.hierarchyTree(companyID, "token").isSuccess());
+        }
+
+        @Test
+        void GivenJwtException_WhenHierarchyTree_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString()))
+                .thenThrow(new JwtException("bad token"));
+
+        assertFalse(userService.hierarchyTree(1, "token").isSuccess());
+        }
+
+        @Test
+        void GivenUnexpectedException_WhenHierarchyTree_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString()))
+                .thenThrow(new RuntimeException("unexpected"));
+
+        assertFalse(userService.hierarchyTree(1, "token").isSuccess());
         }
 
 }
