@@ -1074,4 +1074,246 @@ public class CompanyHierarchyServiceTests {
         assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
     }
 
+    @Test
+    void GivenValidRequest_WhenChangeManagerPermission_ThenReturnSuccess() {
+        int userID = 1;
+        int targetID = 2;
+        int companyID = 10;
+
+        Set<ManagerPermissions> permissions =Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        User mockUser = mock(User.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
+
+        doNothing().when(mockCompany)
+                .updatePermissionsOfManager(userID, targetID, permissions);
+
+        doNothing().when(mockProductionCompanyRepository).save(mockCompany);
+
+        assertTrue(userService.changeManagerPermission(
+                targetID,
+                companyID,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenInvalidToken_WhenChangeManagerPermission_ThenReturnFail() {
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(false);
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenNonUserToken_WhenChangeManagerPermission_ThenReturnFail() {
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(false);
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenUserNotFound_WhenChangeManagerPermission_ThenReturnFail() {
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn("1");
+
+        when(mockUserRepository.getUserByID(anyInt()))
+                .thenThrow(new IllegalArgumentException("User not found"));
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenTargetUserNotFound_WhenChangeManagerPermission_ThenReturnFail() {
+        int userID = 1;
+
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID))
+                .thenReturn(mock(User.class));
+
+        when(mockUserRepository.getUserByID(2))
+                .thenThrow(new IllegalArgumentException("Target not found"));
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenCompanyNotFound_WhenChangeManagerPermission_ThenReturnFail() {
+        int userID = 1;
+
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(anyInt()))
+                .thenReturn(mock(User.class));
+
+        when(mockProductionCompanyRepository.findByID(anyString()))
+                .thenThrow(new IllegalArgumentException("Company not found"));
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenUpdatePermissionsThrowsException_WhenChangeManagerPermission_ThenReturnFail() {
+        int userID = 1;
+
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        User mockUser = mock(User.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID(anyString()))
+                .thenReturn(mockCompany);
+
+        doThrow(new IllegalArgumentException("Not allowed"))
+                .when(mockCompany)
+                .updatePermissionsOfManager(userID, 2, permissions);
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenSaveThrowsOptimisticLocking_WhenChangeManagerPermission_ThenReturnFail() {
+        int userID = 1;
+
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        User mockUser = mock(User.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString()))
+                .thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID(anyString()))
+                .thenReturn(mockCompany);
+
+        doNothing().when(mockCompany)
+                .updatePermissionsOfManager(userID, 2, permissions);
+
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .when(mockProductionCompanyRepository)
+                .save(mockCompany);
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenJwtException_WhenChangeManagerPermission_ThenReturnFail() {
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString()))
+                .thenThrow(new JwtException("bad token"));
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
+        @Test
+        void GivenUnexpectedException_WhenChangeManagerPermission_ThenReturnFail() {
+        Set<ManagerPermissions> permissions =
+                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+
+        when(mockAuthService.validateToken(anyString()))
+                .thenThrow(new RuntimeException("unexpected"));
+
+        assertFalse(userService.changeManagerPermission(
+                2,
+                1,
+                permissions,
+                "token"
+        ).isSuccess());
+        }
+
 }

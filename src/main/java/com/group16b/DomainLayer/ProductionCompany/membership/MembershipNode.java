@@ -46,12 +46,20 @@ public class MembershipNode {
         return assignerID;
     }
     public void setAssignerID(Integer newID)
-    {
+    {   
+        if(this.roleType==RoleType.FOUNDER)
+            throw new IllegalArgumentException("Can't update assignerID for founder of company!");
         this.assignerID=newID;
     }
     public Set<ManagerPermissions> getPermissions()
     {
         return new HashSet<>(permissions);
+    }
+    public void setPermissions(Set<ManagerPermissions> newPermissions)
+    {
+        if(this.roleType.isHigherOrEqual(RoleType.OWNER))
+            throw new IllegalArgumentException("cant update permissions for owner and founder!");
+        this.permissions=new HashSet<>(newPermissions);
     }
     public RoleType getRoleType()
     {

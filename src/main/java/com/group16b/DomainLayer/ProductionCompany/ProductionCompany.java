@@ -182,21 +182,15 @@ public class ProductionCompany {
 
     public void removeMemberByOwner(int ownerID, int targetID)
     {
-        if (!isOwner(ownerID)) {
-            throw new IllegalArgumentException("Caller is not an owner.");
-        }
-
-        MembershipNode targetNode = membersNodes.get(targetID);
-
-        if (targetNode == null) {
-            throw new IllegalArgumentException("Target is not a member.");
-        }
-
-        if (!isAssignedByOwner(ownerID, targetID)) {
-            throw new IllegalArgumentException("Target was not assigned by this owner (directly or transitively).");
-        }
-
+        canOwnerManageTarget(ownerID, targetID);
         removeMember(targetID);
+    }
+
+    public void updatePermissionsOfManager(int ownerID, int targetID, Set<ManagerPermissions> newPerms)
+    {
+        canOwnerManageTarget(ownerID, targetID);
+        MembershipNode targetNode = membersNodes.get(targetID);
+        targetNode.setPermissions(newPerms);
     }
 
     private boolean isAssignedByOwner(int ownerID, int targetID)
@@ -234,6 +228,22 @@ public class ProductionCompany {
 
         // remove user
         membersNodes.remove(userID);
+    }
+
+    private void canOwnerManageTarget(int ownerID, int targetID)
+    {
+        if (!isOwner(ownerID)) {
+            throw new IllegalArgumentException("Caller is not an owner.");
+        }
+        MembershipNode targetNode = membersNodes.get(targetID);
+
+        if (targetNode == null) {
+            throw new IllegalArgumentException("Target is not a member.");
+        }
+
+        if (!isAssignedByOwner(ownerID, targetID)) {
+            throw new IllegalArgumentException("Target was not assigned by this owner (directly or transitively).");
+        }
     }
 
 

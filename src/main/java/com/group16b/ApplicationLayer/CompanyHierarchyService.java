@@ -360,55 +360,54 @@ public class CompanyHierarchyService {
 	}
 
 	public Result<Boolean> changeManagerPermission(int targetID, int companyID, Set<ManagerPermissions> newPermissions, String sessionToken) {
-		Object lock = getCompanyLock(companyID);
 		try {
 			//auth
-			logger.info("Verifying session token for changing manager permissions for target id {0} for company {1}.", targetID,companyID);
+			logger.info("Verifying session token for update manager permissions of target {} in company {}.",targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for changing manager permissions for target id {0} for company {1}.", targetID,companyID);
+				logger.warn("Invalid session token provided for update manager permissions of target {} in company {}.", targetID,companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to update manager permissions.");
+				return Result.makeFail("Only signed-in users are allowed to update manager permissions. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found for updating manager permissions", userID);
-				return Result.makeFail("User not found.");
-			}
+			userRepository.getUserByID(userID);
+
 			logger.info("Session token verified successfully.");
-			logger.info("retrieving target user {0} to update his permissions from company {1} by user {2}",targetID,companyID,userID);
-			User target=userRepository.getUserByID(targetID);
-			if(target==null)
-			{
-				logger.warn("target user {0} was not found to his manager permissions from the compny {1} by user {2}.",targetID,companyID,userID);
-				return Result.makeFail("target user was not found");
-			}
-			synchronized(lock)
-			{
-				Result<Boolean> canManage=canManage(user, target, companyID);
-                if(!canManage.isSuccess())
-                    return canManage;
-                if(((Manager)target.getRole(companyID)).getRoleType()!=RoleType.MANAGER)
-                {
-                    logger.warn("user {0} tried to update the permissions of target {1} in company {2}, but target is owner",userID,targetID,companyID);
-                    return Result.makeFail("Cannot change permissions of an owner");
-                }
-				companyHierarchyDomainService.updateManagerPermissionsForCompny(target, companyID, newPermissions);
-			}
-			logger.info("target {0} have had their manager permissions updated in company {1} by user {2}",targetID,companyID,userID);
+
+			logger.info("ensuring target user {} exists",targetID);
+			userRepository.getUserByID(targetID);
+
+			logger.info("trying to retrieve company {} for update manager permissions of target {} by user {}",companyID, targetID,userID);
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+
+			logger.info("trying to update manager permissions of target {} by user{} in company {}",targetID,userID,companyID);
+			company.updatePermissionsOfManager(userID, targetID, newPermissions);
+
+
+			logger.info("user {} have succesfully updated manager permissions of target {} in company {}.",userID,targetID,companyID);
+
+			logger.info("Trying to save change for update manager permissions of target {}",targetID);
+			productionCompanyRepository.save(company);
+			logger.info("Succesfully saved company {} after update manager permissions of target {} by user {}",companyID,targetID,userID);
 			return Result.makeOk(true);
-
-
-		} catch (IllegalArgumentException | IllegalStateException e) {
-			logger.error("Failed to update manager from company: " + e.getMessage());
+		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during update manager permissions: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
+		}
+		catch(OptimisticLockingFailureException e)
+		{
+			logger.warn("Optimistic locking Failure in update manager permissions: "+e.getMessage());
+			return Result.makeFail("Company was updated by another operation. Please retry.");
+		}
+		catch (JwtException e) {
 			logger.error("JWT authentication error during update manager permissions: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Unexpected error during update manager permissions: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
