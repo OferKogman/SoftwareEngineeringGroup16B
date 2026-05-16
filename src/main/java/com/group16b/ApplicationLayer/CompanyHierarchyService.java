@@ -51,7 +51,7 @@ public class CompanyHierarchyService {
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to assign oner.");
+				logger.warn("Only USERS are allowed to assign owner.");
 				return Result.makeFail("Only signed-in users are allowed to assign owners. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
@@ -95,81 +95,57 @@ public class CompanyHierarchyService {
 
 	
 	public Result<Boolean> assignManagerToCompany(int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
-		Object lock = getCompanyLock(companyID);
-        try {
+		try{
 			//auth
-			logger.info("Verifying session token for Manager assignment of user {0} to company {1}.", targetID, companyID);
+			logger.info("Verifying session token for manager assignment of user {} to company {}.", targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for Manager assignment of user {0} to company {1}.", targetID, companyID);
+				logger.warn("Invalid session token provided for manager assignment of user {} to company {}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to assign manager.");
+				return Result.makeFail("Only signed-in users are allowed to assign managers. Please use a user account.");
 			}
-
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
-            if(user==null)
-            {
-                logger.warn("user with ID {0} not found for Manager assignment.", userID);
-				return Result.makeFail("user not found.");
-            }
-            //get target user
-            logger.info("retrieving target user for Manager assignment.");
-            User targetUser = userRepository.getUserByID(targetID);
-			if (targetUser==null) {
-				logger.warn("Target user with ID {0} not found for Manager assignment.", targetID);
-				return Result.makeFail("Target user not found.");
-			}
 
-            logger.info("ensuring permissions are valid for sending invite to target {0}");
-            if(permissions==null || permissions.isEmpty())
-            {
-                logger.warn("cant assing manager with empty or null set of permissions");
-                return Result.makeFail("Cant assign manager with empty permissions!");
-            }
-            synchronized(lock)
-            {
-                //get perms
-                logger.info("Validating user permissions for manager assignment.");
-                if(!user.isOwnerOfCompany(companyID))
-                {
-                    logger.warn("user {0} is not owner of company {1} and thus cant invite target {2} to be manager",userID,companyID,targetID);
-                    return Result.makeFail("User not owner");
-                }
-                logger.info("User permissions validated successfully.");
+			logger.info("attempting to retrieve target User {}",targetID);
+			userRepository.getUserByID(targetID);
 
-                //send invite
-                logger.info("ensuring target isnt already a manager for company.");
-                if(targetUser.getRole(companyID)!=null)
-                {
-                    logger.warn("target {0} is already an manager of company {1} when trying to send invite by user {2}",targetID,companyID,userID);
-                    return Result.makeFail("Target already manager");
-                }
+			logger.info("attempting to retrieve production company {}", companyID);
+			ProductionCompany company= productionCompanyRepository.findByID(String.valueOf(companyID));
 
-                logger.info("Adding manager assignment invite to target user.");
-                targetUser.addInvite(companyID, userID, new Manager(targetID, userID, permissions));
+			logger.info("Attempting to send manager invite to user {} by user {} in company {}",targetID,userID,companyID);
+			company.AssignManager(userID, targetID,permissions);
+			logger.info("user {} Succefully invited target {} to be manager in company {}",userID,targetID,companyID);
 
-            }
-			logger.info("user {0} have been succesfully invited to be a manager in company {1} by user {2}",targetID,companyID,userID);
+			logger.info("attempting to save changed in production company {}",companyID);
+			productionCompanyRepository.save(company);
+
 			return Result.makeOk(true);
-
-		} catch (IllegalArgumentException e) {
-			logger.error("Failed to invite manager: " + e.getMessage());
+		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during assign Manager: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (IllegalStateException e) {
-			logger.error("Failed to invite manager: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
+		}
+		catch(OptimisticLockingFailureException e)
+		{
+			logger.warn("Optimistic locking Failure in assign manager: "+e.getMessage());
+			return Result.makeFail("Company was updated by another operation. Please retry.");
+		}
+		catch (JwtException e) {
 			logger.error("JWT authentication error during inviting manager: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
+		}
+		catch (Exception e) {
 			logger.error("Unexpected error during inviting manager: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
+		}    
 	}
+
+
 	public Result<Boolean> acceptInviteToCompany(int companyID, int assignerID, String sessionToken) {
 		Object companyLock = getCompanyLock(companyID);
 		try {

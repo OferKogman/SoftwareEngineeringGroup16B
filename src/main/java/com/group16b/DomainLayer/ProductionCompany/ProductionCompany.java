@@ -8,6 +8,7 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.RoleType;
 
 public class ProductionCompany {
@@ -83,6 +84,14 @@ public class ProductionCompany {
         return true;
     }
 
+    private boolean isManager(int userID)
+    {
+        MembershipNode node=membersNodes.get(userID);
+        if(node==null)
+            return false;
+        return true;
+    }
+
     /*
     adds an invite to become owner
     assigner is set to be caller
@@ -100,5 +109,19 @@ public class ProductionCompany {
         }
         MembershipNode newOnwerInvite = MembershipNode.createOwner(callerID, targetID);
         invites.put(targetID, newOnwerInvite);
+    }
+
+    public void AssignManager(int callerID, int targetID,Set<ManagerPermissions> perms)
+    {
+        if(!isOwner(callerID))
+        {
+            throw new IllegalArgumentException("caller User is not owner in Assign Manager.");
+        }
+        if(isManager(targetID))
+        {
+            throw new IllegalArgumentException("Target is already owner in Assign Manager.");
+        }
+        MembershipNode newManagerInvite = MembershipNode.createManager(callerID, targetID,perms);
+        invites.put(targetID, newManagerInvite);
     }
 }
