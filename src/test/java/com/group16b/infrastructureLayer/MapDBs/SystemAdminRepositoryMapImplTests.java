@@ -14,7 +14,7 @@ public class SystemAdminRepositoryMapImplTests {
 
 	@BeforeEach
 	void setUp() {
-		repository = SystemAdminRepositoryMapImpl.getInstance();
+		repository = new SystemAdminRepositoryMapImpl();
 	}
 
 	@Test
@@ -45,12 +45,6 @@ public class SystemAdminRepositoryMapImplTests {
 		assertEquals(null, retrievedAdmin);
 	}
 
-	@Test
-	void testSingletonInstance() {
-		SystemAdminRepositoryMapImpl instance1 = SystemAdminRepositoryMapImpl.getInstance();
-		SystemAdminRepositoryMapImpl instance2 = SystemAdminRepositoryMapImpl.getInstance();
-		assertEquals(instance1, instance2);
-	}
 
 	@Test
 	void testAddMultipleSystemAdmins() {

@@ -10,7 +10,12 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	private Map<String, SystemAdmin> systemAdminsByUsername;
 
 
-	private SystemAdminRepositoryMapImpl(Map<Integer, SystemAdmin> systemAdminsById,  Map<String, SystemAdmin> systemAdminsByUsername) {
+
+	public SystemAdminRepositoryMapImpl() {
+		this.systemAdminsById = new java.util.HashMap<>();
+		this.systemAdminsByUsername = new java.util.HashMap<>();
+	}
+	public SystemAdminRepositoryMapImpl(Map<Integer, SystemAdmin> systemAdminsById,  Map<String, SystemAdmin> systemAdminsByUsername) {
 		this.systemAdminsById = systemAdminsById;
 		this.systemAdminsByUsername = systemAdminsByUsername;
 	}
