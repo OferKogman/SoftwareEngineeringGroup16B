@@ -147,6 +147,17 @@ public class ProductionCompany {
         );
     }
 
+    public void rejectInvite(int targetID, int assignerID) 
+    {
+        InviteKey key = new InviteKey(targetID, assignerID);
+
+        if (!invites.containsKey(key)) {
+            throw new IllegalArgumentException("Invite not found.");
+        }
+
+        invites.remove(key);
+    }
+
 
 
     private static class InviteKey {

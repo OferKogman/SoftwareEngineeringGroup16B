@@ -199,50 +199,57 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}  
 	}
-	
+
 	public Result<Boolean> rejectInviteToCompany( int companyID, int assignerID, String sessionToken) {
-		Object companyLock = getCompanyLock(companyID);
-        try {
+		try {
 			//auth
-			logger.info("Verifying session token for rejecting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
+			logger.info("Verifying session token for rejection invite assignment to company {} by assigner {}.", companyID, assignerID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for rejecting invite assignment to company {0} by assigner {1}.", companyID, assignerID);
+				logger.warn("Invalid session token provided for rejection invite assignment to company {} by assigner {}.", companyID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to reject invite.");
+				return Result.makeFail("Only signed-in users are allowed to reject invites. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-            if(user==null)
-			{
-				logger.warn("user {0} was not found, maybe deleted",userID);
-				return Result.makeFail("user not found");
-			}
+			userRepository.getUserByID(userID);
+
 			logger.info("Session token verified successfully.");
-            synchronized(companyLock)
-            {
-                //check that invite exists and reject it
-                logger.info("rejecting invite assignment for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
-                user.rejectInvite(companyID, assignerID);
-                logger.info("invite rejected successfully for company {0} by user {1} and assigner {2}.", companyID, userID, assignerID);
 
-            }
-			logger.info("user {0} have succesfully rejected an invite to company {1} by user {2}",userID,companyID,assignerID);
+			logger.info("ensuring assigner {} exists for reject invite",assignerID);
+			userRepository.getUserByID(assignerID);
+
+			logger.info("trying to retrieve company {} for reject invite",companyID);
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+
+			logger.info("trying to reject invite for user {} assigner by {} in company {}",userID,assignerID,companyID);
+			company.rejectInvite(userID, assignerID);
+
+
+			logger.info("user {} have succesfully rejected an invite to company {} by assigner {}",userID,companyID,assignerID);
+
+			logger.info("Trying to save change for reject invite");
+			productionCompanyRepository.save(company);
+			logger.info("Succesfully saved company {} after rejected invite",companyID);
 			return Result.makeOk(true);
-
-		} catch (IllegalArgumentException e) {
-			logger.error("Failed to reject invite: " + e.getMessage());
+		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during reject Invite: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (IllegalStateException e) {
-			logger.error("Failed to reject invite: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during invite rejection: " + e.getMessage());
+		}
+		catch(OptimisticLockingFailureException e)
+		{
+			logger.warn("Optimistic locking Failure in reject Invite: "+e.getMessage());
+			return Result.makeFail("Company was updated by another operation. Please retry.");
+		}
+		catch (JwtException e) {
+			logger.error("JWT authentication error during reject Invite: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during invite rejection: " + e.getMessage());
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error during accept Invite: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
