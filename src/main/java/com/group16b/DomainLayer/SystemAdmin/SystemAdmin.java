@@ -77,6 +77,13 @@ public class SystemAdmin {
 		}
 	}
 
+	public boolean equals(SystemAdmin other) {
+		return (this.id.equals(other.id) &&
+		 		this.username.equals(other.username) &&
+		  		this.password.equals(other.password) &&
+		   		this.email.equals(other.email));
+	}
+
 	/*public void closeProductionCompany(int productionCompanyId) {
 		ProductionCompanyRepositoryMapImpl productionCompanyRepo = ProductionCompanyRepositoryMapImpl.getInstance();
 		ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
