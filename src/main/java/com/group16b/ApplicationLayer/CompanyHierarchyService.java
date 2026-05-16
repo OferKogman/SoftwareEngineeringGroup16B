@@ -9,11 +9,14 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
@@ -30,84 +33,64 @@ public class CompanyHierarchyService {
     private final IAuthenticationService authenticationService;
     private final CompanyHierarchyDomainService companyHierarchyDomainService;
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-
+	private final IProductionCompanyRepository productionCompanyRepository;
 	private final ConcurrentHashMap<Integer, Object> companyLocks = new ConcurrentHashMap<>();
 
-    public CompanyHierarchyService(IAuthenticationService authenticationService, CompanyHierarchyDomainService companyHierarchyDomainService) {
+    public CompanyHierarchyService(IAuthenticationService authenticationService, CompanyHierarchyDomainService companyHierarchyDomainService, IProductionCompanyRepository productionCompanyRepository) {
 		this.authenticationService = authenticationService;
 		this.companyHierarchyDomainService=companyHierarchyDomainService;
+		this.productionCompanyRepository=productionCompanyRepository;
 	}
 
     public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
-		Object lock = getCompanyLock(companyID);
-        try {
+		try{
 			//auth
-			logger.info("Verifying session token for Owner assignment of user {0} to company {1}.", targetID, companyID);
+			logger.info("Verifying session token for Owner assignment of user {} to company {}.", targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for Owner assignment of user {0} to company {1}.", targetID, companyID);
+				logger.warn("Invalid session token provided for Owner assignment of user {} to company {}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to assign oner.");
+				return Result.makeFail("Only signed-in users are allowed to assign owners. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
+			userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
-            if(user==null)
-            {
-                logger.warn("User with id {0} was not found",userID);
-                return Result.makeFail("user not found");
-            }
 
-            //get target user
-			logger.info("retrieving target user for Owner assignment.");
-			User targetUser = userRepository.getUserByID(targetID);
-			if (targetUser==null) {
-				logger.warn("Target user with ID {0} not found for Owner assignment.", targetID);
-				return Result.makeFail("Target user not found.");
-			}
-            
-            synchronized(lock)
-            {
-                //get perms
-                logger.info("Validating user permissions for owner assignment.");
-                if(!user.isOwnerOfCompany(companyID))
-                {
-                    logger.warn("user {0} is not owner of company {1} and thus cant invite target {2} to be owner",userID,companyID,targetID);
-                    return Result.makeFail("User not owner");
-                }
-                logger.info("User permissions validated successfully.");
+			logger.info("attempting to retrieve target User {}",targetID);
+			userRepository.getUserByID(targetID);
 
+			logger.info("attempting to retrieve production company {}", companyID);
+			ProductionCompany company= productionCompanyRepository.findByID(String.valueOf(companyID));
 
-                //ensure not owner already
-                logger.info("ensuring target isnt already an owner for company.");
-                if(targetUser.isOwnerOfCompany(companyID))
-                {
-                    logger.warn("target {0} is already an owner of company {1} when trying to send invite by user {2}",targetID,companyID,userID);
-                    return Result.makeFail("Target already owner");
-                }
+			logger.info("Attempting to send owner invite to user {} by user {} in company {}",targetID,userID,companyID);
+			company.AssignOwner(userID, targetID);
+			logger.info("user {} Succefully invited target {} to be owner in company {}",userID,targetID,companyID);
 
-                //add invite to target user
-                logger.info("Adding owner assignment invite to target user.");
-                targetUser.addInvite(companyID, userID, new Owner(targetID, userID));
-            }
-			logger.info("user {0} have been succesfully invited to be an owner in company {1} by user {2}",targetID,companyID,userID);
+			logger.info("attempting to save changed in production company {}",companyID);
+			productionCompanyRepository.save(company);
+
 			return Result.makeOk(true);
-
-		} catch (IllegalArgumentException e) {
-			logger.error("Failed to invite owner: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (IllegalStateException e) {
-			logger.error("Failed to invite owner: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during owner invitation: " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during owner invitation: " + e.getMessage());
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during assignOwner: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
+		catch(OptimisticLockingFailureException e)
+		{
+			logger.warn("Optimistic locking Failure in assign owner: "+e.getMessage());
+			return Result.makeFail("Company was updated by another operation. Please retry.");
+		}
+		catch (JwtException e) {
+			logger.error("JWT authentication error during inviting owner: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error during inviting owner: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}    
 	}
 
 	

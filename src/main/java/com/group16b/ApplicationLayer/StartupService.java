@@ -53,7 +53,7 @@ public class StartupService {
 
         logger.info("Initializing application services...");
         adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl);
-        companyHierarchyService = new CompanyHierarchyService(authService, companyHierarchyDomainService);
+        companyHierarchyService = new CompanyHierarchyService(authService, companyHierarchyDomainService,productionCompanyRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
         productionCompanyService = new ProductionCompanyService(authService);
