@@ -16,7 +16,8 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.ProductionCompanyPolicy.IProductionCompanyPolicyRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
@@ -27,7 +28,6 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
@@ -44,12 +44,13 @@ public class EventService {
 	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
 	private final IVirtualQueueRepository queueRepository = VirtualQueueRepositoryMapImpl.getInstance();
-    private final IProductionCompanyPolicyRepository productionCompanyPolicyRepository = ProductionCompanyPolicyRepositoryMapImpl.getInstance();
+    private final IRepository<ProductionCompany> productionCompanyRepository;
 
-	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService) {
+	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService, IRepository<ProductionCompany> productionCompanyRepo) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
+		this.productionCompanyRepository=productionCompanyRepo;
 	}
 
 	// need to make event active manually

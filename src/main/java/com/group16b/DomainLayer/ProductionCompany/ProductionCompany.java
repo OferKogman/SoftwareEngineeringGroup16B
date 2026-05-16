@@ -8,12 +8,13 @@ public class ProductionCompany {
     private int productionCompanyID;
     private double rating;
     private long version;
-    
+    private String name;
     public ProductionCompany(ProductionCompany other)
     {
         this.productionCompanyID=other.productionCompanyID;
         this.rating=other.rating;
         this.version=other.version;
+        this.name=other.name;
     }
 
 
@@ -26,6 +27,14 @@ public class ProductionCompany {
         return rating;
     }
 
+    public String getName()
+    {
+        return name;
+    }
+    public void setName(String name)
+    {
+        this.name=name;
+    }
     public List<User> getAssociatedUsers() {
         // TODO Auto-generated method stub
         throw new UnsupportedOperationException("Unimplemented method 'getAssociatedUsers'");
@@ -35,7 +44,7 @@ public class ProductionCompany {
     {
         return version;
     }
-    public void setVerson(long version)
+    public void setVersion(long version)
     {
         this.version=version;
     }
