@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.ProductionCompany;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
@@ -12,6 +13,10 @@ public class ProductionCompany {
     private double rating;
     private long version;
     private String name;
+
+    private final HashMap<Integer, MembershipNode> membersNodes=new HashMap<>();
+    private final HashMap<Integer, MembershipNode> invites= new HashMap<>();
+
     public ProductionCompany(ProductionCompany other)
     {
         this.productionCompanyID=other.productionCompanyID;
