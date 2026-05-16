@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.SessionToken;
@@ -20,10 +21,10 @@ public class SystemAdminLoginService {
         this.tokenService = tokenService;
     }
 
-    public Result<String> loginAdmin(int adminID, String password, String email) {
+    public Result<String> loginAdmin(String adminID, String password, String email) {
         logger.info("Attempting login for admin ID: ...", adminID);
 
-        SystemAdmin admin = systemAdminRespotiry.getSystemAdminById(adminID);
+        SystemAdmin admin = systemAdminRespotiry.findByID(adminID);
 
         if (admin == null) {
             logger.warn("Login failed: user ID {} does not exist!", adminID);
@@ -36,7 +37,7 @@ public class SystemAdminLoginService {
                 return Result.makeFail("Invalid user ID or password + email");
             }
 
-            String token = tokenService.generateAdminToken(adminID);
+            String token = tokenService.generateAdminToken(adminID.hashCode());
             logger.info("admin ID {} successfully logged in", adminID);
             
             return Result.makeOk(token);
@@ -49,7 +50,7 @@ public class SystemAdminLoginService {
 
     public Result<String> logOutAdmin(String sessionToken) {
         try {
-            int recievedID = Integer.valueOf(tokenService.extractSubjectFromToken(sessionToken));
+            String recievedID = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
             logger.info("Attempting log out admin ID: {}...", recievedID);
             
             if (!tokenService.isAdminToken(sessionToken)) {
