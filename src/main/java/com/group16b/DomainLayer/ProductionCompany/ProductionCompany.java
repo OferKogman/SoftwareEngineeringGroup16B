@@ -19,7 +19,13 @@ public class ProductionCompany {
         this.version=other.version;
         this.name=other.name;
     }
-
+    public ProductionCompany(int id, String name, double rating)
+    {
+        this.rating=rating;
+        this.name=name;
+        this.productionCompanyID=id;
+        this.version=1;
+    }
 
 
     public int getProductionCompanyID() {
