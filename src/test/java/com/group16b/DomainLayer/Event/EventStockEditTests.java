@@ -72,7 +72,7 @@ public class EventStockEditTests {
         setPrivateField(eventService, "venueRepository", mockVenueRepo);
         setPrivateField(eventService, "eventRepository", mockEventRepo);
         setPrivateField(eventService, "queueRepository", mockQueueRepo);
-        setPrivateField(eventService, "productionCompanyPolicyRepository", mockPolicyRepo);
+        setPrivateField(eventService, "productionCompanyRepository", mockPolicyRepo);
 
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
