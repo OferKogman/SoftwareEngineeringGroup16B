@@ -17,6 +17,7 @@ import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Owner;
@@ -44,9 +45,9 @@ public class EventService {
 	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
 	private final IVirtualQueueRepository queueRepository = VirtualQueueRepositoryMapImpl.getInstance();
-    private final IRepository<ProductionCompany> productionCompanyRepository;
+    private final IProductionCompanyRepository productionCompanyRepository;
 
-	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService, IRepository<ProductionCompany> productionCompanyRepo) {
+	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
@@ -72,7 +73,7 @@ public class EventService {
 			User user = userRepository.getUserByID(Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken)));
 			logger.info("Session token verified successfully.");
 
-			if(productionCompanyPolicyRepository.getProductionCompanyByID(eventRecord.pcID()) == null) {
+			if(productionCompanyRepository.findByID(String.valueOf(eventRecord.pcID())) == null) {
 				logger.warn("Invalid production company ID provided for event creation.");
 				return Result.makeFail("Invalid production company ID. Please provide a valid production company ID to create an event.");
 			}
@@ -316,9 +317,9 @@ public class EventService {
             }
             List<String> pcName = getParam(searchParams, "productionCompany", String.class);
 			List<Integer> pcID = null;
-			if(pcName != null) {
-				pcID = pcName.stream().map(name -> productionCompanyPolicyRepository.getProductionCompanyByName(name).getProductionCompanyID()).toList();
-			}
+			if (pcName != null) {
+					pcID = pcName.stream().map(productionCompanyRepository::getIDByName).toList();
+				}
             List<EventDTO> results = eventFilteringService.searchEvents(
                 getParam(searchParams, "name", String.class),
                 getParam(searchParams, "artist", String.class),

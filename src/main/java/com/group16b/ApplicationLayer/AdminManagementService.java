@@ -17,6 +17,7 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
@@ -25,21 +26,20 @@ import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-    private IRepository<ProductionCompany> productionCompanyRepo;
+    private IProductionCompanyRepository productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
 
-    public AdminManagementService(IAuthenticationService authenticationService, IRepository<ProductionCompany> productionCompanyRepository) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
     }
