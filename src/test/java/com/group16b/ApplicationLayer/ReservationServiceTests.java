@@ -35,6 +35,7 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -185,8 +186,13 @@ public class ReservationServiceTests {
         when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
         when(mockQueueRepository.findVirtualQueueById(EVENT_ID)).thenReturn(queue);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
-        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)).getPurchasePolicy()).thenReturn(companyPurchasePolicies);
-        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)).getDiscountPolicy()).thenReturn(companyDiscountPolicies);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID))).thenReturn(mockCompany);
+
+        when(mockCompany.getPurchasePolicy()).thenReturn(companyPurchasePolicies);
+
+        when(mockCompany.getDiscountPolicy()).thenReturn(companyDiscountPolicies);
 
     }
      // ________ reseurveSeats tests ________
