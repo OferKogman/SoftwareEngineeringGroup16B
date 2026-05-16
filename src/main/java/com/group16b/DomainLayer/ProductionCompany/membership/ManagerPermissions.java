@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.User.Roles;
+package com.group16b.DomainLayer.ProductionCompany.membership;
 
 //will hold all the permissions for a manager
 //for owner all those will be included by default

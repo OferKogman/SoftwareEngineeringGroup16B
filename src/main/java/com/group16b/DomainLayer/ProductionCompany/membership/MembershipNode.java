@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.RoleType;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public class MembershipNode {
     private int userID;

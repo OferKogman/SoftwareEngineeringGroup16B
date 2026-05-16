@@ -17,7 +17,7 @@ import static org.mockito.Mockito.when;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
-import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;

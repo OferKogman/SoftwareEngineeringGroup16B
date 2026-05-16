@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 
 import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.Roles.Manager;
-import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Member;
 import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.Roles.Manager;
