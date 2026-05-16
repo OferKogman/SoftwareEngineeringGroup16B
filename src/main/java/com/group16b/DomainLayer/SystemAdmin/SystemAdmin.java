@@ -21,13 +21,13 @@ import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyPolicyRepositoryMapImpl;
 
 public class SystemAdmin {
-	private int id;
+	private String id;
 	private String username;
 	private String password;
 	private String email;
 	private long version;
 
-	public SystemAdmin(int id, String username, String password, String email) {
+	public SystemAdmin(String id, String username, String password, String email) {
 		this.id = id;
 		this.username = username;
 		this.email = email;
@@ -35,8 +35,15 @@ public class SystemAdmin {
 		setPassword(password);
 
 	}
+	public SystemAdmin(SystemAdmin other) {
+		this.id = other.id;
+		this.username = other.username;
+		this.password = other.password;
+		this.email = other.email;
+		this.version = other.version;
+	}
 
-	public int getId() {
+	public String getId() {
 		return id;
 	}
 
@@ -53,7 +60,6 @@ public class SystemAdmin {
 			messageDigest.update(newPassword.getBytes());
 			String stringHash = new String(messageDigest.digest());
 			this.password = stringHash;
-			version++;
 		} catch (Exception e) {
 			System.out.println("Error hashing password: " + e.getMessage());
 		}
@@ -114,6 +120,15 @@ public class SystemAdmin {
 		for (User u : users) {
 			u.removeRole(productionCompanyId);
 		}
+	}
+	public long getVersion() {
+		return version;
+	}
+	public void updateAdmin(SystemAdmin systemAdmin) {
+		this.username = systemAdmin.username;
+		this.email = systemAdmin.email;
+		this.password = systemAdmin.password;
+		this.version++;
 	}
 
 

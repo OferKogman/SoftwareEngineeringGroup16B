@@ -14,6 +14,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompanyPolicy.ProductionCompanyPolicy;
@@ -36,7 +37,7 @@ public class AdminManagementService {
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
-    private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
+    private SystemAdminRepositoryMapImpl systemAdminRepo = new SystemAdminRepositoryMapImpl();
 
     public AdminManagementService(IAuthenticationService authenticationService) {
         this.authenticationService = authenticationService;
@@ -230,7 +231,7 @@ public class AdminManagementService {
         }
     }
 
-    public Result<String> registerNewAdmin(String sToken, int newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
+    public Result<String> registerNewAdmin(String sToken, String newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try {
             logger.info("AdminManagementService.registerNewAdmin: Attempting to register new admin with ID {}", newAdminID);
             if (!authenticationService.validateToken(sToken)  ) {

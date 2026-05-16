@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
@@ -63,8 +64,8 @@ public class StartupService {
         userService = new UserService(authService, ticketGateway);
 
         logger.info("Adding default system admin...");
-        ISystemAdminRepository systemAdminRepository = SystemAdminRepositoryMapImpl.getInstance();
-        SystemAdmin systemAdmin = new SystemAdmin(1, "admin", "password", "admin@example.com");
+        SystemAdminRepositoryMapImpl systemAdminRepository = new SystemAdminRepositoryMapImpl();
+        SystemAdmin systemAdmin = new SystemAdmin("1", "admin", "password", "admin@example.com");
         systemAdminRepository.addSystemAdmin(systemAdmin);
         logger.info("StartupService initialization complete.");
     }
