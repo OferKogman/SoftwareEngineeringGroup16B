@@ -306,52 +306,55 @@ public class CompanyHierarchyService {
 		}
 	}
 	public Result<Boolean> removeOwnerManager(int targetID, int companyID, String sessionToken) {
-		Object lock = getCompanyLock(companyID);
 		try {
 			//auth
-			logger.info("Verifying session token for removing manager with id {0} for company {1}.", targetID,companyID);
+			logger.info("Verifying session token for remove membership in company {}.", companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for removing manager with id {0} for company {1}.", targetID,companyID);
+				logger.warn("Invalid session token provided for  remove membership in company {}.", companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to  remove membership.");
+				return Result.makeFail("Only signed-in users are allowed to  remove membership. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found for removing manager", userID);
-				return Result.makeFail("User not found.");
-			}
+			userRepository.getUserByID(userID);
+
 			logger.info("Session token verified successfully.");
-			logger.info("retrieving target user {0} to remove manager from company {1} by user {2}",targetID,companyID,userID);
-			User target=userRepository.getUserByID(targetID);
-			if(target==null)
-			{
-				logger.warn("target user {0} was not found to remove him from the compny {1} by user {2}.",targetID,companyID,userID);
-				return Result.makeFail("target user was not found");
-			}
-			synchronized(lock)
-			{
-				Result<Boolean> canManage=canManage(user, target, companyID);
-                if(!canManage.isSuccess())
-                    return canManage;
 
-				companyHierarchyDomainService.removeUserFromCompany(target, companyID);
-			}
-			logger.info("target {0} was removed from company {1} by user {2}",targetID,companyID,userID);
+			logger.info("ensuring target user {} exists",targetID);
+			userRepository.getUserByID(targetID);
+
+			logger.info("trying to retrieve company {} for remove membership of target {} by user {}",companyID, targetID,userID);
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+
+			logger.info("trying to remove membership of target {} by user{} in company {}",targetID,userID,companyID);
+			company.removeMemberByOwner(userID, targetID);
+
+
+			logger.info("user {} have succesfully remove membership of target {} in company {}.",userID,targetID,companyID);
+
+			logger.info("Trying to save change for remove membership of target {}",targetID);
+			productionCompanyRepository.save(company);
+			logger.info("Succesfully saved company {} after remove membership of target {}",companyID,targetID);
 			return Result.makeOk(true);
-
-
-		} catch (IllegalArgumentException | IllegalStateException e) {
-			logger.error("Failed to remove manager from company: " + e.getMessage());
+		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during remove membership: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during forfeitng ownership: " + e.getMessage());
+		}
+		catch(OptimisticLockingFailureException e)
+		{
+			logger.warn("Optimistic locking Failure in remove membership: "+e.getMessage());
+			return Result.makeFail("Company was updated by another operation. Please retry.");
+		}
+		catch (JwtException e) {
+			logger.error("JWT authentication error during remove membership: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during forfeiting ownership: " + e.getMessage());
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error during remove membership: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

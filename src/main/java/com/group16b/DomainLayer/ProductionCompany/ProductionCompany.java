@@ -179,7 +179,44 @@ public class ProductionCompany {
         removeMember(userID);
 
     }
-    
+
+    public void removeMemberByOwner(int ownerID, int targetID)
+    {
+        if (!isOwner(ownerID)) {
+            throw new IllegalArgumentException("Caller is not an owner.");
+        }
+
+        MembershipNode targetNode = membersNodes.get(targetID);
+
+        if (targetNode == null) {
+            throw new IllegalArgumentException("Target is not a member.");
+        }
+
+        if (!isAssignedByOwner(ownerID, targetID)) {
+            throw new IllegalArgumentException("Target was not assigned by this owner (directly or transitively).");
+        }
+
+        removeMember(targetID);
+    }
+
+    private boolean isAssignedByOwner(int ownerID, int targetID)
+    {
+        MembershipNode current = membersNodes.get(targetID);
+
+        while (current != null)
+        {
+            int assignerID = current.getAssignerID();
+
+            if (assignerID == ownerID) {
+                return true;
+            }
+
+            current = membersNodes.get(assignerID);
+        }
+
+        return false;
+    }
+
     private void removeMember(int userID)
     {
         MembershipNode node = membersNodes.get(userID);

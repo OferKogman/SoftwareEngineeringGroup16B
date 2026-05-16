@@ -8,6 +8,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -32,6 +35,9 @@ import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.Roles.Manager;
 import com.group16b.DomainLayer.User.Roles.ManagerPermissions;
 import com.group16b.DomainLayer.User.Roles.Owner;
+
+import io.jsonwebtoken.JwtException;
+
 import com.group16b.DomainLayer.User.User;
 public class CompanyHierarchyServiceTests {
     CompanyHierarchyService userService;
@@ -923,124 +929,149 @@ public class CompanyHierarchyServiceTests {
     //     REMOVE PERSONAL FROM COMPANY TESTS
     //------------------------------------------------------------------------------------------
 
+
+
     @Test
-    void testRemoveManagerFromCompanySuccess()
-    {
+    void GivenValidRequest_WhenRemoveOwnerManager_ThenReturnSuccess() {
         int userID = 1;
         int companyID = 1;
         int targetID = 2;
+
         User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        Manager mockRole=mock(Manager.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
         when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
-        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
-        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
-        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
 
-        assertTrue(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
+
+        doNothing().when(mockCompany).removeMemberByOwner(userID, targetID);
+        doNothing().when(mockProductionCompanyRepository).save(mockCompany);
+
+        assertTrue(userService.removeOwnerManager(targetID, companyID, "token").isSuccess());
     }
 
     @Test
-    void testRemoveManagerFromCompanyTargetNotUnderFail()
-    {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
-        User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        Manager mockRole=mock(Manager.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
-        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
-        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(false);
-        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
-
-        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
-    }
-
-    @Test
-    void testRemoveManagerFromCompanyUserNotOwnerFail()
-    {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
-        User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        Manager mockRole=mock(Manager.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
-        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
-        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
-        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
-        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
-
-        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
-    }
-    
-    @Test
-    void testRemoveManagerFromCompanyTargetNotPersonalFail()
-    {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
-        User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        Manager mockRole=mock(Manager.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
-        when(mockTarget.getRole(companyID)).thenReturn(null);
-        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
-        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
-
-        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
-    }
-
-    @Test
-    void testRemoveManagerFromCompanyAuthFail()
-    {
-        int userID = 1;
-        int companyID = 1;
-        int targetID = 2;
-        User mockUser = mock(User.class);
-        User mockTarget=mock(User.class);
-        Manager mockRole=mock(Manager.class);
+    void GivenInvalidToken_WhenRemoveOwnerManager_ThenReturnFail() {
         when(mockAuthService.validateToken(anyString())).thenReturn(false);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
-        when(mockUserRepository.userExists(targetID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockTarget.getParentIDForCompany(companyID)).thenReturn(userID);
-        when(mockTarget.getRole(companyID)).thenReturn(mockRole);
-        when(mockCompanyHierarchyDomainService.isManagerUnderOwnerTreeTraversal(mockTarget, mockUser, companyID)).thenReturn(true);
-        doNothing().when(mockCompanyHierarchyDomainService).removeUserFromCompany(mockTarget, companyID);
 
-        assertFalse(userService.removeOwnerManager(targetID, companyID, "").isSuccess());
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenNonUserToken_WhenRemoveOwnerManager_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(false);
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenUserNotFound_WhenRemoveOwnerManager_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn("1");
+
+        when(mockUserRepository.getUserByID(anyInt())).thenThrow(new IllegalArgumentException("User not found"));
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenTargetUserNotFound_WhenRemoveOwnerManager_ThenReturnFail() {
+        int userID = 1;
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
+        when(mockUserRepository.getUserByID(2)).thenThrow(new IllegalArgumentException("Target not found"));
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenCompanyNotFound_WhenRemoveOwnerManager_ThenReturnFail() {
+        int userID = 1;
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(anyInt())).thenReturn(mock(User.class));
+        when(mockProductionCompanyRepository.findByID(anyString()))
+                .thenThrow(new IllegalArgumentException("Company not found"));
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenRemoveMemberThrowsException_WhenRemoveOwnerManager_ThenReturnFail() {
+        int userID = 1;
+
+        User mockUser = mock(User.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID(anyString())).thenReturn(mockCompany);
+
+        doThrow(new IllegalArgumentException("Not allowed"))
+                .when(mockCompany).removeMemberByOwner(userID, 2);
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenSaveThrowsOptimisticLocking_WhenRemoveOwnerManager_ThenReturnFail() {
+        int userID = 1;
+
+        User mockUser = mock(User.class);
+        User mockTarget = mock(User.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(anyString())).thenReturn(true);
+        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+
+        when(mockProductionCompanyRepository.findByID(anyString())).thenReturn(mockCompany);
+
+        doNothing().when(mockCompany).removeMemberByOwner(userID, 2);
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .when(mockProductionCompanyRepository).save(mockCompany);
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenJwtException_WhenRemoveOwnerManager_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString()))
+                .thenThrow(new JwtException("bad token"));
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
+    }
+
+    @Test
+    void GivenUnexpectedException_WhenRemoveOwnerManager_ThenReturnFail() {
+        when(mockAuthService.validateToken(anyString()))
+                .thenThrow(new RuntimeException("unexpected"));
+
+        assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
     }
 
 }
