@@ -77,6 +77,14 @@ public class ProductionCompany {
         return null;
     }
 
+    private boolean isFouder(int userID)
+    {
+        MembershipNode node=membersNodes.get(userID);
+        if(node!=null && node.getRoleType()==RoleType.FOUNDER)
+            return true;
+        return false;
+    }
+
     private boolean isOwner(int userID)
     {
         MembershipNode node=membersNodes.get(userID);
@@ -158,6 +166,38 @@ public class ProductionCompany {
         invites.remove(key);
     }
 
+    public void forfeitOwnership(int userID)
+    {
+        if(!isOwner(userID))
+        {
+            throw new IllegalArgumentException("User is not owner in forfeit Ownership");
+        }
+        if(isFouder(userID))
+        {
+            throw new IllegalArgumentException("Founder cannot forfeit ownership in his company.");
+        }
+        removeMember(userID);
+
+    }
+    
+    private void removeMember(int userID)
+    {
+        MembershipNode node = membersNodes.get(userID);
+
+        if (node == null) return;
+
+        int parentID = node.getAssignerID();
+
+        // reparent children
+        for (MembershipNode child : membersNodes.values()) {
+            if (child.getAssignerID() == userID) {
+                child.setAssignerID(parentID);
+            }
+        }
+
+        // remove user
+        membersNodes.remove(userID);
+    }
 
 
     private static class InviteKey {

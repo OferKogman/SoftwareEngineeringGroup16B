@@ -41,9 +41,13 @@ public class MembershipNode {
     {
         return userID;
     }
-    public int getAssgnerID()
+    public int getAssignerID()
     {
         return assignerID;
+    }
+    public void setAssignerID(Integer newID)
+    {
+        this.assignerID=newID;
     }
     public Set<ManagerPermissions> getPermissions()
     {

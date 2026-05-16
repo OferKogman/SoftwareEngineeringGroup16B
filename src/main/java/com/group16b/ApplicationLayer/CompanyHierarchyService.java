@@ -255,53 +255,53 @@ public class CompanyHierarchyService {
 	}
 
     public Result<Boolean> forfeitOwnership(int companyID, String sessionToken) {
-		Object lock = getCompanyLock(companyID);
 		try {
 			//auth
-			logger.info("Verifying session token for forfeiten ownership for company {0}.", companyID);
+			logger.info("Verifying session token for Forfeit ownership in company {}.", companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for forfeiten ownership for company {0}.", companyID);
+				logger.warn("Invalid session token provided for Forfeit ownership in company {}.", companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
+				logger.warn("Only USERS are allowed to Forfeit ownership.");
+				return Result.makeFail("Only signed-in users are allowed to Forfeit ownership. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found for forfeiting ownership", userID);
-				return Result.makeFail("User not found.");
-			}
+			userRepository.getUserByID(userID);
+
 			logger.info("Session token verified successfully.");
-			Integer assignerID;
-			synchronized(lock)
-			{
-				if(!user.isOwnerOfCompany(companyID))
-				{
-					logger.warn("user {0} is not owner for comapny {1}, thus he cant forfeit his ownership there",userID,companyID);
-					return Result.makeFail("user is not owner");
-				}
 
-				assignerID=user.getParentIDForCompany(companyID);
-				if(assignerID==null)
-				{
-					logger.warn("user {0} is founder and thus can't leave the company {1}",userID, companyID);
-					return Result.makeFail("founder cant leave company");
-				}
-				companyHierarchyDomainService.removeUserFromCompany(user, companyID);
-			}
-			logger.info("user {0} has succesfuly forfeited its role in company {1}, thus removing itself from the children of its company parent {2}",userID,companyID,assignerID);
+
+			logger.info("trying to retrieve company {} for Forfeit ownership by user {}",companyID,userID);
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+
+			logger.info("trying to Forfeit ownership by user{} in company {}",userID,companyID);
+			company.forfeitOwnership(userID);
+
+
+			logger.info("user {} have succesfully Forfeited ownership in company {}.",userID,companyID);
+
+			logger.info("Trying to save change for Forfeit ownership");
+			productionCompanyRepository.save(company);
+			logger.info("Succesfully saved company {} after Forfeiting ownership",companyID);
 			return Result.makeOk(true);
-
-		} catch (IllegalArgumentException | IllegalStateException e) {
-			logger.error("Failed to forfeit ownership: " + e.getMessage());
+		}
+		catch(IllegalArgumentException e)
+		{
+			logger.warn("Runtime error during Forfeit ownership: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during forfeitng ownership: " + e.getMessage());
+		}
+		catch(OptimisticLockingFailureException e)
+		{
+			logger.warn("Optimistic locking Failure in Forfeit ownership: "+e.getMessage());
+			return Result.makeFail("Company was updated by another operation. Please retry.");
+		}
+		catch (JwtException e) {
+			logger.error("JWT authentication error during Forfeit ownership: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during forfeiting ownership: " + e.getMessage());
+		}
+		catch (Exception e) {
+			logger.error("Unexpected error during Forfeit ownership: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

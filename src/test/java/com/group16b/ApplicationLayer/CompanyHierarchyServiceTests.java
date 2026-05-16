@@ -804,91 +804,119 @@ public class CompanyHierarchyServiceTests {
     //   FORFEIT OWNERSHIP TESTS
     //-----------------------------------------------------------------
     @Test
-    void testForfeitOwnershipSUccess() {
+    void GivenValidOwner_WhenForfeitOwnership_ThenReturnSuccess() {
         int userID = 1;
         int companyID = 1;
-        int assignerID = 2;
+        String token = "token";
+
         User mockUser = mock(User.class);
-        User mockAssigner=mock(User.class);
-        Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
+
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
-        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
-        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
-       
-        assertTrue(userService.forfeitOwnership( companyID, "").isSuccess());
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
+                .thenReturn(mockCompany);
+
+        doNothing().when(mockCompany).forfeitOwnership(userID);
+        doNothing().when(mockProductionCompanyRepository).save(mockCompany);
+
+        Result<Boolean> result =
+                userService.forfeitOwnership(companyID, token);
+
+        assertTrue(result.isSuccess());
+
+        verify(mockCompany).forfeitOwnership(userID);
+        verify(mockProductionCompanyRepository).save(mockCompany);
     }
 
     @Test
-    void testForfeitOwnershipUserNotOwnerFail() {
+    void GivenUserNotOwner_WhenForfeitOwnership_ThenReturnFailure() {
         int userID = 1;
         int companyID = 1;
-        int assignerID = 2;
+        String token = "token";
+
         User mockUser = mock(User.class);
-        User mockAssigner=mock(User.class);
-        Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
+
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(false);
-        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
-        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
-        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
-       
-        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
+                .thenReturn(mockCompany);
+
+        doThrow(new IllegalArgumentException("User not owner"))
+                .when(mockCompany).forfeitOwnership(userID);
+
+        Result<Boolean> result =
+                userService.forfeitOwnership(companyID, token);
+
+        assertFalse(result.isSuccess());
+
+        verify(mockProductionCompanyRepository, never()).save(any());
     }
 
     @Test
-    void testForfeitOwnershipUserIsDounderFail() {
+    void GivenMissingUser_WhenForfeitOwnership_ThenReturnFailure() {
         int userID = 1;
         int companyID = 1;
-        int assignerID = 2;
-        User mockUser = mock(User.class);
-        User mockAssigner=mock(User.class);
-        Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockUser.getParentIDForCompany(companyID)).thenReturn(null);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
-        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
-        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
-       
-        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+        String token = "token";
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
+
+        when(mockUserRepository.getUserByID(userID))
+                .thenThrow(new IllegalArgumentException("User not found"));
+
+        Result<Boolean> result =
+                userService.forfeitOwnership(companyID, token);
+
+        assertFalse(result.isSuccess());
+
+        verifyNoInteractions(mockProductionCompanyRepository);
     }
 
-       @Test
-    void testForfeitOwnershipAuthFail() {
+    @Test
+    void GivenMissingCompany_WhenForfeitOwnership_ThenReturnFailure() {
         int userID = 1;
         int companyID = 1;
-        int assignerID = 2;
+        String token = "token";
+
         User mockUser = mock(User.class);
-        User mockAssigner=mock(User.class);
-        Owner mockOwner=mock(Owner.class);
-        when(mockAuthService.validateToken(anyString())).thenReturn(false);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
+
+        when(mockAuthService.validateToken(token)).thenReturn(true);
+        when(mockAuthService.isUserToken(token)).thenReturn(true);
+        when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
+
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.userExists(assignerID)).thenReturn(true);
-        when(mockUser.isOwnerOfCompany(companyID)).thenReturn(true);
-        when(mockUser.getParentIDForCompany(companyID)).thenReturn(assignerID);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
-        when(mockUser.getRole(companyID)).thenReturn(mockOwner);
-        when(mockAssigner.getRole(companyID)).thenReturn(mockOwner);
-       
-        assertFalse(userService.forfeitOwnership( companyID, "").isSuccess());
+
+        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
+                .thenThrow(new IllegalArgumentException("Company not found"));
+
+        Result<Boolean> result =
+                userService.forfeitOwnership(companyID, token);
+
+        assertFalse(result.isSuccess());
+
+        verify(mockProductionCompanyRepository, never()).save(any());
+    }
+
+    @Test
+    void GivenInvalidToken_WhenForfeitOwnership_ThenReturnFailure() {
+        when(mockAuthService.validateToken("bad")).thenReturn(false);
+
+        Result<Boolean> result =
+                userService.forfeitOwnership(1, "bad");
+
+        assertFalse(result.isSuccess());
+
+        verifyNoInteractions(mockUserRepository);
+        verifyNoInteractions(mockProductionCompanyRepository);
     }
 
     //------------------------------------------------------------------------------------------
