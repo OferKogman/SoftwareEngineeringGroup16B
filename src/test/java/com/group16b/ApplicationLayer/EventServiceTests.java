@@ -66,7 +66,7 @@ public class EventServiceTests {
 
         eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository);
 
-        Field PCPR = eventService.getClass().getDeclaredField("productionCompanyPolicyRepository");
+        Field PCPR = eventService.getClass().getDeclaredField("productionCompanyRepository");
         PCPR.setAccessible(true);
         PCPR.set(eventService, mockProductionCompanyPolicyRepository);
 
