@@ -319,6 +319,11 @@ public class ProductionCompany {
 
         // remove user
         membersNodes.remove(userID);
+
+        //remove all retaled invites
+        invites.entrySet().removeIf(e ->
+            e.getKey().targetId == userID || e.getKey().assignerId==userID
+        );
     }
 
     private void canOwnerManageTarget(int ownerID, int targetID)
@@ -364,5 +369,10 @@ public class ProductionCompany {
         public int hashCode() {
             return java.util.Objects.hash(targetId, assignerId);
         }
+    }
+
+    public void adminRemoveUser(int userID)
+    {
+        removeMember(userID);
     }
 }

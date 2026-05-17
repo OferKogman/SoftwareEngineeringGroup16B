@@ -1,5 +1,6 @@
 package com.group16b.InfrastructureLayer.MapDBs;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -106,6 +107,19 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
         }
     }
 
+    public List<Integer> getAllUserComapnies(String user)
+    {
+        int userID = parseID(user);
+        List<Integer> userCompanies = new ArrayList<>();
+        for (ProductionCompany company : companies.values()) {
+            if (company.isManager(userID)) {
+                userCompanies.add(company.getProductionCompanyID());
+            }
+        }
+        
+        return userCompanies;
+    }
+
     private int parseID(String ID)
     {
         try {
@@ -114,4 +128,6 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
             throw new IllegalArgumentException("Invalid company ID: " + ID);
         }
     }
+
+
 }
