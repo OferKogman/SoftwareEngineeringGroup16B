@@ -246,6 +246,44 @@ public class ProductionCompany {
         }
     }
 
+    public List<Integer> getDirectSubordinates(int userID)
+    {
+        List<Integer> result = new ArrayList<>();
+
+        for (Map.Entry<Integer, MembershipNode> entry : membersNodes.entrySet())
+        {
+            MembershipNode node = entry.getValue();
+
+            if (node.getAssignerID() == userID)
+            {
+                result.add(entry.getKey());
+            }
+        }
+
+        return result;
+    }
+
+    public List<Integer> getAllSubordinates(int userID)
+    {
+        List<Integer> result = new ArrayList<>();
+
+        collectSubordinates(userID, result);
+
+        return result;
+    }
+
+    private void collectSubordinates(int userID, List<Integer> result)
+    {
+        List<Integer> directSubs = getDirectSubordinates(userID);
+
+        for (Integer subordinateID : directSubs)
+        {
+            result.add(subordinateID);
+
+            collectSubordinates(subordinateID, result);
+        }
+    }
+
     private boolean isAssignedByOwner(int ownerID, int targetID)
     {
         MembershipNode current = membersNodes.get(targetID);
