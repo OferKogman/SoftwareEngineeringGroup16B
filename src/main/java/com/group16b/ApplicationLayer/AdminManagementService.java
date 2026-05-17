@@ -12,7 +12,6 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -36,7 +35,6 @@ public class AdminManagementService {
     private IProductionCompanyRepository productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
-    private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
 

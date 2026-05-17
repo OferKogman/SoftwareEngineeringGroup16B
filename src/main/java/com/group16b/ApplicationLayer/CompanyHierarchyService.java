@@ -11,7 +11,6 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
@@ -25,14 +24,12 @@ public class CompanyHierarchyService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final IAuthenticationService authenticationService;
-    private final CompanyHierarchyDomainService companyHierarchyDomainService;
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final IProductionCompanyRepository productionCompanyRepository;
 	private final ConcurrentHashMap<Integer, Object> companyLocks = new ConcurrentHashMap<>();
 
-    public CompanyHierarchyService(IAuthenticationService authenticationService, CompanyHierarchyDomainService companyHierarchyDomainService, IProductionCompanyRepository productionCompanyRepository) {
+    public CompanyHierarchyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
 		this.authenticationService = authenticationService;
-		this.companyHierarchyDomainService=companyHierarchyDomainService;
 		this.productionCompanyRepository=productionCompanyRepository;
 	}
 
