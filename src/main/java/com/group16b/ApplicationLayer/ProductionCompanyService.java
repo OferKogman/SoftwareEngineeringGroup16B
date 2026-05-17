@@ -42,7 +42,6 @@ public class ProductionCompanyService {
     }
 
     public Result<List<OrderDTO>> viewSalesHistory(String sTocken, int productionCompanyID){
-
     try {
             logger.info("ProductionCompanyService.viewSalesHistory: Retrieving sales history for specific company");
 
@@ -63,20 +62,14 @@ public class ProductionCompanyService {
             company.validateUserPermissions(userID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
             List<Order> orders = orderRepo.getAllCompletedOrders();
-            for (Order order : orders) {
+            List<Order> filtered = orders.stream()
+            .filter(order -> {
                 Event event = eventRepo.getEventByID(order.getEventId());
-                if (event == null) {
-                    logger.warn("ProductionCompanyService.viewSalesHistory: Event with ID {} not found for order {}", order.getEventId(), order.getOrderId());
-                    orders.remove(order);
-                    continue; 
-                }
-                if (event.getEventProductionCompanyID() != productionCompanyID) {
-                    orders.remove(order);
-                }
-            }
-            List<OrderDTO> orderDTOs = orders.stream()
-                    .map(order -> new OrderDTO(order))
-                    .collect(Collectors.toList());
+                return event != null && event.getEventProductionCompanyID() == productionCompanyID;
+                }).toList();
+            List<OrderDTO> orderDTOs =filtered.stream()
+                .map(OrderDTO::new)
+                .collect(Collectors.toList());
             return Result.makeOk(orderDTOs);
         } catch (IllegalArgumentException e) {
             logger.error("ProductionCompanyService.viewSalesHistory: Permission error while retrieving sales history", e);
