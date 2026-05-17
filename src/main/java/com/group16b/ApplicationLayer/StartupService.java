@@ -3,7 +3,6 @@ package com.group16b.ApplicationLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
@@ -48,17 +47,16 @@ public class StartupService {
         TicketGateway ticketGateway = new TicketGateway();
 
         logger.info("Initializing domain services...");
-        CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
         EventFilteringService eventFilteringService = new EventFilteringService(productionCompanyRepositoryMapImpl);
         
 
         logger.info("Initializing application services...");
         adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl);
-        companyHierarchyService = new CompanyHierarchyService(authService, companyHierarchyDomainService);
+        companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
-        productionCompanyService = new ProductionCompanyService(authService);
-        purchasePolicyService = new PurchasePolicyService(authService);
+        productionCompanyService = new ProductionCompanyService(authService,productionCompanyRepositoryMapImpl);
+        purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
         reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);
         userService = new UserService(authService, ticketGateway);

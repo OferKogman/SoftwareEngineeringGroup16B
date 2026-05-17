@@ -133,22 +133,18 @@ public class SystemAdmin {
 		}
 	}
 
-	private void deactivateUsers(List<User> users, int productionCompanyId) {
-		for (User u : users) {
-			u.removeRole(productionCompanyId);
-		}
-	}
-	public long getVersion() {
+	public long getVersion()
+	{
 		return version;
 	}
-	public void updateAdmin(SystemAdmin systemAdmin) {
-		this.username = systemAdmin.username;
-		this.email = systemAdmin.email;
-		this.password = systemAdmin.password;
-		this.version++;
+	public void setVersion(long version)
+	{
+		this.version=version;
 	}
-	public void setVersion(long l) {
-		this.version = l;
+
+	public void updateAdmin(SystemAdmin other)
+	{
+
 	}
 
 

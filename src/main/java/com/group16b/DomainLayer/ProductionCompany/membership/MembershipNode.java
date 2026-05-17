@@ -1,0 +1,74 @@
+package com.group16b.DomainLayer.ProductionCompany.membership;
+
+import java.util.EnumSet;
+import java.util.HashSet;
+import java.util.Set;
+
+
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
+
+public class MembershipNode {
+    private int userID;
+    private Integer assignerID;
+    private RoleType roleType;
+    private Set<ManagerPermissions> permissions;
+
+    private MembershipNode(int userID, Integer assignerID, RoleType roleType, Set<ManagerPermissions> perms)
+    {
+        this.userID=userID;
+        this.assignerID=Integer.valueOf(assignerID);
+        this.roleType=roleType;
+        this.permissions=new HashSet<>(perms);
+    }
+    public MembershipNode(MembershipNode other)
+    {
+        this.userID=other.userID;
+        this.assignerID=other.assignerID;
+        this.roleType=other.roleType;
+        this.permissions=new HashSet<>(other.permissions);
+    }
+    public static MembershipNode createManager(int userID, Integer assignerID,Set<ManagerPermissions> perms)
+    {
+        return new MembershipNode(userID, assignerID, RoleType.MANAGER, perms);
+    }
+    
+    public static MembershipNode createOwner(int userID, Integer assignerID)
+    {
+        return new MembershipNode(userID, assignerID, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
+    }
+    public static MembershipNode createFounder(int userID)
+    {
+        return new MembershipNode(userID, -1, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
+    }
+
+    public int getUserID()
+    {
+        return userID;
+    }
+    public int getAssignerID()
+    {
+        return assignerID;
+    }
+    public void setAssignerID(Integer newID)
+    {   
+        if(this.roleType==RoleType.FOUNDER)
+            throw new IllegalArgumentException("Can't update assignerID for founder of company!");
+        this.assignerID=newID;
+    }
+    public Set<ManagerPermissions> getPermissions()
+    {
+        return new HashSet<>(permissions);
+    }
+    public void setPermissions(Set<ManagerPermissions> newPermissions)
+    {
+        if(this.roleType.isHigherOrEqual(RoleType.OWNER))
+            throw new IllegalArgumentException("cant update permissions for owner and founder!");
+        this.permissions=new HashSet<>(newPermissions);
+    }
+    public RoleType getRoleType()
+    {
+        return roleType;
+    }
+
+}

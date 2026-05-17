@@ -7,11 +7,11 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.DomainServices.CompanyHierarchyDomainService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -22,7 +22,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Role;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -35,9 +34,8 @@ public class AdminManagementService {
     private IProductionCompanyRepository productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
-    private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
-    private SystemAdminRepositoryMapImpl systemAdminRepo = new SystemAdminRepositoryMapImpl();
+    private ISystemAdminRepository systemAdminRepo = new SystemAdminRepositoryMapImpl();
 
     public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
@@ -161,16 +159,11 @@ public class AdminManagementService {
             productionCompanyIDs.add(productionCompanyId);
 
             List<Event> companyEvents = eventRepo.searchEvents(null, null, null, null, null, null, null, null, null, productionCompanyIDs);
-            List<User> companyUsers = company.getAssociatedUsers();
                 if(!companyEvents.isEmpty()) {
                     deactivateEvents(companyEvents);
                     logger.info("AdminManagementService.closeProductionCompany: Deactivated {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
                 }
 
-                if(!companyUsers.isEmpty()) {
-                    deactivateUsers(companyUsers, productionCompanyId);
-                    logger.info("AdminManagementService.closeProductionCompany: Deactivated {} users associated with production company ID {}", companyUsers.size(), productionCompanyId);
-                }
                 productionCompanyRepo.delete(String.valueOf(productionCompanyId));
                 logger.info("AdminManagementService.closeProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
             return Result.makeOk("Production company with ID " + productionCompanyId + " has been closed successfully.");
@@ -200,17 +193,40 @@ public class AdminManagementService {
                 return Result.makeFail("Invalid ID");    
             }
 
-            User userToRemove = userRepository.getUserByID(userID);
-            for (Map.Entry<Integer, Role> entry : userToRemove.getRoles().entrySet()) {
-                int companyID = entry.getKey();
-                Role companyRole = entry.getValue();
-                if(userToRemove.isFounderOfCompany(companyID)){
-                    closeProductionCompany(companyID, sessionToken);//Cannot simply delete and give to someone else this role - whole company goes kapoot        
-                } else if(companyRole != null){
-                    companyHierarchyDomainService.removeUserFromCompany(userToRemove, companyID);
+            List<Integer> companyIDs =
+            productionCompanyRepo.getAllUserComapnies(String.valueOf(userID));
+            for (Integer companyID : companyIDs)
+            {
+                boolean success = false;
+
+                while (!success)
+                {
+                    try
+                    {
+                        ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(companyID));
+                        if (company.isFouder(userID))
+                        {
+                            closeProductionCompany(companyID, sessionToken);
+                            // company no longer exists after closure
+                            success = true;
+                            continue;
+                        }
+                        company.adminRemoveUser(userID);
+                        productionCompanyRepo.save(company);
+                        success = true;
+                    }
+                    catch (IllegalArgumentException e)
+                    {
+                        logger.warn("Company {} not found while removing user {}",companyID,userID);
+                        // stop retrying, company is gone
+                        success = true;
+                    }
+                    catch (OptimisticLockingFailureException e)
+                    {
+                        logger.warn("Optimistic lock conflict while removing user {} from company {}. Retrying...",userID,companyID);
+                    }
                 }
             }
-
             userRepository.deleteUser(userID);
             
             return Result.makeOk("User with ID: " + userID + ", , has been removed");
@@ -226,11 +242,7 @@ public class AdminManagementService {
         }
     }
 
-    private void deactivateUsers(List<User> users, int productionCompanyId) {
-        for (User u : users) {
-            u.removeRole(productionCompanyId);
-        }
-    }
+
 
     public Result<String> registerNewAdmin(String sToken, String newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try {

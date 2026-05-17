@@ -32,7 +32,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -88,7 +87,6 @@ public class AdminManagementServiceTest1 {
         systemAdmin = new SystemAdmin("1", "username", "password", "email");
         
         user = new User("testuser", "password");
-        user.addRole(1, new Founder(user.getUserID()));
         when(mockTokenService.validateToken("user1")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user1")).thenReturn(true);

@@ -12,6 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -25,8 +27,8 @@ import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -108,7 +110,6 @@ public class EventServiceTests {
         when(mockTokenService.isUserToken("user1")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getUserID()));
         
-        user.addRole(1, new Founder(user.getUserID()));
 
         user2 = new User("testuser2", "password");
         when(mockUserRepository.getUserByID(user2.getUserID())).thenReturn(user2);
@@ -116,6 +117,12 @@ public class EventServiceTests {
         when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user2")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getUserID()));
+
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+
+        when(mockProductionCompanyPolicyRepository.findByID("1")).thenReturn(mockCompany);
+
+        doThrow(new IllegalArgumentException("User does not have a role for this company.")).when(mockCompany).validateUserPermissions(user2.getUserID(), RoleType.OWNER);
 
         when(mockEventRepository.getEventByID(500)).thenThrow(new IllegalArgumentException("Event with ID 500 not found"));
 
