@@ -35,7 +35,7 @@ public class AdminManagementService {
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IAuthenticationService authenticationService;
-    private SystemAdminRepositoryMapImpl systemAdminRepo = new SystemAdminRepositoryMapImpl();
+    private ISystemAdminRepository systemAdminRepo = new SystemAdminRepositoryMapImpl();
 
     public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
