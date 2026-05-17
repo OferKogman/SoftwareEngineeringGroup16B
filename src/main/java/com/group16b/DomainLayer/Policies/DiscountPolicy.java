@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Policies.DiscountPolicy;
+package com.group16b.DomainLayer.Policies;
 
 import java.util.ArrayList;
 import java.util.List;
