@@ -4,7 +4,7 @@ import java.util.List;
 
 public interface IRepository<T> {
     T findByID(String ID);
-    List<T> getAl();
+    List<T> getAll();
     void delete(String ID);
     void save(T Obj);
 }

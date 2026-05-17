@@ -142,7 +142,7 @@ private ProductionCompanyRepositoryMapImpl repo;
         repo.save(createCompany(1, "A"));
         repo.save(createCompany(2, "B"));
 
-        List<ProductionCompany> list = repo.getAl();
+        List<ProductionCompany> list = repo.getAll();
 
         assertEquals(2, list.size());
 
