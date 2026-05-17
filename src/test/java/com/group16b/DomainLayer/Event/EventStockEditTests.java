@@ -8,6 +8,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.support.BeanDefinitionDsl.Role;
+
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -22,8 +24,9 @@ import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
@@ -89,8 +92,10 @@ public class EventStockEditTests {
     @Test
     void editStockInSegmentsForEvent_Success() {
         User mockUser = mock(User.class);
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
-        doNothing().when(mockUser).validatePermissions(COMPANY_ID, Owner.class);
+        when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID,RoleType.OWNER);
 
         Event mockEvent = mock(Event.class);
         when(mockEventRepo.getEventByID(EVENT_ID)).thenReturn(mockEvent);
@@ -141,13 +146,15 @@ public class EventStockEditTests {
     @Test
     void editStockInSegmentsForEvent_PermissionDenied_CaughtByCatchBlock() {
         User mockUser = mock(User.class);
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         
         Event mockEvent = mock(Event.class);
         when(mockEventRepo.getEventByID(EVENT_ID)).thenReturn(mockEvent);
         when(mockEvent.getEventProductionCompanyID()).thenReturn(COMPANY_ID);
 
-        doThrow(new IllegalArgumentException("Unauthorized action")).when(mockUser).validatePermissions(COMPANY_ID, Owner.class);
+        doThrow(new IllegalArgumentException("Unauthorized action")).when(mockCompany).validateUserPermissions(USER_ID, RoleType.OWNER);
 
         Map<String, Integer> stockMap = new HashMap<>();
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
