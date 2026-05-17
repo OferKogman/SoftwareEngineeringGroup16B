@@ -13,6 +13,7 @@ import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -66,10 +67,11 @@ public class VenueEventConfigService {
             ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
 
             User actionUser = userRepository.getUserByID(userID);
-            if (actionUser == null || !company.isManager(userID)) {
-                logger.warn("Config failed: User {} is not an owner or manager for company {}.", userID, companyID);
-                return Result.makeFail("Permission denied. You must be an owner or manager of this company.");
+            if (actionUser == null ) {
+                logger.warn("Config failed: User {} not found.", userID);
+                return Result.makeFail("User not found.");
             }
+            company.validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
             Venue newVenueLayout = new Venue(newVenueLayoutDTO);
             newVenueLayout.bookEvent(startTime, endTime, eventID);
