@@ -10,6 +10,8 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
@@ -21,9 +23,11 @@ public class PurchasePolicyService {
     private final IAuthenticationService authenticationService;
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IProductionCompanyRepository productionCompanyRepository;
 
-    public PurchasePolicyService(IAuthenticationService authenticationService) {
+    public PurchasePolicyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
+        this.productionCompanyRepository=productionCompanyRepository;
     }
     
 
@@ -34,9 +38,14 @@ public class PurchasePolicyService {
 				logger.warn("Invalid session token provided for event creation.");
 				return Result.makeFail("Invalid session token.");
 			}
-        User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+        int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+        User user = userRepository.getUserByID(userID);
+
+        logger.info("retrieving prodcution company for creating a lottery policy");
+        ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepo.getEventByID(eventID).getEventProductionCompanyID()));
+
         logger.info("Checking user permissions for userID: {}", user.getUserID());
-        user.validatePermissions(eventRepo.getEventByID(eventID).getEventProductionCompanyID(), ManagerPermissions.PURCHASE_POLICY);
+        company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
         logger.info("User has necessary permissions to create lottery policy for event ID: {}", eventID);
 
         logger.info("Creating lottery policy with ID: {}, Name: {}, Winner Amount: {}, Registration Due Date: {}", lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);

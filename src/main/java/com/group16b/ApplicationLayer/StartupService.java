@@ -56,8 +56,8 @@ public class StartupService {
         companyHierarchyService = new CompanyHierarchyService(authService, companyHierarchyDomainService,productionCompanyRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
-        productionCompanyService = new ProductionCompanyService(authService);
-        purchasePolicyService = new PurchasePolicyService(authService);
+        productionCompanyService = new ProductionCompanyService(authService,productionCompanyRepositoryMapImpl);
+        purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
         reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);
         userService = new UserService(authService, ticketGateway);
