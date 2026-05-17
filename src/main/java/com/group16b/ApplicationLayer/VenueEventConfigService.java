@@ -4,12 +4,16 @@ import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.support.BeanDefinitionDsl.Role;
 
 import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -23,12 +27,14 @@ public class VenueEventConfigService {
     private final IEventRepository eventRepository;
     private final IUserRepository userRepository;
     private final IAuthenticationService authService;
+    private final IProductionCompanyRepository productionCompanyRepository;
 
-    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IUserRepository userRepository, IAuthenticationService authService) {
+    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IUserRepository userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository) {
         this.venueRepository = venueRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.authService = authService;
+        this.productionCompanyRepository=productionCompanyRepository;
     }
 
     public Result<String> configureLayoutAndInventory(String sessionToken, int companyID, int eventID, VenueDTO newVenueLayoutDTO, LocalDateTime startTime, LocalDateTime endTime) {
@@ -58,8 +64,10 @@ public class VenueEventConfigService {
                 return Result.makeFail("Event is already active and is not in creation process.");
             }
 
+            ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+
             User actionUser = userRepository.getUserByID(userID);
-            if (actionUser == null || !(actionUser.isOwnerOfCompany(companyID) || actionUser.managerInCompany(companyID))) {
+            if (actionUser == null || !company.isManager(userID)) {
                 logger.warn("Config failed: User {} is not an owner or manager for company {}.", userID, companyID);
                 return Result.makeFail("Permission denied. You must be an owner or manager of this company.");
             }

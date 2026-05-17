@@ -95,7 +95,7 @@ public class ProductionCompany {
         return null;
     }
 
-    private boolean isFouder(int userID)
+    public boolean isFouder(int userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node!=null && node.getRoleType()==RoleType.FOUNDER)
@@ -103,7 +103,7 @@ public class ProductionCompany {
         return false;
     }
 
-    private boolean isOwner(int userID)
+    public boolean isOwner(int userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node==null || node.getRoleType() == RoleType.MANAGER)
@@ -111,7 +111,7 @@ public class ProductionCompany {
         return true;
     }
 
-    private boolean isManager(int userID)
+    public boolean isManager(int userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node==null)
