@@ -37,7 +37,7 @@ public class AdminManagementService {
     private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
     private final CompanyHierarchyDomainService companyHierarchyDomainService = new CompanyHierarchyDomainService();
 	private final IAuthenticationService authenticationService;
-    private ISystemAdminRepository systemAdminRepo = SystemAdminRepositoryMapImpl.getInstance();
+    private SystemAdminRepositoryMapImpl systemAdminRepo = new SystemAdminRepositoryMapImpl();
 
     public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
@@ -232,7 +232,7 @@ public class AdminManagementService {
         }
     }
 
-    public Result<String> registerNewAdmin(String sToken, int newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
+    public Result<String> registerNewAdmin(String sToken, String newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try {
             logger.info("AdminManagementService.registerNewAdmin: Attempting to register new admin with ID {}", newAdminID);
             if (!authenticationService.validateToken(sToken)  ) {
@@ -244,7 +244,7 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
             
-            boolean checkIfAdminAlreadyExists = systemAdminRepo.getSystemAdminById(newAdminID) != null;
+            boolean checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
             boolean checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;
             
             if(checkIfAdminAlreadyExists ) {
@@ -256,7 +256,7 @@ public class AdminManagementService {
                 return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
             }
             SystemAdmin newAdmin = new SystemAdmin(newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
-            systemAdminRepo.addSystemAdmin(newAdmin);
+            systemAdminRepo.save(newAdmin);
             logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
             return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
         }

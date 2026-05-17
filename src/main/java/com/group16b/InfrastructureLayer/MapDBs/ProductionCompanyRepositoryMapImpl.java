@@ -39,7 +39,7 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
     }
 
     @Override
-    public List<ProductionCompany> getAl() {
+    public List<ProductionCompany> getAll() {
         return companies.values()
                 .stream()
                 .map(ProductionCompany::new)

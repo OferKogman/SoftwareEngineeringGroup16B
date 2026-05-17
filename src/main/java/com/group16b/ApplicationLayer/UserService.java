@@ -46,7 +46,7 @@ public class UserService {
 
 	public Result<Boolean> updateUserPassword(String sessionToken, String oldPassword, String newPassword) {
 		try {
-			logger.info("Verifying session token for event deactivation.");
+			logger.info("Verifying session token for event deactivation."); //TODO: change log message to be more specific to password update
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");

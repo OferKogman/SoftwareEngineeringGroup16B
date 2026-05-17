@@ -85,7 +85,7 @@ public class AdminManagementServiceTest1 {
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
         when(mockTokenService.validateToken(invalidToken)).thenReturn(false);
 
-        systemAdmin = new SystemAdmin(1, "username", "password", "email");
+        systemAdmin = new SystemAdmin("1", "username", "password", "email");
         
         user = new User("testuser", "password");
         user.addRole(1, new Founder(user.getUserID()));
@@ -235,13 +235,13 @@ public class AdminManagementServiceTest1 {
 
     @Test
     public void testRegisterNewAdminSuccess() {
-        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, 1, "newAdmin", "password123", "admin@example.com");
+        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, "1", "newAdmin", "password123", "admin@example.com");
         assertTrue(result.isSuccess());
     }
 
     @Test
     public void testRegisterNewAdminInvalidToken() {
-        Result<String> result = adminManagementService.registerNewAdmin(invalidToken, 1, "admin", "pass", "email@example.com");
+        Result<String> result = adminManagementService.registerNewAdmin(invalidToken, "1", "admin", "pass", "email@example.com");
         assertFalse(result.isSuccess());
     }
 
@@ -249,7 +249,7 @@ public class AdminManagementServiceTest1 {
     public void testRegisterNewAdminUnauthorized() {
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
 
-        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, 1, "admin", "pass", "email@example.com");
+        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, "1", "admin", "pass", "email@example.com");
         assertFalse(result.isSuccess());
     }
 }
