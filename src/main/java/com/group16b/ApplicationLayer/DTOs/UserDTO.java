@@ -4,11 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.group16b.ApplicationLayer.DTOs.Roles.RoleDTO;
-import com.group16b.ApplicationLayer.DTOs.Roles.FounderDTO;
-import com.group16b.ApplicationLayer.DTOs.Roles.OwnerDTO;
-import com.group16b.ApplicationLayer.DTOs.Roles.ManagerDTO;
-import com.group16b.ApplicationLayer.DTOs.Roles.MemberDTO;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.Roles.Owner;
@@ -25,20 +20,4 @@ public class UserDTO {
         this.email = user.getEmail();
     }
 
-    private RoleDTO toRoleDTO(Role role) {
-        if (role instanceof Founder founder) {
-            return new FounderDTO();
-        }
-        if (role instanceof Owner owner) {
-            return new OwnerDTO(owner);
-        }
-        if (role instanceof Manager manager) {
-            return new ManagerDTO(manager);
-        }
-        if (role instanceof Member member) {
-            return new MemberDTO();
-        }
-
-        throw new IllegalArgumentException("Unsupported role type: " + role.getClass().getName());
-    }
 }
