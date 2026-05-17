@@ -133,7 +133,19 @@ public class SystemAdmin {
 		}
 	}
 
-	
+	public long getVersion()
+	{
+		return version;
+	}
+	public void setVersion(long version)
+	{
+		this.version=version;
+	}
+
+	public void updateAdmin(SystemAdmin other)
+	{
+
+	}
 
 
 }
