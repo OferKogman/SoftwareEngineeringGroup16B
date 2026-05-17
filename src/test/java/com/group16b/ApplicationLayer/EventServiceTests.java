@@ -26,7 +26,6 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Founder;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -108,7 +107,6 @@ public class EventServiceTests {
         when(mockTokenService.isUserToken("user1")).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getUserID()));
         
-        user.addRole(1, new Founder(user.getUserID()));
 
         user2 = new User("testuser2", "password");
         when(mockUserRepository.getUserByID(user2.getUserID())).thenReturn(user2);

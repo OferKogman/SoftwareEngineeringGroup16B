@@ -24,9 +24,9 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.Roles.Manager;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.User.Roles.Owner;
 import com.group16b.DomainLayer.User.User;
 
 public class ProductionCompanyServiceTests {
@@ -36,6 +36,7 @@ public class ProductionCompanyServiceTests {
     private IOrderRepository mockOrderRepo;
     private IEventRepository mockEventRepo;
     private IUserRepository mockUserRepo;
+    private IProductionCompanyRepository mockProductionCompanyRepository;
 
     private final String VALID_TOKEN = "valid-token";
     private final int COMPANY_ID = 100;
@@ -47,8 +48,9 @@ public class ProductionCompanyServiceTests {
         mockOrderRepo = mock(IOrderRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockUserRepo = mock(IUserRepository.class);
+        mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 
-        productionCompanyService = new ProductionCompanyService(mockAuthService);
+        productionCompanyService = new ProductionCompanyService(mockAuthService,mockProductionCompanyRepository);
 
         //Inject Repository Mocks using Reflection - bypassing singletons initializations(user, event order)
         Field orderField = ProductionCompanyService.class.getDeclaredField("orderRepo");
@@ -83,10 +85,12 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_PermissionDenied_Fail() {
         User mockUser = mock(User.class);
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         
-        doThrow(new IllegalArgumentException("Not allowed")).when(mockUser)
-            .validatePermissions(COMPANY_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
+        doThrow(new IllegalArgumentException("Not allowed")).when(mockCompany)
+            .validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
         Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
 
@@ -98,18 +102,15 @@ public class ProductionCompanyServiceTests {
    @Test
     void testDisplayTotalRevenue_AsOwner_Success() {
         when(mockAuthService.extractSubjectFromToken(VALID_TOKEN)).thenReturn(String.valueOf(USER_ID));
-
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
         User mockUser = mock(User.class);
-        Owner mockOwnerRole = mock(Owner.class);
 
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
         when(mockUser.getUserID()).thenReturn(USER_ID);
-        when(mockUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
-        
-        doNothing().when(mockUser).validatePermissions(COMPANY_ID, ManagerPermissions.SALES_REPORT);
-        when(mockOwnerRole.getAssignedManagers()).thenReturn(new ArrayList<>());
 
-        when(mockOwnerRole.getAssignerID()).thenReturn(USER_ID);
+        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
+        
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
 
         Order mockOrder = mock(Order.class);
         when(mockOrder.isBelongsToSubject(String.valueOf(USER_ID))).thenReturn(true);
@@ -119,7 +120,7 @@ public class ProductionCompanyServiceTests {
         orderList.add(mockOrder);
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
 
-        Result<Integer> result = productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+        Result<Double> result = productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
         assertTrue(result.isSuccess(), "Service crashed with error: " + result.getError());
         assertEquals(500, result.getValue());
@@ -130,27 +131,21 @@ public class ProductionCompanyServiceTests {
         when(mockAuthService.extractSubjectFromToken(VALID_TOKEN)).thenReturn(String.valueOf(USER_ID));
 
         User mockOwnerUser = mock(User.class);
-        Owner mockOwnerRole = mock(Owner.class);
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
+        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockOwnerUser);
         when(mockOwnerUser.getUserID()).thenReturn(USER_ID);
-        when(mockOwnerUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
         
-        doNothing().when(mockOwnerUser).validatePermissions(COMPANY_ID, ManagerPermissions.SALES_REPORT);
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
         
         // THE SAME FIX applied to the recursion test
-        when(mockOwnerRole.getAssignerID()).thenReturn(USER_ID);
         
         int managerID = 2;
-        Manager mockManager = mock(Manager.class);
-        when(mockManager.getUserID()).thenReturn(managerID);
-        List<Manager> managers = new ArrayList<>();
-        managers.add(mockManager);
-        when(mockOwnerRole.getAssignedManagers()).thenReturn(managers);
+        
         
         User mockManagerUser = mock(User.class);
         when(mockUserRepo.getUserByID(managerID)).thenReturn(mockManagerUser);
-        when(mockManagerUser.getRole(COMPANY_ID)).thenReturn(mockManager);
 
         Order ownerOrder = mock(Order.class);
         when(ownerOrder.isBelongsToSubject(String.valueOf(USER_ID))).thenReturn(true);
@@ -166,7 +161,7 @@ public class ProductionCompanyServiceTests {
         
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
 
-        Result<Integer> result = productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+        Result<Double> result = productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
         assertTrue(result.isSuccess(), "Service crashed with error: " + result.getError());
         assertEquals(750, result.getValue());
@@ -175,8 +170,10 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_Success() {
         User mockUser = mock(User.class);
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
+        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
-        doNothing().when(mockUser).validatePermissions(COMPANY_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
         // FIX 1: RETURNS_DEEP_STUBS prevents OrderDTO from throwing NullPointerExceptions!
         Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);//allows to control and mock return of return in chains
@@ -246,16 +243,13 @@ public class ProductionCompanyServiceTests {
         int ownerID = 2;
         User mockManagerUser = mock(User.class);
         User mockOwnerUser = mock(User.class);
-        Manager mockManagerRole = mock(Manager.class);
-        Owner mockOwnerRole = mock(Owner.class);
+        ProductionCompany mockCompany=mock(ProductionCompany.class);
+        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
 
         when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockManagerUser);
         when(mockManagerUser.getUserID()).thenReturn(USER_ID);
-        when(mockManagerUser.getRole(COMPANY_ID)).thenReturn(mockManagerRole);
         
-        when(mockManagerRole.getAssignerID()).thenReturn(ownerID);
         when(mockUserRepo.getUserByID(ownerID)).thenReturn(mockOwnerUser);
-        when(mockOwnerUser.getRole(COMPANY_ID)).thenReturn(mockOwnerRole);
 
         Order mockOrder = mock(Order.class);
         when(mockOrder.isBelongsToSubject(String.valueOf(USER_ID))).thenReturn(true);
@@ -265,7 +259,7 @@ public class ProductionCompanyServiceTests {
         orderList.add(mockOrder);
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
 
-        Result<Integer> result = productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+        Result<Double> result = productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
         assertTrue(result.isSuccess());
         assertEquals(300, result.getValue());
