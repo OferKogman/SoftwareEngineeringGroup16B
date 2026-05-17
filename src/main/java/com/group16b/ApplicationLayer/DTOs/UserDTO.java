@@ -19,18 +19,10 @@ import com.group16b.DomainLayer.User.Roles.Role;
 public class UserDTO {
     private final int userID;
 	private String email;
-	private HashMap<Integer, RoleDTO> roles;
 
     public UserDTO(User user) {
         this.userID = user.getUserID();
         this.email = user.getEmail();
-        this.roles = user.getRoles().entrySet().stream()
-            .collect(Collectors.toMap(
-                Map.Entry::getKey,
-                entry -> toRoleDTO(entry.getValue()),
-                (first, second) -> first,
-                HashMap::new
-            ));
     }
 
     private RoleDTO toRoleDTO(Role role) {
