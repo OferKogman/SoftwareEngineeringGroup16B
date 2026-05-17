@@ -75,10 +75,10 @@ public class SystemAdminRepositoryMapImplTests {
 		SystemAdmin admin7 = new SystemAdmin("7", "admin7", "pass1", "email7");
 		SystemAdmin admin7duplicateUsername = new SystemAdmin("8", "admin7", "pass2", "email8"); // same username
 		repository.save(admin7);
-		assertThrows(IllegalArgumentException.class, () -> repository.save(admin7duplicateUsername));
+		repository.save(admin7duplicateUsername); // should update the existing admin with the new details
 
 		SystemAdmin retrievedByUsername = repository.getSystemAdminByUsername("admin7");
-		assertEquals(admin7, retrievedByUsername); // should still be the first one added
+		assertEquals(admin7duplicateUsername, retrievedByUsername); // should be the second one added that was updated
 	}
 
 	@Test

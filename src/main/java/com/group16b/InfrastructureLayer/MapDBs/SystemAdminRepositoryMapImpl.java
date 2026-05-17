@@ -35,7 +35,11 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 
 	@Override
 	public SystemAdmin findByID(String ID) {
-		return (new SystemAdmin(systemAdminsById.get(ID)));
+		SystemAdmin admin = systemAdminsById.get(ID);
+		if(admin == null) {
+			return null;
+		}
+		return (new SystemAdmin(admin));
 	}
 
 	@Override
@@ -57,14 +61,21 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	@Override
 	public void save(SystemAdmin systemAdmin) {
 		SystemAdmin existingAdmin = systemAdminsById.get(systemAdmin.getId());
-		if (existingAdmin != null) {
+		if (existingAdmin != null) { //if admin exists in the system, update it
 			long newVersion = systemAdmin.getVersion();
 			long currentVersion = existingAdmin.getVersion();
 			if (newVersion != currentVersion) {
-				throw new IllegalStateException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
+				throw new IllegalArgumentException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
 			}
-			systemAdminsById.put(systemAdmin.getId(), new SystemAdmin(systemAdmin));
 			existingAdmin.updateAdmin(systemAdmin);
+			systemAdminsByUsername.put(systemAdmin.getUsername(), existingAdmin);
+			systemAdminsById.put(systemAdmin.getId(), existingAdmin);
+			
+		}
+		else{ //if admin does not exist, add it to the system, no need to check versions because it's a new admin
+			systemAdmin.setVersion(systemAdmin.getVersion() + 1);
+			systemAdminsById.put(systemAdmin.getId(), new SystemAdmin(systemAdmin));
+			systemAdminsByUsername.put(systemAdmin.getUsername(), systemAdmin);
 		}
 		
 	}

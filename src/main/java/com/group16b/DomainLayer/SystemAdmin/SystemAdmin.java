@@ -77,11 +77,20 @@ public class SystemAdmin {
 		}
 	}
 
-	public boolean equals(SystemAdmin other) {
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		
+		SystemAdmin other = (SystemAdmin) obj;
 		return (this.id.equals(other.id) &&
-		 		this.username.equals(other.username) &&
-		  		this.password.equals(other.password) &&
-		   		this.email.equals(other.email));
+				this.username.equals(other.username) &&
+				this.password.equals(other.password) &&
+				this.email.equals(other.email));
 	}
 
 	/*public void closeProductionCompany(int productionCompanyId) {
@@ -137,6 +146,9 @@ public class SystemAdmin {
 		this.email = systemAdmin.email;
 		this.password = systemAdmin.password;
 		this.version++;
+	}
+	public void setVersion(long l) {
+		this.version = l;
 	}
 
 
