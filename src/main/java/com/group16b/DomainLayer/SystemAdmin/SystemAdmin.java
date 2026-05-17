@@ -107,11 +107,7 @@ public class SystemAdmin {
 		}
 	}
 
-	private void deactivateUsers(List<User> users, int productionCompanyId) {
-		for (User u : users) {
-			u.removeRole(productionCompanyId);
-		}
-	}
+	
 
 
 }
