@@ -49,6 +49,9 @@ public class SystemAdminLoginServiceTests {
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
         // 3. Generating the guest token works
         when(mockTokenService.generateVisitor_GuestToken(any())).thenReturn(expectedGuestToken);
+        // 4. The admin ID exists in the repository
+        when(mockSystemAdminRepository.doesSystemAdminExist(String.valueOf(adminID))).thenReturn(true);
+
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
