@@ -54,7 +54,7 @@ public class StartupService {
         companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
-        productionCompanyService = new ProductionCompanyService(authService,productionCompanyRepositoryMapImpl);
+        productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl);
         purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
         reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);

@@ -1,7 +1,5 @@
 package com.group16b.ApplicationLayer;
 
-
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -10,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
@@ -20,130 +19,135 @@ import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 
 public class ProductionCompanyService {
     
     private static final Logger logger = LoggerFactory.getLogger(ProductionCompanyService.class);
 
-    private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
-    private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-    private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
+    private final IOrderRepository orderRepo;
+    private final IEventRepository eventRepo;
+    private final IUserRepository userRepo;
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 
-    public ProductionCompanyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionRepo) {
+    public ProductionCompanyService(IAuthenticationService authenticationService,IOrderRepository orderRepo, IEventRepository eventRepo, IUserRepository userRepo, IProductionCompanyRepository productionRepo) {
         this.authenticationService = authenticationService;
         this.productionRepo=productionRepo;
+        this.orderRepo=orderRepo;
+        this.eventRepo=eventRepo;
+        this.userRepo=userRepo;
     }
 
-    public Result<List<OrderDTO>> viewSalesHistory(String sTocken, int productionCompanyID){
-    try {
+    public Result<List<OrderDTO>> viewSalesHistory(String sessionToken, int productionCompanyID){
+        try {
             logger.info("ProductionCompanyService.viewSalesHistory: Retrieving sales history for specific company");
-
-            // validate production company token (this is a placeholder, implement actual validation logic)
-            if (!authenticationService.validateToken(sTocken)  ) {
-                logger.error("ProductionCompanyService.viewSalesHistory: Invalid token");
-                return Result.makeFail("Invalid token");
-            }
-            if (!authenticationService.isUserToken(sTocken)) {
-                logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
-                return Result.makeFail("Unauthorized access");
-            }
-           int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sTocken));
-		    User user = userRepo.getUserByID(userID);
-
+            
+            int userID=validateAndGetUserID(sessionToken);
+            logger.info("ProductionCompanyService.viewSalesHistory: Session token verified successfully.");
+            
+            logger.info("ProductionCompanyService.viewSalesHistory: retrieving company {}",productionCompanyID);
             ProductionCompany company=productionRepo.findByID(String.valueOf(productionCompanyID));
 
+            logger.info("ProductionCompanyService.viewSalesHistory: validating user {} have permissions in company {}",userID,productionCompanyID);
             company.validateUserPermissions(userID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
-            List<Order> orders = orderRepo.getAllCompletedOrders();
-            List<Order> filtered = orders.stream()
-            .filter(order -> {
-                int eventID = order.getEventId();
-                Event event = eventRepo.findByID(String.valueOf(eventID));
-                return event != null && event.getEventProductionCompanyID() == productionCompanyID;
-                }).toList();
-            List<OrderDTO> orderDTOs =filtered.stream()
-                .map(OrderDTO::new)
-                .collect(Collectors.toList());
+            logger.info("ProductionCompanyService.viewSalesHistory: retrieving all events for company {}",productionCompanyID);
+            
+
+            logger.info("ProductionCompanyService.viewSalesHistory: collecting all orders for the company {} events",productionCompanyID);
+            List<OrderDTO> orderDTOs =getAllCompletedCompanyOrders(productionCompanyID).stream()
+                    .map(OrderDTO::new)
+                    .toList();
+
+            logger.info("ProductionCompanyService.viewSalesHistory: succesfully collected all orders.");
             return Result.makeOk(orderDTOs);
+        }catch(AuthException e){
+            logger.warn("ProductionCompanyService.viewSalesHistory: Auth error: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
         } catch (IllegalArgumentException e) {
-            logger.error("ProductionCompanyService.viewSalesHistory: Permission error while retrieving sales history", e);
-            return Result.makeFail("Permission error: " + e.getMessage());
+            logger.warn("ProductionCompanyService.viewSalesHistory: Illegal Argument Error: ", e);
+            return Result.makeFail(e.getMessage());
         } catch (Exception e) {
-            logger.error("ProductionCompanyService.viewSalesHistory: An unexpected error occurred while retrieving sales history", e);
+            logger.error("ProductionCompanyService.viewSalesHistory: An unexpected error occurred: ", e);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
-    public Result<Double> displayTotalRevenue(String sToken, int productionCompanyID) {
+    public Result<Double> displayTotalRevenue(String sessionToken, int productionCompanyID) {
         try {
-            logger.info(
-                "ProductionCompanyService.displayTotalRevenue: Calculating total revenue for company {}",
-                productionCompanyID
-            );
+            logger.info("ProductionCompanyService.displayTotalRevenue: Calculating total revenue for company {}",productionCompanyID);
 
-            // validate token
-            if (!authenticationService.validateToken(sToken)) {
-                logger.error("Invalid token");
-                return Result.makeFail("Invalid token");
-            }
+            int userID=validateAndGetUserID(sessionToken);
+            logger.info("ProductionCompanyService.displayTotalRevenue: Session token verified successfully.");
 
-            if (!authenticationService.isUserToken(sToken)) {
-                logger.error("Unauthorized access attempt");
-                return Result.makeFail("Unauthorized access");
-            }
-
-            int userID = Integer.parseInt(
-                    authenticationService.extractSubjectFromToken(sToken)
-            );
-
-            ProductionCompany company =
-                    productionRepo.findByID(String.valueOf(productionCompanyID));
-
-            if (company == null) {
-                logger.error("Production company {} not found", productionCompanyID);
-                return Result.makeFail("Production company not found");
-            }
+            logger.info("ProductionCompanyService.displayTotalRevenue: retrieving company {}",productionCompanyID);
+            ProductionCompany company =productionRepo.findByID(String.valueOf(productionCompanyID));
 
             // validate permission through company
-            company.validateUserPermissions(
-                    userID,
-                    ManagerPermissions.SALES_REPORT
-            );
+            logger.info("ProductionCompanyService.displayTotalRevenue: validating user {} permissions in company {}",userID,productionCompanyID);
+            company.validateUserPermissions(userID,ManagerPermissions.SALES_REPORT);
 
-            double totalRevenue = getAllRevenue(company, userID);
+            logger.info("ProductionCompanyService.displayTotalRevenue: calculating total revenue for company {}",productionCompanyID);
+            double totalRevenue = getAllRevenue(getAllCompletedCompanyOrders(productionCompanyID));
 
+            logger.info("ProductionCompanyService.displayTotalRevenue: successfuly calculated total revenue for company {}.",productionCompanyID);
             return Result.makeOk(totalRevenue);
 
-        } catch (Exception e) {
-            logger.error(
-                "ProductionCompanyService.displayTotalRevenue: Unexpected error",
-                e
-            );
-
-            return Result.makeFail(
-                "An unexpected error occurred: " + e.getMessage()
-            );
+        }
+        catch(AuthException e)
+        {
+            logger.warn("ProductionCompanyService.displayTotalRevenue: Auth error: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } 
+        catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.displayTotalRevenue: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.displayTotalRevenue: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
-    private double getAllRevenue(ProductionCompany company, int userID) 
+    //gets all orders for the company
+    private List<Order> getAllCompletedCompanyOrders(int companyID)
     {
-        Set<Integer> relevantUsers = new HashSet<>(company.getAllSubordinates(userID));
-        relevantUsers.add(userID);
-        return orderRepo.getAllCompletedOrders()
-        .stream()
-        .filter(order ->
-                relevantUsers.contains(
-                        Integer.parseInt(order.getSubjectId())))
-        .mapToDouble(Order::getTotalOrderprice)
-        .sum();
+        Set<Integer> companyEventIDs =
+                eventRepo.searchEvents(
+                    null, null, null, null,
+                    null, null,
+                    null, null,
+                    null,
+                    List.of(companyID)
+                ).stream()
+                .map(Event::getEventID)
+                .collect(Collectors.toSet());
+        return orderRepo.getAllCompletedOrders().stream()
+                    .filter(order -> companyEventIDs.contains(order.getEventId()))
+                    .toList();
+    }
+
+    private double getAllRevenue(List<Order> orders) 
+    {
+        return orders.stream()
+                .mapToDouble(Order::getTotalOrderprice)
+                .sum();
+    }
+    
+    private int validateAndGetUserID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid Token");
+        }
+        if (!authenticationService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+        //verify user exists in the database, i.e not a stale user
+        userRepo.getUserByID(userID);
+        return userID;
     }
 
 }
