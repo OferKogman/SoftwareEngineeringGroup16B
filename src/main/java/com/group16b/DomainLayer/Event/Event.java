@@ -243,4 +243,11 @@ public class Event {
 	public boolean isActiveEvent() {//relevant for venue assignment
         return active.get(); 
     }
+
+	public void enrollInLottery(int userID) {
+		if (!this.isActiveEvent()) {
+			throw new IllegalStateException("Can't enroll in lottery for an inactive event");
+		}
+		this.getLotteryPolicy().enrollInLottery(this.eventID, userID);
+	}
 }
