@@ -29,19 +29,22 @@ public class OrderRepositoryMapImpl implements IRepository<Order> {
 			Order inserted = new Order(order);
 			this.orders.put(order.getOrderId(), inserted);
 		}
-		Order current = this.orders.get(order.getOrderId());
-		if(current.getVersion() != order.getVersion()) {
-                throw new OptimisticLockingFailureException(
-                    "Order " + order.getOrderId() +
-                    " version mismatch. Expected " +
-                    order.getVersion() +
-                    " but found " +
-                    current.getVersion()
-                );
-			}
-		Order updated = new Order(order);
-		updated.setVersion(order.getVersion() + 1);
-		this.orders.put(order.getOrderId(), updated);
+		else{
+			Order current = this.orders.get(order.getOrderId());
+			if(current.getVersion() != order.getVersion()) {
+					throw new OptimisticLockingFailureException(
+						"Order " + order.getOrderId() +
+						" version mismatch. Expected " +
+						order.getVersion() +
+						" but found " +
+						current.getVersion()
+					);
+				}
+			Order updated = new Order(order);
+			updated.setVersion(order.getVersion() + 1);
+			this.orders.put(order.getOrderId(), updated);
+		}
+		
 
 	}
 
@@ -65,6 +68,10 @@ public class OrderRepositoryMapImpl implements IRepository<Order> {
 	@Override
 	public synchronized void delete(String orderId) {
 		if (this.orders.containsKey(orderId)) {
+			Order current = this.orders.get(orderId);
+			if(!current.isActive()){
+				throw new UnsupportedOperationException("Cannot delete a completed order");
+			}
 			this.orders.remove(orderId);
 		}
 		else{
