@@ -51,12 +51,12 @@ public class EventRepositoryMapImpl implements IEventRepository {
 		if (e == null) {
 			throw new IllegalArgumentException("Event with ID " + eventID + " not found");
 		}
-		return e;
+		return new Event(e);
 	}
 
 	@Override
 	public List<Event> getAll() {
-		return new ArrayList<>(events.values());
+		return events.values().stream().map(Event::new).collect(Collectors.toCollection(ArrayList::new));
 	}
 
 	@Override
@@ -91,7 +91,7 @@ public class EventRepositoryMapImpl implements IEventRepository {
 				(endTime == null || endTime.isEmpty() || !event.getEventStartTime().isAfter(endTime.get(0))) &&
 				(eventRating == null || eventRating.isEmpty() || event.getEventRating() >= eventRating.get(0)) &&
 				(productionCompanyID == null || productionCompanyID.isEmpty() || productionCompanyID.contains(event.getEventProductionCompanyID()))
-		).collect(Collectors.toCollection(ArrayList::new));
+		).map(e -> new Event(e)).collect(Collectors.toCollection(ArrayList::new));
     }
 
 	private int parseID(String ID)

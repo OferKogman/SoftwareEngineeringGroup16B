@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.Objects;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -15,7 +15,7 @@ public class Event {
 	private static int IDCounter = 1;
 
 	private final int eventID;
-	private AtomicBoolean active = new AtomicBoolean(false);
+	private boolean active = false;
 	private String venueID;
 	private String name;
 	private LocalDateTime startTime;
@@ -54,24 +54,44 @@ public class Event {
 		this.version = 0;
 	}
 
+	public Event(Event other) {
+		this.eventID = other.getEventID();
+		this.active = other.getEventStatus();
+		this.venueID = other.getEventVenueID();
+		this.name = other.getEventName();
+		this.startTime = other.getEventStartTime();
+		this.endTime = other.getEventEndTime();
+		this.artist = other.getEventArtist();
+		this.category = other.getEventCategory();
+		this.productionCompanyID = other.getEventProductionCompanyID();
+		this.discountPolicy = new HashSet<>(other.getEventDiscountPolicy());
+		this.purchasePolicy = new HashSet<>(other.getEventPurchasePolicy());
+		this.price = other.getEventPrice();
+		this.rating = other.getEventRating();
+		this.ownerId = other.getOwnerId();
+		this.version = other.getVersion();
+	}
+
 	public int getEventID() {
 		return eventID;
 	}
 
 	public boolean getEventStatus() {
-		return active.get();
+		return active;
 	}
 
 	public void activateEvent() {
-		if (active.getAndSet(true)) {
+		if (active) {
 			throw new IllegalStateException("Event is already active.");
 		}
+		active = true;
 	}
 
 	public void deactivateEvent() {
-		if (!active.getAndSet(false)) {
+		if (!active) {
 			throw new IllegalStateException("Event is already inactive.");
 		}
+		active = false;
 	}
 
 	public String getEventVenueID() {
@@ -174,6 +194,10 @@ public class Event {
 		return purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
 	}
 
+	public int getOwnerId() {
+		return ownerId;
+	}
+
 	public long getVersion() {
 		return version;
 	}
@@ -240,8 +264,42 @@ public class Event {
 				'}';
 	}
 
+	@Override
+	public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Event event = (Event) o;
+
+        return eventID == event.eventID &&
+                active == event.active &&
+                productionCompanyID == event.productionCompanyID &&
+                Objects.equals(venueID, event.venueID) &&
+                Objects.equals(name, event.name) &&
+                Objects.equals(startTime, event.startTime) &&
+                Objects.equals(endTime, event.endTime) &&
+                Objects.equals(artist, event.artist) &&
+                Objects.equals(category, event.category);
+    }
+
+
+	@Override
+    public int hashCode() {
+        return Objects.hash(
+                eventID,
+                active,
+                venueID,
+                name,
+                startTime,
+                endTime,
+                artist,
+                category,
+                productionCompanyID
+        );
+    }
+
 
 	public boolean isActiveEvent() {//relevant for venue assignment
-        return active.get(); 
+        return active; 
     }
 }
