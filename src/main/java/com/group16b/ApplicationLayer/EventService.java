@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.support.BeanDefinitionDsl.Role;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -18,6 +19,8 @@ import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import java.time.LocalDateTime;
+import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
@@ -58,192 +61,172 @@ public class EventService {
 	// need to make event active manually
 	public Result<EventDTO> createEvent(EventRecord eventRecord, String sessionToken) {
 		try {
-			logger.info("Verifying session token for event creation.");
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event creation.");
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)) {
-				logger.warn("Only signed-in users are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a user account.");
-			}
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
+			int userID = validateAndGetUserID(sessionToken);
+			logger.info("EventService.createEvent: Session token verified successfully.");
 
-			if(productionCompanyRepository.findByID(String.valueOf(eventRecord.pcID())) == null) {
-				logger.warn("Invalid production company ID provided for event creation.");
-				return Result.makeFail("Invalid production company ID. Please provide a valid production company ID to create an event.");
-			}
-			logger.info("retrieving prodction company for event creation");
+			User user = userRepository.getUserByID(userID);
+	
+			logger.info("EventService.createEvent: retrieving production company for event creation");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRecord.pcID()));
 
-			logger.info("Validating user permissions for event creation.");
+			logger.info("EventService.createEvent: Validating user permissions for event creation.");
 			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("User permissions validated successfully.");
+			logger.info("EventService.createEvent: User permissions validated successfully.");
 
-			logger.info("Attempting to create event: " + eventRecord.name());
+			logger.info("EventService.createEvent: Attempting to create event: " + eventRecord.name());
 			Event event = new Event(eventRecord, user.getUserID());
-			logger.info("Creating queue for the new event");
+
+			logger.info("EventService.createEvent: Creating queue for the new event");
 			VirtualQueue q = new VirtualQueue(event.getEventID());
-			logger.info("Verifying venue availability.");
+
+			logger.info("EventService.createEvent: Verifying venue availability.");
 			Venue venue = venueRepository.getVenueByID(eventRecord.venueID());
 			venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
+
 			eventRepository.save(event);
 			queueRepository.save(q);
-			logger.info("Event created successfully with ID: " + event.getEventID());
+			venueRepository.addVenue(venue.getName(), venue);
+
+			logger.info("EventService.createEvent: Event created successfully with ID: " + event.getEventID());
 			return Result.makeOk(new EventDTO(event));
 
 		} catch (IllegalArgumentException e) {
-			logger.error("Failed to create event: " + e.getMessage());
+			logger.error("EventService.createEvent: Failed to create event: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during event creation: " + e.getMessage());
+		}catch (AuthException e) {
+			logger.error("EventService.createEvent: Invalid token. " + e.getMessage());
+				return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch (JwtException e) {
+			logger.error("EventService.createEvent: JWT authentication error during event creation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch (OptimisticLockingFailureException e){
+			logger.error("EventService.createEvent: Concurrent modification error during event creation: " + e.getMessage());
+			return Result.makeFail("Failed to create event due to concurrent modification. Please try again.");
 		}catch (Exception e) {
-			logger.error("Unexpected error during event creation: " + e.getMessage());
+			logger.error("EventService.createEvent: Unexpected error during event creation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
 
 	public Result<Boolean> activateEvent(int eventID, String sessionToken) {
 		try {
-			logger.info("Verifying session token for event activation.");
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event activation.");
-				return Result.makeFail("Invalid session token.");
-			}
+			int userID = validateAndGetUserID(sessionToken);
+			logger.info("EventService.activateEvent: Session token verified successfully.");
 
-			if(!authenticationService.isUserToken(sessionToken)) {
-				logger.warn("Only signed-in users are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
-			}
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
-
+			logger.info("EventService.activateEvent: retrieving event for activation");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("retrieving prodction company for event activation");
+			logger.info("EventService.activateEvent: retrieving production company for event activation");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("Validating user permissions for event activation.");
+			logger.info("EventService.activateEvent: Validating user permissions for event activation.");
 			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("User permissions validated successfully.");
+			logger.info("EventService.activateEvent: User permissions validated successfully.");
 
-			logger.info("Attempting to activate event: " + event.getEventName());
+			logger.info("EventService.activateEvent: Attempting to activate event: " + event.getEventName());
 			event.activateEvent();
-			logger.info("Event activated successfully with ID: " + event.getEventID());
+			eventRepository.save(event);
+			logger.info("EventService.activateEvent: Event activated successfully with ID: " + event.getEventID());
 
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException e) {
-			logger.error("Failed to find event: " + e.getMessage());
+			logger.error("EventService.activateEvent: Failed to find event: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (IllegalStateException e) {
-			logger.error("Failed to activate event: " + e.getMessage());
+			logger.error("EventService.activateEvent: Failed to activate event: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during event activation: " + e.getMessage());
+		}catch (AuthException e) {
+			logger.error("EventService.activateEvent: Invalid session token. " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("Unexpected error during event activation: " + e.getMessage());
+		} catch (JwtException e) {
+			logger.error("EventService.activateEvent: JWT authentication error during event activation: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch (OptimisticLockingFailureException e){
+			logger.error("EventService.activateEvent: Concurrent modification error during event activation: " + e.getMessage());
+			return Result.makeFail("Failed to activate event due to concurrent modification. Please try again.");
+		}catch (Exception e) {
+			logger.error("EventService.activateEvent: Unexpected error during event activation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
 
 	public Result<Boolean> deactivateEvent(int eventID, String sessionToken) {
 		try {
-			logger.info("Verifying session token for event deactivation.");
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event deactivation.");
-				return Result.makeFail("Invalid session token.");
-			}
+			int userID = validateAndGetUserID(sessionToken);
+			logger.info("EventService.deactivateEvent: Session token verified successfully.");
 
-			if(!authenticationService.isUserToken(sessionToken)) {
-				logger.warn("Only signed-in users are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
-			}
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
-
+			logger.info("EventService.deactivateEvent: retrieving event for deactivation");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("retrieving prodction company for event deactivation");
+			logger.info("EventService.deactivateEvent: retrieving production company for event deactivation");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("Validating user permissions for event deactivation.");
+			logger.info("EventService.deactivateEvent: Validating user permissions for event deactivation.");
 			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("User permissions validated successfully.");
+			logger.info("EventService.deactivateEvent: User permissions validated successfully.");
 
-			logger.info("Attempting to deactivate event: " + event.getEventName());
+			logger.info("EventService.deactivateEvent: Attempting to deactivate event: " + event.getEventName());
 			event.deactivateEvent();
-			logger.info("Event deactivated successfully with ID: " + event.getEventID());
+			eventRepository.save(event);
+			logger.info("EventService.deactivateEvent: Event deactivated successfully with ID: " + event.getEventID());
 
 			return Result.makeOk(true);
 
 		} catch (IllegalArgumentException e) {
-			logger.error("Failed to find event: " + e.getMessage());
+			logger.error("EventService.deactivateEvent: Failed to find event: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (IllegalStateException e) {
-			logger.error("Failed to deactivate event: " + e.getMessage());
+			logger.error("EventService.deactivateEvent: Failed to deactivate event: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
+		}catch (AuthException e) {
+			logger.error("EventService.deactivateEvent: Invalid session token. " + e.getMessage());
+				return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			logger.error("EventService.deactivateEvent: JWT authentication error during event deactivation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch (OptimisticLockingFailureException e){
+			logger.error("EventService.deactivateEvent: Concurrent modification error during event deactivation: " + e.getMessage());
+			return Result.makeFail("Failed to deactivate event due to concurrent modification. Please try again.");
 		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			logger.error("EventService.deactivateEvent: Unexpected error during event deactivation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
 
     public Result<EventDTO> viewEvent(int eventID) {
         try {
-            logger.info("Attempting to retrieve event with ID: " + eventID);
+            logger.info("EventService.viewEvent: Attempting to retrieve event with ID: " + eventID);
             Event event = eventRepository.findByID(String.valueOf(eventID));
-            logger.info("Event retrieved successfully with ID: " + eventID);
+
+            logger.info("EventService.viewEvent: Event retrieved successfully with ID: " + eventID);
             return Result.makeOk(new EventDTO(event));
         }
         catch (IllegalArgumentException e) {
-            logger.error("Failed to find event: " + e.getMessage());
+            logger.error("EventService.viewEvent: Failed to find event: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error during event retrieval: " + e.getMessage());
+            logger.error("EventService.viewEvent: Unexpected error during event retrieval: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 	
 	public Result<EventDTO> editEvent(Map<String, Object> editParams, int eventID, String sessionToken) {
         try {
-			logger.info("Verifying session token for event editing.");
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event editing.");
-				return Result.makeFail("Invalid session token.");
-			}
+			int userID = validateAndGetUserID(sessionToken);
+			logger.info("EventService.editEvent: Session token verified successfully.");
 
-			if(!authenticationService.isUserToken(sessionToken)) {
-				logger.warn("Only signed-in users are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
-			}
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
-
+			logger.info("EventService.editEvent: retrieving event for edition");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("retrieving prodction company for event edition");
+			logger.info("EventService.editEvent: retrieving production company for event edition");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("Validating user permissions for event activation.");
+			logger.info("EventService.editEvent: Validating user permissions for event edition.");
 			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("User permissions validated successfully.");
+			logger.info("EventService.editEvent: User permissions validated successfully.");
 
-            logger.info("Attempting to edit event with ID: " + eventID);
+            logger.info("EventService.editEvent: Attempting to edit event with ID: " + eventID);
 			if (getEditParam(editParams, "name", String.class) != null) {
 				event.setEventName(getEditParam(editParams, "name", String.class));
 			}
@@ -264,69 +247,87 @@ public class EventService {
 				String newVenueID = getEditParam(editParams, "venue", String.class);
 				Venue newVenue = venueRepository.getVenueByID(newVenueID);
 				newVenue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), event.getEventID());
+				venueRepository.addVenue(oldVenue.getName(), oldVenue);
+				venueRepository.addVenue(newVenue.getName(), newVenue);
 				event.setEventVenue(newVenueID);
 			}
 			if (getEditParam(editParams, "eventRating", Double.class) != null) {
 				event.setEventRating(getEditParam(editParams, "eventRating", Double.class));
 			}
 			eventRepository.save(event);
-			logger.info("Event edited successfully with ID: " + eventID);
+			
+			logger.info("EventService.editEvent: Event edited successfully with ID: " + eventID);
             return Result.makeOk(new EventDTO(event));
         }
         catch (IllegalArgumentException e) {
-            logger.error(e.getMessage());
+            logger.error("EventService.editEvent: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         }
+		catch (OptimisticLockingFailureException e){
+			logger.error("EventService.editEvent: Concurrent modification error during event edition: " + e.getMessage());
+			return Result.makeFail("Failed to edit event due to concurrent modification. Please try again.");
+		}
+		catch (AuthException e) {
+			logger.error("EventService.editEvent: Invalid session token. " + e.getMessage());
+				return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
+		catch (JwtException e) {
+			logger.error("EventService.editEvent: JWT authentication error during event edition: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
 		catch (Exception e) {
-            logger.error("Unexpected error during event search: " + e.getMessage());
+            logger.error("EventService.editEvent: Unexpected error during event search: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
 	public Result<String> editStockInSegmentsForEvent(Map<String, Integer> segmentsAndNewStock,  int eventID, String sessionToken){
 		try{
-			logger.info("Verifying session token for event editing.");
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event editing.");
-				return Result.makeFail("Invalid session token.");
-			}
+			int userID = validateAndGetUserID(sessionToken);
+			logger.info("EventService.editStockInSegmentsForEvent: Session token verified successfully.");
 
-			if(!authenticationService.isUserToken(sessionToken)) {
-				logger.warn("Only signed-in users are allowed to create events.");
-				return Result.makeFail("Only signed-in users are allowed to create events. Please use a production company account.");
-			}
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
-
+			logger.info("EventService.editStockInSegmentsForEvent: retrieving event for stock edition");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("retrieving prodction company for event stock editiong");
+			logger.info("EventService.editStockInSegmentsForEvent: retrieving production company for event stock edition");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("Validating user permissions for event activation.");
+			logger.info("EventService.editStockInSegmentsForEvent: Validating user permissions for event activation.");
 			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("User permissions validated successfully.");
+			logger.info("EventService.editStockInSegmentsForEvent: User permissions validated successfully.");
 
+			logger.info("EventService.editStockInSegmentsForEvent: Attempting to edit stock in segments for event with ID: " + eventID);
 			Venue venue = venueRepository.getVenueByID(event.getEventVenueID());
 
-			logger.info("Attempting to edit event with ID: " + eventID);	
 			
 			for(Map.Entry<String, Integer> entry : segmentsAndNewStock.entrySet()){
 				Segment currSeg = venue.getSegmentByID(entry.getKey());
 				currSeg.setStockForEvent(eventID, entry.getValue());
 			}
+			venueRepository.addVenue(venue.getName(), venue);
 
-			return Result.makeOk("Changed stocks for eventID: " + eventID);
-		}	catch(Exception e){
-			logger.error("Unexpected error during event search: " + e.getMessage());
+			return Result.makeOk("EventService.editStockInSegmentsForEvent: Changed stocks for eventID: " + eventID);
+		}
+		catch (IllegalArgumentException e) {
+            logger.error("EventService.editStockInSegmentsForEvent: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+		}
+		catch (AuthException e) {
+			logger.error("EventService.editStockInSegmentsForEvent: Invalid session token. " + e.getMessage());
+				return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
+		catch (JwtException e) {
+			logger.error("EventService.editStockInSegmentsForEvent: JWT authentication error during stock edition: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch(Exception e){
+			logger.error("EventService.editStockInSegmentsForEvent: Unexpected error occurred: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}	
 	}
 
     public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
         try {
-            logger.info("Attempting to search events with parameters: " + searchParams);
+            logger.info("EventService.searchEvents: Attempting to search events with parameters: " + searchParams);
             List<String> locationNames = getParam(searchParams, "location", String.class);
             List<Location> locations = null;
             if (locationNames != null) {
@@ -355,22 +356,22 @@ public class EventService {
                 getParam(searchParams, "productionCompanyRating", Double.class)
             ).stream().map(EventDTO::new).toList();
 
-            logger.info("Event search completed successfully. Found " + results.size() + " events.");
+            logger.info("EventService.searchEvents: Event search completed successfully. Found " + results.size() + " events.");
             return Result.makeOk(results);
         }
         catch (IllegalArgumentException e) {
-            logger.error("Invalid search parameters: " + e.getMessage());
+            logger.error("EventService.searchEvents: Invalid search parameters: " + e.getMessage());
             return Result.makeFail("Invalid search parameters: " + e.getMessage());
         }
         catch (IOException e) {
-			logger.error("Failed contacting Photon API: " + e.getMessage());
+			logger.error("EventService.searchEvents: Failed contacting Photon API: " + e.getMessage());
             return Result.makeFail("Failed contacting Photon API: " + e.getMessage());
 		} catch (InterruptedException e) {
-			logger.error("Request interrupted: " + e.getMessage());
+			logger.error("EventService.searchEvents: Request interrupted: " + e.getMessage());
             return Result.makeFail("Request interrupted: " + e.getMessage());
 		}
 		catch (Exception e) {
-            logger.error("Unexpected error during event search: " + e.getMessage());
+            logger.error("EventService.searchEvents: Unexpected error during event search: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -398,5 +399,18 @@ public class EventService {
             throw new IllegalArgumentException("Invalid type for parameter '" + key + "'. Expected: " + type.getSimpleName());
         }
         return (T) params.get(key);
+    }
+
+	private int validateAndGetUserID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid session token.");
+        }
+        if (!authenticationService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        int userID = Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+        userRepository.getUserByID(userID);
+        return userID;
     }
 }

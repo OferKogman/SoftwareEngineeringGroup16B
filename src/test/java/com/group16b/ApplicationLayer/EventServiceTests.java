@@ -44,7 +44,7 @@ public class EventServiceTests {
     static private IAuthenticationService mockTokenService;
     static private ILocationService mockLocationService;
     static private EventFilteringService eventFilteringService;
-    static private ProductionCompanyRepositoryMapImpl mockProductionCompanyPolicyRepository;
+    static private ProductionCompanyRepositoryMapImpl mockProductionCompanyRepository;
     static private IUserRepository mockUserRepository;
     static private IVenueRepository mockVenueRepository;
     static private IEventRepository mockEventRepository;
@@ -59,22 +59,22 @@ public class EventServiceTests {
     static public void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockTokenService = mock(IAuthenticationService.class);
         mockLocationService = mock(ILocationService.class);
-        mockProductionCompanyPolicyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
-        eventFilteringService = new EventFilteringService(mockProductionCompanyPolicyRepository);
+        mockProductionCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
+        eventFilteringService = new EventFilteringService(mockProductionCompanyRepository);
         mockVirtualQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
 
-        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository, mockVirtualQueueRepository);
+        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyRepository, mockVirtualQueueRepository);
 
         Field PCPR = eventService.getClass().getDeclaredField("productionCompanyRepository");
         PCPR.setAccessible(true);
-        PCPR.set(eventService, mockProductionCompanyPolicyRepository);
+        PCPR.set(eventService, mockProductionCompanyRepository);
 
         Field PCPR2 = eventFilteringService.getClass().getDeclaredField("productionCompanyPolicyRepository");
         PCPR2.setAccessible(true);
-        PCPR2.set(eventFilteringService, mockProductionCompanyPolicyRepository);
+        PCPR2.set(eventFilteringService, mockProductionCompanyRepository);
 
         Field ER = eventService.getClass().getDeclaredField("eventRepository");
         ER.setAccessible(true);
@@ -96,7 +96,6 @@ public class EventServiceTests {
         VR2.setAccessible(true);
         VR2.set(eventFilteringService, mockVenueRepository);
 
-        when(mockProductionCompanyPolicyRepository.findByID(String.valueOf(1))).thenReturn(mock(ProductionCompany.class));
         when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
 
         user = new User("testuser", "password");
@@ -116,7 +115,8 @@ public class EventServiceTests {
 
         ProductionCompany mockCompany = mock(ProductionCompany.class);
 
-        when(mockProductionCompanyPolicyRepository.findByID("1")).thenReturn(mockCompany);
+        when(mockProductionCompanyRepository.findByID("999")).thenThrow(new IllegalArgumentException("Production company with ID 999 is not found."));
+        when(mockProductionCompanyRepository.findByID("1")).thenReturn(mockCompany);
 
         doThrow(new IllegalArgumentException("User does not have a role for this company.")).when(mockCompany).validateUserPermissions(user2.getUserID(), RoleType.OWNER);
 
@@ -384,14 +384,14 @@ public class EventServiceTests {
     public void CreateEvent_UserIsNotAuthenticated_Failure() {
         LocalDateTime now = LocalDateTime.now();
         EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2", 1, 67.0, 4.5);
-        assertEquals("Invalid session token.", eventService.createEvent(record, "invalid_token").getError());
+        assertEquals("Authentication failed: Invalid session token.", eventService.createEvent(record, "invalid_token").getError());
     }
     
     @Test
     public void CreateEvent_CompanyNotFound_Failure() {
         LocalDateTime now = LocalDateTime.now();
         EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2", 999, 67.0, 4.5);
-        assertEquals("Invalid production company ID. Please provide a valid production company ID to create an event.", eventService.createEvent(record, "user1").getError());
+        assertEquals("Production company with ID 999 is not found.", eventService.createEvent(record, "user1").getError());
     }
 
     @Test
@@ -480,7 +480,7 @@ public class EventServiceTests {
 
     @Test
     public void DeactivateEvent_UserIsNotAuthenticated_Failure() {
-        assertEquals("Invalid session token.", eventService.deactivateEvent(e1.getEventID(), "invalid_token").getError());
+        assertEquals("Authentication failed: Invalid session token.", eventService.deactivateEvent(e1.getEventID(), "invalid_token").getError());
     }
 
     @Test
@@ -505,7 +505,7 @@ public class EventServiceTests {
 
     @Test
     public void ActivateEvent_UserIsNotAuthenticated_Failure() {
-        assertEquals("Invalid session token.", eventService.activateEvent(e1.getEventID(), "invalid_token").getError());
+        assertEquals("Authentication failed: Invalid session token.", eventService.activateEvent(e1.getEventID(), "invalid_token").getError());
     }
 
     @Test

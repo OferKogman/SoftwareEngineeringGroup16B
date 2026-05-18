@@ -128,7 +128,7 @@ public class EventStockEditTests {
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid session token.", result.getError());
+        assertEquals("Authentication failed: Invalid session token.", result.getError());
     }
 
     @Test
@@ -139,7 +139,7 @@ public class EventStockEditTests {
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Only signed-in users are allowed to create events"));
+        assertEquals("Authentication failed: Only users are allowed to perform operation", result.getError());
     }
 
     @Test
@@ -159,6 +159,6 @@ public class EventStockEditTests {
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("An unexpected error occurred: Unauthorized action"));
+        assertEquals("Unauthorized action", result.getError());
     }
 }
