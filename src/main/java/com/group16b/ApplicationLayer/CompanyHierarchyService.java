@@ -86,50 +86,51 @@ public class CompanyHierarchyService {
 	public Result<Boolean> assignManagerToCompany(int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
 		try{
 			//auth
-			logger.info("Verifying session token for manager assignment of user {} to company {}.", targetID, companyID);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: Verifying session token for manager assignment of user {} to company {}.", targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for manager assignment of user {} to company {}.", targetID, companyID);
+				logger.warn("CompanyHierarchyService.assignManagerToCompany: Invalid session token provided for manager assignment of user {} to company {}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to assign manager.");
+				logger.warn("CompanyHierarchyService.assignManagerToCompany: Only USERS are allowed to assign manager.");
 				return Result.makeFail("Only signed-in users are allowed to assign managers. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
+			logger.info("CompanyHierarchyService.assignManagerToCompany: Session token verified successfully.");
 
-			logger.info("attempting to retrieve target User {}",targetID);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: attempting to retrieve target User {}",targetID);
 			userRepository.getUserByID(targetID);
 
-			logger.info("attempting to retrieve production company {}", companyID);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: attempting to retrieve production company {}", companyID);
 			ProductionCompany company= productionCompanyRepository.findByID(String.valueOf(companyID));
 
-			logger.info("Attempting to send manager invite to user {} by user {} in company {}",targetID,userID,companyID);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: Attempting to send manager invite to user {} by user {} in company {}",targetID,userID,companyID);
 			company.AssignManager(userID, targetID,permissions);
-			logger.info("user {} Succefully invited target {} to be manager in company {}",userID,targetID,companyID);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: user {} Succefully invited target {} to be manager in company {}",userID,targetID,companyID);
 
-			logger.info("attempting to save changed in production company {}",companyID);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: attempting to save changed in production company {}",companyID);
 			productionCompanyRepository.save(company);
+			logger.info("CompanyHierarchyService.assignManagerToCompany: succesfuly save company {}",companyID);
 
 			return Result.makeOk(true);
 		}
 		catch(IllegalArgumentException e)
 		{
-			logger.warn("Runtime error during assign Manager: "+e.getMessage());
+			logger.warn("CompanyHierarchyService.assignManagerToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
 		catch(OptimisticLockingFailureException e)
 		{
-			logger.warn("Optimistic locking Failure in assign manager: "+e.getMessage());
+			logger.warn("CompanyHierarchyService.assignManagerToCompany: Optimistic locking Failure: "+e.getMessage());
 			return Result.makeFail("Company was updated by another operation. Please retry.");
 		}
 		catch (JwtException e) {
-			logger.error("JWT authentication error during inviting manager: " + e.getMessage());
+			logger.error("CompanyHierarchyService.assignManagerToCompany: JWT authentication error: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		}
 		catch (Exception e) {
-			logger.error("Unexpected error during inviting manager: " + e.getMessage());
+			logger.error("CompanyHierarchyService.assignManagerToCompany: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}    
 	}
@@ -138,53 +139,53 @@ public class CompanyHierarchyService {
 	public Result<Boolean> acceptInviteToCompany(int companyID, int assignerID, String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: Verifying session token for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
+				logger.warn("CompanyHierarchyService.acceptInviteToCompany: Invalid session token provided for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to accept invite.");
+				logger.warn("CompanyHierarchyService.acceptInviteToCompany: Only USERS are allowed to accept invite.");
 				return Result.makeFail("Only signed-in users are allowed to accept invites. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			userRepository.getUserByID(userID);
 
-			logger.info("Session token verified successfully.");
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: Session token verified successfully.");
 
-			logger.info("ensuring assigner {} exists for accept invite",assignerID);
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: ensuring assigner {} exists for accept invite",assignerID);
 			userRepository.getUserByID(assignerID);
 
-			logger.info("trying to retrieve company {} for accept invite",companyID);
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: trying to retrieve company {} for accept invite",companyID);
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
 
-			logger.info("trying to accept invite for user {} assigner by {} in company {}",userID,assignerID,companyID);
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: trying to accept invite for user {} assigner by {} in company {}",userID,assignerID,companyID);
 			company.acceptInvite(userID, assignerID);
 
 
-			logger.info("user {} have succesfully accepted an invite to company {} by assigner {}",userID,companyID,assignerID);
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: user {} have succesfully accepted an invite to company {} by assigner {}",userID,companyID,assignerID);
 
-			logger.info("Trying to save change for accepting invite");
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: Trying to save change for accepting invite");
 			productionCompanyRepository.save(company);
-			logger.info("Succesfully saved company {} after accepting invite",companyID);
+			logger.info("CompanyHierarchyService.acceptInviteToCompany: Succesfully saved company {} after accepting invite",companyID);
 			return Result.makeOk(true);
 		}
 		catch(IllegalArgumentException e)
 		{
-			logger.warn("Runtime error during accept Invite: "+e.getMessage());
+			logger.warn("CompanyHierarchyService.acceptInviteToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
 		catch(OptimisticLockingFailureException e)
 		{
-			logger.warn("Optimistic locking Failure in accept Invite: "+e.getMessage());
+			logger.warn("CompanyHierarchyService.acceptInviteToCompany: Optimistic locking Failure: "+e.getMessage());
 			return Result.makeFail("Company was updated by another operation. Please retry.");
 		}
 		catch (JwtException e) {
-			logger.error("JWT authentication error during accept Invite: " + e.getMessage());
+			logger.error("CompanyHierarchyService.acceptInviteToCompany: JWT authentication error: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		}
 		catch (Exception e) {
-			logger.error("Unexpected error during accept Invite: " + e.getMessage());
+			logger.error("CompanyHierarchyService.acceptInviteToCompany: Unexpected error during: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}  
 	}
