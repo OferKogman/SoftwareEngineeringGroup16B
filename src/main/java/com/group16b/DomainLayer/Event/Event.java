@@ -29,6 +29,8 @@ public class Event {
 	private double rating;
 	private final int ownerId;
 
+	private long version;
+
 	public Event(EventRecord eventRecord, int ownerId) {
 		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
@@ -49,6 +51,7 @@ public class Event {
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;
+		this.version = 0;
 	}
 
 	public int getEventID() {
@@ -174,6 +177,15 @@ public class Event {
 	public LotteryPolicy getLotteryPolicy() {
 		return purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
 	}
+
+	public long getVersion() {
+		return version;
+	}
+
+	public void incrementVersion() {
+		this.version++;
+	}
+	
 
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {
