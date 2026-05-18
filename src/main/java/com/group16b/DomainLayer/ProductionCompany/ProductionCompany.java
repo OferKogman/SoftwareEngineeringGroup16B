@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -21,7 +22,7 @@ public class ProductionCompany {
     private String name;
     private int founderID;
 
-    private final HashMap<Integer, MembershipNode> membersNodes=new HashMap<>();
+    private final HashMap<String, MembershipNode> membersNodes=new HashMap<>();
     private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
 
     public ProductionCompany(ProductionCompany other)
@@ -31,7 +32,7 @@ public class ProductionCompany {
         this.version=other.version;
         this.name=other.name;
         this.founderID=other.founderID;
-        for (Map.Entry<Integer, MembershipNode> entry : other.membersNodes.entrySet()) {
+        for (Entry<String, MembershipNode> entry : other.membersNodes.entrySet()) {
             this.membersNodes.put(
                     entry.getKey(),
                     new MembershipNode(entry.getValue())
@@ -95,7 +96,7 @@ public class ProductionCompany {
         return null;
     }
 
-    public boolean isFouder(int userID)
+    public boolean isFouder(String userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node!=null && node.getRoleType()==RoleType.FOUNDER)
@@ -153,22 +154,22 @@ public class ProductionCompany {
     }
 
     //if invite is found then accept it and remove all invites with equivalent or lower role
-    public void acceptInvite(int targetID, int assignerID) 
+    public void acceptInvite(String targetEmail, int assignerID) 
     {
-        InviteKey key = new InviteKey(targetID, assignerID);
+        InviteKey key = new InviteKey(targetEmail, assignerID);
         MembershipNode invite = invites.get(key);
 
         if (invite == null) {
             throw new IllegalArgumentException("Invite not found.");
         }
 
-        membersNodes.put(targetID, invite);
+        membersNodes.put(targetEmail, invite);
 
         RoleType acceptedRole = invite.getRoleType();
 
         // remove equivalent or lower roles only
         invites.entrySet().removeIf(e ->
-            e.getKey().targetId == targetID &&
+            e.getKey().targetId == targetEmail &&
             e.getValue().getRoleType().isLowerOrEqual(acceptedRole)
         );
     }

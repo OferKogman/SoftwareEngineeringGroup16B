@@ -87,7 +87,7 @@ public class ProductionCompanyServiceTests {
     void testViewSalesHistory_PermissionDenied_Fail() {
         User mockUser = mock(User.class);
         ProductionCompany mockCompany=mock(ProductionCompany.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         
         doThrow(new IllegalArgumentException("Not allowed")).when(mockCompany)
@@ -196,7 +196,7 @@ public class ProductionCompanyServiceTests {
         User mockUser = mock(User.class);
         ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
         // FIX 1: RETURNS_DEEP_STUBS prevents OrderDTO from throwing NullPointerExceptions!
@@ -222,7 +222,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_EventNotFound_SkipsOrder() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(true);
         when(mockAuthService.isUserToken(VALID_TOKEN)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
@@ -254,7 +254,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testViewSalesHistory_WrongCompany_SkipsOrder() {
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
 
         Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         Event mockEvent = mock(Event.class);
@@ -305,10 +305,10 @@ public class ProductionCompanyServiceTests {
         when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID)))
             .thenReturn(mockCompany);
 
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockManagerUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockManagerUser);
         when(mockManagerUser.getUserID()).thenReturn(USER_ID);
 
-        when(mockUserRepo.getUserByID(ownerID)).thenReturn(mockOwnerUser);
+        when(mockUserRepo.findByID(ownerID)).thenReturn(mockOwnerUser);
 
         doNothing().when(mockCompany)
             .validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);

@@ -113,7 +113,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
         doNothing().when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
         
@@ -148,7 +148,7 @@ public class VenueEventConfigServiceTests {
         
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockCompany.isOwner(userID)).thenReturn(false); 
         when(mockCompany.isOwner(userID)).thenReturn(true); // is a manager instead
         
@@ -202,7 +202,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(null);
+        when(mockUserRepository.findByID(userID)).thenReturn(null);
 
         Result<String> result = configService.configureLayoutAndInventory(
                 validToken, companyID, eventID, validDTO, startTime, endTime);
@@ -227,7 +227,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
         
         doThrow(new IllegalArgumentException("Permission denied. You must be an owner or manager of this company.")).when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
@@ -291,7 +291,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
         ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -332,7 +332,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mock(Event.class));
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID(userID)).thenReturn(mock(User.class));
 
         ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);

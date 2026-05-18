@@ -62,9 +62,9 @@ public class CompanyHierarchyServiceTests {
     //good
     @Test
     void GivenValidAuthAndExistingUsersAndCompany_WhenAssignOwnerToCompany_ThenReturnSuccess() {
-        int userID = 1;
+        String userID = "someEmail1";
         int companyID = 1;
-        int targetID = 2;
+        String targetID = "someEmail2";
 
         String token = "valid-token";
 
@@ -78,8 +78,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
         // USERS EXIST
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(targetID)).thenReturn(mockTarget);
 
         // COMPANY
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -97,8 +97,8 @@ public class CompanyHierarchyServiceTests {
         verify(mockCompany, times(1)).AssignOwner(userID, targetID);
         verify(mockProductionCompanyRepository, times(1)).save(mockCompany);
 
-        verify(mockUserRepository, times(1)).getUserByID(userID);
-        verify(mockUserRepository, times(1)).getUserByID(targetID);
+        verify(mockUserRepository, times(1)).findByID(userID);
+        verify(mockUserRepository, times(1)).findByID(targetID);
         verify(mockProductionCompanyRepository, times(1))
                 .findByID(String.valueOf(companyID));
     }
@@ -116,8 +116,8 @@ public class CompanyHierarchyServiceTests {
         User mockTarget = mock(User.class);
         ProductionCompany mockCompany = mock(ProductionCompany.class);
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2")).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenReturn(mockCompany);
@@ -126,7 +126,7 @@ public class CompanyHierarchyServiceTests {
                 .when(mockCompany).AssignOwner(1, 2);
 
         Result<Boolean> result =
-                userService.assignOwnerToCompany(1, 2, token);
+                userService.assignOwnerToCompany(1, "2", token);
 
         assertFalse(result.isSuccess());
 
@@ -142,11 +142,11 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1))
+        when(mockUserRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         Result<Boolean> result =
-                userService.assignOwnerToCompany(1, 2, token);
+                userService.assignOwnerToCompany(1, "2", token);
 
         assertFalse(result.isSuccess());
     }
@@ -162,11 +162,11 @@ public class CompanyHierarchyServiceTests {
 
         User mockUser = mock(User.class);
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2))
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2"))
                 .thenThrow(new IllegalArgumentException("Target not found"));
 
-        Result<Boolean> result =userService.assignOwnerToCompany(1, 2, token);
+        Result<Boolean> result =userService.assignOwnerToCompany(1, "2", token);
 
         assertFalse(result.isSuccess());
     }
@@ -180,14 +180,14 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mock(User.class));
-        when(mockUserRepository.getUserByID(2)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID("1")).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID("2")).thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("Company not found"));
 
         Result<Boolean> result =
-                userService.assignOwnerToCompany(1, 2, token);
+                userService.assignOwnerToCompany(1, "2", token);
 
         assertFalse(result.isSuccess());
     }
@@ -199,7 +199,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.validateToken("bad")).thenReturn(false);
 
         Result<Boolean> result =
-                userService.assignOwnerToCompany(1, 2, "bad");
+                userService.assignOwnerToCompany(1, "2", "bad");
 
         assertFalse(result.isSuccess());
 
@@ -212,7 +212,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.validateToken("token")).thenReturn(true);
         when(mockAuthService.isUserToken("token")).thenReturn(false);
 
-        Result<Boolean> result = userService.assignOwnerToCompany(1, 2, "token");
+        Result<Boolean> result = userService.assignOwnerToCompany(1, :"2", "token");
 
         assertFalse(result.isSuccess());
 
@@ -233,14 +233,14 @@ public class CompanyHierarchyServiceTests {
         User mockTarget = mock(User.class);
         ProductionCompany mockCompany = mock(ProductionCompany.class);
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2")).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID("1")).thenReturn(mockCompany);
 
         doThrow(new OptimisticLockingFailureException("version conflict")).when(mockProductionCompanyRepository).save(mockCompany);
 
-        Result<Boolean> result =userService.assignOwnerToCompany(1, 2, token);
+        Result<Boolean> result =userService.assignOwnerToCompany(1, "2", token);
 
         assertFalse(result.isSuccess());
     }
@@ -252,9 +252,9 @@ public class CompanyHierarchyServiceTests {
 
     @Test
     void GivenValidAuthAndExistingUsersAndCompany_WhenAssignManagerToCompany_ThenReturnSuccess() {
-        int userID = 1;
+        String userID = "1";
         int companyID = 1;
-        int targetID = 2;
+        String targetID = "2";
 
         String token = "valid-token";
 
@@ -271,8 +271,8 @@ public class CompanyHierarchyServiceTests {
                 .thenReturn(String.valueOf(userID));
 
         // USERS
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(targetID)).thenReturn(mockTarget);
 
         // COMPANY
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
@@ -294,8 +294,8 @@ public class CompanyHierarchyServiceTests {
 
         verify(mockProductionCompanyRepository, times(1)).save(mockCompany);
 
-        verify(mockUserRepository).getUserByID(userID);
-        verify(mockUserRepository).getUserByID(targetID);
+        verify(mockUserRepository).findByID(userID);
+        verify(mockUserRepository).findByID(targetID);
     }
 
    @Test
@@ -306,11 +306,11 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1))
+        when(mockUserRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         Result<Boolean> result =
-                userService.assignManagerToCompany(1, 2, Collections.emptySet(), token);
+                userService.assignManagerToCompany(1, "2", Collections.emptySet(), token);
 
         assertFalse(result.isSuccess());
     }
@@ -325,12 +325,12 @@ public class CompanyHierarchyServiceTests {
 
         User mockUser = mock(User.class);
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2))
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2"))
                 .thenThrow(new IllegalArgumentException("Target not found"));
 
         Result<Boolean> result =
-                userService.assignManagerToCompany(1, 2, Collections.emptySet(), token);
+                userService.assignManagerToCompany(1, "2", Collections.emptySet(), token);
 
         assertFalse(result.isSuccess());
     }
@@ -343,23 +343,23 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mock(User.class));
-        when(mockUserRepository.getUserByID(2)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID("1")).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID("2")).thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("Company not found"));
 
         Result<Boolean> result =
-                userService.assignManagerToCompany(1, 2, Collections.emptySet(), token);
+                userService.assignManagerToCompany(1, "2", Collections.emptySet(), token);
 
         assertFalse(result.isSuccess());
     }
 
     @Test
     void GivenDomainRuleViolation_WhenAssignManagerToCompany_ThenReturnFailure() {
-        int userID = 1;
+        String userID = "1";
         int companyID = 1;
-        int targetID = 2;
+        String targetID = "2";
 
         String token = "valid-token";
 
@@ -376,8 +376,8 @@ public class CompanyHierarchyServiceTests {
                 .thenReturn(String.valueOf(userID));
 
         // USERS
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(targetID)).thenReturn(mockTarget);
 
         // COMPANY
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
@@ -441,8 +441,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2")).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID("1")).thenReturn(mockCompany);
 
@@ -450,7 +450,7 @@ public class CompanyHierarchyServiceTests {
                 .when(mockProductionCompanyRepository).save(mockCompany);
 
         Result<Boolean> result =
-                userService.assignManagerToCompany(1, 2, perms, token);
+                userService.assignManagerToCompany(1, "2", perms, token);
 
         assertFalse(result.isSuccess());
     }
@@ -464,9 +464,9 @@ public class CompanyHierarchyServiceTests {
 
     @Test
     void GivenValidInvite_WhenAcceptInviteToCompany_ThenReturnSuccess() {
-        int userID = 1;
+        String userID = "1";
         int companyID = 1;
-        int assignerID = 2;
+        String assignerID = "2";
         String token = "token";
 
         User mockUser = mock(User.class);
@@ -477,8 +477,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(assignerID)).thenReturn(mockAssigner);
 
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
                 .thenReturn(mockCompany);
@@ -527,7 +527,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1))
+        when(mockUserRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         Result<Boolean> result =
@@ -546,8 +546,8 @@ public class CompanyHierarchyServiceTests {
 
         User mockUser = mock(User.class);
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2))
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2"))
                 .thenThrow(new IllegalArgumentException("Assigner not found"));
 
         Result<Boolean> result =
@@ -564,8 +564,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mock(User.class));
-        when(mockUserRepository.getUserByID(2)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID("1")).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID("2")).thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("Company not found"));
@@ -588,14 +588,14 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockAssigner);
+        when(mockUserRepository.findByID("1")).thenReturn(mockUser);
+        when(mockUserRepository.findByID("2")).thenReturn(mockAssigner);
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenReturn(mockCompany);
 
         doThrow(new IllegalArgumentException("Invite not found"))
-                .when(mockCompany).acceptInvite(1, 2);
+                .when(mockCompany).acceptInvite("1", 2);
 
         Result<Boolean> result =
                 userService.acceptInviteToCompany(1, 2, token);
@@ -617,8 +617,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockAssigner);
+        when(mockUserRepository.findByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockAssigner);
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenReturn(mockCompany);
@@ -651,8 +651,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(assignerID)).thenReturn(mockAssigner);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(assignerID)).thenReturn(mockAssigner);
 
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
                 .thenReturn(mockCompany);
@@ -701,7 +701,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1))
+        when(mockUserRepository.findByID(1))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         Result<Boolean> result =
@@ -720,8 +720,8 @@ public class CompanyHierarchyServiceTests {
 
         User mockUser = mock(User.class);
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2))
+        when(mockUserRepository.findByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2))
                 .thenThrow(new IllegalArgumentException("Assigner not found"));
 
         Result<Boolean> result =
@@ -738,8 +738,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mock(User.class));
-        when(mockUserRepository.getUserByID(2)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID(1)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID(2)).thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenThrow(new IllegalArgumentException("Company not found"));
@@ -762,8 +762,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockAssigner);
+        when(mockUserRepository.findByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockAssigner);
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenReturn(mockCompany);
@@ -791,8 +791,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockAssigner);
+        when(mockUserRepository.findByID(1)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockAssigner);
 
         when(mockProductionCompanyRepository.findByID("1"))
                 .thenReturn(mockCompany);
@@ -822,7 +822,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
                 .thenReturn(mockCompany);
 
@@ -851,7 +851,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
                 .thenReturn(mockCompany);
 
@@ -876,7 +876,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID))
+        when(mockUserRepository.findByID(userID))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         Result<Boolean> result =
@@ -899,7 +899,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(token)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
                 .thenThrow(new IllegalArgumentException("Company not found"));
@@ -945,8 +945,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(targetID)).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
 
@@ -977,7 +977,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn("1");
 
-        when(mockUserRepository.getUserByID(anyInt())).thenThrow(new IllegalArgumentException("User not found"));
+        when(mockUserRepository.findByID(anyInt())).thenThrow(new IllegalArgumentException("User not found"));
 
         assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
     }
@@ -990,8 +990,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
-        when(mockUserRepository.getUserByID(2)).thenThrow(new IllegalArgumentException("Target not found"));
+        when(mockUserRepository.findByID(userID)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID(2)).thenThrow(new IllegalArgumentException("Target not found"));
 
         assertFalse(userService.removeOwnerManager(2, 1, "token").isSuccess());
     }
@@ -1004,7 +1004,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(anyInt())).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID(anyInt())).thenReturn(mock(User.class));
         when(mockProductionCompanyRepository.findByID(anyString()))
                 .thenThrow(new IllegalArgumentException("Company not found"));
 
@@ -1023,8 +1023,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID(anyString())).thenReturn(mockCompany);
 
@@ -1046,8 +1046,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID(anyString())).thenReturn(mockCompany);
 
@@ -1091,8 +1091,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(targetID)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(targetID)).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
 
@@ -1150,7 +1150,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn("1");
 
-        when(mockUserRepository.getUserByID(anyInt()))
+        when(mockUserRepository.findByID(anyInt()))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         assertFalse(userService.changeManagerPermission(
@@ -1173,10 +1173,10 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID))
+        when(mockUserRepository.findByID(userID))
                 .thenReturn(mock(User.class));
 
-        when(mockUserRepository.getUserByID(2))
+        when(mockUserRepository.findByID(2))
                 .thenThrow(new IllegalArgumentException("Target not found"));
 
         assertFalse(userService.changeManagerPermission(
@@ -1199,7 +1199,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(anyInt()))
+        when(mockUserRepository.findByID(anyInt()))
                 .thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID(anyString()))
@@ -1229,8 +1229,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID(anyString()))
                 .thenReturn(mockCompany);
@@ -1263,8 +1263,8 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
-        when(mockUserRepository.getUserByID(2)).thenReturn(mockTarget);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(2)).thenReturn(mockTarget);
 
         when(mockProductionCompanyRepository.findByID(anyString()))
                 .thenReturn(mockCompany);
@@ -1345,7 +1345,7 @@ public class CompanyHierarchyServiceTests {
                 when(mockAuthService.extractSubjectFromToken(anyString()))
                         .thenReturn(String.valueOf(userID));
 
-                when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+                when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
                 when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))
                         .thenReturn(mockCompany);
@@ -1382,7 +1382,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn("1");
 
-        when(mockUserRepository.getUserByID(1))
+        when(mockUserRepository.findByID(1))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
         assertFalse(userService.hierarchyTree(1, "token").isSuccess());
@@ -1397,7 +1397,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID))
+        when(mockUserRepository.findByID(userID))
                 .thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID(anyString()))
@@ -1418,7 +1418,7 @@ public class CompanyHierarchyServiceTests {
         when(mockAuthService.extractSubjectFromToken(anyString()))
                 .thenReturn(String.valueOf(userID));
 
-        when(mockUserRepository.getUserByID(userID))
+        when(mockUserRepository.findByID(userID))
                 .thenReturn(mock(User.class));
 
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID)))

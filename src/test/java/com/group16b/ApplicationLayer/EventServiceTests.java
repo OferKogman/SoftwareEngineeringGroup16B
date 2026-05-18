@@ -100,7 +100,7 @@ public class EventServiceTests {
         when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
 
         user = new User("testuser", "password");
-        when(mockUserRepository.getUserByID(user.getUserID())).thenReturn(user);
+        when(mockUserRepository.findByID(user.getUserID())).thenReturn(user);
         when(mockTokenService.validateToken("user1")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user1")).thenReturn(true);
@@ -108,7 +108,7 @@ public class EventServiceTests {
         
 
         user2 = new User("testuser2", "password");
-        when(mockUserRepository.getUserByID(user2.getUserID())).thenReturn(user2);
+        when(mockUserRepository.findByID(user2.getUserID())).thenReturn(user2);
         when(mockTokenService.validateToken("user2")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user2")).thenReturn(true);

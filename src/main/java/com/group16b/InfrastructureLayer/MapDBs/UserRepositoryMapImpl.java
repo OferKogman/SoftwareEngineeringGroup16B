@@ -9,34 +9,19 @@ import com.group16b.DomainLayer.User.User;
 
 public class UserRepositoryMapImpl implements IUserRepository {
 
-	private Map<Integer, User> users;
 	private Map<String, User> usersByEmail;
 
 	public UserRepositoryMapImpl(Map<Integer, User> users, Map<String, User> usersByEmail) {
-		this.users = users;
 		this.usersByEmail = usersByEmail;
 	}
 	public UserRepositoryMapImpl() {
-		this.users = new HashMap<>();
+		this.usersByEmail = new HashMap<>();
 	}
 
 
-	public User getUserByID(int userID) {
-		User user = users.get(userID);
-		return user != null ? new User(user) : null;
-	}
 
-
-	public void deleteUser(int userID) {
-		User user = users.get(userID);
-		if (user != null) {
-			usersByEmail.remove(user.getEmail());
-			users.remove(userID);
-		}
-	}
-
-	public boolean userExists(int userID) {
-		return users.containsKey(userID);
+	public boolean userExists(String userEmail) {
+		return usersByEmail.containsKey(userEmail);
 	}
 
 	@Override
@@ -52,7 +37,7 @@ public class UserRepositoryMapImpl implements IUserRepository {
 	@Override
 	public List<User> getAll() {
 		List<User> userList = new java.util.ArrayList<>();
-		for(User user : users.values()) {
+		for(User user : usersByEmail.values()) {
 			userList.add(new User(user));
 		}
 		return userList;
@@ -62,29 +47,26 @@ public class UserRepositoryMapImpl implements IUserRepository {
 	public void delete(String ID) {
 		User user = usersByEmail.get(ID);
 		if (user != null) {
-			users.remove(user.getUserID());
 			usersByEmail.remove(ID);
 		}
-		
-
 	}
 
 	@Override
 	public void save(User user) {
-		User existingUser = users.get(user.getUserID());
+		User existingUser = usersByEmail.get(user.getEmail());
 		if(existingUser != null) {
 			long newVersion = user.getVersion();
 			long currentVersion = existingUser.getVersion();
 			if(newVersion != currentVersion) {
 				throw new IllegalStateException("Version mismatch: User has been modified by another process.");
 			}
+			user.setVersion(user.getVersion() + 1);
 			existingUser.updateUser(user);
 			usersByEmail.put(user.getEmail(), existingUser);
-			users.put(user.getUserID(), existingUser);
+
 		}
 		else{
 			user.setVersion(user.getVersion() + 1);
-			users.put(user.getUserID(), user);
 			usersByEmail.put(user.getEmail(), user);
 		}
 	}

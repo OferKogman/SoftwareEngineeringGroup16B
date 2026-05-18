@@ -36,35 +36,35 @@ public class UserLoginService {
         }
     }
 
-    public Result<String> loginMember(int userID, String password, String email) {
-        logger.info("Attempting login for user ID: ...", userID);
+    public Result<String> loginMember(String userEmail, String password, String email) {
+        logger.info("Attempting login for user ID: ...", userEmail);
         
-        if (!userRepository.userExists(userID)) {
-            logger.warn("Login failed: user ID {} does not exist!", userID);
+        if (!userRepository.userExists(userEmail)) {
+            logger.warn("Login failed: user ID {} does not exist!", userEmail);
             return Result.makeFail("Invalid user ID");
         }
 
-        User member = userRepository.getUserByID(userID);
+        User member = userRepository.findByID(userEmail);
         try{
             if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
-                logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);
+                logger.warn("Login failed: invalid password and email attempt for user ID {}", userEmail);
                 return Result.makeFail("Invalid user ID or password + email");
             }
 
-            String token = tokenService.generateVisitor_SignedToken(userID);
-            logger.info("user ID {} successfully logged in", userID);
+            String token = tokenService.generateVisitor_SignedToken(userEmail);
+            logger.info("user ID {} successfully logged in", userEmail);
             
             return Result.makeOk(token);
         }
         catch (Exception e) {
-            logger.error("Login failed for user ID {}. Error: {}", userID, e.getMessage(), e);
+            logger.error("Login failed for user ID {}. Error: {}", userEmail, e.getMessage(), e);
             return Result.makeFail("Failed to login: " + e.getMessage());
         }
     }
 
     public Result<String> logOutMember(String sessionToken) {
         try {
-            int recievedID = Integer.valueOf(tokenService.extractSubjectFromToken(sessionToken));
+            String recievedID = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
             logger.info("Attempting log out user ID: {}...", recievedID);
             
             if (!tokenService.isUserToken(sessionToken)) {

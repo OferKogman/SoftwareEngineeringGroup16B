@@ -54,8 +54,8 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-           int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sTocken));
-		    User user = userRepo.getUserByID(userID);
+            String userID=String.parseInt(authenticationService.extractSubjectFromToken(sTocken));
+		    User user = userRepo.findByID(userID);
 
             ProductionCompany company=productionRepo.findByID(String.valueOf(productionCompanyID));
 

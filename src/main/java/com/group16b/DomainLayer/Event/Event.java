@@ -28,6 +28,7 @@ public class Event {
 	private double price;
 	private double rating;
 	private final int ownerId;
+	private final String ownerEmail;
 
 	private long version;
 
@@ -52,9 +53,33 @@ public class Event {
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;
 		this.version = 0;
+		this.ownerEmail = null; //TODO - WE NOW USE EMAIL TO IDENTIFY USERS
 	}
 
-	public int getEventID() {
+	public Event(EventRecord eventRecord, String ownerEmail) {
+		this.eventID = IDCounter++;
+		this.venueID = eventRecord.venueID();
+		validateName(eventRecord.name());
+		this.name = eventRecord.name();
+		validateDates(eventRecord.startTime(), eventRecord.endTime());
+		this.startTime = eventRecord.startTime();
+		this.endTime = eventRecord.endTime();
+		validateArtist(eventRecord.artist());
+		this.artist = eventRecord.artist();
+		validateCategory(eventRecord.category());
+		this.category = eventRecord.category();
+		this.productionCompanyID = eventRecord.pcID();
+		this.discountPolicy = new HashSet<>();
+		this.purchasePolicy = new HashSet<>();
+		validatePrice(eventRecord.price());
+		this.price = eventRecord.price();
+		validateRating(eventRecord.rating());
+		this.rating = eventRecord.rating();
+		this.ownerId = -1; //TODO - WE NOW USE EMAIL TO IDENTIFY USERS
+		this.ownerEmail = ownerEmail;
+	}
+
+    public int getEventID() {
 		return eventID;
 	}
 

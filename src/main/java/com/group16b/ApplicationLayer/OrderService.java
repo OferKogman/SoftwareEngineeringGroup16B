@@ -52,7 +52,7 @@ public class OrderService {
 		this.productionCompanyRepo=productionCompanyRepo;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
+    public Result<List<TicketDTO>> CompleteActiveOrder(String userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
 		logger.info("UserService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
 		/*
 			1. System - check active order status.
@@ -100,7 +100,7 @@ public class OrderService {
 
 			// 3. System - charges the user for the designed price.
 			logger.info("UserService.CompleteActiveOrder: user {} is attempting to pay {} for order {}", userId, price, orderID);
-			User user = userRepo.getUserByID(userId);
+			User user = userRepo.findByID(userId);
 			if (user == null) {
 				logger.error("UserService.CompleteActiveOrder: User {} not found while attempting to complete order {}", userId, orderID);
 				return Result.makeFail("User not found");
@@ -186,8 +186,8 @@ public class OrderService {
                 logger.warn("Only user can get order history.");
                 return Result.makeFail("Only user can get order history.");
             }
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepo.getUserByID(userID);
+			String userID=String.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepo.findByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);
 				return Result.makeFail("User not found.");

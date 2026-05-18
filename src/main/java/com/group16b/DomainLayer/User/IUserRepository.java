@@ -7,9 +7,5 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 
 public interface IUserRepository extends IRepository<User> {
 
-	User getUserByID(int userID);
-
-	void deleteUser(int userID);
-
-	boolean userExists(int userID);
+	boolean userExists(String userEmail);
 }

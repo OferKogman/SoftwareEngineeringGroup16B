@@ -53,7 +53,7 @@ public class VenueEventConfigService {
                 return Result.makeFail("Authentication failed. Please log in again.");    
             }
 
-            int userID = Integer.valueOf(authService.extractSubjectFromToken(sessionToken));
+            String userID = String.valueOf(authService.extractSubjectFromToken(sessionToken));
 
             Event targetEvent = eventRepository.findByID(String.valueOf(eventID));
             if (targetEvent.isActiveEvent()) {
@@ -62,7 +62,7 @@ public class VenueEventConfigService {
 
             ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
 
-            User actionUser = userRepository.getUserByID(userID);
+            User actionUser = userRepository.findByID(userID);
             if (actionUser == null ) {
                 logger.warn("Config failed: User {} not found.", userID);
                 return Result.makeFail("User not found.");

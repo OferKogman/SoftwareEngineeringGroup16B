@@ -67,6 +67,7 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 			if (newVersion != currentVersion) {
 				throw new IllegalArgumentException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
 			}
+			systemAdmin.setVersion(systemAdmin.getVersion() + 1);
 			existingAdmin.updateAdmin(systemAdmin);
 			systemAdminsByUsername.put(systemAdmin.getUsername(), existingAdmin);
 			systemAdminsById.put(systemAdmin.getId(), existingAdmin);

@@ -33,31 +33,31 @@ public class CompanyHierarchyService {
 		this.productionCompanyRepository=productionCompanyRepository;
 	}
 
-    public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
+    public Result<Boolean> assignOwnerToCompany(int companyID, String targetEmail, String sessionToken) {
 		try{
 			//auth
-			logger.info("Verifying session token for Owner assignment of user {} to company {}.", targetID, companyID);
+			logger.info("Verifying session token for Owner assignment of user {} to company {}.", targetEmail, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for Owner assignment of user {} to company {}.", targetID, companyID);
+				logger.warn("Invalid session token provided for Owner assignment of user {} to company {}.", targetEmail, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
 				logger.warn("Only USERS are allowed to assign owner.");
 				return Result.makeFail("Only signed-in users are allowed to assign owners. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 			logger.info("Session token verified successfully.");
 
-			logger.info("attempting to retrieve target User {}",targetID);
-			userRepository.getUserByID(targetID);
+			logger.info("attempting to retrieve target User {}",targetEmail);
+			userRepository.findByID(targetEmail);
 
 			logger.info("attempting to retrieve production company {}", companyID);
 			ProductionCompany company= productionCompanyRepository.findByID(String.valueOf(companyID));
 
-			logger.info("Attempting to send owner invite to user {} by user {} in company {}",targetID,userID,companyID);
-			company.AssignOwner(userID, targetID);
-			logger.info("user {} Succefully invited target {} to be owner in company {}",userID,targetID,companyID);
+			logger.info("Attempting to send owner invite to user {} by user {} in company {}",targetEmail,userID,companyID);
+			company.AssignOwner(userID, targetEmail);
+			logger.info("user {} Succefully invited target {} to be owner in company {}",userID,targetEmail,companyID);
 
 			logger.info("attempting to save changed in production company {}",companyID);
 			productionCompanyRepository.save(company);
@@ -85,31 +85,31 @@ public class CompanyHierarchyService {
 	}
 
 	
-	public Result<Boolean> assignManagerToCompany(int companyID, int targetID, Set<ManagerPermissions> permissions, String sessionToken) {
+	public Result<Boolean> assignManagerToCompany(int companyID, String targetEmail, Set<ManagerPermissions> permissions, String sessionToken) {
 		try{
 			//auth
-			logger.info("Verifying session token for manager assignment of user {} to company {}.", targetID, companyID);
+			logger.info("Verifying session token for manager assignment of user {} to company {}.", targetEmail, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for manager assignment of user {} to company {}.", targetID, companyID);
+				logger.warn("Invalid session token provided for manager assignment of user {} to company {}.", targetEmail, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
 				logger.warn("Only USERS are allowed to assign manager.");
 				return Result.makeFail("Only signed-in users are allowed to assign managers. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 			logger.info("Session token verified successfully.");
 
-			logger.info("attempting to retrieve target User {}",targetID);
-			userRepository.getUserByID(targetID);
+			logger.info("attempting to retrieve target User {}",targetEmail);
+			userRepository.findByID(targetEmail);
 
 			logger.info("attempting to retrieve production company {}", companyID);
 			ProductionCompany company= productionCompanyRepository.findByID(String.valueOf(companyID));
 
-			logger.info("Attempting to send manager invite to user {} by user {} in company {}",targetID,userID,companyID);
-			company.AssignManager(userID, targetID,permissions);
-			logger.info("user {} Succefully invited target {} to be manager in company {}",userID,targetID,companyID);
+			logger.info("Attempting to send manager invite to user {} by user {} in company {}",targetEmail,userID,companyID);
+			company.AssignManager(userID, targetEmail,permissions);
+			logger.info("user {} Succefully invited target {} to be manager in company {}",userID,targetEmail,companyID);
 
 			logger.info("attempting to save changed in production company {}",companyID);
 			productionCompanyRepository.save(company);
@@ -137,7 +137,7 @@ public class CompanyHierarchyService {
 	}
 
 
-	public Result<Boolean> acceptInviteToCompany(int companyID, int assignerID, String sessionToken) {
+	public Result<Boolean> acceptInviteToCompany(int companyID, String assignerID, String sessionToken) {
 		try {
 			//auth
 			logger.info("Verifying session token for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
@@ -149,13 +149,13 @@ public class CompanyHierarchyService {
 				logger.warn("Only USERS are allowed to accept invite.");
 				return Result.makeFail("Only signed-in users are allowed to accept invites. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 
 			logger.info("Session token verified successfully.");
 
 			logger.info("ensuring assigner {} exists for accept invite",assignerID);
-			userRepository.getUserByID(assignerID);
+			userRepository.findByID(assignerID);
 
 			logger.info("trying to retrieve company {} for accept invite",companyID);
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
@@ -191,7 +191,7 @@ public class CompanyHierarchyService {
 		}  
 	}
 
-	public Result<Boolean> rejectInviteToCompany( int companyID, int assignerID, String sessionToken) {
+	public Result<Boolean> rejectInviteToCompany( int companyID, String assignerID, String sessionToken) {
 		try {
 			//auth
 			logger.info("Verifying session token for rejection invite assignment to company {} by assigner {}.", companyID, assignerID);
@@ -203,13 +203,13 @@ public class CompanyHierarchyService {
 				logger.warn("Only USERS are allowed to reject invite.");
 				return Result.makeFail("Only signed-in users are allowed to reject invites. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 
 			logger.info("Session token verified successfully.");
 
 			logger.info("ensuring assigner {} exists for reject invite",assignerID);
-			userRepository.getUserByID(assignerID);
+			userRepository.findByID(assignerID);
 
 			logger.info("trying to retrieve company {} for reject invite",companyID);
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
@@ -257,8 +257,8 @@ public class CompanyHierarchyService {
 				logger.warn("Only USERS are allowed to Forfeit ownership.");
 				return Result.makeFail("Only signed-in users are allowed to Forfeit ownership. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 
 			logger.info("Session token verified successfully.");
 
@@ -296,7 +296,7 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-	public Result<Boolean> removeOwnerManager(int targetID, int companyID, String sessionToken) {
+	public Result<Boolean> removeOwnerManager(String targetID, int companyID, String sessionToken) {
 		try {
 			//auth
 			logger.info("Verifying session token for remove membership in company {}.", companyID);
@@ -308,13 +308,13 @@ public class CompanyHierarchyService {
 				logger.warn("Only USERS are allowed to  remove membership.");
 				return Result.makeFail("Only signed-in users are allowed to  remove membership. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 
 			logger.info("Session token verified successfully.");
 
 			logger.info("ensuring target user {} exists",targetID);
-			userRepository.getUserByID(targetID);
+			userRepository.findByID(targetID);
 
 			logger.info("trying to retrieve company {} for remove membership of target {} by user {}",companyID, targetID,userID);
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
@@ -350,7 +350,7 @@ public class CompanyHierarchyService {
 		}
 	}
 
-	public Result<Boolean> changeManagerPermission(int targetID, int companyID, Set<ManagerPermissions> newPermissions, String sessionToken) {
+	public Result<Boolean> changeManagerPermission(String targetID, int companyID, Set<ManagerPermissions> newPermissions, String sessionToken) {
 		try {
 			//auth
 			logger.info("Verifying session token for update manager permissions of target {} in company {}.",targetID, companyID);
@@ -362,13 +362,13 @@ public class CompanyHierarchyService {
 				logger.warn("Only USERS are allowed to update manager permissions.");
 				return Result.makeFail("Only signed-in users are allowed to update manager permissions. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 
 			logger.info("Session token verified successfully.");
 
 			logger.info("ensuring target user {} exists",targetID);
-			userRepository.getUserByID(targetID);
+			userRepository.findByID(targetID);
 
 			logger.info("trying to retrieve company {} for update manager permissions of target {} by user {}",companyID, targetID,userID);
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
@@ -416,8 +416,8 @@ public class CompanyHierarchyService {
 				logger.warn("Only USERS are allowed to get hierarchy tree of a company.");
 				return Result.makeFail("Only signed-in users are allowed to get hierarchy tree of a company. Please use a user account.");
 			}
-			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.getUserByID(userID);
+			String userID=String.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+			userRepository.findByID(userID);
 
 			logger.info("Session token verified successfully.");
 

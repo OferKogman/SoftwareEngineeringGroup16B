@@ -104,7 +104,7 @@ public class AdminManagementService {
         }
     }
 
-    public Result<List<OrderDTO>> viewPurchesHistoryByUser(String sTocken, int userId){
+    public Result<List<OrderDTO>> viewPurchesHistoryByUser(String sTocken, String userId){
         try {
             logger.info("AdminManagementService.viewPurchesHistoryByUser: Retrieving completed orders for specific user");
 
@@ -175,9 +175,9 @@ public class AdminManagementService {
 
     }
 
-    public Result<String> removeUser(int userID, String sessionToken){
+    public Result<String> removeUser(String userEmail, String sessionToken){
         try {
-            logger.info("Attempting to remove the user subscription of user ID {}", userID);
+            logger.info("Attempting to remove the user subscription of user ID {}", userEmail);
             if (!authenticationService.validateToken(sessionToken)  ) {
                 logger.error("Invalid token");
                 return Result.makeFail("Invalid token");
@@ -188,12 +188,12 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
             
-            if(!userRepository.userExists(userID)){
-                logger.error("user to remove doesn't exist! given ID: {}", userID);
+            if(!userRepository.userExists(userEmail)){
+                logger.error("user to remove doesn't exist! given ID: {}", userEmail);
                 return Result.makeFail("Invalid ID");    
             }
 
-            List<Integer> companyIDs = productionCompanyRepo.getAllUserComapnies(String.valueOf(userID));
+            List<Integer> companyIDs = productionCompanyRepo.getAllUserComapnies(userEmail);
             for (Integer companyID : companyIDs)
             {
                 boolean success = false;
@@ -203,32 +203,32 @@ public class AdminManagementService {
                     try
                     {
                         ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(companyID));
-                        if (company.isFouder(userID))
+                        if (company.isFouder(userEmail))
                         {
                             closeProductionCompany(companyID, sessionToken);
                             // company no longer exists after closure
                             success = true;
                             continue;
                         }
-                        company.adminRemoveUser(userID);
+                        company.adminRemoveUser(userEmail); //TODO WE NOW USE EMAIL AS USER ID, CHECK THIS DOESN'T CAUSE PROBLEMS
                         productionCompanyRepo.save(company);
                         success = true;
                     }
                     catch (IllegalArgumentException e)
                     {
-                        logger.warn("Company {} not found while removing user {}",companyID,userID);
+                        logger.warn("Company {} not found while removing user {}",companyID,userEmail);
                         // stop retrying, company is gone
                         success = true;
                     }
                     catch (OptimisticLockingFailureException e)
                     {
-                        logger.warn("Optimistic lock conflict while removing user {} from company {}. Retrying...",userID,companyID);
+                        logger.warn("Optimistic lock conflict while removing user {} from company {}. Retrying...",userEmail,companyID);
                     }
                 }
             }
-            userRepository.deleteUser(userID);
+            userRepository.delete(userEmail);
             
-            return Result.makeOk("User with ID: " + userID + ", , has been removed");
+            return Result.makeOk("User with ID: " + userEmail + ", , has been removed");
         } catch (Exception e) {
             logger.error("System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while saving the layout.");

@@ -6,20 +6,17 @@ import java.security.MessageDigest;
 public class User {
 	private static int idCounter = 1;
 
-	private int userID;
 	private String email;
 	private String password;
 	private long version;
 
 	public User(String email, String password) {
-		this.userID = idCounter++;
 		this.email = email;
 		setPassword(password);
 		this.version = 1;
 	}
 
 	public User(User other) {
-		this.userID = other.userID;
 		this.email = other.email;
 		this.password = other.password;
 		this.version = other.version;
@@ -27,10 +24,6 @@ public class User {
 
 	public String getEmail() {
 		return email;
-	}
-	public int getUserID()
-	{
-		return userID;
 	}
 	public long getVersion() {
 		return version;
