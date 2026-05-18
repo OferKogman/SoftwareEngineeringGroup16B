@@ -41,42 +41,56 @@ public class ProductionCompanyService {
         this.productionRepo=productionRepo;
     }
 
-    public Result<List<OrderDTO>> viewSalesHistory(String sTocken, int productionCompanyID){
-    try {
+    public Result<List<OrderDTO>> viewSalesHistory(String sessionToken, int productionCompanyID){
+        try {
             logger.info("ProductionCompanyService.viewSalesHistory: Retrieving sales history for specific company");
 
             // validate production company token (this is a placeholder, implement actual validation logic)
-            if (!authenticationService.validateToken(sTocken)  ) {
-                logger.error("ProductionCompanyService.viewSalesHistory: Invalid token");
+            if (!authenticationService.validateToken(sessionToken)  ) {
+                logger.warn("ProductionCompanyService.viewSalesHistory: Invalid token");
                 return Result.makeFail("Invalid token");
             }
-            if (!authenticationService.isUserToken(sTocken)) {
-                logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
+            if (!authenticationService.isUserToken(sessionToken)) {
+                logger.warn("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-           int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sTocken));
-		    User user = userRepo.getUserByID(userID);
-
+            int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+		    userRepo.getUserByID(userID);
+            logger.info("ProductionCompanyService.viewSalesHistory: Session token verified successfully.");
+            
+            logger.info("ProductionCompanyService.viewSalesHistory: retrieving company {}",productionCompanyID);
             ProductionCompany company=productionRepo.findByID(String.valueOf(productionCompanyID));
 
+            logger.info("ProductionCompanyService.viewSalesHistory: validating user {} have permissions in company {}",userID,productionCompanyID);
             company.validateUserPermissions(userID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
-            List<Order> orders = orderRepo.getAllCompletedOrders();
-            List<Order> filtered = orders.stream()
-            .filter(order -> {
-                int eventID = order.getEventId();
-                Event event = eventRepo.findByID(String.valueOf(eventID));
-                return event != null && event.getEventProductionCompanyID() == productionCompanyID;
-                }).toList();
-            List<OrderDTO> orderDTOs =filtered.stream()
-                .map(OrderDTO::new)
-                .collect(Collectors.toList());
+            logger.info("ProductionCompanyService.viewSalesHistory: retrieving all events for company {}",productionCompanyID);
+            Set<Integer> companyEventIDs =
+                eventRepo.searchEvents(
+                    null, null, null, null,
+                    null, null,
+                    null, null,
+                    null,
+                    List.of(productionCompanyID)
+                ).stream()
+                .map(Event::getEventID)
+                .collect(Collectors.toSet());
+
+            logger.info("ProductionCompanyService.viewSalesHistory: collecting all orders for the company {} events",productionCompanyID);
+            List<OrderDTO> orderDTOs =
+                orderRepo.getAllCompletedOrders().stream()
+                    .filter(order -> companyEventIDs.contains(order.getEventId()))
+                    .map(OrderDTO::new)
+                    .toList();
+
+
+            logger.info("ProductionCompanyService.viewSalesHistory: succesfully collected all orders.");
             return Result.makeOk(orderDTOs);
         } catch (IllegalArgumentException e) {
-            logger.error("ProductionCompanyService.viewSalesHistory: Permission error while retrieving sales history", e);
-            return Result.makeFail("Permission error: " + e.getMessage());
+            logger.warn("ProductionCompanyService.viewSalesHistory: Illegal Argument Error: ", e);
+            return Result.makeFail(e.getMessage());
         } catch (Exception e) {
-            logger.error("ProductionCompanyService.viewSalesHistory: An unexpected error occurred while retrieving sales history", e);
+            logger.error("ProductionCompanyService.viewSalesHistory: An unexpected error occurred: ", e);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
