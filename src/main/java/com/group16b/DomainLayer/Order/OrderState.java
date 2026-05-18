@@ -3,10 +3,10 @@ package com.group16b.DomainLayer.Order;
 import java.util.List;
 
 public interface OrderState {
-
 	List<String> getTickets();
 	void setTickets(List<String> tickets);
 	CompletedOrder completeOrder();
 	boolean isActive();
+	OrderState copy();
 
 }

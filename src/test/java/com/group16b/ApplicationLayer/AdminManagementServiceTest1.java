@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.mock;
@@ -25,7 +24,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
@@ -48,7 +47,7 @@ public class AdminManagementServiceTest1 {
     private IEventRepository mockEventRepository;
     private IVenueRepository mockVenueRepository;
     private IUserRepository mockUserRepository;
-    private IOrderRepository mockOrderRepository;
+    private IRepository<Order> mockOrderRepository;
     private IProductionCompanyRepository mockProductonCompanyRepository;
 
     private Location location1;
@@ -68,7 +67,7 @@ public class AdminManagementServiceTest1 {
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
-        mockOrderRepository = mock(IOrderRepository.class); 
+        mockOrderRepository = mock(IRepository.class); 
         mockProductonCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
 
         adminManagementService = new AdminManagementService(mockTokenService,mockProductonCompanyRepository);
@@ -131,7 +130,7 @@ public class AdminManagementServiceTest1 {
         List<Order> databaseOrders = new ArrayList<>();
         databaseOrders.add(completedOrder);
         
-        when(mockOrderRepository.getAllCompletedOrders()).thenReturn(databaseOrders);
+        when(mockOrderRepository.getAll()).thenReturn(databaseOrders);
         
         Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
         
@@ -149,7 +148,7 @@ public class AdminManagementServiceTest1 {
         Order order2 = new Order("segment2", 2, 2.0, eventID, String.valueOf(user.getUserID()));
         order2.CompleteOrder();
         
-        when(mockOrderRepository.getAllCompletedOrders()).thenReturn(List.of(order1, order2));
+        when(mockOrderRepository.getAll()).thenReturn(List.of(order1, order2));
         
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getUserID());
         
@@ -189,8 +188,7 @@ public class AdminManagementServiceTest1 {
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
         when(mockUserRepository.getUserByID(newUser.getUserID())).thenReturn(newUser);
-        when(mockOrderRepository.getOrdersBySubjectID(String.valueOf(newUser.getUserID()))).thenReturn(new ArrayList<>());
-        
+        when(mockOrderRepository.getAll()).thenReturn(new ArrayList<>());
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, newUser.getUserID());
         
         assertNotNull(history);

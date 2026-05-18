@@ -3,10 +3,12 @@ package com.group16b.InfrastructureLayer.MapDBs;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import org.springframework.dao.OptimisticLockingFailureException;
+
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 
-public class OrderRepositoryMapImpl implements IOrderRepository {
+public class OrderRepositoryMapImpl implements IRepository<Order> {
 	private final ConcurrentHashMap<String, Order> orders;
 	private final static OrderRepositoryMapImpl instance = new OrderRepositoryMapImpl();
 
@@ -21,43 +23,69 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 
 
 	@Override
-	public boolean addOrder(Order order) {
-		if (this.orders.containsKey(order.getOrderId())) {
-			return false;
+	public synchronized void save(Order order) {
+		// INSERT
+		if (!this.orders.containsKey(order.getOrderId())) {
+			Order inserted = new Order(order);
+			this.orders.put(order.getOrderId(), inserted);
 		}
-		this.orders.put(order.getOrderId(), order);
-		return true;
+		else{
+			Order current = this.orders.get(order.getOrderId());
+			if(current.getVersion() != order.getVersion()) {
+					throw new OptimisticLockingFailureException(
+						"Order " + order.getOrderId() +
+						" version mismatch. Expected " +
+						order.getVersion() +
+						" but found " +
+						current.getVersion()
+					);
+				}
+			Order updated = new Order(order);
+			updated.setVersion(order.getVersion() + 1);
+			this.orders.put(order.getOrderId(), updated);
+		}
+		
+
 	}
 
+
+
+
+
+
+
+
+
+
+
     @Override
-	public List<Order> getAllCompletedOrders() {
-		return this.orders.values().stream()
-				.filter(order -> !order.isActive())
-				.toList();
-	}
+	public List<Order> getAll() {
+		return this.orders.values().stream().map(Order::new).toList();
+	} //.values().stream().filter(order -> !order.isActive()).toList(); need to cheack everywhere the assumption if active order
 
 	
 
 	@Override
-	public boolean cancelOrder(String orderId) {
+	public synchronized void delete(String orderId) {
 		if (this.orders.containsKey(orderId)) {
+			Order current = this.orders.get(orderId);
+			if(!current.isActive()){
+				throw new UnsupportedOperationException("Cannot delete a completed order");
+			}
 			this.orders.remove(orderId);
-			return true;
 		}
-		return false;
+		else{
+			throw new IllegalArgumentException("Order with ID " + orderId + " not found");
+		}
 	}
 
 	@Override
-	public Order getOrder(String orderId) {
-		return this.orders.get(orderId);
+	public Order findByID(String orderId) {
+		if(this.orders.containsKey(orderId)) {
+			return new Order(this.orders.get(orderId));
+		}
+		else {
+			throw new IllegalArgumentException("Order with ID " + orderId + " not found");
+		}
 	}
-
-	@Override
-	public List<Order> getOrdersBySubjectID(String subjectID) {
-		return this.orders.values().stream()
-				.filter(order -> order.getSubjectId().equals(subjectID))
-				.toList();
-	}
-
-
 }

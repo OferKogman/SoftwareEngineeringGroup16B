@@ -1,9 +1,6 @@
 package com.group16b.ApplicationLayer;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,8 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -24,20 +19,20 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
+import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 
 public class ProductionCompanyServiceTests {
 
     private ProductionCompanyService productionCompanyService;
     private IAuthenticationService mockAuthService;
-    private IOrderRepository mockOrderRepo;
+    private IRepository<Order> mockOrderRepo;
     private IEventRepository mockEventRepo;
     private IUserRepository mockUserRepo;
     private IProductionCompanyRepository mockProductionCompanyRepository;
@@ -52,7 +47,7 @@ public class ProductionCompanyServiceTests {
     @BeforeEach
     void setUp() throws Exception {
         mockAuthService = mock(IAuthenticationService.class);
-        mockOrderRepo = mock(IOrderRepository.class);
+        mockOrderRepo = mock(IRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockUserRepo = mock(IUserRepository.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
@@ -132,7 +127,7 @@ public class ProductionCompanyServiceTests {
         when(unrelatedOrder.getTotalOrderprice())
             .thenReturn(1000D);
 
-        when(mockOrderRepo.getAllCompletedOrders())
+        when(mockOrderRepo.getAll())
             .thenReturn(List.of(
                 matchingOrder,
                 unrelatedOrder
@@ -176,7 +171,7 @@ public class ProductionCompanyServiceTests {
         when(order2.getEventId()).thenReturn(102);
         when(order2.getTotalOrderprice()).thenReturn(250D);
 
-        when(mockOrderRepo.getAllCompletedOrders())
+        when(mockOrderRepo.getAll())
             .thenReturn(List.of(order1, order2));
 
         Result<Double> result =
@@ -209,7 +204,7 @@ public class ProductionCompanyServiceTests {
 
         when(mockOrder.getOrderType()).thenReturn(OrderType.FIELD); // or whatever exists
 
-        when(mockOrderRepo.getAllCompletedOrders())
+        when(mockOrderRepo.getAll())
             .thenReturn(List.of(mockOrder));
 
         Result<List<OrderDTO>> result =
@@ -225,7 +220,7 @@ public class ProductionCompanyServiceTests {
         List<Order> orderList = new CopyOnWriteArrayList<>();
         orderList.add(mockOrder);
         
-        when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
+        when(mockOrderRepo.getAll()).thenReturn(orderList);
         when(mockOrder.getEventId()).thenReturn(50);
         
         when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(null); 
@@ -244,7 +239,7 @@ public class ProductionCompanyServiceTests {
         List<Order> orderList = new CopyOnWriteArrayList<>();
         orderList.add(mockOrder);
     
-        when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
+        when(mockOrderRepo.getAll()).thenReturn(orderList);
         when(mockOrder.getEventId()).thenReturn(50);
         when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(mockEvent);
         
@@ -279,7 +274,7 @@ public class ProductionCompanyServiceTests {
         // required by DTO (avoid previous crash)
         when(mockOrder.getOrderType()).thenReturn(OrderType.FIELD);
 
-        when(mockOrderRepo.getAllCompletedOrders())
+        when(mockOrderRepo.getAll())
             .thenReturn(List.of(mockOrder));
 
         // ---------- CALL ----------

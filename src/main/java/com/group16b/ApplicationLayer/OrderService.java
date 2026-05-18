@@ -15,7 +15,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -40,7 +40,7 @@ public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 	private final IAuthenticationService authenticationService;
     private final ITicketGateway ticketGateway = new TicketGateway();
-	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
@@ -64,7 +64,7 @@ public class OrderService {
 		*/
 		try {
 				// 1. System - check active order status.
-			Order order = orderRepo.getOrder(orderID);
+			Order order = orderRepo.findByID(orderID);
 			if (order == null) {
 				logger.error("UserService.CompleteActiveOrder: Order {} not found for user {}", orderID, userId);
 				return Result.makeFail("Order not found");
@@ -142,12 +142,12 @@ public class OrderService {
 	} 
 
 	private void _cancelOrder(String orderID) {
-		Order order = orderRepo.getOrder(orderID);
+		Order order = orderRepo.findByID(orderID);
 		if (order == null) {
 			logger.error("UserService._cancelOrder: Order {} not found while attempting to cancel order {}", orderID, orderID);
 			return;
 		}
-		orderRepo.cancelOrder(orderID);
+		orderRepo.delete(orderID);
 		int eventID = order.getEventId();
 		Event event = eventRepo.findByID(String.valueOf(eventID));
 		if (event == null) {
@@ -196,7 +196,9 @@ public class OrderService {
 
 			//get orders
 			logger.info("Retrieving orders for user {0}.", userID);
-			List<Order> orders = orderRepo.getOrdersBySubjectID(String.valueOf(userID));
+			List<Order> orders = orderRepo.getAll().stream()
+				.filter(order -> order.getSubjectId().equals(String.valueOf(userID)))
+				.toList();
 			List<OrderDTO> orderDTOs = new ArrayList<>();
 			for (Order order : orders) {
 				OrderDTO orderDTO = new OrderDTO(order); 
@@ -240,7 +242,7 @@ public class OrderService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
 
             // get order seats. 
-            Order order = orderRepo.getOrder(orderId);
+            Order order = orderRepo.findByID(orderId);
             if (order == null) {
                 logger.error("Order {} not found for changing seats.", orderId);
                 return Result.makeFail("Order not found");
@@ -337,7 +339,7 @@ public class OrderService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
 
             // get order seats. 
-            Order order = orderRepo.getOrder(orderId);
+            Order order = orderRepo.findByID(orderId);
             if (order == null) {
                 logger.error("Order {} not found for changing seats.", orderId);
                 return Result.makeFail("Order not found");
@@ -437,7 +439,7 @@ public class OrderService {
 	public Result<Boolean> cancelOrder(String orderId) { // to call when order is expired
 		try {
 			logger.info("Attempting to cancel order {}.", orderId);
-			Order order = orderRepo.getOrder(orderId);
+			Order order = orderRepo.findByID(orderId);
 			if (order == null) {
 				logger.error("Order {} not found for cancellation.", orderId);
 				return Result.makeFail("Order not found");

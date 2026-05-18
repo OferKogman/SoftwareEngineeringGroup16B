@@ -8,7 +8,8 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -22,7 +23,7 @@ import io.jsonwebtoken.JwtException;
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();

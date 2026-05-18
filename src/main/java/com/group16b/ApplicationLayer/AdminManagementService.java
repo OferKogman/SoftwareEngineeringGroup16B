@@ -1,8 +1,6 @@
 package com.group16b.ApplicationLayer;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
@@ -15,14 +13,12 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
@@ -32,7 +28,7 @@ public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private IProductionCompanyRepository productionCompanyRepo;
-    private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo = new SystemAdminRepositoryMapImpl();
@@ -57,7 +53,7 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
 
-            List<Order> orders = orderRepo.getAllCompletedOrders();
+            List<Order> orders = orderRepo.getAll();
             List<OrderDTO> orderDTOs = orders.stream()
                     .map(order -> new OrderDTO(order))
                     .collect(Collectors.toList());
@@ -82,7 +78,7 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
 
-            List<Order> orders = orderRepo.getAllCompletedOrders();
+            List<Order> orders = orderRepo.getAll();
             for (Order order : orders) {
                 Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
                 if (event == null) {
@@ -118,7 +114,7 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
 
-            List<Order> orders = orderRepo.getAllCompletedOrders();
+            List<Order> orders = orderRepo.getAll();
             orders = orders.stream()
                     .filter(order -> order.isBelongsToSubject(userId + ""))
                     .collect(Collectors.toList());
