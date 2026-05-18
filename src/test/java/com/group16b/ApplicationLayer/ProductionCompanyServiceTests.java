@@ -299,4 +299,29 @@ public class ProductionCompanyServiceTests {
 
         assertFalse(result.isSuccess());
     }
+
+    @Test
+    void testDisplayTotalRevenue_PermissionDenied_Fail() {
+        doThrow(new IllegalArgumentException("Not allowed"))
+            .when(mockCompany)
+            .validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
+
+        Result<Double> result =
+            productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("Not allowed"));
+    }
+
+    @Test
+    void testDisplayTotalRevenue_CompanyRepoThrows_Fail() {
+        doThrow(new RuntimeException("DB error"))
+            .when(mockProductionCompanyRepository)
+            .findByID(String.valueOf(COMPANY_ID));
+
+        Result<Double> result =
+            productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
+    }
 }
