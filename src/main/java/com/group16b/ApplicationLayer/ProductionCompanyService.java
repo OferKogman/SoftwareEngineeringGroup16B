@@ -62,13 +62,10 @@ public class ProductionCompanyService {
 
             logger.info("ProductionCompanyService.viewSalesHistory: succesfully collected all orders.");
             return Result.makeOk(orderDTOs);
-        }
-        catch(AuthException e)
-        {
+        }catch(AuthException e){
             logger.warn("ProductionCompanyService.viewSalesHistory: Auth error: "+e.getMessage());
             return Result.makeFail(e.getMessage());
-        } 
-        catch (IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             logger.warn("ProductionCompanyService.viewSalesHistory: Illegal Argument Error: ", e);
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
