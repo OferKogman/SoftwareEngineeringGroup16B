@@ -2,7 +2,6 @@ package com.group16b.ApplicationLayer;
 
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +25,6 @@ public class CompanyHierarchyService {
     private final IAuthenticationService authenticationService;
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final IProductionCompanyRepository productionCompanyRepository;
-	private final ConcurrentHashMap<Integer, Object> companyLocks = new ConcurrentHashMap<>();
 
     public CompanyHierarchyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
 		this.authenticationService = authenticationService;
@@ -36,50 +34,50 @@ public class CompanyHierarchyService {
     public Result<Boolean> assignOwnerToCompany(int companyID, int targetID, String sessionToken) {
 		try{
 			//auth
-			logger.info("Verifying session token for Owner assignment of user {} to company {}.", targetID, companyID);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: Verifying session token for Owner assignment of user {} to company {}.", targetID, companyID);
 			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for Owner assignment of user {} to company {}.", targetID, companyID);
+				logger.warn("CompanyHierarchyService.assignOwnerToCompany: Invalid session token provided for Owner assignment of user {} to company {}.", targetID, companyID);
 				return Result.makeFail("Invalid session token.");
 			}
 			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("Only USERS are allowed to assign owner.");
+				logger.warn("CompanyHierarchyService.assignOwnerToCompany: Only USERS are allowed to assign owner.");
 				return Result.makeFail("Only signed-in users are allowed to assign owners. Please use a user account.");
 			}
 			int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 			userRepository.getUserByID(userID);
-			logger.info("Session token verified successfully.");
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: Session token verified successfully.");
 
-			logger.info("attempting to retrieve target User {}",targetID);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: attempting to retrieve target User {}",targetID);
 			userRepository.getUserByID(targetID);
 
-			logger.info("attempting to retrieve production company {}", companyID);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: attempting to retrieve production company {}", companyID);
 			ProductionCompany company= productionCompanyRepository.findByID(String.valueOf(companyID));
 
-			logger.info("Attempting to send owner invite to user {} by user {} in company {}",targetID,userID,companyID);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: Attempting to send owner invite to user {} by user {} in company {}",targetID,userID,companyID);
 			company.AssignOwner(userID, targetID);
-			logger.info("user {} Succefully invited target {} to be owner in company {}",userID,targetID,companyID);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: user {} Succefully invited target {} to be owner in company {}",userID,targetID,companyID);
 
-			logger.info("attempting to save changed in production company {}",companyID);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: attempting to save changed in production company {}",companyID);
 			productionCompanyRepository.save(company);
-
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: Successfuly saved the {} company",companyID);
 			return Result.makeOk(true);
 		}
 		catch(IllegalArgumentException e)
 		{
-			logger.warn("Runtime error during assignOwner: "+e.getMessage());
+			logger.warn("CompanyHierarchyService.assignOwnerToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
 		catch(OptimisticLockingFailureException e)
 		{
-			logger.warn("Optimistic locking Failure in assign owner: "+e.getMessage());
+			logger.warn("CompanyHierarchyService.assignOwnerToCompany: Optimistic locking Failure: "+e.getMessage());
 			return Result.makeFail("Company was updated by another operation. Please retry.");
 		}
 		catch (JwtException e) {
-			logger.error("JWT authentication error during inviting owner: " + e.getMessage());
+			logger.error("CompanyHierarchyService.assignOwnerToCompany: JWT authentication error: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		}
 		catch (Exception e) {
-			logger.error("Unexpected error during inviting owner: " + e.getMessage());
+			logger.error("CompanyHierarchyService.assignOwnerToCompany: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}    
 	}
