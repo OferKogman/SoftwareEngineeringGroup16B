@@ -24,7 +24,7 @@ public class CompanyHierarchyService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final IAuthenticationService authenticationService;
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepository = new UserRepositoryMapImpl();
 	private final IProductionCompanyRepository productionCompanyRepository;
 	private final ConcurrentHashMap<Integer, Object> companyLocks = new ConcurrentHashMap<>();
 

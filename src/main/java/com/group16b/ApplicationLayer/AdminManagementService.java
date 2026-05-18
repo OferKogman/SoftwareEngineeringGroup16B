@@ -30,7 +30,7 @@ import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
-    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepository = new UserRepositoryMapImpl();
     private IProductionCompanyRepository productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();

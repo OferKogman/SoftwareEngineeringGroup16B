@@ -14,7 +14,7 @@ public class UserLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserLoginService.class);
 
-    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepository = new UserRepositoryMapImpl();
     private final IAuthenticationService tokenService;
 
     public UserLoginService(IAuthenticationService tokenService) {

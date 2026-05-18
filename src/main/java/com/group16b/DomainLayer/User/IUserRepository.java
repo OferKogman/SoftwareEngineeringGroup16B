@@ -3,15 +3,11 @@ package com.group16b.DomainLayer.User;
 import java.util.HashMap;
 import java.util.Map;
 
-public interface IUserRepository {
+import com.group16b.DomainLayer.Interfaces.IRepository;
+
+public interface IUserRepository extends IRepository<User> {
 
 	User getUserByID(int userID);
-
-	void registerUser(User user);
-
-	void addUser(User user);
-
-	void updateUser(User user);
 
 	void deleteUser(int userID);
 

@@ -32,7 +32,7 @@ public class ProductionCompanyService {
 
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-    private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepo = new UserRepositoryMapImpl();
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 

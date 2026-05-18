@@ -9,11 +9,20 @@ public class User {
 	private int userID;
 	private String email;
 	private String password;
+	private long version;
 
 	public User(String email, String password) {
 		this.userID = idCounter++;
 		this.email = email;
 		setPassword(password);
+		this.version = 1;
+	}
+
+	public User(User other) {
+		this.userID = other.userID;
+		this.email = other.email;
+		this.password = other.password;
+		this.version = other.version;
 	}
 
 	public String getEmail() {
@@ -22,6 +31,12 @@ public class User {
 	public int getUserID()
 	{
 		return userID;
+	}
+	public long getVersion() {
+		return version;
+	}
+	public void setVersion(long version) {
+		this.version = version;
 	}
 
 	private void setPassword(String newPassword) {
@@ -55,5 +70,11 @@ public class User {
 			return false;	
 		}
 	}
+
+    public void updateUser(User user) {
+		this.email = user.email;
+		this.password = user.password;
+		this.version = user.version;
+    }
 
 }

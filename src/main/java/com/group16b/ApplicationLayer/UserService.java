@@ -25,7 +25,7 @@ public class UserService {
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IUserRepository userRepository = new UserRepositoryMapImpl();
 	private final ITicketGateway ticketGateway;
 
 	private final IAuthenticationService authenticationService;
@@ -40,7 +40,7 @@ public class UserService {
 	public Result<UserDTO> registerUser(String email, String password) {
 		logger.info("Creating new User with email: " + email);
 		User newUser = new User(email, password);
-		userRepository.addUser(newUser);
+		userRepository.save(newUser);
 		return Result.makeOk(new UserDTO(newUser));
 	}
 
@@ -66,7 +66,7 @@ public class UserService {
 				// different from old password
 			try{
 			user.changePassword(oldPassword, newPassword);
-			userRepository.updateUser(user);
+			userRepository.save(user);
 			logger.info("Password changed successfully");
 			return Result.makeOk(true);
 			}
