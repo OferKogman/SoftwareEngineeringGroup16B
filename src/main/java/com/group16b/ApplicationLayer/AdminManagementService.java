@@ -193,8 +193,7 @@ public class AdminManagementService {
                 return Result.makeFail("Invalid ID");    
             }
 
-            List<Integer> companyIDs =
-            productionCompanyRepo.getAllUserComapnies(String.valueOf(userID));
+            List<Integer> companyIDs = productionCompanyRepo.getAllUserComapnies(String.valueOf(userID));
             for (Integer companyID : companyIDs)
             {
                 boolean success = false;

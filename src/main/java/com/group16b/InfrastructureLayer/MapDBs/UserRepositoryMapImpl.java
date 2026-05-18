@@ -22,12 +22,17 @@ public class UserRepositoryMapImpl implements IUserRepository {
 
 
 	public User getUserByID(int userID) {
-		return users.get(userID);
+		User user = users.get(userID);
+		return user != null ? new User(user) : null;
 	}
 
 
 	public void deleteUser(int userID) {
-		users.remove(userID);
+		User user = users.get(userID);
+		if (user != null) {
+			usersByEmail.remove(user.getEmail());
+			users.remove(userID);
+		}
 	}
 
 	public boolean userExists(int userID) {
