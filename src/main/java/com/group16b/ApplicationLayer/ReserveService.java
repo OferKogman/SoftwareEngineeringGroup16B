@@ -11,6 +11,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -20,7 +21,6 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -34,14 +34,15 @@ public class ReserveService {
 
     private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
-    private final IVirtualQueueRepository queueImp = VirtualQueueRepositoryMapImpl.getInstance();
+    private final IRepository<VirtualQueue> queueImp;
     private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepo;
     private final IAuthenticationService authenticationService;
 
-    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo) {
+    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepo;
+        this.queueImp = queueImp;
     }
 
     public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId, String sessionToken) {
@@ -81,9 +82,9 @@ public class ReserveService {
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
             logger.info("Moving queue forward");
-            q = queueImp.findVirtualQueueById(eventID);
+            q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.saveVirtualQueue(q);
+            queueImp.save(q);
             logger.info("check if user passed queue");
             if(!q.isUserPassedQueue(subjectID)){
                 logger.error("User did not pass the queue");
@@ -189,9 +190,9 @@ public class ReserveService {
             }
             //1. System - Checks user passed the queue.
             logger.info("Moving queue forward");
-            q = queueImp.findVirtualQueueById(eventID);
+            q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.saveVirtualQueue(q);
+            queueImp.save(q);
             logger.info("check if user passed queue");
             if(!q.isUserPassedQueue(subjectID)){
                 logger.error("User did not pass the queue");
@@ -308,9 +309,9 @@ public class ReserveService {
             lotteryPolicy.validateLotteryCode(lotteryCode);
 
             logger.info("Moving queue forward");
-            q = queueImp.findVirtualQueueById(eventID);
+            q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.saveVirtualQueue(q);
+            queueImp.save(q);
             logger.info("check if user passed queue");
             if(!q.isUserPassedQueue(subjectID)){
                 logger.error("User did not pass the queue");
@@ -428,9 +429,9 @@ public class ReserveService {
 
             //1. System - Checks user passed the queue.
             logger.info("Moving queue forward");
-            q = queueImp.findVirtualQueueById(eventID);
+            q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.saveVirtualQueue(q);
+            queueImp.save(q);
             logger.info("check if user passed queue");
             if(!q.isUserPassedQueue(subjectID)){
                 logger.error("User did not pass the queue");

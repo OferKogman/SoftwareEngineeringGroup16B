@@ -16,7 +16,6 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
     // secondary index
     private final ConcurrentHashMap<String, Integer> names =new ConcurrentHashMap<>();
     // protects consistency between maps
-    private final Object lock = new Object();
     public ProductionCompanyRepositoryMapImpl() {
     }
 
@@ -48,20 +47,17 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
     }
 
     @Override
-    public void delete(String ID) {
+    public synchronized void delete(String ID) {
         int id=parseID(ID);
 
-        synchronized (lock) {
-            ProductionCompany removed = companies.remove(id);
-            if(removed != null) {
-                names.remove(removed.getName());
-            }
+        ProductionCompany removed = companies.remove(id);
+        if(removed != null) {
+            names.remove(removed.getName());
         }
     }
 
     @Override
-    public void save(ProductionCompany company) {
-        synchronized (lock) {
+    public synchronized void save(ProductionCompany company) {
             int id = company.getProductionCompanyID();
             ProductionCompany current = companies.get(id);
 
@@ -104,7 +100,6 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
                 names.put(updated.getName(), id);
             }
             companies.put(id, updated);
-        }
     }
 
     public List<Integer> getAllUserComapnies(String user)
