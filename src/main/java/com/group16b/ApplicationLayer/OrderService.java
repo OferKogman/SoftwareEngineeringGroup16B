@@ -42,7 +42,7 @@ public class OrderService {
     private final ITicketGateway ticketGateway = new TicketGateway();
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
-	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepo;
 
@@ -148,7 +148,8 @@ public class OrderService {
 			return;
 		}
 		orderRepo.cancelOrder(orderID);
-		Event event = eventRepo.getEventByID(order.getEventId());
+		int eventID = order.getEventId();
+		Event event = eventRepo.findByID(String.valueOf(eventID));
 		if (event == null) {
 			logger.error("UserService._cancelOrder: Event {} not found while attempting to cancel order {}", order.getEventId(), orderID);
 			return;
@@ -266,7 +267,8 @@ public class OrderService {
             // remove intersection from old seats -> seatsToRemove
             List<String> seatsToRemove = removeFromList(oldSeats, intersection);
             // reserve new seatsToAdd
-            Event event = eventRepo.getEventByID(order.getEventId());
+			int eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
             if (event == null) {
                 return Result.makeFail("Event not found");
             }
@@ -278,7 +280,6 @@ public class OrderService {
             logger.info("Freeing old seats {} for order {}.", seatsToRemove, orderId);
             venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
 
-			int eventID = order.getEventId();
 			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
 			if (venue == null) {
 				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
@@ -360,7 +361,7 @@ public class OrderService {
                 logger.info("New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
                 return Result.makeOk(newSeatsNum);
             }
-            Event event = eventRepo.getEventByID(order.getEventId());
+            Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
             if (event == null) {
                 return Result.makeFail("Event not found");
             }
@@ -457,7 +458,7 @@ public class OrderService {
     }
 
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepo.getEventByID(eventID);
+        Event event = eventRepo.findByID(String.valueOf(eventID));
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
         Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
 
@@ -477,7 +478,7 @@ public class OrderService {
             return priceAfterDiscountPolicy;
     }
     private boolean validatePurchasePolicy(int eventID) {
-        Event event = eventRepo.getEventByID(eventID);
+        Event event = eventRepo.findByID(String.valueOf(eventID));
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
         Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
 

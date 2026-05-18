@@ -7,45 +7,47 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
+import org.springframework.dao.OptimisticLockingFailureException;
+
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 
 public class EventRepositoryMapImpl implements IEventRepository {
-	private final static EventRepositoryMapImpl instance = new EventRepositoryMapImpl();
 	private Map<Integer, Event> events = new TreeMap<>();
 
-	private EventRepositoryMapImpl() {
-	}
 
-	public static EventRepositoryMapImpl getInstance() {
-		return instance;
+	public EventRepositoryMapImpl() {
 	}
 
 	@Override
-	public void addEvent(Event e) {
+	public synchronized void save(Event e) {
 		if (e == null) {
 			throw new IllegalArgumentException("Event cannot be null");
 		}
-		if (events.get(e.getEventID()) != null) {
-			throw new IllegalArgumentException("Event with this ID already exists");
+
+		Event curr = events.get(e.getEventID());
+
+		if (curr != null) {
+			if (curr.getVersion() != e.getVersion()){
+				throw new OptimisticLockingFailureException(
+                    "Event " + e.getEventID() + " version mismatch. Expected " +
+                    e.getVersion() +
+                    " but found " +
+                    curr.getVersion()
+                );
+			}
+			e.incrementVersion();
+			events.put(e.getEventID(), e);
+		}else {
+			events.put(e.getEventID(), e);
 		}
-		events.put(e.getEventID(), e);
+
 	}
 
 	@Override
-	public void updateEvent(Event event){
-		if (event == null) {
-			throw new IllegalArgumentException("Event cannot be null");
-		}
-
-		if (events.replace(event.getEventID(), event) == null) {
-            throw new IllegalArgumentException("Event with this ID doesn't exist");
-        }	
-	}
-
-	@Override
-	public Event getEventByID(int eventID) {
-		Event e = events.get(eventID);
+	public Event findByID(String eventID) {
+		int id = parseID(eventID);
+		Event e = events.get(id);
 		if (e == null) {
 			throw new IllegalArgumentException("Event with ID " + eventID + " not found");
 		}
@@ -53,8 +55,13 @@ public class EventRepositoryMapImpl implements IEventRepository {
 	}
 
 	@Override
-	public boolean EventExists(int eventID) {
-		return events.containsKey(eventID);
+	public List<Event> getAll() {
+		return new ArrayList<>(events.values());
+	}
+
+	@Override
+	public void delete(String eventID) {
+		throw new UnsupportedOperationException("Delete operation is not supported for EventRepositoryMapImpl");
 	}
 
     @Override
@@ -85,5 +92,14 @@ public class EventRepositoryMapImpl implements IEventRepository {
 				(eventRating == null || eventRating.isEmpty() || event.getEventRating() >= eventRating.get(0)) &&
 				(productionCompanyID == null || productionCompanyID.isEmpty() || productionCompanyID.contains(event.getEventProductionCompanyID()))
 		).collect(Collectors.toCollection(ArrayList::new));
+    }
+
+	private int parseID(String ID)
+    {
+        try {
+            return Integer.parseInt(ID);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Invalid company ID: " + ID);
+        }
     }
 }

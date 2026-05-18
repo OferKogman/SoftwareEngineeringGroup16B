@@ -29,6 +29,8 @@ public class Event {
 	private double rating;
 	private final int ownerId;
 
+	private long version;
+
 	public Event(EventRecord eventRecord, int ownerId) {
 		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
@@ -42,13 +44,14 @@ public class Event {
 		validateCategory(eventRecord.category());
 		this.category = eventRecord.category();
 		this.productionCompanyID = eventRecord.pcID();
-		this.discountPolicy = Collections.synchronizedSet(new HashSet<>());
-		this.purchasePolicy = Collections.synchronizedSet(new HashSet<>());
+		this.discountPolicy = new HashSet<>();
+		this.purchasePolicy = new HashSet<>();
 		validatePrice(eventRecord.price());
 		this.price = eventRecord.price();
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;
+		this.version = 0;
 	}
 
 	public int getEventID() {
@@ -126,9 +129,7 @@ public class Event {
 	}
 
 	public Set<DiscountPolicy> getEventDiscountPolicy() {
-		synchronized (discountPolicy) {
-			return new HashSet<>(discountPolicy);
-		}
+		return new HashSet<>(discountPolicy);
 	}
 
 	public void addEventDiscountPolicy(DiscountPolicy dp) {
@@ -140,9 +141,7 @@ public class Event {
 	}
 
 	public Set<PurchasePolicy> getEventPurchasePolicy() {
-		synchronized (purchasePolicy) {
         return new HashSet<>(purchasePolicy);
-    }
 	}
 
 	public void addEventPurchasePolicy(PurchasePolicy pp) {
@@ -174,6 +173,15 @@ public class Event {
 	public LotteryPolicy getLotteryPolicy() {
 		return purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
 	}
+
+	public long getVersion() {
+		return version;
+	}
+
+	public void incrementVersion() {
+		this.version++;
+	}
+
 
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {

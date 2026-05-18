@@ -43,7 +43,7 @@ public class EventService {
     private final EventFilteringService eventFilteringService;
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
-	private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepository = new EventRepositoryMapImpl();
 	private final IRepository<VirtualQueue> queueRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
 
@@ -93,7 +93,7 @@ public class EventService {
 			logger.info("Verifying venue availability.");
 			Venue venue = venueRepository.getVenueByID(eventRecord.venueID());
 			venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
-			eventRepository.addEvent(event);
+			eventRepository.save(event);
 			queueRepository.save(q);
 			logger.info("Event created successfully with ID: " + event.getEventID());
 			return Result.makeOk(new EventDTO(event));
@@ -126,7 +126,7 @@ public class EventService {
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
-			Event event = eventRepository.getEventByID(eventID);
+			Event event = eventRepository.findByID(String.valueOf(eventID));
 
 			logger.info("retrieving prodction company for event activation");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
@@ -172,7 +172,7 @@ public class EventService {
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
-			Event event = eventRepository.getEventByID(eventID);
+			Event event = eventRepository.findByID(String.valueOf(eventID));
 
 			logger.info("retrieving prodction company for event deactivation");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
@@ -205,7 +205,7 @@ public class EventService {
     public Result<EventDTO> viewEvent(int eventID) {
         try {
             logger.info("Attempting to retrieve event with ID: " + eventID);
-            Event event = eventRepository.getEventByID(eventID);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
             logger.info("Event retrieved successfully with ID: " + eventID);
             return Result.makeOk(new EventDTO(event));
         }
@@ -234,7 +234,7 @@ public class EventService {
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
-			Event event = eventRepository.getEventByID(eventID);
+			Event event = eventRepository.findByID(String.valueOf(eventID));
 
 			logger.info("retrieving prodction company for event edition");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
@@ -269,7 +269,7 @@ public class EventService {
 			if (getEditParam(editParams, "eventRating", Double.class) != null) {
 				event.setEventRating(getEditParam(editParams, "eventRating", Double.class));
 			}
-			eventRepository.updateEvent(event);
+			eventRepository.save(event);
 			logger.info("Event edited successfully with ID: " + eventID);
             return Result.makeOk(new EventDTO(event));
         }
@@ -299,7 +299,7 @@ public class EventService {
 			User user = userRepository.getUserByID(userID);
 			logger.info("Session token verified successfully.");
 
-			Event event = eventRepository.getEventByID(eventID);
+			Event event = eventRepository.findByID(String.valueOf(eventID));
 
 			logger.info("retrieving prodction company for event stock editiong");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));

@@ -209,7 +209,7 @@ public class ProductionCompanyServiceTests {
         
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
         when(mockOrder.getEventId()).thenReturn(50);
-        when(mockEventRepo.getEventByID(50)).thenReturn(mockEvent);
+        when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(mockEvent);
         when(mockEvent.getEventProductionCompanyID()).thenReturn(COMPANY_ID); 
 
         Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
@@ -243,7 +243,7 @@ public class ProductionCompanyServiceTests {
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
         when(mockOrder.getEventId()).thenReturn(50);
         
-        when(mockEventRepo.getEventByID(50)).thenReturn(null); 
+        when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(null); 
 
         Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
 
@@ -277,7 +277,7 @@ public class ProductionCompanyServiceTests {
         
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
         when(mockOrder.getEventId()).thenReturn(50);
-        when(mockEventRepo.getEventByID(50)).thenReturn(mockEvent);
+        when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(mockEvent);
         
         when(mockEvent.getEventProductionCompanyID()).thenReturn(999); 
 
