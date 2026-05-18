@@ -6,39 +6,37 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.group16b.ApplicationLayer.DTOs.EventDTO;
+
 public class VirtualQueue {
 	private final List<String> queueLine;
 	private final Map<String, Long> passedQueue;
-	private long version;
 	private final int id;
 	private final int PASS_NUM = 50;
 	private final int PASS_TIMEOUT = 60 * 10 * 1000;
 
 	public VirtualQueue(int id) {
 		queueLine = new LinkedList<>();
-		this.version = 0;
 		this.id = id;
 		this.passedQueue = new LinkedHashMap<>();
 	}
 
 	public VirtualQueue(VirtualQueue other) {
 		this.queueLine = new LinkedList<>(other.queueLine);
-		this.version = other.version;
 		this.id = other.id;
-		this.passedQueue = new LinkedHashMap<>();
+		this.passedQueue = new LinkedHashMap<>(other.passedQueue);
 	}
 
-	public synchronized boolean addToQueue(String subjectID) {
+	public boolean addToQueue(String subjectID) {
 		popFirstIn();
 		if (queueLine.contains(subjectID) || passedQueue.containsKey(subjectID))
 			return false;
 		queueLine.add(subjectID);
-		this.version++;
 		popFirstIn();
 		return true;
 	}
 
-	private synchronized void popFirstIn() {
+	private void popFirstIn() {
 		if (queueLine.isEmpty()) {
 			return;
 		}
@@ -53,28 +51,18 @@ public class VirtualQueue {
 		if (passedQueue.size() >= PASS_NUM) {
 			return;
 		}
-		this.version++;
 		passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
 	}
 
-	public synchronized void removePassed(String subjectID) {
-		this.version++;
+	public void removePassed(String subjectID) {
 		passedQueue.remove(subjectID);
 	}
 
-	public synchronized long getVersion() {
-		return this.version;
-	}
-
-	public synchronized int getId() {
+	public int getId() {
 		return this.id;
 	}
 
-	public synchronized void setVersion(long version) {
-		this.version = version;
-	}
-
-	public synchronized boolean isUserPassedQueue(String subjectID) throws NoSuchAlgorithmException {
+	public boolean isUserPassedQueue(String subjectID) throws NoSuchAlgorithmException {
 		return passedQueue.containsKey(subjectID);
 	}
 }

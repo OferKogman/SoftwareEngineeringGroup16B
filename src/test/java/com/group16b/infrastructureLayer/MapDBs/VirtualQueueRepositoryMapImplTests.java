@@ -15,20 +15,19 @@ import static org.mockito.Mockito.when;
 public class VirtualQueueRepositoryMapImplTests {
     
     VirtualQueueRepositoryMapImpl virtualQueueRepository;
+    VirtualQueue vQueue;
     
     @BeforeEach
     void setUp(){
-        virtualQueueRepository = VirtualQueueRepositoryMapImpl.getInstance();
+        virtualQueueRepository = new VirtualQueueRepositoryMapImpl();
+        vQueue = new VirtualQueue(1);
     }
 
     @Test
     void AddAndGetQueueById(){
-        VirtualQueue vQueue = mock(VirtualQueue.class);
-        when(vQueue.getId()).thenReturn(67);
+        assertDoesNotThrow(() -> virtualQueueRepository.save(vQueue));
         
-        assertDoesNotThrow(() -> virtualQueueRepository.addVirtualQueue(vQueue));
-        
-        VirtualQueue received = virtualQueueRepository.findVirtualQueueById(vQueue.getId());
+        VirtualQueue received = virtualQueueRepository.findByID(Integer.toString(vQueue.getId()));
         
         assertEquals(vQueue.getId(), received.getId());
     }
@@ -37,20 +36,7 @@ public class VirtualQueueRepositoryMapImplTests {
     void AddVirtualQueueByIdNotExisting(){
         assertThrows(
             IllegalArgumentException.class, 
-            () -> virtualQueueRepository.findVirtualQueueById(99)
+            () -> virtualQueueRepository.findByID("99")
         );
-    }
-
-    @Test
-    void AddExistingQueueFail(){
-        VirtualQueue vQueue = mock(VirtualQueue.class);
-        when(vQueue.getId()).thenReturn(68);
-        
-        assertDoesNotThrow(() -> virtualQueueRepository.addVirtualQueue(vQueue));
-        
-        assertThrows(
-            IllegalArgumentException.class, 
-            () -> virtualQueueRepository.addVirtualQueue(vQueue)
-        );     
     }
 }
