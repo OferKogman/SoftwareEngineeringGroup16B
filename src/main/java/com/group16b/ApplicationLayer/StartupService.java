@@ -26,7 +26,6 @@ public class StartupService {
     private final EventService eventService;
     private final OrderService orderService;
     private final ProductionCompanyService productionCompanyService;
-    //private final PurchaseHistoryService purchaseHistoryService;
     private final PurchasePolicyService purchasePolicyService;
     private final ReserveService reserveService;
     private final UserLoginService userLoginService;
@@ -41,7 +40,7 @@ public class StartupService {
         VenueRepositoryMapImpl venueRepositoryMapImpl = VenueRepositoryMapImpl.getInstance();
         OrderRepositoryMapImpl orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
         EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
-        VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = VirtualQueueRepositoryMapImpl.getInstance();
+        VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = new VirtualQueueRepositoryMapImpl();
         ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
         PaymentService paymentService = new PaymentService();
         TicketGateway ticketGateway = new TicketGateway();
@@ -53,11 +52,11 @@ public class StartupService {
         logger.info("Initializing application services...");
         adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl);
         companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl);
-        eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl);
+        eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
         productionCompanyService = new ProductionCompanyService(authService,productionCompanyRepositoryMapImpl);
         purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
-        reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl);
+        reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);
         userService = new UserService(authService, ticketGateway);
 

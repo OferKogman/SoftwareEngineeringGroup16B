@@ -27,7 +27,6 @@ import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
@@ -45,14 +44,15 @@ public class EventService {
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepository = new EventRepositoryMapImpl();
-	private final IVirtualQueueRepository queueRepository = VirtualQueueRepositoryMapImpl.getInstance();
+	private final IRepository<VirtualQueue> queueRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
 
-	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo) {
+	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
-		this.productionCompanyRepository=productionCompanyRepo;
+		this.productionCompanyRepository = productionCompanyRepo;
+		this.queueRepository = queueRepository;
 	}
 
 	// need to make event active manually
@@ -94,7 +94,7 @@ public class EventService {
 			Venue venue = venueRepository.getVenueByID(eventRecord.venueID());
 			venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
 			eventRepository.save(event);
-			queueRepository.addVirtualQueue(q);
+			queueRepository.save(q);
 			logger.info("Event created successfully with ID: " + event.getEventID());
 			return Result.makeOk(new EventDTO(event));
 

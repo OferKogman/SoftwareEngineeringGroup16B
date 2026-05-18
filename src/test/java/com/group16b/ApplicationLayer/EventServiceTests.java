@@ -25,6 +25,7 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.IUserRepository;
@@ -34,7 +35,7 @@ import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
+import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 
 public class EventServiceTests {
@@ -47,7 +48,7 @@ public class EventServiceTests {
     static private IUserRepository mockUserRepository;
     static private IVenueRepository mockVenueRepository;
     static private IEventRepository mockEventRepository;
-    static private IVirtualQueueRepository mockVirtualQueueRepository;
+    static private IRepository<VirtualQueue> mockVirtualQueueRepository;
     static private User user;
     static private User user2;
     static private Event e1;
@@ -60,12 +61,12 @@ public class EventServiceTests {
         mockLocationService = mock(ILocatoinService.class);
         mockProductionCompanyPolicyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
         eventFilteringService = new EventFilteringService(mockProductionCompanyPolicyRepository);
-        mockVirtualQueueRepository = mock(IVirtualQueueRepository.class);
+        mockVirtualQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IUserRepository.class);
 
-        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository);
+        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository, mockVirtualQueueRepository);
 
         Field PCPR = eventService.getClass().getDeclaredField("productionCompanyRepository");
         PCPR.setAccessible(true);
@@ -74,10 +75,6 @@ public class EventServiceTests {
         Field PCPR2 = eventFilteringService.getClass().getDeclaredField("productionCompanyPolicyRepository");
         PCPR2.setAccessible(true);
         PCPR2.set(eventFilteringService, mockProductionCompanyPolicyRepository);
-
-        Field VPR = eventService.getClass().getDeclaredField("queueRepository");
-        VPR.setAccessible(true);
-        VPR.set(eventService, mockVirtualQueueRepository);
 
         Field ER = eventService.getClass().getDeclaredField("eventRepository");
         ER.setAccessible(true);

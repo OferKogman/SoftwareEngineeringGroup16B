@@ -43,7 +43,7 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	}
 
 	@Override
-	public List getAll() {
+	public List<SystemAdmin> getAll() {
 		List<SystemAdmin> admins = new java.util.ArrayList<>();
 		for(SystemAdmin admin : systemAdminsById.values()) {
 			admins.add(new SystemAdmin(admin));
@@ -51,7 +51,7 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 		return admins;
 	}
 	@Override
-	public void delete(String ID) {
+	public synchronized void delete(String ID) {
 		SystemAdmin admin = systemAdminsById.remove(ID);
 		if (admin != null) {
 			systemAdminsByUsername.remove(admin.getUsername());
@@ -59,7 +59,7 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	}
 
 	@Override
-	public void save(SystemAdmin systemAdmin) {
+	public synchronized void save(SystemAdmin systemAdmin) {
 		SystemAdmin existingAdmin = systemAdminsById.get(systemAdmin.getId());
 		if (existingAdmin != null) { //if admin exists in the system, update it
 			long newVersion = systemAdmin.getVersion();

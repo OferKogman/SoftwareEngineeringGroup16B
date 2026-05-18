@@ -23,6 +23,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
@@ -31,8 +32,7 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
-
+import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 // this class is here since eventTests checks ecent itself and not this feature with relevant mocks
 public class EventStockEditTests {
@@ -47,7 +47,7 @@ public class EventStockEditTests {
     private IUserRepository mockUserRepo;
     private IVenueRepository mockVenueRepo;
     private IEventRepository mockEventRepo;
-    private IVirtualQueueRepository mockQueueRepo;
+    private IRepository<VirtualQueue> mockQueueRepo;
     private IProductionCompanyRepository mockPolicyRepo;
 
     private final String VALID_TOKEN = "valid-session-token";
@@ -65,16 +65,15 @@ public class EventStockEditTests {
         mockUserRepo = mock(IUserRepository.class);
         mockVenueRepo = mock(IVenueRepository.class);
         mockEventRepo = mock(IEventRepository.class);
-        mockQueueRepo = mock(IVirtualQueueRepository.class);
+        mockQueueRepo = mock(IRepository.class);
         mockPolicyRepo = mock(IProductionCompanyRepository.class);
 
-        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo);
+        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo, mockQueueRepo);
 
         // 3. Inject Singleton Repositories via Reflection
         setPrivateField(eventService, "userRepository", mockUserRepo);
         setPrivateField(eventService, "venueRepository", mockVenueRepo);
         setPrivateField(eventService, "eventRepository", mockEventRepo);
-        setPrivateField(eventService, "queueRepository", mockQueueRepo);
         setPrivateField(eventService, "productionCompanyRepository", mockPolicyRepo);
 
         when(mockAuthService.validateToken(anyString())).thenReturn(true);

@@ -29,6 +29,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -42,7 +43,6 @@ import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Seat;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.VirtualQueue.IVirtualQueueRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 
@@ -54,7 +54,7 @@ public class ReservationServiceTests {
     private IAuthenticationService mockAuthenticationService;
     private IVenueRepository mockVenueRepository;
     private IOrderRepository mockOrderRepository;
-    private IVirtualQueueRepository mockQueueRepository;
+    private IRepository<VirtualQueue> mockQueueRepository;
     private IEventRepository mockEventRepository;
     private IProductionCompanyRepository mockProductionCompanyRepository;
 
@@ -146,11 +146,11 @@ public class ReservationServiceTests {
         mockAuthenticationService = mock(IAuthenticationService.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockOrderRepository = mock(IOrderRepository.class);
-        mockQueueRepository = mock(IVirtualQueueRepository.class);
+        mockQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        reserveService = new ReserveService(mockAuthenticationService,mockProductionCompanyRepository);
+        reserveService = new ReserveService(mockAuthenticationService,mockProductionCompanyRepository, mockQueueRepository);
 
         // inject venue repo
         Field venueRepoField = ReserveService.class.getDeclaredField("venueRepo");
@@ -184,7 +184,7 @@ public class ReservationServiceTests {
 
         when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID);
         when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
-        when(mockQueueRepository.findVirtualQueueById(EVENT_ID)).thenReturn(queue);
+        when(mockQueueRepository.findByID(Integer.toString(EVENT_ID))).thenReturn(queue);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
         ProductionCompany mockCompany = mock(ProductionCompany.class);
 
@@ -319,7 +319,7 @@ public class ReservationServiceTests {
 
         when(queueThatDoesNotPassUser.isUserPassedQueue(USER_ID)).thenReturn(false);
 
-        when(mockQueueRepository.findVirtualQueueById(EVENT_ID)).thenReturn(queueThatDoesNotPassUser);
+        when(mockQueueRepository.findByID(Integer.toString(EVENT_ID))).thenReturn(queueThatDoesNotPassUser);
 
         Result<String> result = reserveService.reserveSeats(
                 SEGMENT_ID,
