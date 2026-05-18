@@ -11,7 +11,7 @@ import org.springframework.context.support.BeanDefinitionDsl.Role;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
@@ -39,7 +39,7 @@ public class EventService {
 
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
 	private final IAuthenticationService authenticationService;
-    private final ILocatoinService locationService;
+    private final ILocationService locationService;
     private final EventFilteringService eventFilteringService;
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
@@ -47,7 +47,7 @@ public class EventService {
 	private final IRepository<VirtualQueue> queueRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
 
-	public EventService(IAuthenticationService authenticationService, ILocatoinService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository) {
+	public EventService(IAuthenticationService authenticationService, ILocationService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
@@ -264,7 +264,7 @@ public class EventService {
 				String newVenueID = getEditParam(editParams, "venue", String.class);
 				Venue newVenue = venueRepository.getVenueByID(newVenueID);
 				newVenue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), event.getEventID());
-				event.setEventString(newVenueID);
+				event.setEventVenue(newVenueID);
 			}
 			if (getEditParam(editParams, "eventRating", Double.class) != null) {
 				event.setEventRating(getEditParam(editParams, "eventRating", Double.class));

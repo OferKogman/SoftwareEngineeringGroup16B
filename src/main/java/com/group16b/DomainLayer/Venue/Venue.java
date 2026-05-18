@@ -1,7 +1,9 @@
 package com.group16b.DomainLayer.Venue;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.DTOs.ChosenSeatingSegDTO;
@@ -9,6 +11,9 @@ import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
 import com.group16b.ApplicationLayer.DTOs.SegmentDTO;
 import com.group16b.ApplicationLayer.DTOs.VenueDTO;
+import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
+import com.group16b.ApplicationLayer.Records.FieldSegRecord;
+import com.group16b.ApplicationLayer.Records.VenueRecord;
 
 public class Venue {
 	private volatile String name;
@@ -24,25 +29,17 @@ public class Venue {
 		this.scheduledEvents = new ConcurrentHashMap<>();
 	}
 
-	public Venue(VenueDTO venueDTO){
-		this.name = venueDTO.getName();
-		this.location = new Location(venueDTO.getLocation());
-		this.segments = new ConcurrentHashMap<>();
-
-		for(Map.Entry<String, SegmentDTO> entry: venueDTO.getSegments().entrySet()){
-            if(entry.getValue().getSegmentType().equals("S")){
-                segments.put(entry.getKey(), new ChosenSeatingSeg((ChosenSeatingSegDTO)entry.getValue(), IDForSeg+""));
-				IDForSeg++;
-            } else if(entry.getValue().getSegmentType().equals("F")){
-                segments.put(entry.getKey(), new FieldSeg((FieldSegDTO)entry.getValue(), IDForSeg+"")); 
-				IDForSeg++;   
-            }
-        }
-
-        this.scheduledEvents = new ConcurrentHashMap<>();
-        for(Map.Entry<Integer, EventScheduleDTO> entry: venueDTO.getEventsSchedules().entrySet()){
-            scheduledEvents.put(entry.getKey(), new EventSchedule(entry.getValue()));
-        }
+	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg) {
+		this.name = name;
+		this.location = location;
+		this.segments = new TreeMap<>();
+		for (FieldSegRecord fsr : fieldSeg) {
+			segments.put(fsr.segmentID(), new FieldSeg(fsr.segmentID(), fsr.size()));
+		}
+		for (ChosenSeatingSegRecord cssr : seatSeg) {
+			segments.put(cssr.segmentID(), new ChosenSeatingSeg(cssr.segmentID(), cssr.seats()));
+		}
+		this.scheduledEvents = new ConcurrentHashMap<>();
 	}
 
 	public Map<String, Segment> getSegments(){

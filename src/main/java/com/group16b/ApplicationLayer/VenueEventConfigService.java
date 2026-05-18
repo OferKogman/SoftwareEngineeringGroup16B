@@ -8,7 +8,9 @@ import org.springframework.context.support.BeanDefinitionDsl.Role;
 
 import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.VenueRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
@@ -17,6 +19,7 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
+import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 
 public class VenueEventConfigService {
@@ -28,20 +31,21 @@ public class VenueEventConfigService {
     private final IUserRepository userRepository;
     private final IAuthenticationService authService;
     private final IProductionCompanyRepository productionCompanyRepository;
+    private final ILocationService locationService;
 
-    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IUserRepository userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository) {
+    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IUserRepository userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository, ILocationService locationService) {
         this.venueRepository = venueRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.authService = authService;
-        this.productionCompanyRepository=productionCompanyRepository;
+        this.productionCompanyRepository = productionCompanyRepository;
+        this.locationService = locationService;
     }
 
-    public Result<String> configureLayoutAndInventory(String sessionToken, int companyID, int eventID, VenueDTO newVenueLayoutDTO, LocalDateTime startTime, LocalDateTime endTime) {
+    public Result<String> configureLayoutAndInventory(String sessionToken, int companyID, int eventID, VenueRecord newVenueLayout) {
         
-        logger.info("Attempting to configure venue layout for event {}", eventID);
-
         try {
+            logger.info("Attempting to configure venue layout for event {}", eventID);
 
             if (!authService.validateToken(sessionToken)) {
                 logger.warn("Config failed: Invalid or expired session token.");
@@ -55,30 +59,22 @@ public class VenueEventConfigService {
 
             int userID = Integer.valueOf(authService.extractSubjectFromToken(sessionToken));
 
-            if (!eventRepository.EventExists(eventID)) {
-                return Result.makeFail("Event not found.");
-            }
-
             Event targetEvent = eventRepository.getEventByID(eventID);
-            if (targetEvent.isActiveEvent()) {
-                return Result.makeFail("Event is already active and is not in creation process.");
-            }
 
-            ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
 
             User actionUser = userRepository.getUserByID(userID);
-            if (actionUser == null ) {
-                logger.warn("Config failed: User {} not found.", userID);
-                return Result.makeFail("User not found.");
-            }
+            
             company.validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
-            Venue newVenueLayout = new Venue(newVenueLayoutDTO);
-            newVenueLayout.bookEvent(startTime, endTime, eventID);
+            Location loc = locationService.search(newVenueLayout.location());
 
-            venueRepository.addVenue(newVenueLayout.getName(), newVenueLayout);
+            Venue venue = new Venue(newVenueLayout.name(), loc, newVenueLayout.fieldSeg(), newVenueLayout.seatSeg());
+            venue.bookEvent(targetEvent.getEventStartTime(), targetEvent.getEventEndTime(), eventID);
 
-            targetEvent.setEventString(newVenueLayout.getName()); 
+            venueRepository.addVenue(venue.getName(), venue);
+
+            targetEvent.setEventVenue(venue.getName()); 
             eventRepository.updateEvent(targetEvent);
 
             logger.info("Successfully configured venue and initialized inventory for event {}", eventID);

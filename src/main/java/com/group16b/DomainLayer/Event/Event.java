@@ -75,9 +75,8 @@ public class Event {
 		return venueID;
 	}
 
-	public void setEventString(String venueID) {
+	public void setEventVenue(String venueID) {
 		this.venueID = venueID;
-		// initialize stock and handle old sales
 	}
 
 	public String getEventName() {

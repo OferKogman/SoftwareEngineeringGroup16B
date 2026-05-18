@@ -19,15 +19,6 @@ public class Seat {
 		stock = new ConcurrentHashMap<Integer, Boolean>();
 	}
 
-	public Seat(SeatDTO seatDTO, String seatID){
-		this.seatId = seatID;
-		this.row = seatDTO.getRow();
-		this.number = seatDTO.getNumber();
-		
-		this.stock = new ConcurrentHashMap<>();
-		stock.putAll(seatDTO.getStock());
-	}
-
 	public String getSeatId() {
 		return seatId;
 	}

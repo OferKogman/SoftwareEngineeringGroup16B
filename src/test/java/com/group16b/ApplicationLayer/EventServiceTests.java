@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
@@ -43,7 +43,7 @@ public class EventServiceTests {
 
     static private EventService eventService;
     static private IAuthenticationService mockTokenService;
-    static private ILocatoinService mockLocationService;
+    static private ILocationService mockLocationService;
     static private EventFilteringService eventFilteringService;
     static private ProductionCompanyRepositoryMapImpl mockProductionCompanyPolicyRepository;
     static private IUserRepository mockUserRepository;
@@ -59,7 +59,7 @@ public class EventServiceTests {
     @BeforeAll
     static public void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockTokenService = mock(IAuthenticationService.class);
-        mockLocationService = mock(ILocatoinService.class);
+        mockLocationService = mock(ILocationService.class);
         mockProductionCompanyPolicyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
         eventFilteringService = new EventFilteringService(mockProductionCompanyPolicyRepository);
         mockVirtualQueueRepository = mock(IRepository.class);
