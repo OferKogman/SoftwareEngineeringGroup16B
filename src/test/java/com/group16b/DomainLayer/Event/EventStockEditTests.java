@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.EventService;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -40,7 +40,7 @@ public class EventStockEditTests {
 
     // Injected via Constructor
     private IAuthenticationService mockAuthService;
-    private ILocatoinService mockLocationService;
+    private ILocationService mockLocationService;
     private EventFilteringService mockEventFilteringService;
 
     // Injected via Reflection (Singletons)
@@ -59,7 +59,7 @@ public class EventStockEditTests {
     @BeforeEach
     void setUp() throws Exception {
         mockAuthService = mock(IAuthenticationService.class);
-        mockLocationService = mock(ILocatoinService.class);
+        mockLocationService = mock(ILocationService.class);
         mockEventFilteringService = mock(EventFilteringService.class);
         
         mockUserRepo = mock(IUserRepository.class);

@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.User.IUserRepository;
@@ -31,69 +32,89 @@ public class PurchasePolicyService {
     }
     
 
-    public Result<LotteryPolicy> createLotteryPolicy(String sessionToken, int eventID, int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
-        logger.info("Received request to create lottery policy for event ID: {} by session token: {}", eventID, sessionToken); 
-        logger.info("Validating session token: {}", sessionToken);
-        if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event creation.");
-				return Result.makeFail("Invalid session token.");
-			}
-        int userID=Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
-        User user = userRepository.getUserByID(userID);
+    public Result<Boolean> createLotteryPolicy(String sessionToken, int eventID, int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
+        try {
+            logger.info("PurchasePolicyService.createLotteryPolicy: Received request to create lottery policy for event ID: {}", eventID); 
+            if (!authenticationService.validateToken(sessionToken)) {
+                    logger.warn("PurchasePolicyService.createLotteryPolicy: Invalid or expired session token.");
+                    return Result.makeFail("Authentication failed. Please log in again.");
+                }
+                if(!authenticationService.isUserToken(sessionToken)){
+                    logger.warn("PurchasePolicyService.createLotteryPolicy: Expected a user session token");
+                    return Result.makeFail("Authentication failed. Please log in again.");    
+                }
+            int userID = Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 
-        logger.info("retrieving prodcution company for creating a lottery policy");
-        ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepo.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
+            logger.info("PurchasePolicyService.createLotteryPolicy: verifying user exists for id {}", userID);
+            User user = userRepository.getUserByID(userID);
 
-        logger.info("Checking user permissions for userID: {}", user.getUserID());
-        company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
-        logger.info("User has necessary permissions to create lottery policy for event ID: {}", eventID);
+            logger.info("PurchasePolicyService.createLotteryPolicy: retrieving production company for creating a lottery policy");
+            ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepo.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
 
-        logger.info("Creating lottery policy with ID: {}, Name: {}, Winner Amount: {}, Registration Due Date: {}", lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
-        LotteryPolicy lotteryPolicy = new LotteryPolicy(lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
-        logger.info("Lottery policy created successfully: {}", lotteryPolicy);
-        
-        logger.info("Adding lottery policy to event with ID: {}", eventID);
-        eventRepo.findByID(String.valueOf(eventID)).addEventPurchasePolicy(lotteryPolicy);
-        logger.info("Lottery policy added to event successfully");
-        return Result.makeOk(lotteryPolicy);
+            logger.info("PurchasePolicyService.createLotteryPolicy: Checking user permissions for userID: {}", user.getUserID());
+            company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
+
+            logger.info("PurchasePolicyService.createLotteryPolicy: Creating lottery policy with ID: {}, Name: {}, Winner Amount: {}, Registration Due Date: {}", lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
+            
+            logger.info("PurchasePolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
+            Event e = eventRepo.findByID(String.valueOf(eventID));
+            
+            logger.info("PurchasePolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}", eventID);
+            e.addEventPurchasePolicy(lotteryPolicy);
+
+            logger.info("PurchasePolicyService.createLotteryPolicy: saving changes to repository");
+            eventRepo.save(e);
+
+            logger.info("PurchasePolicyService.createLotteryPolicy: Lottery policy added to event successfully");
+            return Result.makeOk(true);
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.createLotteryPolicy: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("PurchasePolicyService.createLotteryPolicy: An unexpected error occurred while creating a lottery" + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
 
-    public Result<Void> enrollInLottery(String sessionToken, int eventID) {
+    public Result<Boolean> enrollInLottery(String sessionToken, int eventID) {
         try{
-            logger.info("Received request to enroll in lottery for event ID: {} by session token: {}", eventID, sessionToken);
-            logger.info("Validating session token: {}", sessionToken);
+            logger.info("PurchasePolicyService.enrollInLottery: Received request to enroll in lottery for event ID: {}", eventID); 
             if (!authenticationService.validateToken(sessionToken)) {
-                logger.warn("Invalid session token provided for lottery enrollment.");
-                return Result.makeFail("Invalid session token.");
+                logger.warn("PurchasePolicyService.enrollInLottery: Invalid or expired session token.");
+                return Result.makeFail("Authentication failed. Please log in again.");
             }
-            User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+            if(!authenticationService.isUserToken(sessionToken)){
+                logger.warn("PurchasePolicyService.enrollInLottery: Expected a user session token");
+                return Result.makeFail("Authentication failed. Please log in again.");    
+            }
+            int userID = Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
 
-            logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
+            logger.info("PurchasePolicyService.enrollInLottery: verifying user exists for id {}", userID);
+            User user = userRepository.getUserByID(userID);
+
+            logger.info("PurchasePolicyService.enrollInLottery: Checking if user with id {} passed purchase policy checks", userID);
             //TODO: implement purchase policy checks for lottery enrollment
-            logger.info("User passed purchase policy checks for lottery enrollment");
 
-            //check event is active
-            logger.info("Checking if event with ID: {} is active", eventID);
-            if(!eventRepo.findByID(String.valueOf(eventID)).getEventStatus()) {
-                logger.warn("Event with ID: {} is not active. Cannot enroll in lottery.", eventID);
-                return Result.makeFail("Event is not active. Cannot enroll in lottery.");
-            }
+            logger.info("PurchasePolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
+            Event e = eventRepo.findByID(String.valueOf(eventID));
 
-            //check event has lottery policy with lotteryID
-            logger.info("Checking if event with ID: {} has a lottery policy", eventID);
-            LotteryPolicy lottery = eventRepo.findByID(String.valueOf(eventID)).getLotteryPolicy();
-            if(lottery == null) {
-                logger.warn("Event with ID: {} does not have a lottery policy.", eventID);
-                return Result.makeFail("Event does not have a lottery policy.");
-            }
+            logger.info("PurchasePolicyService.createLotteryPolicy: Enrolling in lottery");
+            e.enrollInLottery(user.getUserID());
 
-            logger.info("Enrolling in lottery...");
-            lottery.enrollInLottery(eventID, user.getUserID());
+            logger.info("PurchasePolicyService.createLotteryPolicy: Saving changes to repository");
+            eventRepo.save(e);
+
             logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getUserID(), eventID);
-            return Result.makeOk(null);
+            return Result.makeOk(true);
+        }
+        catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.enrollInLottery: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
         }
         catch (IllegalStateException e) {
-            logger.error("Failed to enroll in lottery for event ID: {}: {}", eventID, e.getMessage());
+            logger.error("PurchasePolicyService.enrollInLottery: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         }
         catch (Exception e) {

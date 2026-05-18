@@ -23,17 +23,6 @@ public class Location {
         this.longitude = longitude;
     }
 
-    public Location(LocationDTO locationDTO){
-        this.name = locationDTO.getName();
-        this.houseNumber = locationDTO.getHouseNumber();
-        this.street = locationDTO.getStreet();
-        this.city = locationDTO.getCity();
-        this.state = locationDTO.getState();
-        this.country = locationDTO.getCountry();
-        this.latitude = locationDTO.getLatitude();
-        this.longitude = locationDTO.getLongitude();        
-    }
-
     public String getName() {
         return name;
     }

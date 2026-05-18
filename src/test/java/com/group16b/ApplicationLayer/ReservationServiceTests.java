@@ -30,7 +30,6 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
@@ -53,7 +52,7 @@ public class ReservationServiceTests {
     private ReserveService reserveService;
     private IAuthenticationService mockAuthenticationService;
     private IVenueRepository mockVenueRepository;
-    private IOrderRepository mockOrderRepository;
+    private IRepository<Order> mockOrderRepository;
     private IRepository<VirtualQueue> mockQueueRepository;
     private IEventRepository mockEventRepository;
     private IProductionCompanyRepository mockProductionCompanyRepository;
@@ -145,7 +144,7 @@ public class ReservationServiceTests {
 
         mockAuthenticationService = mock(IAuthenticationService.class);
         mockVenueRepository = mock(IVenueRepository.class);
-        mockOrderRepository = mock(IOrderRepository.class);
+        mockOrderRepository = mock(IRepository.class);
         mockQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
@@ -204,7 +203,7 @@ public class ReservationServiceTests {
         assertTrue(result.isSuccess());
         assertTrue(result.getValue().startsWith("new OrderId: "));
         verify(mockVenueRepository).reserveTickets(VENUE_ID, SEGMENT_ID, SEAT_IDS, EVENT_ID);
-        verify(mockOrderRepository).addOrder(any(Order.class));
+        verify(mockOrderRepository).save(any(Order.class));
     }
         
     @Test
@@ -224,7 +223,7 @@ public class ReservationServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Invalid session token.", result.getError());
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
 
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
@@ -248,7 +247,7 @@ public class ReservationServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Invalid session token.", result.getError());
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
 
@@ -281,7 +280,7 @@ public class ReservationServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Event is inactive", result.getError());
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
     
@@ -308,7 +307,7 @@ public class ReservationServiceTests {
                 result.getError()
         );
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
     
@@ -332,7 +331,7 @@ public class ReservationServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("User did not pass the queue", result.getError());
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
 
@@ -357,7 +356,7 @@ public class ReservationServiceTests {
                 result.getError()
         );
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
     }
     @Test
     void reserveSeats_noDiscountPolicy_returnsFail() throws Exception {
@@ -380,7 +379,7 @@ public class ReservationServiceTests {
                 result.getError()
         );
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
     }
 
 
@@ -408,7 +407,7 @@ public class ReservationServiceTests {
         assertTrue(result.getValue().startsWith("new OrderId: "));
 
         verify(mockVenueRepository).reserveTickets(VENUE_ID, FIELD_SEGMENT_ID, FIELD_AMOUNT, EVENT_ID);
-        verify(mockOrderRepository).addOrder(any(Order.class));
+        verify(mockOrderRepository).save(any(Order.class));
     }
     @Test
     void reserveFieldSeats_invalidAmount_returnsFail() {
@@ -426,7 +425,7 @@ public class ReservationServiceTests {
 
         assertFalse(result.isSuccess());
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
     }
     @Test
     void reserveFieldSeats_adminToken_returnsFail() throws Exception {
@@ -447,7 +446,7 @@ public class ReservationServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Invalid session token.", result.getError());
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyInt(), anyInt());
     }
     @Test
@@ -473,7 +472,7 @@ public class ReservationServiceTests {
                 result.getError()
         );
 
-        verify(mockOrderRepository, never()).addOrder(any(Order.class));
+        verify(mockOrderRepository, never()).save(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyInt(), anyInt());
     }
 

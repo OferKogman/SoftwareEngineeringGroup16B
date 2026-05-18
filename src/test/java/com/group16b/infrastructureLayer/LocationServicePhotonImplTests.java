@@ -6,13 +6,13 @@ import java.io.IOException;
 
 import org.junit.jupiter.api.Test;
 
-import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
 
 public class LocationServicePhotonImplTests {
     
-    private ILocatoinService locationService = new LocationServicePhotonImpl();
+    private ILocationService locationService = new LocationServicePhotonImpl();
 
     @Test
     public void SuccessfullLocationSearch() {

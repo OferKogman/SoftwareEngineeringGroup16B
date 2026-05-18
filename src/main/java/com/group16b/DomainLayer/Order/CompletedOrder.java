@@ -9,8 +9,6 @@ class CompletedOrder implements OrderState {
 	public CompletedOrder() {}
 
 
-	
-
 	@Override
 	public boolean isActive() {
 		return false;
@@ -34,4 +32,9 @@ class CompletedOrder implements OrderState {
 		return tickets;
 	}
 	
+	@Override
+
+    public OrderState copy() {
+        return new CompletedOrder();
+    }
 }

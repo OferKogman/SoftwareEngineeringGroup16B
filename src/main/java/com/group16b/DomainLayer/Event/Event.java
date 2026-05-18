@@ -98,9 +98,8 @@ public class Event {
 		return venueID;
 	}
 
-	public void setEventString(String venueID) {
+	public void setEventVenue(String venueID) {
 		this.venueID = venueID;
-		// initialize stock and handle old sales
 	}
 
 	public String getEventName() {
@@ -302,4 +301,11 @@ public class Event {
 	public boolean isActiveEvent() {//relevant for venue assignment
         return active; 
     }
+
+	public void enrollInLottery(int userID) {
+		if (!this.isActiveEvent()) {
+			throw new IllegalStateException("Can't enroll in lottery for an inactive event");
+		}
+		this.getLotteryPolicy().enrollInLottery(this.eventID, userID);
+	}
 }

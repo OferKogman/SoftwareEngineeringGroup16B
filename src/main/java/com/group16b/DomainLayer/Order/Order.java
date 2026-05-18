@@ -15,6 +15,7 @@ public class Order {
 	private  double totalOrderprice;
 	private final int eventId;
 	private final String subjectID;
+	private long version;
 
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
@@ -27,6 +28,7 @@ public class Order {
 		this.totalOrderprice = totalPrice;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
+		this.version = 0;
 	}
 	public Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID) {
 		this.orderId = "order_" + ++idCounter;
@@ -37,7 +39,24 @@ public class Order {
 		this.totalOrderprice = totalPrice;
 		this.eventId = eventId;
 		this.subjectID = subjectID;
-		}
+		this.version = 0;
+	}
+
+	public Order(Order other) { // deep copy constructor
+		this.orderId = other.orderId;
+		this.state = other.state.copy();
+		this.segmentId = other.segmentId;
+		this.seats = List.copyOf(other.seats);
+		this.numOfTickets = other.numOfTickets;
+		this.orderType = other.orderType;
+		this.totalOrderprice = other.totalOrderprice;
+		this.eventId = other.eventId;
+		this.subjectID = other.subjectID;
+		this.version = other.version;
+		
+	}
+	
+
 
 	public String getOrderId() {
 		return orderId;
@@ -112,6 +131,17 @@ public class Order {
 		this.numOfTickets = newNumOfTickets;
 		this.totalOrderprice = newTotalPrice;
 	}
+
+	public long getVersion()
+    {
+        return version;
+    }
+    public void setVersion(long version)
+    {
+        this.version=version;
+    }
+
+
 
 	
 
