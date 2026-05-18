@@ -250,14 +250,13 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
-        
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenThrow(new IllegalArgumentException("Event with ID " + eventID + " not found"));
 
         Result<String> result = configService.configureLayoutAndInventory(
                 validToken, companyID, eventID, validDTO, startTime, endTime);
 
         assertFalse(result.isSuccess());
-        assertEquals("Event not found.", result.getError());
-        verify(mockEventRepository, never()).findByID(anyString());
+        assertEquals("Configuration failed: Event with ID " + eventID + " not found", result.getError());
     }
 
     @Test

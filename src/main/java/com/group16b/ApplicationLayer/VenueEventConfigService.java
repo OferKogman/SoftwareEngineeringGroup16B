@@ -55,10 +55,6 @@ public class VenueEventConfigService {
 
             int userID = Integer.valueOf(authService.extractSubjectFromToken(sessionToken));
 
-            if (eventRepository.findByID(String.valueOf(eventID)) == null) {
-                return Result.makeFail("Event not found.");
-            }
-
             Event targetEvent = eventRepository.findByID(String.valueOf(eventID));
             if (targetEvent.isActiveEvent()) {
                 return Result.makeFail("Event is already active and is not in creation process.");

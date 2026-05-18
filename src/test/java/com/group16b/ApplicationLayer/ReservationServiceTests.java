@@ -284,10 +284,11 @@ public class ReservationServiceTests {
         verify(mockOrderRepository, never()).addOrder(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
+    
     @Test
     void reserveSeats_eventHasLotteryPolicy_returnsFail() throws Exception {
         LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
-
+        
         Event eventWithLottery = spy(event);
         when(eventWithLottery.getLotteryPolicy()).thenReturn(lotteryPolicy);
 
@@ -300,17 +301,18 @@ public class ReservationServiceTests {
                 VENUE_ID,
                 SESSION_TOKEN
         );
-
+        
         assertFalse(result.isSuccess());
         assertEquals(
-                "User did not provide lottery keypass to reserve seats for this event",
+            "User did not provide lottery keypass to reserve seats for this event",
                 result.getError()
         );
 
         verify(mockOrderRepository, never()).addOrder(any(Order.class));
         verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
     }
-
+    
+    
     @Test
     void reserveSeats_userDidNotPassQueue_returnsFail() throws Exception {
         VirtualQueue queueThatDoesNotPassUser = mock(VirtualQueue.class);

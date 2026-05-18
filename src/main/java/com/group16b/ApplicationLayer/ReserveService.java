@@ -64,7 +64,7 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
             
             logger.info("Checking event is active");
-            Event event = eventRepository.findByID("eventID");
+            Event event = eventRepository.findByID(String.valueOf(eventID));
             // TODO check event exists
             if (!event.getEventStatus()) {
                 logger.error("Event is inactive");
@@ -75,7 +75,7 @@ public class ReserveService {
             //2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            if (eventRepository.findByID("eventID").getLotteryPolicy() != null) {
+            if (eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveSeats: {} did not provide lottery keypass");
                 queueRemovePassed(q, subjectID);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");

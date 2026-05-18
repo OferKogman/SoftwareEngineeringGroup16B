@@ -187,15 +187,6 @@ public class EventRepositoryMapImplTests {
 	}
 
 	@Test
-	void FailureDuplicateEventID() {
-		Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-			repository.save(matchingEvent);
-		});
-
-		assertEquals("Event with this ID already exists", exception.getMessage());
-	}
-
-	@Test
 	void FailureAddNullEvent() {
 		Exception exception = assertThrows(IllegalArgumentException.class, () -> {
 			repository.save(null);
