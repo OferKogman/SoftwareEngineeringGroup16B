@@ -11,6 +11,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -40,6 +42,8 @@ public class ProductionCompanyServiceTests {
     private IUserRepository mockUserRepo;
     private IProductionCompanyRepository mockProductionCompanyRepository;
 
+    private ProductionCompany mockCompany;
+
     private final String VALID_TOKEN = "valid-token";
     private final int COMPANY_ID = 100;
     private final int USER_ID = 1;
@@ -53,25 +57,22 @@ public class ProductionCompanyServiceTests {
         mockUserRepo = mock(IUserRepository.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 
+        mockCompany = mock(ProductionCompany.class);
+
         productionCompanyService = new ProductionCompanyService(mockAuthService,mockOrderRepo,mockEventRepo,mockUserRepo,mockProductionCompanyRepository);
 
-        //Inject Repository Mocks using Reflection - bypassing singletons initializations(user, event order)
-        Field orderField = ProductionCompanyService.class.getDeclaredField("orderRepo");
-        orderField.setAccessible(true);
-        orderField.set(productionCompanyService, mockOrderRepo);
-
-        Field eventField = ProductionCompanyService.class.getDeclaredField("eventRepo");
-        eventField.setAccessible(true);
-        eventField.set(productionCompanyService, mockEventRepo);
-
-        Field userField = ProductionCompanyService.class.getDeclaredField("userRepo");
-        userField.setAccessible(true);
-        userField.set(productionCompanyService, mockUserRepo);
 
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(USER_ID));
         
+        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
+
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
+    
+        User mockUser = mock(User.class);
+        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
     }
 
 
@@ -87,11 +88,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void testViewSalesHistory_PermissionDenied_Fail() {
-        User mockUser = mock(User.class);
-        ProductionCompany mockCompany=mock(ProductionCompany.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
-        
         doThrow(new IllegalArgumentException("Not allowed")).when(mockCompany)
             .validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
 
@@ -104,27 +100,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void testDisplayTotalRevenue_AsOwner_Success() {
-
-        when(mockAuthService.validateToken(VALID_TOKEN))
-            .thenReturn(true);
-
-        when(mockAuthService.isUserToken(VALID_TOKEN))
-            .thenReturn(true);
-
-        when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
-            .thenReturn(String.valueOf(USER_ID));
-
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-        when(mockProductionCompanyRepository.findByID(
-                String.valueOf(COMPANY_ID)))
-            .thenReturn(mockCompany);
-
-        doNothing().when(mockCompany)
-            .validateUserPermissions(
-                USER_ID,
-                ManagerPermissions.SALES_REPORT);
-
         // company event
         Event matchingEvent = mock(Event.class);
 
@@ -177,24 +152,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void testDisplayTotalRevenue_MultipleEvents_SumsCorrectly() {
-
-        when(mockAuthService.validateToken(VALID_TOKEN))
-            .thenReturn(true);
-
-        when(mockAuthService.isUserToken(VALID_TOKEN))
-            .thenReturn(true);
-
-        when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
-            .thenReturn(String.valueOf(USER_ID));
-
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID)))
-            .thenReturn(mockCompany);
-
-        doNothing().when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
-
         // Company has events
         Event event1 = mock(Event.class);
         when(event1.getEventID()).thenReturn(101);
@@ -234,25 +191,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void testViewSalesHistory_Success() {
-
-        User mockUser = mock(User.class);
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID)))
-            .thenReturn(mockCompany);
-
-        when(mockUserRepo.getUserByID(USER_ID))
-            .thenReturn(mockUser);
-
-        doNothing().when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
-
-        // AUTH
-        when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.isUserToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
-            .thenReturn(String.valueOf(USER_ID));
-
         // EVENT (IMPORTANT: uses searchEvents now, NOT findByID)
         Event mockEvent = mock(Event.class);
         when(mockEvent.getEventID()).thenReturn(50);
@@ -283,21 +221,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void testViewSalesHistory_EventNotFound_SkipsOrder() {
-        User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
-        when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.isUserToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
-            .thenReturn(String.valueOf(USER_ID));
-
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID)))
-            .thenReturn(mockCompany);
-
-        doNothing().when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
-
         Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         List<Order> orderList = new CopyOnWriteArrayList<>();
         orderList.add(mockOrder);
@@ -315,28 +238,12 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void testViewSalesHistory_WrongCompany_SkipsOrder() {
-        User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
-
         Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
         Event mockEvent = mock(Event.class);
         
         List<Order> orderList = new CopyOnWriteArrayList<>();
         orderList.add(mockOrder);
-
-                when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.isUserToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
-            .thenReturn(String.valueOf(USER_ID));
-
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID)))
-            .thenReturn(mockCompany);
-
-        doNothing().when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
-        
+    
         when(mockOrderRepo.getAllCompletedOrders()).thenReturn(orderList);
         when(mockOrder.getEventId()).thenReturn(50);
         when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(mockEvent);
@@ -352,23 +259,6 @@ public class ProductionCompanyServiceTests {
     
     @Test
     void testDisplayTotalRevenue_AsManagerUnderOwner_Success() {
-
-        when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.isUserToken(VALID_TOKEN)).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(VALID_TOKEN))
-            .thenReturn(String.valueOf(USER_ID));
-
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID)))
-            .thenReturn(mockCompany);
-
-        when(mockUserRepo.getUserByID(USER_ID))
-            .thenReturn(mock(User.class));
-
-        doNothing().when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
-
         // ---------- EVENTS ----------
         Event mockEvent = mock(Event.class);
         when(mockEvent.getEventID()).thenReturn(100);
@@ -399,5 +289,14 @@ public class ProductionCompanyServiceTests {
         // ---------- ASSERT ----------
         assertTrue(result.isSuccess(), result.getError());
         assertEquals(300D, result.getValue());
+    }
+
+    @Test
+    void testDisplayTotalRevenue_CompanyNotFound_Fails() {
+        doThrow(new IllegalArgumentException("No company")).when(mockProductionCompanyRepository).findByID(String.valueOf(COMPANY_ID));
+
+        Result<Double> result =productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
     }
 }
