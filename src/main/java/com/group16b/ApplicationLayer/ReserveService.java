@@ -12,7 +12,6 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
@@ -25,7 +24,6 @@ import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
@@ -33,7 +31,7 @@ public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
     private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
-    private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IRepository<VirtualQueue> queueImp;
     private final IEventRepository eventRepository = new EventRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyRepo;
@@ -126,7 +124,7 @@ public class ReserveService {
 
             //6. System - creates an active order for the user with the selected tickets.
             Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
-            orderRepo.addOrder(order);
+            orderRepo.save(order);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
             return Result.makeOk("new OrderId: " + order.getOrderId());
@@ -240,7 +238,7 @@ public class ReserveService {
 
             //6. System - creates an active order for the user with the selected tickets.
             Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
-            orderRepo.addOrder(order);
+            orderRepo.save(order);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
             return Result.makeOk("new OrderId: " + order.getOrderId());
@@ -343,7 +341,7 @@ public class ReserveService {
 
             //6. System - creates an active order for the user with the selected tickets.
             Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
-            orderRepo.addOrder(order);
+            orderRepo.save(order);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
             lotteryPolicy.useCode(lotteryCode);
@@ -455,7 +453,7 @@ public class ReserveService {
 
             //6. System - creates an active order for the user with the selected tickets.
             Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
-            orderRepo.addOrder(order);
+            orderRepo.save(order);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
             lotteryPolicy.useCode(lotteryCode);

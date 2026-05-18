@@ -2,7 +2,7 @@ package com.group16b.DomainLayer.Order;
 
 import java.util.List;
 
-class ActiveOrder implements OrderState {
+public class ActiveOrder implements OrderState {
 	private final long creationTime;
     private static final long ORDER_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
 
@@ -31,6 +31,12 @@ class ActiveOrder implements OrderState {
 		validateTime();
 		return new CompletedOrder();
 	}
+
+	@Override
+    public OrderState copy() {
+        return new ActiveOrder();
+
+    }
 
 	private void validateTime() {
         long currentTime = System.currentTimeMillis();

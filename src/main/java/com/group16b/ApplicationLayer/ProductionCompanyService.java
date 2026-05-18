@@ -13,25 +13,25 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
+import com.group16b.DomainLayer.User.IUserRepository;
 
 
 public class ProductionCompanyService {
     
     private static final Logger logger = LoggerFactory.getLogger(ProductionCompanyService.class);
 
-    private final IOrderRepository orderRepo;
+    private final IRepository<Order> orderRepo;
     private final IEventRepository eventRepo;
     private final IUserRepository userRepo;
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 
-    public ProductionCompanyService(IAuthenticationService authenticationService,IOrderRepository orderRepo, IEventRepository eventRepo, IUserRepository userRepo, IProductionCompanyRepository productionRepo) {
+    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IUserRepository userRepo, IProductionCompanyRepository productionRepo) {
         this.authenticationService = authenticationService;
         this.productionRepo=productionRepo;
         this.orderRepo=orderRepo;
@@ -124,7 +124,7 @@ public class ProductionCompanyService {
                 ).stream()
                 .map(Event::getEventID)
                 .collect(Collectors.toSet());
-        return orderRepo.getAllCompletedOrders().stream()
+        return orderRepo.getAll().stream()
                     .filter(order -> companyEventIDs.contains(order.getEventId()))
                     .toList();
     }
