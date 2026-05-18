@@ -35,7 +35,7 @@ public class ReserveService {
     private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IRepository<VirtualQueue> queueImp;
-    private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepository = new EventRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyRepo;
     private final IAuthenticationService authenticationService;
 
@@ -65,7 +65,7 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
             
             logger.info("Checking event is active");
-            Event event = eventRepository.getEventByID(eventID);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
             // TODO check event exists
             if (!event.getEventStatus()) {
                 logger.error("Event is inactive");
@@ -76,7 +76,7 @@ public class ReserveService {
             //2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            if (eventRepository.getEventByID(eventID).getLotteryPolicy() != null) {
+            if (eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveSeats: {} did not provide lottery keypass");
                 queueRemovePassed(q, subjectID);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
@@ -176,7 +176,7 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
             
             logger.info("Checking event is active");
-            Event event = eventRepository.getEventByID(eventID);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
             if (!event.getEventStatus()) {
                 logger.error("Event is inactive");
                 return Result.makeFail("Event is inactive");
@@ -184,7 +184,7 @@ public class ReserveService {
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Validating lottery for {}", subjectID);
-            if (eventRepository.getEventByID(eventID).getLotteryPolicy() != null) {
+            if (eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy() != null) {
                 logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: {} did not provide lottery keypass", subjectID);
                 return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
             }
@@ -286,7 +286,7 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
 
             
-            Event event = eventRepository.getEventByID(eventID);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
             if (event == null) {
                 logger.error("Event with ID {} not found", eventID);
                 return Result.makeFail("Event not found");
@@ -301,7 +301,7 @@ public class ReserveService {
             
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            lotteryPolicy = eventRepository.getEventByID(eventID).getLotteryPolicy();
+            lotteryPolicy = eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy();
             if (lotteryPolicy == null) {
                 logger.error("ApplicationLayer.ReserveService.reserveSeats: no keypass required for {}", eventID);
                 return Result.makeFail("User provided lottery keypass to reserve seats for event that does not have lottery policy.");
@@ -403,7 +403,7 @@ public class ReserveService {
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
             
             logger.info("Checking event is active");
-            Event event = eventRepository.getEventByID(eventID);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
             if (event == null) {
                 logger.error("Event with ID {} not found", eventID);
                 return Result.makeFail("Event not found");
@@ -420,7 +420,7 @@ public class ReserveService {
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            lotteryPolicy = eventRepository.getEventByID(eventID).getLotteryPolicy();
+            lotteryPolicy = eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy();
             if (lotteryPolicy == null) {
                 logger.error("ApplicationLayer.ReserveService.reserveSeats: no keypass required for {}", eventID);
                 return Result.makeFail("User provided lottery keypass to reserve seats for event that does not have lottery policy.");
@@ -493,7 +493,7 @@ public class ReserveService {
 
 
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepository.getEventByID(eventID);
+        Event event = eventRepository.findByID(String.valueOf(eventID));
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
         Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
 
@@ -513,7 +513,7 @@ public class ReserveService {
             return priceAfterDiscountPolicy;
     }
     private boolean validatePurchasePolicy(int eventID) {
-        Event event = eventRepository.getEventByID(eventID);
+        Event event = eventRepository.findByID(String.valueOf(eventID));
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
         Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
 

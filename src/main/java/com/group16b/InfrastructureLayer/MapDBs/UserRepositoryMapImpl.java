@@ -24,7 +24,7 @@ public class UserRepositoryMapImpl implements IUserRepository {
 	public User getUserByID(int userID) {
 		User user = users.get(userID);
 		if (user == null) {
-			throw new IllegalArgumentException("User with ID" + userID + "not found.");
+			throw new IllegalArgumentException("User with ID " + userID + " not found.");
 		}
 		return users.get(userID);
 	}

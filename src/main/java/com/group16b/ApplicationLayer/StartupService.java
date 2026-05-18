@@ -39,7 +39,7 @@ public class StartupService {
         UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
         VenueRepositoryMapImpl venueRepositoryMapImpl = VenueRepositoryMapImpl.getInstance();
         OrderRepositoryMapImpl orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
-        EventRepositoryMapImpl eventRepositoryMapImpl = EventRepositoryMapImpl.getInstance();
+        EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
         VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = new VirtualQueueRepositoryMapImpl();
         ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
         PaymentService paymentService = new PaymentService();
@@ -54,7 +54,7 @@ public class StartupService {
         companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
-        productionCompanyService = new ProductionCompanyService(authService,productionCompanyRepositoryMapImpl);
+        productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl);
         purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
         reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);

@@ -13,8 +13,8 @@ import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 
 public class EventFilteringService {
 
-    private final IEventRepository eventRepository = EventRepositoryMapImpl.getInstance();
-    private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepository = new EventRepositoryMapImpl();
+    private final IVenueRepository venueRepository = new VenueRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyPolicyRepository;
 
     public EventFilteringService(IProductionCompanyRepository productionCompanyPolicyRepository) {

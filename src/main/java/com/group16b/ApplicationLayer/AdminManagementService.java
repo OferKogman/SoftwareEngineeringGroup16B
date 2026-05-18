@@ -33,7 +33,7 @@ public class AdminManagementService {
     private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private IProductionCompanyRepository productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
-    private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo = new SystemAdminRepositoryMapImpl();
 
@@ -84,7 +84,7 @@ public class AdminManagementService {
 
             List<Order> orders = orderRepo.getAllCompletedOrders();
             for (Order order : orders) {
-                Event event = eventRepo.getEventByID(order.getEventId());
+                Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
                 if (event == null) {
                     logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Event with ID {} not found for order {}", order.getEventId(), order.getOrderId());
                     orders.remove(order);

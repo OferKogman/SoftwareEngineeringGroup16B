@@ -24,7 +24,7 @@ public class UserService {
 
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
-	private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final ITicketGateway ticketGateway;
 
