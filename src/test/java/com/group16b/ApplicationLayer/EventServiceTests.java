@@ -58,7 +58,7 @@ public class EventServiceTests {
     @BeforeAll
     static public void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         mockTokenService = mock(IAuthenticationService.class);
-        mockLocationService = mock(ILocatoinService.class);
+        mockLocationService = mock(ILocationService.class);
         mockProductionCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
         eventFilteringService = new EventFilteringService(mockProductionCompanyRepository);
         mockVirtualQueueRepository = mock(IRepository.class);
