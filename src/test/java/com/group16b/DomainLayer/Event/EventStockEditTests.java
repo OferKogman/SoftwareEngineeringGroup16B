@@ -27,7 +27,6 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
@@ -44,7 +43,7 @@ public class EventStockEditTests {
     private EventFilteringService mockEventFilteringService;
 
     // Injected via Reflection (Singletons)
-    private IUserRepository mockUserRepo;
+    private IRepository<User> mockUserRepo;
     private IVenueRepository mockVenueRepo;
     private IEventRepository mockEventRepo;
     private IRepository<VirtualQueue> mockQueueRepo;
@@ -62,7 +61,7 @@ public class EventStockEditTests {
         mockLocationService = mock(ILocatoinService.class);
         mockEventFilteringService = mock(EventFilteringService.class);
         
-        mockUserRepo = mock(IUserRepository.class);
+        mockUserRepo = mock(IRepository.class);
         mockVenueRepo = mock(IVenueRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockQueueRepo = mock(IRepository.class);

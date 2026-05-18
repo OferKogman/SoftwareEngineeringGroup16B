@@ -14,6 +14,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
@@ -32,7 +33,7 @@ public class ProductionCompanyService {
 
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-    private final IUserRepository userRepo = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepo = new UserRepositoryMapImpl();
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 

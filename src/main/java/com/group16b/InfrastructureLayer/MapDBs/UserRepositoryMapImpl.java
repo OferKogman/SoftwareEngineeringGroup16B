@@ -4,10 +4,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.User;
 
-public class UserRepositoryMapImpl implements IUserRepository {
+public class UserRepositoryMapImpl implements IRepository<User>{
 
 	private Map<String, User> usersByEmail;
 
@@ -19,16 +19,11 @@ public class UserRepositoryMapImpl implements IUserRepository {
 	}
 
 
-
-	public boolean userExists(String userEmail) {
-		return usersByEmail.containsKey(userEmail);
-	}
-
 	@Override
 	public User findByID(String ID) {
 		User user = usersByEmail.get(ID);
 		if(user == null) {
-			return null;
+			throw new IllegalArgumentException("User with email " + ID + " does not exist.");
 		}
 		return (new User(user));
 

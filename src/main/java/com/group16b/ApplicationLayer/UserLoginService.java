@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
@@ -14,7 +14,7 @@ public class UserLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserLoginService.class);
 
-    private final IUserRepository userRepository = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
     private final IAuthenticationService tokenService;
 
     public UserLoginService(IAuthenticationService tokenService) {
@@ -38,14 +38,10 @@ public class UserLoginService {
 
     public Result<String> loginMember(String userEmail, String password, String email) {
         logger.info("Attempting login for user ID: ...", userEmail);
-        
-        if (!userRepository.userExists(userEmail)) {
-            logger.warn("Login failed: user ID {} does not exist!", userEmail);
-            return Result.makeFail("Invalid user ID");
-        }
+    
 
-        User member = userRepository.findByID(userEmail);
         try{
+            User member = userRepository.findByID(userEmail);
             if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
                 logger.warn("Login failed: invalid password and email attempt for user ID {}", userEmail);
                 return Result.makeFail("Invalid user ID or password + email");
@@ -72,10 +68,7 @@ public class UserLoginService {
                 return Result.makeFail("Invalid ID for logout");
             }
 
-            if (!userRepository.userExists(recievedID)) {
-                logger.warn("Logout failed: user ID {} of the token does not exist!", recievedID);
-                return Result.makeFail("Invalid user ID");
-            }
+            userRepository.findByID(recievedID); // check if user exist, if not, exception will be thrown and caught in catch block
 
             Result<String> res = this.createGuestSession();
 

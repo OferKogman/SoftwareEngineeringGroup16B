@@ -31,10 +31,10 @@ import static org.mockito.Mockito.when;
 import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
@@ -44,12 +44,12 @@ import com.group16b.DomainLayer.User.User;
 public class CompanyHierarchyServiceTests {
     CompanyHierarchyService userService;
     IAuthenticationService mockAuthService;
-    IUserRepository mockUserRepository;
+    IRepository<User> mockUserRepository;
     IProductionCompanyRepository mockProductionCompanyRepository;
 
     @BeforeEach
     void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockAuthService = mock(IAuthenticationService.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 

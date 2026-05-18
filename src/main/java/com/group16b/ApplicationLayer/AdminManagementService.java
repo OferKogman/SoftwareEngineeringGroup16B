@@ -21,7 +21,6 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -30,7 +29,7 @@ import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
-    private final IUserRepository userRepository = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
     private IProductionCompanyRepository productionCompanyRepo;
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
@@ -188,10 +187,8 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
             
-            if(!userRepository.userExists(userEmail)){
-                logger.error("user to remove doesn't exist! given ID: {}", userEmail);
-                return Result.makeFail("Invalid ID");    
-            }
+            userRepository.findByID(userEmail); //activated to check if user exists, will throw exception if not
+                
 
             List<Integer> companyIDs = productionCompanyRepo.getAllUserComapnies(userEmail);
             for (Integer companyID : companyIDs)

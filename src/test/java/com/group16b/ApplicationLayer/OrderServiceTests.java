@@ -36,13 +36,13 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.FieldSeg;
@@ -62,7 +62,7 @@ public class OrderServiceTests {
     private IOrderRepository mockOrderRepository;
     private IVenueRepository mockVenueRepository;
     private IEventRepository mockEventRepository;
-    private IUserRepository mockUserRepository;
+    private IRepository<User> mockUserRepository;
     private IProductionCompanyRepository mockProductionCompanyRepository;
 
     private static final String SESSION_TOKEN = "valid-token";
@@ -162,7 +162,7 @@ public class OrderServiceTests {
         mockOrderRepository = mock(IOrderRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockEventRepository = mock(IEventRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockPaymentService = mock(PaymentService.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 

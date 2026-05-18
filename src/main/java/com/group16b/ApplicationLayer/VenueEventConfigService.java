@@ -11,10 +11,10 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -25,11 +25,11 @@ public class VenueEventConfigService {
 
     private final IVenueRepository venueRepository;
     private final IEventRepository eventRepository;
-    private final IUserRepository userRepository;
+    private final IRepository<User> userRepository;
     private final IAuthenticationService authService;
     private final IProductionCompanyRepository productionCompanyRepository;
 
-    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IUserRepository userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository) {
+    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IRepository<User> userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository) {
         this.venueRepository = venueRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;

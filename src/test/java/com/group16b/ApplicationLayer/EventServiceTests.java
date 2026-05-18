@@ -28,7 +28,6 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -45,7 +44,7 @@ public class EventServiceTests {
     static private ILocatoinService mockLocationService;
     static private EventFilteringService eventFilteringService;
     static private ProductionCompanyRepositoryMapImpl mockProductionCompanyPolicyRepository;
-    static private IUserRepository mockUserRepository;
+    static private IRepository<User> mockUserRepository;
     static private IVenueRepository mockVenueRepository;
     static private IEventRepository mockEventRepository;
     static private IRepository<VirtualQueue> mockVirtualQueueRepository;
@@ -64,7 +63,7 @@ public class EventServiceTests {
         mockVirtualQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
 
         eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyPolicyRepository, mockVirtualQueueRepository);
 

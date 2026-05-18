@@ -41,7 +41,7 @@ public class EventService {
 	private final IAuthenticationService authenticationService;
     private final ILocatoinService locationService;
     private final EventFilteringService eventFilteringService;
-    private final IUserRepository userRepository = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
 	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepository = new EventRepositoryMapImpl();
 	private final IRepository<VirtualQueue> queueRepository;

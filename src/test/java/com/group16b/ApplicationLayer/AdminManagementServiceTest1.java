@@ -25,13 +25,13 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -47,7 +47,7 @@ public class AdminManagementServiceTest1 {
     private ISystemAdminRepository mockSystemAdminRepository;
     private IEventRepository mockEventRepository;
     private IVenueRepository mockVenueRepository;
-    private IUserRepository mockUserRepository;
+    private IRepository<User> mockUserRepository;
     private IOrderRepository mockOrderRepository;
     private IProductionCompanyRepository mockProductonCompanyRepository;
 
@@ -67,7 +67,7 @@ public class AdminManagementServiceTest1 {
         mockTokenService = mock(IAuthenticationService.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockOrderRepository = mock(IOrderRepository.class); 
         mockProductonCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
 

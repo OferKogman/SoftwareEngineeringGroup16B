@@ -22,9 +22,9 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
@@ -36,7 +36,7 @@ public class ProductionCompanyServiceTests {
     private IAuthenticationService mockAuthService;
     private IOrderRepository mockOrderRepo;
     private IEventRepository mockEventRepo;
-    private IUserRepository mockUserRepo;
+    private IRepository<User> mockUserRepo;
     private IProductionCompanyRepository mockProductionCompanyRepository;
 
     private final String VALID_TOKEN = "valid-token";
@@ -48,7 +48,7 @@ public class ProductionCompanyServiceTests {
         mockAuthService = mock(IAuthenticationService.class);
         mockOrderRepo = mock(IOrderRepository.class);
         mockEventRepo = mock(IEventRepository.class);
-        mockUserRepo = mock(IUserRepository.class);
+        mockUserRepo = mock(IRepository.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 
         productionCompanyService = new ProductionCompanyService(mockAuthService,mockProductionCompanyRepository);

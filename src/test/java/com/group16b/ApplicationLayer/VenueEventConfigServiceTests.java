@@ -26,11 +26,11 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -43,7 +43,7 @@ public class VenueEventConfigServiceTests {
 
     private IVenueRepository mockVenueRepository;
     private IEventRepository mockEventRepository;
-    private IUserRepository mockUserRepository;
+    private IRepository<User> mockUserRepository;
     private IAuthenticationService mockAuthService;
     private VenueEventConfigService configService;
     private IProductionCompanyRepository mockProductionCompanyRepository;
@@ -62,7 +62,7 @@ public class VenueEventConfigServiceTests {
     void setUp() {
         mockVenueRepository = mock(IVenueRepository.class);
         mockEventRepository = mock(IEventRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockAuthService = mock(IAuthenticationService.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
         
