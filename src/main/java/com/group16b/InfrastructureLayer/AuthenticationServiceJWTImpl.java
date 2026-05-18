@@ -59,7 +59,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
         return createToken(session.getValue(), "Guest", userExpirationTime, userKey);
     }
 
-    public String generateVisitor_SignedToken(int userID) {
+    public String generateVisitor_SignedToken(String userID) {
         return createToken(String.valueOf(userID), "Signed", userExpirationTime, userKey);
     }
 

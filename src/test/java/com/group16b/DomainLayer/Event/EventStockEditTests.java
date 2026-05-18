@@ -51,7 +51,7 @@ public class EventStockEditTests {
     private IProductionCompanyRepository mockPolicyRepo;
 
     private final String VALID_TOKEN = "valid-session-token";
-    private final int USER_ID = 1;
+    private final String USER_ID = "1";
     private final int EVENT_ID = 10;
     private final int VENUE_ID = 50;
     private final int COMPANY_ID = 100;

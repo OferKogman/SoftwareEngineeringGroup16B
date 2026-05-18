@@ -41,7 +41,7 @@ public class ProductionCompanyServiceTests {
 
     private final String VALID_TOKEN = "valid-token";
     private final int COMPANY_ID = 100;
-    private final int USER_ID = 1;
+    private final String USER_ID = "1";
 
     @BeforeEach
     void setUp() throws Exception {
@@ -160,7 +160,7 @@ public class ProductionCompanyServiceTests {
         doNothing().when(mockCompany)
             .validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
 
-        int managerID = 2;
+        String managerID = "2";
 
         when(mockCompany.getAllSubordinates(USER_ID))
             .thenReturn(List.of(managerID));
@@ -291,7 +291,7 @@ public class ProductionCompanyServiceTests {
     @Test
     void testDisplayTotalRevenue_AsManagerUnderOwner_Success() {
 
-        int ownerID = 2;
+        String ownerID = "2";
 
         User mockManagerUser = mock(User.class);
         User mockOwnerUser = mock(User.class);
@@ -306,7 +306,7 @@ public class ProductionCompanyServiceTests {
             .thenReturn(mockCompany);
 
         when(mockUserRepo.findByID(USER_ID)).thenReturn(mockManagerUser);
-        when(mockManagerUser.getUserID()).thenReturn(USER_ID);
+        when(mockManagerUser.getEmail()).thenReturn(USER_ID);
 
         when(mockUserRepo.findByID(ownerID)).thenReturn(mockOwnerUser);
 

@@ -9,15 +9,15 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public class MembershipNode {
-    private int userID;
-    private Integer assignerID;
+    private String userID;
+    private String assignerID;
     private RoleType roleType;
     private Set<ManagerPermissions> permissions;
 
-    private MembershipNode(int userID, Integer assignerID, RoleType roleType, Set<ManagerPermissions> perms)
+    private MembershipNode(String userID, String assignerID, RoleType roleType, Set<ManagerPermissions> perms)
     {
         this.userID=userID;
-        this.assignerID=Integer.valueOf(assignerID);
+        this.assignerID= assignerID;
         this.roleType=roleType;
         this.permissions=new HashSet<>(perms);
     }
@@ -28,29 +28,29 @@ public class MembershipNode {
         this.roleType=other.roleType;
         this.permissions=new HashSet<>(other.permissions);
     }
-    public static MembershipNode createManager(int userID, Integer assignerID,Set<ManagerPermissions> perms)
+    public static MembershipNode createManager(String userID, String assignerID,Set<ManagerPermissions> perms)
     {
         return new MembershipNode(userID, assignerID, RoleType.MANAGER, perms);
     }
     
-    public static MembershipNode createOwner(int userID, Integer assignerID)
+    public static MembershipNode createOwner(String userID, String assignerID)
     {
         return new MembershipNode(userID, assignerID, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
     }
-    public static MembershipNode createFounder(int userID)
+    public static MembershipNode createFounder(String userID)
     {
-        return new MembershipNode(userID, -1, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
+        return new MembershipNode(userID, null, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
     }
 
-    public int getUserID()
+    public String getUserID()
     {
         return userID;
     }
-    public int getAssignerID()
+    public String getAssignerID()
     {
         return assignerID;
     }
-    public void setAssignerID(Integer newID)
+    public void setAssignerID(String newID)
     {   
         if(this.roleType==RoleType.FOUNDER)
             throw new IllegalArgumentException("Can't update assignerID for founder of company!");

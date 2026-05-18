@@ -51,7 +51,7 @@ public class VenueEventConfigServiceTests {
     // Test Data
     private final String validToken = "valid.user.token";
     private final String userIDString = "1";
-    private final int userID = 1;
+    private final String userID = "1";
     private final int companyID = 10;
     private final int eventID = 100;
     private final String venueName = "Madison Square Garden";

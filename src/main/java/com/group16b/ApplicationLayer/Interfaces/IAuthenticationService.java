@@ -13,7 +13,7 @@ public interface IAuthenticationService {
 
 	String generateVisitor_GuestToken(SessionToken session);
 
-	String generateVisitor_SignedToken(int userID);
+	String generateVisitor_SignedToken(String userID);
 
 	String generateAdminToken(int adminID);
 

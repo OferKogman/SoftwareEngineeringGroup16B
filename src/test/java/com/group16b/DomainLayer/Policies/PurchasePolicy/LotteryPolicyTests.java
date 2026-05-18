@@ -51,7 +51,7 @@ public class LotteryPolicyTests {
     public void SuccessfulEnrollInLottery(){
         assertDoesNotThrow(() -> {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusDays(1));
-            lotteryPolicy.enrollInLottery(1, 1);
+            lotteryPolicy.enrollInLottery(1, "1");
         });
     }
 
@@ -61,7 +61,7 @@ public class LotteryPolicyTests {
         try {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, lotteryDate);
             Thread.sleep(10000);
-            lotteryPolicy.enrollInLottery(1, 1);
+            lotteryPolicy.enrollInLottery(1, "1");
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
             assert(e.getMessage().equals("Lottery enrollment is closed since " + lotteryDate + "."));
@@ -72,8 +72,8 @@ public class LotteryPolicyTests {
     public void FailureEnrollInLotteryAlreadyEnrolled() {
         try {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusDays(1));
-            lotteryPolicy.enrollInLottery(1, 1);
-            lotteryPolicy.enrollInLottery(1, 1);
+            lotteryPolicy.enrollInLottery(1, "1");
+            lotteryPolicy.enrollInLottery(1, "1");
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
             assert(e.getMessage().equals("User is already enrolled in the lottery."));

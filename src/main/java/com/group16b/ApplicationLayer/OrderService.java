@@ -186,7 +186,7 @@ public class OrderService {
                 logger.warn("Only user can get order history.");
                 return Result.makeFail("Only user can get order history.");
             }
-			String userID=String.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+			String userID=authenticationService.extractSubjectFromToken(sessionToken);
 			User user = userRepo.findByID(userID);
 			if (user == null) {
 				logger.warn("User with ID {0} not found for retrieving orders.", userID);

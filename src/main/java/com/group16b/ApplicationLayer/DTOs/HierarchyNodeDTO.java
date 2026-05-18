@@ -7,8 +7,8 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 public record HierarchyNodeDTO(
-        int userID,
-        int parentID,
+        String userID,
+        String parentID,
         RoleType roleType,
         Set<ManagerPermissions> permissions
 ) {public HierarchyNodeDTO(HierarchyNodeData data) {

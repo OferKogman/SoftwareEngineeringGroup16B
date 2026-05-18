@@ -54,7 +54,7 @@ public class ProductionCompanyService {
                 logger.error("ProductionCompanyService.viewSalesHistory: Unauthorized access attempt by non-production company user");
                 return Result.makeFail("Unauthorized access");
             }
-            String userID=String.parseInt(authenticationService.extractSubjectFromToken(sTocken));
+            String userID=authenticationService.extractSubjectFromToken(sTocken);
 		    User user = userRepo.findByID(userID);
 
             ProductionCompany company=productionRepo.findByID(String.valueOf(productionCompanyID));
@@ -99,9 +99,7 @@ public class ProductionCompanyService {
                 return Result.makeFail("Unauthorized access");
             }
 
-            int userID = Integer.parseInt(
-                    authenticationService.extractSubjectFromToken(sToken)
-            );
+            String userID = authenticationService.extractSubjectFromToken(sToken);
 
             ProductionCompany company =
                     productionRepo.findByID(String.valueOf(productionCompanyID));
@@ -133,15 +131,15 @@ public class ProductionCompanyService {
         }
     }
 
-    private double getAllRevenue(ProductionCompany company, int userID) 
+    private double getAllRevenue(ProductionCompany company, String userID) 
     {
-        Set<Integer> relevantUsers = new HashSet<>(company.getAllSubordinates(userID));
+        Set<String> relevantUsers = new HashSet<>(company.getAllSubordinates(userID));
         relevantUsers.add(userID);
         return orderRepo.getAllCompletedOrders()
         .stream()
         .filter(order ->
                 relevantUsers.contains(
-                        Integer.parseInt(order.getSubjectId())))
+                        order.getSubjectId()))
         .mapToDouble(Order::getTotalOrderprice)
         .sum();
     }

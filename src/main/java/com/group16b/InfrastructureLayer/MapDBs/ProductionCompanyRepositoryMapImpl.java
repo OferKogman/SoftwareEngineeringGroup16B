@@ -104,7 +104,7 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
 
     public List<Integer> getAllUserComapnies(String user)
     {
-        int userID = parseID(user);
+        String userID = user;
         List<Integer> userCompanies = new ArrayList<>();
         for (ProductionCompany company : companies.values()) {
             if (company.isManager(userID)) {

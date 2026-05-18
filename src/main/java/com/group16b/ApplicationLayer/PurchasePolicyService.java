@@ -66,9 +66,9 @@ public class PurchasePolicyService {
                 logger.warn("Invalid session token provided for lottery enrollment.");
                 return Result.makeFail("Invalid session token.");
             }
-            User user = userRepository.findByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+            User user = userRepository.findByID(authenticationService.extractSubjectFromToken(sessionToken));
 
-            logger.info("Checking if userID: {} passed purchase policy checks", user.getUserID());
+            logger.info("Checking if userID: {} passed purchase policy checks", user.getEmail());
             //TODO: implement purchase policy checks for lottery enrollment
             logger.info("User passed purchase policy checks for lottery enrollment");
 

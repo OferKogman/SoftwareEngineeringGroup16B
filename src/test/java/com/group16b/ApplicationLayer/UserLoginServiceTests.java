@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -126,22 +127,22 @@ public class UserLoginServiceTests {
     @Test
     void loginMember_UserDoesNotExist_ReturnsFailResult() {
         String nonExistentUserEmail = "999";
-        when(mockUserRepository.userExists(nonExistentUserID)).thenReturn(false);
+        when(mockUserRepository.userExists(nonExistentUserEmail)).thenReturn(false);
 
-        Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword", "someMail");
+        Result<String> result = userLoginService.loginMember(nonExistentUserEmail, "anyPassword", "someMail");
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID", result.getError());
         
-        verify(mockUserRepository, never()).findByID(anyInt());
-        verify(mockTokenService, never()).generateVisitor_SignedToken(anyInt());
+        verify(mockUserRepository, never()).findByID(anyString());
+        verify(mockTokenService, never()).generateVisitor_SignedToken(anyString());
     }
 
     @Test
     void logOutMember_SuccessfulLogout_ReturnsNewGuestToken() {
         String validToken = "valid.user.token";
         String newGuestToken = "new.guest.token";
-        int userID = 123;
+        String userID = "123";
         
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(userID));
         when(mockUserRepository.userExists(userID)).thenReturn(true);
@@ -158,7 +159,7 @@ public class UserLoginServiceTests {
     @Test
     void logOutMember_TokenIsNotUserToken_ReturnsFailResult() {
         String guestToken = "guest.token";
-        int guestID = 0; 
+        String guestID = "0"; 
         
         when(mockTokenService.extractRoleFromToken(guestToken)).thenReturn("Guest");
         when(mockTokenService.extractSubjectFromToken(guestToken)).thenReturn(String.valueOf(guestID));//shouldnt be relevant won;t parse subject since incorrect role
@@ -173,7 +174,7 @@ public class UserLoginServiceTests {
     @Test
     void logOutMember_UserDoesNotExistInDB_ReturnsFailResult() {
         String validToken = "valid.user.token";
-        int nonExistentID = 999;
+        String nonExistentID = "999";
         
         when(mockTokenService.isUserToken(validToken)).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(nonExistentID));
