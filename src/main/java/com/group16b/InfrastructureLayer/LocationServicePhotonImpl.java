@@ -8,10 +8,10 @@ import java.net.http.HttpResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group16b.ApplicationLayer.Interfaces.ILocatoinService;
+import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.DomainLayer.Venue.Location;
 
-public class LocationServicePhotonImpl implements ILocatoinService {
+public class LocationServicePhotonImpl implements ILocationService {
 
     @Override
     public Location search(String location) throws IOException, InterruptedException {
