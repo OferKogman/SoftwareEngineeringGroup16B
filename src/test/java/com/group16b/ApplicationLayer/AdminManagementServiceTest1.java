@@ -110,7 +110,7 @@ public class AdminManagementServiceTest1 {
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getUserID());
-        when(mockEventRepository.getEventByID(e1.getEventID())).thenReturn(e1);
+        when(mockEventRepository.findByID(String.valueOf(e1.getEventID()))).thenReturn(e1);
         when(mockEventRepository.searchEvents(List.of("empty"), null, null, null, null, null, null, null, null, null)).thenReturn(new ArrayList<>(List.of()));
     }
 

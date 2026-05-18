@@ -167,35 +167,29 @@ public class EventRepositoryMapImplTests {
 				2
 		);
 		List<Event> allEvents = List.of(matchingEvent, wrongName, wrongArtist, wrongCategory, wrongKeyword, tooCheap, tooExpensive, tooEarly, tooLate, lowRating, wrongProductionCompany);
-		repository = EventRepositoryMapImpl.getInstance();
-		allEvents.forEach(repository::addEvent);
+		repository = new EventRepositoryMapImpl();
+		allEvents.forEach(repository::save);
 	}
 
 	@Test
 	void successfulGetEventById() {
-		Event retrievedEvent = repository.getEventByID(matchingEvent.getEventID());
+		Event retrievedEvent = repository.findByID(String.valueOf(matchingEvent.getEventID()));
 		assertEquals(matchingEvent, retrievedEvent);
 	}
 
 	@Test
 	void FailureGetEventByIdNotFound() {
 		try {
-			repository.getEventByID(999);
+			repository.findByID("999");
 		} catch (Exception e) {
 			assertEquals("Event with ID 999 not found", e.getMessage());
 		}
 	}
 
 	@Test
-	void SuccessfulEventExists() {
-		assertEquals(true, repository.EventExists(matchingEvent.getEventID()));
-		assertEquals(false, repository.EventExists(999));
-	}
-
-	@Test
 	void FailureDuplicateEventID() {
 		Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-			repository.addEvent(matchingEvent);
+			repository.save(matchingEvent);
 		});
 
 		assertEquals("Event with this ID already exists", exception.getMessage());
@@ -204,7 +198,7 @@ public class EventRepositoryMapImplTests {
 	@Test
 	void FailureAddNullEvent() {
 		Exception exception = assertThrows(IllegalArgumentException.class, () -> {
-			repository.addEvent(null);
+			repository.save(null);
 		});
 
 		assertEquals("Event cannot be null", exception.getMessage());

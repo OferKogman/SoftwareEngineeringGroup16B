@@ -55,11 +55,11 @@ public class VenueEventConfigService {
 
             int userID = Integer.valueOf(authService.extractSubjectFromToken(sessionToken));
 
-            if (!eventRepository.EventExists(eventID)) {
+            if (eventRepository.findByID(String.valueOf(eventID)) == null) {
                 return Result.makeFail("Event not found.");
             }
 
-            Event targetEvent = eventRepository.getEventByID(eventID);
+            Event targetEvent = eventRepository.findByID(String.valueOf(eventID));
             if (targetEvent.isActiveEvent()) {
                 return Result.makeFail("Event is already active and is not in creation process.");
             }
@@ -79,7 +79,7 @@ public class VenueEventConfigService {
             venueRepository.addVenue(newVenueLayout.getName(), newVenueLayout);
 
             targetEvent.setEventString(newVenueLayout.getName()); 
-            eventRepository.updateEvent(targetEvent);
+            eventRepository.save(targetEvent);
 
             logger.info("Successfully configured venue and initialized inventory for event {}", eventID);
             return Result.makeOk("Venue layout configured and saved successfully.");

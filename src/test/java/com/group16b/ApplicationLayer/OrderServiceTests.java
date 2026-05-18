@@ -185,7 +185,7 @@ public class OrderServiceTests {
         when(mockAuthenticationService.isUserToken(ADMIN_TOKEN)).thenReturn(false);
 
 
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
 
         ProductionCompany mockCompany = mock(ProductionCompany.class);
@@ -716,7 +716,7 @@ public class OrderServiceTests {
         Order order = createActiveSeatOrder();
 
         when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(null);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
 
         Result<List<String>> result = orderService.changeSeatsToOrder(
                 ORDER_ID,
@@ -989,7 +989,7 @@ public class OrderServiceTests {
         Order order = createActiveFieldOrder(2);
 
         when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(null);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
 
         Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
                 ORDER_ID,
@@ -1068,7 +1068,7 @@ public class OrderServiceTests {
 
         verify(mockOrderRepository).cancelOrder(ORDER_ID);
 
-        verify(mockEventRepository).getEventByID(EVENT_ID);
+        verify(mockEventRepository).findByID(String.valueOf(EVENT_ID));
         verify(mockVenueRepository).getVenueByID(VENUE_ID);
 
         verify(mockOrderRepository, times(2)).getOrder(ORDER_ID);
@@ -1144,7 +1144,7 @@ public class OrderServiceTests {
         );
 
         when(mockOrderRepository.getOrder(ORDER_ID)).thenReturn(seatOrder);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(null);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
 
         Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
 

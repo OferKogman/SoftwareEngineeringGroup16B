@@ -16,7 +16,7 @@ public class EventRepositoryMapImpl implements IEventRepository {
 	private Map<Integer, Event> events = new TreeMap<>();
 
 
-	private EventRepositoryMapImpl() {
+	public EventRepositoryMapImpl() {
 	}
 
 	@Override

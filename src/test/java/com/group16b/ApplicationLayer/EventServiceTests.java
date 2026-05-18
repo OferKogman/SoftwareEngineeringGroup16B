@@ -123,7 +123,7 @@ public class EventServiceTests {
 
         doThrow(new IllegalArgumentException("User does not have a role for this company.")).when(mockCompany).validateUserPermissions(user2.getUserID(), RoleType.OWNER);
 
-        when(mockEventRepository.getEventByID(500)).thenThrow(new IllegalArgumentException("Event with ID 500 not found"));
+        when(mockEventRepository.findByID(String.valueOf(500))).thenThrow(new IllegalArgumentException("Event with ID 500 not found"));
 
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
         
@@ -138,7 +138,7 @@ public class EventServiceTests {
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getUserID());
-        when(mockEventRepository.getEventByID(e1.getEventID())).thenReturn(e1);
+        when(mockEventRepository.findByID(String.valueOf(e1.getEventID()))).thenReturn(e1);
         when(mockEventRepository.searchEvents(List.of("empty"), null, null, null, null, null, null, null, null, null)).thenReturn(new ArrayList<>(List.of()));
         venue1.bookEvent(e1.getEventStartTime(), e1.getEventEndTime(), 1);
     }

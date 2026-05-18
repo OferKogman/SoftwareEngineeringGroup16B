@@ -183,7 +183,7 @@ public class ReservationServiceTests {
         when(mockAuthenticationService.isAdminToken(SESSION_TOKEN)).thenReturn(false);
 
         when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID);
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(event);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
         when(mockQueueRepository.findVirtualQueueById(EVENT_ID)).thenReturn(queue);
         when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
         ProductionCompany mockCompany = mock(ProductionCompany.class);
@@ -268,7 +268,7 @@ public class ReservationServiceTests {
 
         Event inactiveEvent = new Event(inactiveRecord, PRODUCTION_COMPANY_ID);
 
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(inactiveEvent);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(inactiveEvent);
 
         Result<String> result = reserveService.reserveSeats(
                 SEGMENT_ID,
@@ -291,7 +291,7 @@ public class ReservationServiceTests {
         Event eventWithLottery = spy(event);
         when(eventWithLottery.getLotteryPolicy()).thenReturn(lotteryPolicy);
 
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithLottery);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(eventWithLottery);
 
         Result<String> result = reserveService.reserveSeats(
                 SEGMENT_ID,
@@ -339,7 +339,7 @@ public class ReservationServiceTests {
         Event eventWithoutPurchasePolicy = spy(event);
         when(eventWithoutPurchasePolicy.getEventPurchasePolicy()).thenReturn(null);
 
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithoutPurchasePolicy);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(eventWithoutPurchasePolicy);
 
         Result<String> result = reserveService.reserveSeats(
                 SEGMENT_ID,
@@ -362,7 +362,7 @@ public class ReservationServiceTests {
         Event eventWithoutDiscountPolicy = spy(event);
         when(eventWithoutDiscountPolicy.getEventDiscountPolicy()).thenReturn(null);
 
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithoutDiscountPolicy);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(eventWithoutDiscountPolicy);
 
         Result<String> result = reserveService.reserveSeats(
                 SEGMENT_ID,
@@ -455,7 +455,7 @@ public class ReservationServiceTests {
         Event eventWithLottery = spy(event);
         when(eventWithLottery.getLotteryPolicy()).thenReturn(lotteryPolicy);
 
-        when(mockEventRepository.getEventByID(EVENT_ID)).thenReturn(eventWithLottery);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(eventWithLottery);
 
         Result<String> result = reserveService.reserveFieldSeats(
                 FIELD_SEGMENT_ID,

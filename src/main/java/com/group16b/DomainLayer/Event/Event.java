@@ -44,8 +44,8 @@ public class Event {
 		validateCategory(eventRecord.category());
 		this.category = eventRecord.category();
 		this.productionCompanyID = eventRecord.pcID();
-		this.discountPolicy = Collections.synchronizedSet(new HashSet<>());
-		this.purchasePolicy = Collections.synchronizedSet(new HashSet<>());
+		this.discountPolicy = new HashSet<>();
+		this.purchasePolicy = new HashSet<>();
 		validatePrice(eventRecord.price());
 		this.price = eventRecord.price();
 		validateRating(eventRecord.rating());
@@ -129,9 +129,7 @@ public class Event {
 	}
 
 	public Set<DiscountPolicy> getEventDiscountPolicy() {
-		synchronized (discountPolicy) {
-			return new HashSet<>(discountPolicy);
-		}
+		return new HashSet<>(discountPolicy);
 	}
 
 	public void addEventDiscountPolicy(DiscountPolicy dp) {
@@ -143,9 +141,7 @@ public class Event {
 	}
 
 	public Set<PurchasePolicy> getEventPurchasePolicy() {
-		synchronized (purchasePolicy) {
         return new HashSet<>(purchasePolicy);
-    }
 	}
 
 	public void addEventPurchasePolicy(PurchasePolicy pp) {
@@ -185,7 +181,7 @@ public class Event {
 	public void incrementVersion() {
 		this.version++;
 	}
-	
+
 
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {

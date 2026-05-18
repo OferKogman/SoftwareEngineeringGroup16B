@@ -98,7 +98,7 @@ public class EventStockEditTests {
         doNothing().when(mockCompany).validateUserPermissions(USER_ID,RoleType.OWNER);
 
         Event mockEvent = mock(Event.class);
-        when(mockEventRepo.getEventByID(EVENT_ID)).thenReturn(mockEvent);
+        when(mockEventRepo.findByID(String.valueOf(EVENT_ID))).thenReturn(mockEvent);
         when(mockEvent.getEventProductionCompanyID()).thenReturn(COMPANY_ID);
         when(mockEvent.getEventVenueID()).thenReturn(String.valueOf(VENUE_ID));
 
@@ -151,7 +151,7 @@ public class EventStockEditTests {
         when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         
         Event mockEvent = mock(Event.class);
-        when(mockEventRepo.getEventByID(EVENT_ID)).thenReturn(mockEvent);
+        when(mockEventRepo.findByID(String.valueOf(EVENT_ID))).thenReturn(mockEvent);
         when(mockEvent.getEventProductionCompanyID()).thenReturn(COMPANY_ID);
 
         doThrow(new IllegalArgumentException("Unauthorized action")).when(mockCompany).validateUserPermissions(USER_ID, RoleType.OWNER);

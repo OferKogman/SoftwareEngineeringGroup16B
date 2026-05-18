@@ -21,7 +21,7 @@ public class PurchasePolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
     
     private final IAuthenticationService authenticationService;
-    private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepository;
 
@@ -42,7 +42,7 @@ public class PurchasePolicyService {
         User user = userRepository.getUserByID(userID);
 
         logger.info("retrieving prodcution company for creating a lottery policy");
-        ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepo.getEventByID(eventID).getEventProductionCompanyID()));
+        ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepo.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
 
         logger.info("Checking user permissions for userID: {}", user.getUserID());
         company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
@@ -53,7 +53,7 @@ public class PurchasePolicyService {
         logger.info("Lottery policy created successfully: {}", lotteryPolicy);
         
         logger.info("Adding lottery policy to event with ID: {}", eventID);
-        eventRepo.getEventByID(eventID).addEventPurchasePolicy(lotteryPolicy);
+        eventRepo.findByID(String.valueOf(eventID)).addEventPurchasePolicy(lotteryPolicy);
         logger.info("Lottery policy added to event successfully");
         return Result.makeOk(lotteryPolicy);
     }
@@ -74,14 +74,14 @@ public class PurchasePolicyService {
 
             //check event is active
             logger.info("Checking if event with ID: {} is active", eventID);
-            if(!eventRepo.getEventByID(eventID).getEventStatus()) {
+            if(!eventRepo.findByID(String.valueOf(eventID)).getEventStatus()) {
                 logger.warn("Event with ID: {} is not active. Cannot enroll in lottery.", eventID);
                 return Result.makeFail("Event is not active. Cannot enroll in lottery.");
             }
 
             //check event has lottery policy with lotteryID
             logger.info("Checking if event with ID: {} has a lottery policy", eventID);
-            LotteryPolicy lottery = eventRepo.getEventByID(eventID).getLotteryPolicy();
+            LotteryPolicy lottery = eventRepo.findByID(String.valueOf(eventID)).getLotteryPolicy();
             if(lottery == null) {
                 logger.warn("Event with ID: {} does not have a lottery policy.", eventID);
                 return Result.makeFail("Event does not have a lottery policy.");

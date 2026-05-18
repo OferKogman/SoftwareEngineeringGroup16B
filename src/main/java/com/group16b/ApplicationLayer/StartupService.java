@@ -40,7 +40,7 @@ public class StartupService {
         UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
         VenueRepositoryMapImpl venueRepositoryMapImpl = VenueRepositoryMapImpl.getInstance();
         OrderRepositoryMapImpl orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
-        EventRepositoryMapImpl eventRepositoryMapImpl = EventRepositoryMapImpl.getInstance();
+        EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
         VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = VirtualQueueRepositoryMapImpl.getInstance();
         ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
         PaymentService paymentService = new PaymentService();

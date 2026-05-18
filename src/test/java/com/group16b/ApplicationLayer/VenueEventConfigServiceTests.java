@@ -110,8 +110,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
@@ -129,7 +128,7 @@ public class VenueEventConfigServiceTests {
         verify(mockEvent, times(1)).setEventString(venueName);
         // We verify that the repository actually received ANY fully constructed Venue object!
         verify(mockVenueRepository, times(1)).addVenue(eq(venueName), any(Venue.class));
-        verify(mockEventRepository, times(1)).updateEvent(mockEvent);
+        verify(mockEventRepository, times(1)).save(mockEvent);
     }
 
     @Test
@@ -144,8 +143,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -174,7 +172,7 @@ public class VenueEventConfigServiceTests {
 
         assertFalse(result.isSuccess());
         assertEquals("Authentication failed. Please log in again.", result.getError());
-        verify(mockEventRepository, never()).EventExists(anyInt());
+        verify(mockEventRepository, never()).findByID(anyString());
     }
 
     @Test
@@ -201,8 +199,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
         when(mockUserRepository.getUserByID(userID)).thenReturn(null);
@@ -227,8 +224,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
@@ -255,14 +251,13 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(false);
 
         Result<String> result = configService.configureLayoutAndInventory(
                 validToken, companyID, eventID, validDTO, startTime, endTime);
 
         assertFalse(result.isSuccess());
         assertEquals("Event not found.", result.getError());
-        verify(mockEventRepository, never()).getEventByID(anyInt());
+        verify(mockEventRepository, never()).findByID(anyString());
     }
 
     @Test
@@ -275,8 +270,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(true);
 
         Result<String> result = configService.configureLayoutAndInventory(
@@ -296,8 +290,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mockEvent);
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
 
@@ -339,8 +332,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
-        when(mockEventRepository.EventExists(eventID)).thenReturn(true);
-        when(mockEventRepository.getEventByID(eventID)).thenReturn(mock(Event.class));
+        when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mock(Event.class));
         when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
 
         ProductionCompany mockCompany=mock(ProductionCompany.class);

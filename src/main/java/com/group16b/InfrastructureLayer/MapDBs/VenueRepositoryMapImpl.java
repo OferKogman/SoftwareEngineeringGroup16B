@@ -14,7 +14,7 @@ public class VenueRepositoryMapImpl implements IVenueRepository{
     private final static VenueRepositoryMapImpl instance = new VenueRepositoryMapImpl();
 	private Map<String, Venue> venus = new ConcurrentHashMap<>();
 
-	private VenueRepositoryMapImpl() {
+	public VenueRepositoryMapImpl() {
 	}
 
 	public static VenueRepositoryMapImpl getInstance() {

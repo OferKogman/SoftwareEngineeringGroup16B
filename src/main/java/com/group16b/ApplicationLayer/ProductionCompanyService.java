@@ -31,7 +31,7 @@ public class ProductionCompanyService {
     private static final Logger logger = LoggerFactory.getLogger(ProductionCompanyService.class);
 
     private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
-    private final IEventRepository eventRepo = EventRepositoryMapImpl.getInstance();
+    private final IEventRepository eventRepo = new EventRepositoryMapImpl();
     private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
@@ -64,7 +64,8 @@ public class ProductionCompanyService {
             List<Order> orders = orderRepo.getAllCompletedOrders();
             List<Order> filtered = orders.stream()
             .filter(order -> {
-                Event event = eventRepo.getEventByID(order.getEventId());
+                int eventID = order.getEventId();
+                Event event = eventRepo.findByID(String.valueOf(eventID));
                 return event != null && event.getEventProductionCompanyID() == productionCompanyID;
                 }).toList();
             List<OrderDTO> orderDTOs =filtered.stream()
