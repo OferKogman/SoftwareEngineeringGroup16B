@@ -5,10 +5,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 
-public class OrderRepositoryMapImpl implements IRepository<Order> {
+public class OrderRepositoryMapImpl implements IOrderRepository {
 	private final ConcurrentHashMap<String, Order> orders;
 	private final static OrderRepositoryMapImpl instance = new OrderRepositoryMapImpl();
 
@@ -63,7 +63,13 @@ public class OrderRepositoryMapImpl implements IRepository<Order> {
 		return this.orders.values().stream().map(Order::new).toList();
 	} //.values().stream().filter(order -> !order.isActive()).toList(); need to cheack everywhere the assumption if active order
 
-	
+	@Override
+	public List<Order> getBySubjectId(String subjectId) {
+		return this.orders.values().stream()
+				.filter(order -> order.isCompleted())
+				.filter(order -> order.getSubjectId().equals(String.valueOf(subjectId)))
+				.toList();
+	}
 
 	@Override
 	public synchronized void delete(String orderId) {

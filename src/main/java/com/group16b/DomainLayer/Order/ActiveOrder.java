@@ -17,6 +17,11 @@ public class ActiveOrder implements OrderState {
 	}
 
 	@Override
+	public boolean isCompleted() {
+		return false;
+	}
+
+	@Override
 	public List<String> getTickets() {
 		throw new IllegalStateException("Cannot get tickets from an active order");
 	}

@@ -33,8 +33,12 @@ class CompletedOrder implements OrderState {
 	}
 	
 	@Override
-
     public OrderState copy() {
         return new CompletedOrder();
     }
+	
+	@Override
+	public boolean isCompleted() {
+		return true;
+	}
 }

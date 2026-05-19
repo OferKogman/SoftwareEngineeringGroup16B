@@ -9,20 +9,21 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Segment;
@@ -31,7 +32,6 @@ import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
 
 import io.jsonwebtoken.JwtException;
@@ -40,180 +40,148 @@ public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 	private final IAuthenticationService authenticationService;
     private final ITicketGateway ticketGateway = new TicketGateway();
-	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepo;
+	private final IPaymentGateway paymentService;
 
-
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
+		this.paymentService = paymentGateway;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
-		logger.info("UserService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
-		/*
-			1. System - check active order status.
-			1.5 System - verify order belungs to the user.
-			2. System - calculates price of tickets according to company and event policies.
-			3. System - charges the user for the designed price.
-			4. System - creates Tickets for each of the tickets.
-			5. System - sends the user his acquired tickets.
-		*/
+    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
 		try {
-				// 1. System - check active order status.
+			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
+
+			// 1. System - check active order status.
 			Order order = orderRepo.findByID(orderID);
-			if (order == null) {
-				logger.error("UserService.CompleteActiveOrder: Order {} not found for user {}", orderID, userId);
-				return Result.makeFail("Order not found");
-			}
-			if (!order.isActive()) {
-				logger.error("UserService.CompleteActiveOrder: Order {} is not active for user {}", orderID, userId);
-				return Result.makeFail("Order is not active");
-			}
+
+			logger.info("OrderService.CompleteActiveOrder: validate Order {} is activeOrder for user {}", orderID, userId);
+			order.validiteOrderIsActive();
+			
 
             logger.info("Verifying session token for completion.");
-			if (!authenticationService.validateToken(sTocken)) {
-				logger.warn("Invalid session token provided for completion.");
-				return Result.makeFail("Invalid session token.");
-			}
-            if (authenticationService.isAdminToken(sTocken)) {
-				logger.warn("Invalid session token provided for completion.");
-				return Result.makeFail("Invalid session token.");
-			}
-			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
-			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+            logger.info("Session token verified successfully.");
 
-				// 1.5 System - verify order belungs to the user.
-			
-			if (!order.isBelongsToSubject(subjectID)) {
-				logger.error("UserService.CompleteActiveOrder: Order {} does not belong to user {}", orderID, userId);
-				return Result.makeFail("Order does not belong to the given user");
-			}
+
+			// 1.5 System - verify order belungs to the user.
+			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, userId);
+			order.verifyBelongsToSubject(subjectID);
 
 			// 2. System - calculates price of tickets according to company and event policies.
-			double price = order.getTotalOrderprice(); // TODO: implement price calculation logic
+			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, userId);
+			double price = order.getTotalOrderprice();
 
 
 			// 3. System - charges the user for the designed price.
-			logger.info("UserService.CompleteActiveOrder: user {} is attempting to pay {} for order {}", userId, price, orderID);
-			User user = userRepo.getUserByID(userId);
-			if (user == null) {
-				logger.error("UserService.CompleteActiveOrder: User {} not found while attempting to complete order {}", userId, orderID);
-				return Result.makeFail("User not found");
-			}
+			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, userId, price);
+			paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
+			logger.info("OrderService.CompleteActiveOrder: user {} paid {} successfully for order {}", userId, price, orderID);
 
-			if (!paymentService.processPayment(paymentInfo, price)) {
-				return Result.makeFail("Payment failed");
-			}
-			logger.info("UserService.CompleteActiveOrder: user {} paid {} successfully for order {}", userId, price, orderID);
 
 			// 4. System - creates Tickets for each of the tickets.
+			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, userId);
 			List<TicketDTO> tikketDTOs = new ArrayList<>();
 			for (int i = 0; i < order.getNumOfTickets(); i++) {
 				TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), String.valueOf(userId), order.getSegmentId(), order.getSeats().get(i), price); // TODO: implement actual ticket generation logic
 				tikketDTOs.add(ticketDTO);
             }
+
+			logger.info("OrderService.CompleteActiveOrder: generated {} tickets successfully for order {} for user {}", tikketDTOs.size(), orderID, userId);
 			order.CompleteOrder();
-			logger.info("UserService.CompleteActiveOrder: Order {} completed successfully for user {}", orderID, userId);
+			logger.info("OrderService.CompleteActiveOrder: Order {} completed successfully for user {}", orderID, userId);
 
 			
 			// 5. System - sends the user his acquired tickets.
-				return Result.makeOk(tikketDTOs);
+			return Result.makeOk(tikketDTOs);
 
 
+		} catch (AuthException e) {
+			logger.error("Authentication error during retrieving orders: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (IllegalStateException e) { 
-			logger.error("UserService.CompleteActiveOrder: Failed to generate tickets for order {} for user {}: {}", orderID, userId, e.getMessage());
-			cancelPayment(paymentInfo); 
+			logger.error("OrderService.CompleteActiveOrder: Cannot complete Already completed order {} for user {}: {}", orderID, userId, e.getMessage());
+			paymentService.cancelPayment(); 
 			_cancelOrder(orderID);
 			return Result.makeFail(e.getMessage());
-		}catch (Exception e) {
-			cancelPayment(paymentInfo);
+		} catch (IllegalArgumentException e) { 
+			logger.error("OrderService.CompleteActiveOrder: {}", e.getMessage());
+			paymentService.cancelPayment(); 
+			_cancelOrder(orderID);
+			return Result.makeFail(e.getMessage());
+		}catch (PaymentFailedException e) {
+			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {} for user {}: {}", orderID, userId, e.getMessage());
+			return Result.makeFail("Payment failed: " + e.getMessage());
+		}
+		catch (Exception e) {
+			paymentService.cancelPayment();
 			_cancelOrder(orderID); 
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
     
-	private void cancelPayment(PaymentInfo paymentInfo) {
-		// TODO: implement payment cancellation logic
-	} 
-
 	private void _cancelOrder(String orderID) {
+	try {
 		Order order = orderRepo.findByID(orderID);
-		if (order == null) {
-			logger.error("UserService._cancelOrder: Order {} not found while attempting to cancel order {}", orderID, orderID);
-			return;
-		}
 		orderRepo.delete(orderID);
 		int eventID = order.getEventId();
 		Event event = eventRepo.findByID(String.valueOf(eventID));
-		if (event == null) {
-			logger.error("UserService._cancelOrder: Event {} not found while attempting to cancel order {}", order.getEventId(), orderID);
-			return;
-		}
-
 		Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-		if (venue == null) {
-			logger.error("UserService._cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
-			return;
-		}
 		Segment segment = venue.getSegmentByID(order.getSegmentId());
-		if (segment == null) {
-			logger.error("UserService._cancelOrder: Segment {} not found while attempting to cancel order {}", order.getSegmentId(), orderID);
-			return;
-		}
-
-        switch (segment.getSegmentType()) {
+		
+			switch (segment.getSegmentType()) {
             case "S" -> segment.cancelReservation(ReservationRequest.forSeats(order.getEventId(), order.getSeats(), order.getSegmentId()));
             case "F" -> segment.cancelReservation(ReservationRequest.forField(order.getEventId(), order.getNumOfTickets(), order.getSegmentId()));
-            default -> logger.error("UserService._cancelOrder: Unknown segment type {} for segment {} while attempting to cancel order {}", segment.getSegmentType(), segment.getSegmentID(), orderID);
+            default -> logger.error("OrderService._cancelOrder: Unknown segment type {} for segment {} while attempting to cancel order {}", segment.getSegmentType(), segment.getSegmentID(), orderID);
         }
+		} catch (Exception e) {
+			logger.error("OrderService._cancelOrder: Failed to cancel reservation for order {}: {}", orderID, e.getMessage());
+			 // we log the error but do not throw it further as the main goal of this method is to cancel the order and we don't want a failure in cancelling the reservation to prevent the order cancellation.
+		}
+        
 
 	}
 
     public Result<List<OrderDTO>> getUserOrders(String sessionToken) {
 		try {
 			//auth
-			logger.info("Verifying session token for retrieving orders of user with session token {0}.", sessionToken);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for retrieving orders of user with session token {0}.", sessionToken);
-				return Result.makeFail("Invalid session token.");
-			}
-            if (!authenticationService.isUserToken(sessionToken)) {
-                logger.warn("Only user can get order history.");
-                return Result.makeFail("Only user can get order history.");
-            }
-			int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-			User user = userRepo.getUserByID(userID);
-			if (user == null) {
-				logger.warn("User with ID {0} not found for retrieving orders.", userID);
-				return Result.makeFail("User not found.");
-			}
-			logger.info("Session token verified successfully.");
+			logger.info("OrderService.getUserOrders: Verifying session token for retrieving orders of user with session token {0}.", sessionToken);
+			int userID = validateAndGetUserID(sessionToken);
+			logger.info("OrderService.getUserOrders: Session token verified successfully.");
 
 			//get orders
-			logger.info("Retrieving orders for user {0}.", userID);
-			List<Order> orders = orderRepo.getAll().stream()
-				.filter(order -> order.getSubjectId().equals(String.valueOf(userID)))
-				.toList();
+			logger.info("OrderService.getUserOrders: Retrieving orders for user {0}.", userID);
+			List<Order> orders = orderRepo.getBySubjectId(String.valueOf(userID));
+			
+			logger.info("OrderService.getUserOrders: Mapping orders to OrderDTOs for user {0}.", userID);
 			List<OrderDTO> orderDTOs = new ArrayList<>();
 			for (Order order : orders) {
 				OrderDTO orderDTO = new OrderDTO(order); 
 				orderDTOs.add(orderDTO);
 			}
-			logger.info("Orders retrieved successfully for user {0}.", userID);
+			logger.info("OrderService.getUserOrders: Orders retrieved successfully for user {0}.", userID);
 			return Result.makeOk(orderDTOs);
-		} catch (IllegalArgumentException | IllegalStateException e) {
-			logger.error("Failed to retrieve orders: " + e.getMessage());
+
+		}catch (AuthException e) {
+			logger.error("OrderService.getUserOrders: Authentication error during retrieving orders: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
+		catch (IllegalArgumentException e) {
+			logger.error("OrderService.getUserOrders: Invalid argument provided: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (JwtException e) {
-			logger.error("JWT authentication error during retrieving orders: " + e.getMessage());
+		} catch (IllegalStateException e){
+			logger.error("OrderService.getUserOrders: Illegal state encountered: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}catch (JwtException e) {
+			logger.error("OrderService.getUserOrders: JWT authentication error during retrieving orders: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
-			logger.error("Unexpected error during retrieving orders: " + e.getMessage());
+			logger.error("OrderService.getUserOrders: Unexpected error during retrieving orders: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
@@ -222,46 +190,28 @@ public class OrderService {
         
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
-            logger.info("Attempting to change seats for order {} with new seats {}.", orderId, newSeatIds);
+            logger.info("OrderService.changeSeatsToOrder: Attempting to change seats for order {} with new seats {}.", orderId, newSeatIds);
             if (newSeatIds == null || newSeatIds.isEmpty()) {
                 return Result.makeFail("New seat IDs list cannot be null or empty");
             }
 
-            logger.info("Verifying session token for change.");
-			if (!authenticationService.validateToken(sTocken)) {
-				logger.warn("Invalid session token provided for reservation.");
-				return Result.makeFail("Invalid session token.");
-			}
-            if (authenticationService.isAdminToken(sTocken)) {
-				logger.warn("Invalid session token provided for reservation.");
-				return Result.makeFail("Invalid session token.");
-			}
-
-			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
-			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
+            logger.info("OrderService.changeSeatsToOrder: Verifying session token for change.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+			logger.info("OrderService.changeSeatsToOrder: Session token verified successfully.");
 
             // get order seats. 
             Order order = orderRepo.findByID(orderId);
-            if (order == null) {
-                logger.error("Order {} not found for changing seats.", orderId);
-                return Result.makeFail("Order not found");
-            }
-            if (!order.isBelongsToSubject(subjectID)) {
-                logger.error("Order {} does not belong to the user with the provided token for changing seats.", orderId);
-                return Result.makeFail("Order does not belong to the given user");
-            }   
-            if (order.getOrderType() != OrderType.SEAT) {
-                logger.error("Order {} is not a seat order for changing seats.", orderId);
-                return Result.makeFail("Cannot change seats for a non-seat order");
-            }
-            if(!order.isActive()) {
-                logger.error("Order {} is not active for changing seats.", orderId);
-                return Result.makeFail("Cannot change seats for a non-active order");
-            }
-            
-            List<String> oldSeats = order.getSeats();
 
+			logger.info("OrderService.changeSeatsToOrder: verifying that order {} belongs to the user with the provided token for changing seats.", orderId);
+            order.verifyBelongsToSubject(subjectID);
+
+			logger.info("OrderService.changeSeatsToOrder: verifying that order {} is a seat order for changing seats.", orderId);
+            order.verifyTypeSeats();
+
+			logger.info("OrderService.changeSeatsToOrder: verifying that order {} is active for changing seats.", orderId);
+            order.validiteOrderIsActive();
+
+            List<String> oldSeats = order.getSeats();
             List<String> intersection = getIntersection(newSeatIds, oldSeats);
 
             // remove intersection from new seats -> seatsToAdd
@@ -271,48 +221,41 @@ public class OrderService {
             // reserve new seatsToAdd
 			int eventID = order.getEventId();
             Event event = eventRepo.findByID(String.valueOf(eventID));
-            if (event == null) {
-                return Result.makeFail("Event not found");
-            }
 
-            logger.info("Reserving new seats {} for order {}.", seatsToAdd, orderId);
-            venueRepo.reserveTickets(event.getEventVenueID(), order.getSegmentId(), seatsToAdd, order.getEventId());
+            logger.info("OrderService.changeSeatsToOrder: Reserving new seats {} for order {}.", seatsToAdd, orderId);
+			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+			venue.reserveSeats(ReservationRequest.forSeats(order.getEventId(), seatsToAdd, order.getSegmentId()));
             
             // free seatsToRemove
-            logger.info("Freeing old seats {} for order {}.", seatsToRemove, orderId);
-            venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
+            logger.info("OrderService.changeSeatsToOrder: Freeing old seats {} for order {}.", seatsToRemove, orderId);
+			venue.freeSeats(ReservationRequest.forSeats(order.getEventId(), seatsToRemove, order.getSegmentId()));
+			
+			logger.info("OrderService.changeSeatsToOrder: Validating purchase policy for event {} for order {}.", eventID, orderId);
+			validatePurchasePolicy(event.getEventID());
 
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-			if (venue == null) {
-				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
-				return Result.makeFail("Venue not found");
-			}
 			Segment segment = venue.getSegmentByID(order.getSegmentId());
-			if (segment == null) {
-				logger.error("Segment {} not found for changing seats for order {}.", order.getSegmentId(), orderId);
-				return Result.makeFail("Segment not found");
-			}
-
 			double pricePerSeat = segment.getPrice(eventID);
-			if (!validatePurchasePolicy(event.getEventID())) {
-                logger.error("Purchase policy validation failed for event {}", eventID);
-                return Result.makeFail("Purchase policy validation failed for this event");
-            }
-
+			logger.info("OrderService.changeSeatsToOrder: Calculating discount policies for event {} for order {}.", eventID, orderId);
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatIds.size());
 
-
-
-            logger.info("Updating order {} with new seats {}.", orderId, newSeatIds);
+            logger.info("OrderService.changeSeatsToOrder: Updating order {} with new seats {}.", orderId, newSeatIds);
             order.updateSeats(newSeatIds, priceAfterDiscountPolicy);
 
             return Result.makeOk(newSeatIds);
-        } catch (IllegalArgumentException e) {
-            logger.error("Failed to change seats for order {}: " + e.getMessage(), orderId);
+        } catch (AuthException e) {
+			logger.error("OrderService.changeSeatsToOrder: Authentication error during changing seats for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
+		catch (IllegalStateException e) {
+			logger.error("OrderService.changeSeatsToOrder: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
+		catch (IllegalArgumentException e) {
+            logger.error("OrderService.changeSeatsToOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
             return Result.makeFail(e.getMessage());
         }
         catch (Exception e) {
-            logger.error("Unexpected error during changing seats: " + e.getMessage());
+            logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats: {}", e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -320,102 +263,72 @@ public class OrderService {
     public Result<Integer> changeNumOfSeatsInFieldOrder(String orderId, String sTocken, int newSeatsNum){
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
-            logger.info("Attempting to change number of seats for order {} with new number of seats {}.", orderId, newSeatsNum);
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: Attempting to change number of seats for order {} with new number of seats {}.", orderId, newSeatsNum);
             if (newSeatsNum <= 0) {
                 return Result.makeFail("New number of seats must be greater than zero");
             }
 
-            logger.info("Verifying session token for edit.");
-			if (!authenticationService.validateToken(sTocken)) {
-				logger.warn("Invalid session token provided for edit.");
-				return Result.makeFail("Invalid session token.");
-			}
-            if (authenticationService.isAdminToken(sTocken)) {
-				logger.warn("Invalid session token provided for edit.");
-				return Result.makeFail("Invalid session token.");
-			}
-			String subjectID = authenticationService.extractSubjectFromToken(sTocken);
-			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
+            logger.info("OrderService.Verifying session token for edit.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: Verifying session token for edit.");
 
             // get order seats. 
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: Attempting to reserve seats for {}", subjectID);
             Order order = orderRepo.findByID(orderId);
-            if (order == null) {
-                logger.error("Order {} not found for changing seats.", orderId);
-                return Result.makeFail("Order not found");
-            }
-            if (!order.isBelongsToSubject(subjectID)) {
-                logger.error("Order {} does not belong to the user with the provided token for changing seats.", orderId);
-                return Result.makeFail("Order does not belong to the given user");
-            }   
-            if (order.getOrderType() != OrderType.FIELD) {
-                logger.error("Order {} is not a field order for changing seats.", orderId);
-                return Result.makeFail("Cannot change seats for a non-field order");
-            }
-            if(!order.isActive()) {
-                logger.error("Order {} is not active for changing seats.", orderId);
-                return Result.makeFail("Cannot change seats for a non-active order");
-            }
+
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} belongs to the user with the provided token for changing number of seats.", orderId);
+            order.verifyBelongsToSubject(subjectID);
+
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} is a field order for changing number of seats.", orderId);
+            order.verifyTypeField();
+
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} is active for changing number of seats.", orderId);
+            order.validiteOrderIsActive();
             
             int oldNumOfTickets = order.getNumOfTickets();
 
             if (oldNumOfTickets == newSeatsNum){
-                logger.info("New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
                 return Result.makeOk(newSeatsNum);
             }
-            Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
-            if (event == null) {
-                return Result.makeFail("Event not found");
-            }
-
+			int eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
             if (oldNumOfTickets < newSeatsNum) {
                 // reserve new seatsToAdd
                 int seatsToAdd = newSeatsNum - oldNumOfTickets;
 
-                logger.info("Reserving {} new seats for order {}.", seatsToAdd, orderId);
-                venueRepo.reserveTickets(event.getEventVenueID(), order.getSegmentId(), seatsToAdd, order.getEventId());
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: Reserving {} new seats for order {}.", seatsToAdd, orderId);
+				venue.reserveSeats(ReservationRequest.forField(order.getEventId(), seatsToAdd, order.getSegmentId()));
             } else {
                 // free seatsToRemove
                 int seatsToRemove = oldNumOfTickets - newSeatsNum;
-                logger.info("Freeing {} old seats for order {}.", seatsToRemove, orderId);
-                venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: Freeing {} old seats for order {}.", seatsToRemove, orderId);
+				venue.freeSeats(ReservationRequest.forField(order.getEventId(), seatsToRemove, order.getSegmentId()));
             }
 
-            logger.info("Updating order {} with new seats {}.", orderId, newSeatsNum);
-			int eventID = order.getEventId();
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-			if (venue == null) {
-				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
-				return Result.makeFail("Venue not found");
-			}
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: Updating order {} with new seats {}.", orderId, newSeatsNum);
 			Segment segment = venue.getSegmentByID(order.getSegmentId());
-			if (segment == null) {
-				logger.error("Segment {} not found for changing seats for order {}.", order.getSegmentId(), orderId);
-				return Result.makeFail("Segment not found");
-			}
 
 			double pricePerSeat = segment.getPrice(eventID);
-			if (!validatePurchasePolicy(event.getEventID())) {
-                logger.error("Purchase policy validation failed for event {}", eventID);
-                return Result.makeFail("Purchase policy validation failed for this event");
-            }
+			validatePurchasePolicy(event.getEventID());
 
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatsNum);
-
-
 			order.updateNumOfTickets(newSeatsNum, priceAfterDiscountPolicy);
-
 
             return Result.makeOk(newSeatsNum);
 
         } catch (IllegalArgumentException e) {
-            logger.error("Failed to change seats for order {}: " + e.getMessage(), orderId);
+            logger.error("OrderService.changeNumOfSeatsInFieldOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
             return Result.makeFail(e.getMessage());
-        }
-        
-        
-        catch (Exception e) {
-            logger.error("Unexpected error during changing seats: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("OrderService.changeNumOfSeatsInFieldOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (AuthException e) {
+			logger.error("OrderService.changeNumOfSeatsInFieldOrder: Authentication error during changing number of seats for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch (Exception e) {
+            logger.error("OrderService.changeNumOfSeatsInFieldOrder: Unexpected error during changing seats: {}", e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -451,10 +364,10 @@ public class OrderService {
 			_cancelOrder(orderId);
         return Result.makeOk(true);
 		} catch (IllegalArgumentException e) {
-			logger.error("Failed to cancel order {}: " + e.getMessage(), orderId);
+			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (Exception e) {	
-			logger.error("Unexpected error during cancelling order {}: " + e.getMessage(), orderId);
+			logger.error("OrderService.cancelOrder: Unexpected error during cancelling order {}: {}", orderId, e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
     }
@@ -479,7 +392,7 @@ public class OrderService {
             }
             return priceAfterDiscountPolicy;
     }
-    private boolean validatePurchasePolicy(int eventID) {
+    private void validatePurchasePolicy(int eventID) {
         Event event = eventRepo.findByID(String.valueOf(eventID));
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
         Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
@@ -497,9 +410,33 @@ public class OrderService {
             for (PurchasePolicy pp : purchasePolicy) {
                 if (!pp.validatePurchase()) {
                     logger.error("User did not meet purchase policy requirements");
-                    return false;
+                    throw new IllegalArgumentException("User did not meet purchase policy requirements");
                 }
             }
-            return true;
+    }
+
+	private String validateAssureNotAdminGetSubjectID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid Token");
+        }
+        if (authenticationService.isAdminToken(sessionToken)) {
+            throw new AuthException("Admins are not allowed to perform operation");
+        }
+        String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
+        return subjectID;
+    }
+	private int validateAndGetUserID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid Token");
+        }
+        if (!authenticationService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+        //verify user exists in the database, i.e not a stale user
+        userRepo.getUserByID(userID);
+        return userID;
     }
 }

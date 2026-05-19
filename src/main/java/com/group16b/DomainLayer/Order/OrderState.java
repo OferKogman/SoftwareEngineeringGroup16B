@@ -7,6 +7,8 @@ public interface OrderState {
 	void setTickets(List<String> tickets);
 	CompletedOrder completeOrder();
 	boolean isActive();
+	boolean isCompleted();
 	OrderState copy();
+
 
 }
