@@ -8,8 +8,8 @@ import org.slf4j.LoggerFactory;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
@@ -22,7 +22,7 @@ public class PurchasePolicyService {
     
     private final IAuthenticationService authenticationService;
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-    private final IUserRepository userRepository = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyRepository;
 
     public PurchasePolicyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
