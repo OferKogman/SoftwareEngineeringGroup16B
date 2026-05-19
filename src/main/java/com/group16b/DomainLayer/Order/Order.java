@@ -1,7 +1,5 @@
 package com.group16b.DomainLayer.Order;
 
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 public class Order {
@@ -92,6 +90,17 @@ public class Order {
 		return orderType;
 	}
 
+	public void verifyTypeSeats(){
+		if (orderType != OrderType.SEAT) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+	}
+	public void verifyTypeField(){
+		if (orderType != OrderType.FIELD) {
+			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
+		}
+	}
+
 	public boolean CompleteOrder() {
 		this.state = state.completeOrder();
 		return true;
@@ -105,8 +114,25 @@ public class Order {
 	public boolean isActive() {
 		return state.isActive();
 	}
+	public boolean isCompleted() {
+		return state.isCompleted();
+	}
+
+	public void validiteOrderIsActive() {
+		if (!this.isActive()) {
+			throw new IllegalStateException("Order " + this.orderId + " is not active");
+		}
+	}
+
+
 	public boolean isBelongsToSubject(String subjectID) {
 		return this.subjectID.equals(subjectID);
+	}
+
+	public void verifyBelongsToSubject(String subjectID) {
+		if (!this.subjectID.equals(subjectID)){
+			throw new IllegalArgumentException("Order " + this.orderId + " does not belong to subject " + subjectID);
+		}
 	}	
 
 
@@ -140,23 +166,6 @@ public class Order {
     {
         this.version=version;
     }
-
-
-
-	
-
-	public String encodeStocken(String sTocken) {
-		try{
-			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			messageDigest.update(sTocken.getBytes());
-			String stringHash = new String(messageDigest.digest());
-			return stringHash;
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException("Error hashing password: " + e.getMessage());
-		}catch (Exception e) {
-			throw new RuntimeException("An unexpected error occurred while hashing password: " + e.getMessage());
-		}
-	}
 
 	
 	

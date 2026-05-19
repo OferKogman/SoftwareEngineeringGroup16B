@@ -4,8 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
-import com.group16b.DomainLayer.Interfaces.IRepository;
-import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
@@ -38,7 +38,7 @@ public class StartupService {
         LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
         UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
         VenueRepositoryMapImpl venueRepositoryMapImpl = VenueRepositoryMapImpl.getInstance();
-        IRepository<Order> orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
+        IOrderRepository orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
         EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
         VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = new VirtualQueueRepositoryMapImpl();
         ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
@@ -53,7 +53,7 @@ public class StartupService {
         adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl);
         companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
-        orderService = new OrderService(authService,productionCompanyRepositoryMapImpl);
+        orderService = new OrderService(authService,productionCompanyRepositoryMapImpl, paymentService);
         productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl);
         purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
         reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
@@ -61,7 +61,7 @@ public class StartupService {
         userService = new UserService(authService, ticketGateway);
 
         logger.info("Adding default system admin...");
-        IRepository<SystemAdmin> systemAdminRepository = new SystemAdminRepositoryMapImpl();
+        ISystemAdminRepository systemAdminRepository = new SystemAdminRepositoryMapImpl();
         SystemAdmin systemAdmin = new SystemAdmin("1", "admin", "password", "admin@example.com");
         systemAdminRepository.save(systemAdmin);
         logger.info("StartupService initialization complete.");
