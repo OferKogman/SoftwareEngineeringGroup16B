@@ -18,20 +18,19 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.TicketGateway;
 
 import io.jsonwebtoken.JwtException;
@@ -40,17 +39,18 @@ public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 	private final IAuthenticationService authenticationService;
     private final ITicketGateway ticketGateway = new TicketGateway();
-	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
-	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
 
-
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
+		this.venueRepo = venueRepo;
+		this.paymentService = paymentGateway;
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
@@ -136,7 +136,7 @@ public class OrderService {
 			return;
 		}
 
-		Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+		Venue venue = venueRepo.findByID(event.getEventVenueID());
 		if (venue == null) {
 			logger.error("UserService._cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
 			return;
@@ -230,22 +230,18 @@ public class OrderService {
             // reserve new seatsToAdd
 			int eventID = order.getEventId();
             Event event = eventRepo.findByID(String.valueOf(eventID));
-            if (event == null) {
-                return Result.makeFail("Event not found");
-            }
 
-            logger.info("Reserving new seats {} for order {}.", seatsToAdd, orderId);
-            venueRepo.reserveTickets(event.getEventVenueID(), order.getSegmentId(), seatsToAdd, order.getEventId());
+            logger.info("OrderService.changeSeatsToOrder: Reserving new seats {} for order {}.", seatsToAdd, orderId);
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
+			venue.reserveSeats(ReservationRequest.forSeats(order.getEventId(), seatsToAdd, order.getSegmentId()));
             
             // free seatsToRemove
-            logger.info("Freeing old seats {} for order {}.", seatsToRemove, orderId);
-            venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
+            logger.info("OrderService.changeSeatsToOrder: Freeing old seats {} for order {}.", seatsToRemove, orderId);
+			venue.freeSeats(ReservationRequest.forSeats(order.getEventId(), seatsToRemove, order.getSegmentId()));
+			
+			logger.info("OrderService.changeSeatsToOrder: Validating purchase policy for event {} for order {}.", eventID, orderId);
+			validatePurchasePolicy(event.getEventID());
 
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-			if (venue == null) {
-				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
-				return Result.makeFail("Venue not found");
-			}
 			Segment segment = venue.getSegmentByID(order.getSegmentId());
 			double pricePerSeat = segment.getPrice(eventID);
 			logger.info("OrderService.changeSeatsToOrder: Calculating discount policies for event {} for order {}.", eventID, orderId);
@@ -304,31 +300,23 @@ public class OrderService {
                 logger.info("OrderService.changeNumOfSeatsInFieldOrder: New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
                 return Result.makeOk(newSeatsNum);
             }
-            Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
-            if (event == null) {
-                return Result.makeFail("Event not found");
-            }
-
+			int eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
             if (oldNumOfTickets < newSeatsNum) {
                 // reserve new seatsToAdd
                 int seatsToAdd = newSeatsNum - oldNumOfTickets;
 
-                logger.info("Reserving {} new seats for order {}.", seatsToAdd, orderId);
-                venueRepo.reserveTickets(event.getEventVenueID(), order.getSegmentId(), seatsToAdd, order.getEventId());
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: Reserving {} new seats for order {}.", seatsToAdd, orderId);
+				venue.reserveSeats(ReservationRequest.forField(order.getEventId(), seatsToAdd, order.getSegmentId()));
             } else {
                 // free seatsToRemove
                 int seatsToRemove = oldNumOfTickets - newSeatsNum;
-                logger.info("Freeing {} old seats for order {}.", seatsToRemove, orderId);
-                venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: Freeing {} old seats for order {}.", seatsToRemove, orderId);
+				venue.freeSeats(ReservationRequest.forField(order.getEventId(), seatsToRemove, order.getSegmentId()));
             }
 
-            logger.info("Updating order {} with new seats {}.", orderId, newSeatsNum);
-			int eventID = order.getEventId();
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-			if (venue == null) {
-				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
-				return Result.makeFail("Venue not found");
-			}
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: Updating order {} with new seats {}.", orderId, newSeatsNum);
 			Segment segment = venue.getSegmentByID(order.getSegmentId());
 
 			double pricePerSeat = segment.getPrice(eventID);

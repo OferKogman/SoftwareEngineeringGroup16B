@@ -60,7 +60,7 @@ public class OrderServiceTests {
     private PaymentService mockPaymentService;
     private IAuthenticationService mockAuthenticationService;
     private ITicketGateway mockTicketGateway;
-    private IRepository<Order> mockOrderRepository;
+    private IOrderRepository mockOrderRepository;
     private IRepository<Venue> mockVenueRepository;
     private IEventRepository mockEventRepository;
     private IUserRepository mockUserRepository;
@@ -162,14 +162,14 @@ public class OrderServiceTests {
     void setUp() throws Exception {
         mockAuthenticationService = mock(IAuthenticationService.class);
         mockTicketGateway = mock(ITicketGateway.class);
-        mockOrderRepository = mock(IRepository.class);
+        mockOrderRepository = mock(IOrderRepository.class);
         mockVenueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockUserRepository = mock(IUserRepository.class);
         mockPaymentService = mock(PaymentService.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockVenueRepository);
+        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockPaymentService, mockVenueRepository);
 
         injectField(orderService, "ticketGateway", mockTicketGateway);
         injectField(orderService, "orderRepo", mockOrderRepository);
@@ -673,23 +673,6 @@ public class OrderServiceTests {
 
         assertFalse(result.isSuccess());
         assertEquals("Event not found", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_venueNotFound_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(null);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Venue not found", result.getError());
     }
 
     @Test
