@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -25,7 +26,7 @@ import com.group16b.DomainLayer.Venue.Venue;
 public class EventFilteringServiceTests {
     
      IEventRepository eventRepository = mock(IEventRepository.class);
-     IVenueRepository venueRepository = mock(IVenueRepository.class);
+     IRepository<Venue> venueRepository = mock(IRepository.class);
      IProductionCompanyRepository productionCompanyPolicyRepository = mock(IProductionCompanyRepository.class);
      EventFilteringService eventFilteringService;
      List<Integer> compID = new ArrayList<>(List.of(1));
@@ -120,17 +121,17 @@ public class EventFilteringServiceTests {
         )).thenReturn(new ArrayList<>(List.of(inactiveEvent)));
         Venue v1 = mock(Venue.class);
         when(v1.getLocation()).thenReturn(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
-        when(venueRepository.getVenueByID("1")).thenReturn(v1);
+        when(venueRepository.findByID("1")).thenReturn(v1);
         Venue v2 = mock(Venue.class);
         when(v2.getLocation()).thenReturn(new Location("B", "B", "B", "B", "B", "B", 0.0, 0.0));
-        when(venueRepository.getVenueByID("2")).thenReturn(v2);
+        when(venueRepository.findByID("2")).thenReturn(v2);
         ProductionCompany pcp1 = mock(ProductionCompany.class);
         when(pcp1.getRating()).thenReturn(3.0);
         ProductionCompany pcp2 = mock(ProductionCompany.class);
         when(pcp2.getRating()).thenReturn(5.0);
         when(productionCompanyPolicyRepository.findByID("1")).thenReturn(pcp1);
         when(productionCompanyPolicyRepository.findByID("2")).thenReturn(pcp2);
-        eventFilteringService = new EventFilteringService(productionCompanyPolicyRepository);
+        eventFilteringService = new EventFilteringService(productionCompanyPolicyRepository, eventRepository, venueRepository);
         Field eventRepo = eventFilteringService.getClass().getDeclaredField("eventRepository");
         eventRepo.setAccessible(true);
         eventRepo.set(eventFilteringService, eventRepository);

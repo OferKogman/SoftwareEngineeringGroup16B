@@ -45,17 +45,18 @@ public class EventService {
     private final ILocationService locationService;
     private final EventFilteringService eventFilteringService;
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
-	private final IVenueRepository venueRepository = VenueRepositoryMapImpl.getInstance();
+	private final IRepository<Venue> venueRepository;
 	private final IEventRepository eventRepository = new EventRepositoryMapImpl();
 	private final IRepository<VirtualQueue> queueRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
 
-	public EventService(IAuthenticationService authenticationService, ILocationService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository) {
+	public EventService(IAuthenticationService authenticationService, ILocationService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository, IRepository<Venue> venueRepository) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
 		this.productionCompanyRepository = productionCompanyRepo;
 		this.queueRepository = queueRepository;
+		this.venueRepository = venueRepository;
 	}
 
 	// need to make event active manually
@@ -80,12 +81,12 @@ public class EventService {
 			VirtualQueue q = new VirtualQueue(event.getEventID());
 
 			logger.info("EventService.createEvent: Verifying venue availability.");
-			Venue venue = venueRepository.getVenueByID(eventRecord.venueID());
+			Venue venue = venueRepository.findByID(eventRecord.venueID());
 			venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
 
 			eventRepository.save(event);
 			queueRepository.save(q);
-			venueRepository.addVenue(venue.getName(), venue);
+			venueRepository.save(venue);
 
 			logger.info("EventService.createEvent: Event created successfully with ID: " + event.getEventID());
 			return Result.makeOk(new EventDTO(event));
@@ -242,13 +243,13 @@ public class EventService {
 				return Result.makeFail("Must edit both start and end time together to update event time !");
 			}
 			if (getEditParam(editParams, "venue", String.class) != null) {
-				Venue oldVenue = venueRepository.getVenueByID(event.getEventVenueID());
+				Venue oldVenue = venueRepository.findByID(event.getEventVenueID());
 				oldVenue.cancelEvent(event.getEventStartTime(),event.getEventID());
 				String newVenueID = getEditParam(editParams, "venue", String.class);
-				Venue newVenue = venueRepository.getVenueByID(newVenueID);
+				Venue newVenue = venueRepository.findByID(newVenueID);
 				newVenue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), event.getEventID());
-				venueRepository.addVenue(oldVenue.getName(), oldVenue);
-				venueRepository.addVenue(newVenue.getName(), newVenue);
+				venueRepository.save(oldVenue);
+				venueRepository.save(newVenue);
 				event.setEventVenue(newVenueID);
 			}
 			if (getEditParam(editParams, "eventRating", Double.class) != null) {
@@ -297,14 +298,14 @@ public class EventService {
 			logger.info("EventService.editStockInSegmentsForEvent: User permissions validated successfully.");
 
 			logger.info("EventService.editStockInSegmentsForEvent: Attempting to edit stock in segments for event with ID: " + eventID);
-			Venue venue = venueRepository.getVenueByID(event.getEventVenueID());
+			Venue venue = venueRepository.findByID(event.getEventVenueID());
 
 			
 			for(Map.Entry<String, Integer> entry : segmentsAndNewStock.entrySet()){
 				Segment currSeg = venue.getSegmentByID(entry.getKey());
 				currSeg.setStockForEvent(eventID, entry.getValue());
 			}
-			venueRepository.addVenue(venue.getName(), venue);
+			venueRepository.save(venue);
 
 			return Result.makeOk("EventService.editStockInSegmentsForEvent: Changed stocks for eventID: " + eventID);
 		}

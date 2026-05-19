@@ -30,16 +30,17 @@ import io.jsonwebtoken.JwtException;
 public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
-    private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+    private final IRepository<Venue> venueRepo;
     private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IRepository<VirtualQueue> queueImp;
     private final IEventRepository eventRepository = new EventRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyRepo;
     private final IAuthenticationService authenticationService;
 
-    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp) {
+    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp, IRepository<Venue> venueRepo) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepo;
+        this.venueRepo = venueRepo;
         this.queueImp = queueImp;
     }
 
@@ -93,16 +94,10 @@ public class ReserveService {
             //3. System - validates selected seats exist.
             //4. System - validates selected seats are available.
             //5. System - removes selected seats from stock.
-            venueRepo.reserveTickets(venueId, segmentId, seatIds, eventID);
+            Venue venue = venueRepo.findByID(venueId);
+            venue.reserveTickets(segmentId, seatIds, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for {}", subjectID);
 
-            // 5.5 calculate price of the order
-            Venue venue = venueRepo.getVenueByID(venueId);
-            if (venue == null) {
-                logger.error("Venue with ID {} not found", venueId);
-                queueRemovePassed(q, subjectID);
-                return Result.makeFail("Venue not found");
-            }
             Segment segment = venue.getSegmentByID(segmentId);
             if (segment == null) {
                 logger.error("Segment with ID {} not found in venue {}", segmentId, venueId);
@@ -199,20 +194,14 @@ public class ReserveService {
             }
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
 
-
+            Venue venue = venueRepo.findByID(venueId);
             //3. System - validates selected seats exist.
             //4. System - validates selected seats are available.
             //5. System - removes selected seats from stock.
-            venueRepo.reserveTickets(venueId, segmentId, amount, eventID);
+            venue.reserveTickets(segmentId, amount, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
 
             // 5.5 calculate price of the order
-            Venue venue = venueRepo.getVenueByID(venueId);
-            if (venue == null) {
-                logger.error("Venue with ID {} not found", venueId);
-                queueRemovePassed(q, subjectID);
-                return Result.makeFail("Venue not found");
-            }
             Segment segment = venue.getSegmentByID(segmentId);
             if (segment == null) {
                 logger.error("Segment with ID {} not found in venue {}", segmentId, venueId);
@@ -322,11 +311,11 @@ public class ReserveService {
             //3. System - validates selected seats exist.
             //4. System - validates selected seats are available.
             //5. System - removes selected seats from stock.
-            venueRepo.reserveTickets(venueId, segmentId, seatIds, eventID);
+            Venue venue = venueRepo.findByID(venueId);
+            venue.reserveTickets(segmentId, seatIds, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for {}", subjectID);
 
             // 5.5 calculate price of the order
-            Venue venue = venueRepo.getVenueByID(venueId);
             Segment segment = venue.getSegmentByID(segmentId);
             double pricePerSeat = segment.getPrice(eventID);
 
@@ -410,7 +399,7 @@ public class ReserveService {
                 logger.error("Event is inactive");
                 return Result.makeFail("Event is inactive");
             }
-            Segment segment = venueRepo.getVenueByID(venueId).getSegmentByID(segmentId);
+            Segment segment = venueRepo.findByID(venueId).getSegmentByID(segmentId);
             if (segment == null) {
                 logger.error("Segment with ID {} not found in venue {}", segmentId, venueId);
                 return Result.makeFail("Segment not found");
@@ -437,8 +426,8 @@ public class ReserveService {
                 return Result.makeFail("User did not pass the queue");
             }
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
-
-            venueRepo.reserveTickets(venueId, segmentId, amount, eventID);
+            Venue venue = venueRepo.findByID(venueId);
+            venue.reserveTickets(segmentId, amount, eventID);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
 
             double pricePerSeat = segment.getPrice(eventID);

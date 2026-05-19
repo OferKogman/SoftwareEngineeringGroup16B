@@ -16,6 +16,12 @@ public class FieldSeg extends Segment {
 		stock = new ConcurrentHashMap<Integer, Integer>();
 	}
 
+	public FieldSeg(FieldSeg other){
+		super(other.segmentID);
+		this.size = other.size;
+		this.stock = new ConcurrentHashMap<>(other.stock);
+	}
+
 	public int getFieldSize() {
 		return size;
 	}

@@ -13,6 +13,7 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
+import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
@@ -24,7 +25,7 @@ public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
 	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
-	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
 	private final ITicketGateway ticketGateway;
@@ -33,9 +34,10 @@ public class UserService {
 
 	
 
-	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway) {
+	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway, IRepository<Venue> venueRepo) {
 		this.authenticationService = authenticationService;
 		this.ticketGateway = ticketGateway;
+		this.venueRepo = venueRepo;
 	}
 
 	public Result<UserDTO> registerUser(String email, String password) {

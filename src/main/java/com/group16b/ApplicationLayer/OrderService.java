@@ -41,15 +41,16 @@ public class OrderService {
 	private final IAuthenticationService authenticationService;
     private final ITicketGateway ticketGateway = new TicketGateway();
 	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
-	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepo;
 
 
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<Venue> venueRepo) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
+		this.venueRepo = venueRepo;
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo, PaymentService paymentService ) {
@@ -155,7 +156,7 @@ public class OrderService {
 			return;
 		}
 
-		Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+		Venue venue = venueRepo.findByID(event.getEventVenueID());
 		if (venue == null) {
 			logger.error("UserService._cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
 			return;
@@ -274,19 +275,18 @@ public class OrderService {
             if (event == null) {
                 return Result.makeFail("Event not found");
             }
-
-            logger.info("Reserving new seats {} for order {}.", seatsToAdd, orderId);
-            venueRepo.reserveTickets(event.getEventVenueID(), order.getSegmentId(), seatsToAdd, order.getEventId());
-            
-            // free seatsToRemove
-            logger.info("Freeing old seats {} for order {}.", seatsToRemove, orderId);
-            venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
-
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-			if (venue == null) {
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
+			if (venue == null) {//will not be found since findByID throws exception
 				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
 				return Result.makeFail("Venue not found");
 			}
+            logger.info("Reserving new seats {} for order {}.", seatsToAdd, orderId);
+			venue.reserveTickets(order.getSegmentId(), seatsToAdd, order.getEventId());
+            
+            // free seatsToRemove
+            logger.info("Freeing old seats {} for order {}.", seatsToRemove, orderId);
+            venue.freeTickets(order.getSegmentId(), seatsToRemove, order.getEventId());
+
 			Segment segment = venue.getSegmentByID(order.getSegmentId());
 			if (segment == null) {
 				logger.error("Segment {} not found for changing seats for order {}.", order.getSegmentId(), orderId);
@@ -367,27 +367,24 @@ public class OrderService {
             if (event == null) {
                 return Result.makeFail("Event not found");
             }
-
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
+			
             if (oldNumOfTickets < newSeatsNum) {
                 // reserve new seatsToAdd
                 int seatsToAdd = newSeatsNum - oldNumOfTickets;
 
                 logger.info("Reserving {} new seats for order {}.", seatsToAdd, orderId);
-                venueRepo.reserveTickets(event.getEventVenueID(), order.getSegmentId(), seatsToAdd, order.getEventId());
+				
+                venue.reserveTickets(order.getSegmentId(), seatsToAdd, order.getEventId());
             } else {
                 // free seatsToRemove
                 int seatsToRemove = oldNumOfTickets - newSeatsNum;
                 logger.info("Freeing {} old seats for order {}.", seatsToRemove, orderId);
-                venueRepo.freeTickets(event.getEventVenueID(), order.getSegmentId(), seatsToRemove, order.getEventId());
+                venue.freeTickets(order.getSegmentId(), seatsToRemove, order.getEventId());
             }
 
             logger.info("Updating order {} with new seats {}.", orderId, newSeatsNum);
 			int eventID = order.getEventId();
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
-			if (venue == null) {
-				logger.error("Venue {} not found for changing seats for order {}.", event.getEventVenueID(), orderId);
-				return Result.makeFail("Venue not found");
-			}
 			Segment segment = venue.getSegmentByID(order.getSegmentId());
 			if (segment == null) {
 				logger.error("Segment {} not found for changing seats for order {}.", order.getSegmentId(), orderId);

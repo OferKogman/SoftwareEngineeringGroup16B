@@ -46,7 +46,7 @@ public class EventServiceTests {
     static private EventFilteringService eventFilteringService;
     static private ProductionCompanyRepositoryMapImpl mockProductionCompanyRepository;
     static private IUserRepository mockUserRepository;
-    static private IVenueRepository mockVenueRepository;
+    static private IRepository<Venue> mockVenueRepository;
     static private IEventRepository mockEventRepository;
     static private IRepository<VirtualQueue> mockVirtualQueueRepository;
     static private User user;
@@ -60,13 +60,12 @@ public class EventServiceTests {
         mockTokenService = mock(IAuthenticationService.class);
         mockLocationService = mock(ILocationService.class);
         mockProductionCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
-        eventFilteringService = new EventFilteringService(mockProductionCompanyRepository);
         mockVirtualQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
-        mockVenueRepository = mock(IVenueRepository.class);
+        mockVenueRepository = mock(IRepository.class);
         mockUserRepository = mock(IUserRepository.class);
-
-        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyRepository, mockVirtualQueueRepository);
+        eventFilteringService = new EventFilteringService(mockProductionCompanyRepository, mockEventRepository, mockVenueRepository);
+        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyRepository, mockVirtualQueueRepository, mockVenueRepository);
 
         Field PCPR = eventService.getClass().getDeclaredField("productionCompanyRepository");
         PCPR.setAccessible(true);
@@ -128,8 +127,8 @@ public class EventServiceTests {
         Map<String, Segment> segmentMap = new TreeMap<>();
         segmentMap.put("segment1", segment1);
 
-        Venue venue1 = new Venue("Test Venue", location1, segmentMap);
-        when(mockVenueRepository.getVenueByID("venue1")).thenReturn(venue1);
+        Venue venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID");
+        when(mockVenueRepository.findByID("venue1")).thenReturn(venue1);
         
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);

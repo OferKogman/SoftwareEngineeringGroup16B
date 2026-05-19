@@ -11,6 +11,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,6 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.FieldSeg;
-import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Seat;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -51,7 +51,7 @@ public class ReservationServiceTests {
 
     private ReserveService reserveService;
     private IAuthenticationService mockAuthenticationService;
-    private IVenueRepository mockVenueRepository;
+    private IRepository<Venue> mockVenueRepository;
     private IRepository<Order> mockOrderRepository;
     private IRepository<VirtualQueue> mockQueueRepository;
     private IEventRepository mockEventRepository;
@@ -71,9 +71,9 @@ public class ReservationServiceTests {
     private static Venue fieldVenue;
     private static FieldSeg fieldSegment;
 
-    private static Venue venue;
-    private static Event event;
-    private static VirtualQueue queue;
+    private Venue venue;
+    private Event event;
+    private VirtualQueue queue;
 
     private static Set<PurchasePolicy> companyPurchasePolicies;
     private static Set<DiscountPolicy> companyDiscountPolicies;
@@ -102,20 +102,25 @@ public class ReservationServiceTests {
 
         companyPurchasePolicies = new HashSet<>();
         companyDiscountPolicies = new HashSet<>();
+    }
 
+    @BeforeEach
+    void setUp() throws Exception {
         HashMap<String, Seat> seats = new HashMap<>();
         seats.put("1-1", new Seat(1, 1));
         seats.put("1-2", new Seat(1, 2));
         seats.put("1-3", new Seat(1, 3));
 
-        Segment segment = new ChosenSeatingSeg(SEGMENT_ID, seats);
+        ChosenSeatingSeg segment = new ChosenSeatingSeg(SEGMENT_ID, seats);
 
         fieldSegment = new FieldSeg(FIELD_SEGMENT_ID, 100);
 
         HashMap<String, Segment> segments = new HashMap<>();
         segments.put(SEGMENT_ID, segment);
         segments.put(FIELD_SEGMENT_ID, fieldSegment);
-        venue = new Venue(VENUE_ID, null, segments);
+
+        Venue realVenue = new Venue("venue", null, segments, VENUE_ID);
+        venue = spy(realVenue);
 
         EventRecord eventRecord = new EventRecord(
                 VENUE_ID,
@@ -135,21 +140,16 @@ public class ReservationServiceTests {
         queue = new VirtualQueue(EVENT_ID);
         queue.addToQueue(USER_ID);
 
-
-        
-    }
-
-    @BeforeEach
-    void setUp() throws Exception {
+        venue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), EVENT_ID);
 
         mockAuthenticationService = mock(IAuthenticationService.class);
-        mockVenueRepository = mock(IVenueRepository.class);
+        mockVenueRepository = mock(IRepository.class);
         mockOrderRepository = mock(IRepository.class);
         mockQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        reserveService = new ReserveService(mockAuthenticationService,mockProductionCompanyRepository, mockQueueRepository);
+        reserveService = new ReserveService(mockAuthenticationService,mockProductionCompanyRepository, mockQueueRepository, mockVenueRepository);
 
         // inject venue repo
         Field venueRepoField = ReserveService.class.getDeclaredField("venueRepo");
@@ -176,7 +176,6 @@ public class ReservationServiceTests {
         productionCompanyRepoField.setAccessible(true);
         productionCompanyRepoField.set(reserveService, mockProductionCompanyRepository);
 
-
         when(mockAuthenticationService.validateToken(SESSION_TOKEN)).thenReturn(true);
         when(mockAuthenticationService.isUserToken(SESSION_TOKEN)).thenReturn(true);
         when(mockAuthenticationService.isAdminToken(SESSION_TOKEN)).thenReturn(false);
@@ -184,15 +183,12 @@ public class ReservationServiceTests {
         when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID);
         when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
         when(mockQueueRepository.findByID(Integer.toString(EVENT_ID))).thenReturn(queue);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venue);
+        
         ProductionCompany mockCompany = mock(ProductionCompany.class);
-
         when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID))).thenReturn(mockCompany);
-
         when(mockCompany.getPurchasePolicy()).thenReturn(companyPurchasePolicies);
-
         when(mockCompany.getDiscountPolicy()).thenReturn(companyDiscountPolicies);
-
     }
      // ________ reseurveSeats tests ________
     @Test
@@ -202,7 +198,7 @@ public class ReservationServiceTests {
 
         assertTrue(result.isSuccess());
         assertTrue(result.getValue().startsWith("new OrderId: "));
-        verify(mockVenueRepository).reserveTickets(VENUE_ID, SEGMENT_ID, SEAT_IDS, EVENT_ID);
+        verify(venue).reserveTickets(SEGMENT_ID, SEAT_IDS, EVENT_ID);
         verify(mockOrderRepository).save(any(Order.class));
     }
         
@@ -225,7 +221,7 @@ public class ReservationServiceTests {
 
         verify(mockOrderRepository, never()).save(any(Order.class));
 
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
+        verify(venue, never()).reserveTickets(anyString(), anyList(), anyInt());
     }
 
     @Test
@@ -248,7 +244,7 @@ public class ReservationServiceTests {
         assertEquals("Invalid session token.", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
+        verify(venue, never()).reserveTickets(anyString(), anyList(), anyInt());
     }
 
     @Test
@@ -281,7 +277,7 @@ public class ReservationServiceTests {
         assertEquals("Event is inactive", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
+        verify(venue, never()).reserveTickets( anyString(), anyList(), anyInt());
     }
     
     @Test
@@ -308,7 +304,7 @@ public class ReservationServiceTests {
         );
 
         verify(mockOrderRepository, never()).save(any(Order.class));
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
+        verify(venue, never()).reserveTickets( anyString(), anyList(), anyInt());
     }
     
     
@@ -332,7 +328,7 @@ public class ReservationServiceTests {
         assertEquals("User did not pass the queue", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyList(), anyInt());
+        verify(venue, never()).reserveTickets( anyString(), anyList(), anyInt());
     }
 
     @Test
@@ -406,12 +402,12 @@ public class ReservationServiceTests {
         assertTrue(result.isSuccess());
         assertTrue(result.getValue().startsWith("new OrderId: "));
 
-        verify(mockVenueRepository).reserveTickets(VENUE_ID, FIELD_SEGMENT_ID, FIELD_AMOUNT, EVENT_ID);
+        verify(venue).reserveTickets(FIELD_SEGMENT_ID, FIELD_AMOUNT, EVENT_ID);
         verify(mockOrderRepository).save(any(Order.class));
     }
     @Test
     void reserveFieldSeats_invalidAmount_returnsFail() {
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(fieldVenue);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(fieldVenue);
 
         int invalidAmount = -1;
 
@@ -447,7 +443,7 @@ public class ReservationServiceTests {
         assertEquals("Invalid session token.", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyInt(), anyInt());
+        verify(venue, never()).reserveTickets( anyString(), anyInt(), anyInt());
     }
     @Test
     void reserveFieldSeats_eventHasLotteryPolicy_returnsFail() {
@@ -473,7 +469,7 @@ public class ReservationServiceTests {
         );
 
         verify(mockOrderRepository, never()).save(any(Order.class));
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyInt(), anyInt());
+        verify(venue, never()).reserveTickets( anyString(), anyInt(), anyInt());
     }
 
 
