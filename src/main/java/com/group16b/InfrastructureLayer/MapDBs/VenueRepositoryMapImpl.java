@@ -26,20 +26,23 @@ public class VenueRepositoryMapImpl implements IRepository<Venue>{
         return new Venue(venue);
     }
 
-    public void save(Venue venue){
+    public synchronized void save(Venue venue){
         Venue currentVenue = venues.get(venue.getID());
         //here is the case of venue is addedd
         if (currentVenue == null) {
             Venue newVenue = new Venue(venue);
             newVenue.setVersion(1);//start at 1
 
-            Venue existing = venues.putIfAbsent(venue.getID(), newVenue);
-            if (existing != null) {
-                throw new IllegalArgumentException("Venue " + venue.getID() + " was created!");
-            }
+            venues.putIfAbsent(venue.getID(), newVenue);
             return; 
         }
+        
         //case of updating existing version
+        long newVersion = venue.getVersion();
+        long currentVersion = currentVenue.getVersion();
+        if (newVersion != currentVersion) {
+				throw new IllegalArgumentException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
+        }
         Venue updatedVenue = new Venue(venue);
         updatedVenue.setVersion(venue.getVersion() + 1);
 
@@ -53,7 +56,7 @@ public class VenueRepositoryMapImpl implements IRepository<Venue>{
     }
 
     @Override
-	public void delete(String ID) {
+	public synchronized void delete(String ID) {
 		Venue venue = venues.get(ID);
 		if (venue == null) {
 			throw new IllegalArgumentException("No venue found to delete for id: " + ID);

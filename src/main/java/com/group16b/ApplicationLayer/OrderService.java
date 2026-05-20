@@ -131,16 +131,8 @@ public class OrderService {
 		orderRepo.delete(orderID);
 		int eventID = order.getEventId();
 		Event event = eventRepo.findByID(String.valueOf(eventID));
-		if (event == null) {
-			logger.error("UserService._cancelOrder: Event {} not found while attempting to cancel order {}", order.getEventId(), orderID);
-			return;
-		}
 
 		Venue venue = venueRepo.findByID(event.getEventVenueID());
-		if (venue == null) {
-			logger.error("UserService._cancelOrder: Venue {} not found while attempting to cancel order {}", event.getEventVenueID(), orderID);
-			return;
-		}
 		Segment segment = venue.getSegmentByID(order.getSegmentId());
 		
 			switch (segment.getSegmentType()) {
@@ -362,17 +354,17 @@ public class OrderService {
 		try {
 			logger.info("Attempting to cancel order {}.", orderId);
 			Order order = orderRepo.findByID(orderId);
+			
 			if (order == null) {
-				logger.error("Order {} not found for cancellation.", orderId);
-				return Result.makeFail("Order not found");
-			}
-			if (!order.isActive()) {
-				logger.error("Order {} is not active for cancellation.", orderId);
-				return Result.makeFail("Order is not active");
-			}
+    			return Result.makeFail("Order not found");
+}
+			order.validiteOrderIsActive();
 			_cancelOrder(orderId);
         return Result.makeOk(true);
 		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
 			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (Exception e) {	

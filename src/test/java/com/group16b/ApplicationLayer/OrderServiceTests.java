@@ -1046,7 +1046,7 @@ public class OrderServiceTests {
         Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
 
         assertFalse(result.isSuccess());
-        assertEquals("Order is not active", result.getError());
+        assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
 
         verify(mockOrderRepository, never()).delete(anyString());
     }
