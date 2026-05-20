@@ -30,7 +30,7 @@ class ProductionCompanyTests {
 
     @BeforeEach
     void setUp() {
-        company = new ProductionCompany(1, "Company", 5.0,1);
+        company = new ProductionCompany(1, "Company", 5.0,"1");
 
     }
 
@@ -38,22 +38,22 @@ class ProductionCompanyTests {
 
     @Test
     void GivenOwnerCaller_WhenAssignOwner_ThenInviteCanBeAccepted() {
-        company.AssignOwner(1, 2);
+        company.AssignOwner("1", "2");
 
-        assertDoesNotThrow(() -> company.acceptInvite(2, 1));
+        assertDoesNotThrow(() -> company.acceptInvite("2", "1"));
     }
 
     @Test
     void GivenNonOwnerCaller_WhenAssignOwner_ThenThrowException() {
-        assertThrows(IllegalArgumentException.class,() -> company.AssignOwner(2, 3));
+        assertThrows(IllegalArgumentException.class,() -> company.AssignOwner("2", "3"));
     }
 
     @Test
     void GivenExistingOwner_WhenAssignOwner_ThenThrowException() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
-        assertThrows(IllegalArgumentException.class,() -> company.AssignOwner(1, 2));
+        assertThrows(IllegalArgumentException.class,() -> company.AssignOwner("1", "2"));
     }
 
     // ---------- Assign Manager ----------
@@ -62,9 +62,9 @@ class ProductionCompanyTests {
     void GivenOwnerCaller_WhenAssignManager_ThenInviteCanBeAccepted() {
         Set<ManagerPermissions> perms =Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
 
-        company.AssignManager(1, 2, perms);
+        company.AssignManager("1", "2", perms);
 
-        assertDoesNotThrow(() -> company.acceptInvite(2, 1));
+        assertDoesNotThrow(() -> company.acceptInvite("2", "1"));
     }
 
     @Test
@@ -72,8 +72,8 @@ class ProductionCompanyTests {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> company.AssignManager(
-                        2,
-                        3,
+                        "2",
+                        "3",
                         Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
                 )
         );
@@ -82,18 +82,18 @@ class ProductionCompanyTests {
     @Test
     void GivenExistingManager_WhenAssignManager_ThenThrowException() {
         company.AssignManager(
-                1,
-                2,
+                "1",
+                "2",
                 Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
         );
 
-        company.acceptInvite(2, 1);
+        company.acceptInvite("2", "1");
 
         assertThrows(
                 IllegalArgumentException.class,
                 () -> company.AssignManager(
-                        1,
-                        2,
+                        "1",
+                        "2",
                         Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
                 )
         );
@@ -103,15 +103,15 @@ class ProductionCompanyTests {
 
     @Test
     void GivenExistingInvite_WhenAcceptInvite_ThenMemberAddedToHierarchy() {
-        company.AssignOwner(1, 2);
+        company.AssignOwner("1", "2");
 
-        company.acceptInvite(2, 1);
+        company.acceptInvite("2", "1");
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree(1);
+        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
 
         assertTrue(
                 hierarchy.stream()
-                        .anyMatch(n -> n.getUserID() == 2)
+                        .anyMatch(n -> n.getUserID().equals("2"))
         );
     }
 
@@ -119,7 +119,7 @@ class ProductionCompanyTests {
     void GivenMissingInvite_WhenAcceptInvite_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.acceptInvite(2, 1)
+                () -> company.acceptInvite("2", "1")
         );
     }
 
@@ -127,13 +127,13 @@ class ProductionCompanyTests {
 
     @Test
     void GivenExistingInvite_WhenRejectInvite_ThenInviteRemoved() {
-        company.AssignOwner(1, 2);
+        company.AssignOwner("1", "2");
 
-        company.rejectInvite(2, 1);
+        company.rejectInvite("2", "1");
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.acceptInvite(2, 1)
+                () -> company.acceptInvite("2", "1")
         );
     }
 
@@ -141,7 +141,7 @@ class ProductionCompanyTests {
     void GivenMissingInvite_WhenRejectInvite_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.rejectInvite(2, 1)
+                () -> company.rejectInvite("2", "1")
         );
     }
 
@@ -149,16 +149,16 @@ class ProductionCompanyTests {
 
     @Test
     void GivenOwner_WhenForfeitOwnership_ThenRemovedFromHierarchy() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
-        company.forfeitOwnership(2);
+        company.forfeitOwnership("2");
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree(1);
+        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
 
         assertFalse(
                 hierarchy.stream()
-                        .anyMatch(n -> n.getUserID() == 2)
+                        .anyMatch(n -> n.getUserID().equals("2"))
         );
     }
 
@@ -166,7 +166,7 @@ class ProductionCompanyTests {
     void GivenNonOwner_WhenForfeitOwnership_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.forfeitOwnership(2)
+                () -> company.forfeitOwnership("2")
         );
     }
 
@@ -174,30 +174,30 @@ class ProductionCompanyTests {
 
     @Test
     void GivenManagedUser_WhenRemoveMemberByOwner_ThenUserRemoved() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
-        company.removeMemberByOwner(1, 2);
+        company.removeMemberByOwner("1", "2");
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree(1);
+        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
 
         assertFalse(
                 hierarchy.stream()
-                        .anyMatch(n -> n.getUserID() == 2)
+                        .anyMatch(n -> n.getUserID().equals("2"))
         );
     }
 
     @Test
     void GivenUnmanagedUser_WhenRemoveMemberByOwner_ThenThrowException() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
-        company.AssignOwner(2, 3);
-        company.acceptInvite(3, 2);
+        company.AssignOwner("2", "3");
+        company.acceptInvite("3", "2");
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.removeMemberByOwner(3, 2)
+                () -> company.removeMemberByOwner("3", "2")
         );
     }
 
@@ -211,15 +211,15 @@ class ProductionCompanyTests {
         Set<ManagerPermissions> newPerms =
                 Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
 
-        company.AssignManager(1, 2, oldPerms);
-        company.acceptInvite(2, 1);
+        company.AssignManager("1", "2", oldPerms);
+        company.acceptInvite("2", "1");
 
-        company.updatePermissionsOfManager(1, 2, newPerms);
+        company.updatePermissionsOfManager("1", "2", newPerms);
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree(1);
+        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
 
         HierarchyNodeData node = hierarchy.stream()
-                .filter(n -> n.getUserID() == 2)
+                .filter(n -> n.getUserID().equals("2"))
                 .findFirst()
                 .orElseThrow();
 
@@ -228,22 +228,22 @@ class ProductionCompanyTests {
 
     @Test
     void GivenUnmanagedManager_WhenUpdatePermissionsOfManager_ThenThrowException() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
         company.AssignManager(
-                2,
-                3,
+                "2",
+                "3",
                 Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
         );
 
-        company.acceptInvite(3, 2);
+        company.acceptInvite("3", "2");
 
         assertThrows(
                 IllegalArgumentException.class,
                 () -> company.updatePermissionsOfManager(
-                        3,
-                        2,
+                        "3",
+                        "2",
                         Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
                 )
         );
@@ -253,11 +253,11 @@ class ProductionCompanyTests {
 
     @Test
     void GivenOwnerRequester_WhenGetHierarchyTree_ThenReturnHierarchy() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
         List<HierarchyNodeData> hierarchy =
-                company.getHierarchyTree(1);
+                company.getHierarchyTree("1");
 
         assertEquals(2, hierarchy.size());
     }
@@ -266,7 +266,7 @@ class ProductionCompanyTests {
     void GivenNonOwnerRequester_WhenGetHierarchyTree_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.getHierarchyTree(2)
+                () -> company.getHierarchyTree("2")
         );
     }
 
@@ -274,24 +274,24 @@ class ProductionCompanyTests {
 
     @Test
     void GivenHierarchy_WhenRemoveMiddleOwner_ThenChildrenReparented() {
-        company.AssignOwner(1, 2);
-        company.acceptInvite(2, 1);
+        company.AssignOwner("1", "2");
+        company.acceptInvite("2", "1");
 
         company.AssignManager(
-                2,
-                3,
+                "2",
+                "3",
                 Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
         );
 
-        company.acceptInvite(3, 2);
+        company.acceptInvite("3", "2");
 
-        company.removeMemberByOwner(1, 2);
+        company.removeMemberByOwner("1", "2");
 
         List<HierarchyNodeData> hierarchy =
-                company.getHierarchyTree(1);
+                company.getHierarchyTree("1");
 
         HierarchyNodeData child = hierarchy.stream()
-                .filter(n -> n.getUserID() == 3)
+                .filter(n -> n.getUserID().equals("3"))
                 .findFirst()
                 .orElseThrow();
 

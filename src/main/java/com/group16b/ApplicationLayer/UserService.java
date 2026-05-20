@@ -10,7 +10,6 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -27,7 +26,7 @@ public class UserService {
 	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
 	private final ITicketGateway ticketGateway;
 
 	private final IAuthenticationService authenticationService;
@@ -43,7 +42,7 @@ public class UserService {
 	public Result<UserDTO> registerUser(String email, String password) {
 		logger.info("Creating new User with email: " + email);
 		User newUser = new User(email, password);
-		userRepository.addUser(newUser);
+		userRepository.save(newUser);
 		return Result.makeOk(new UserDTO(newUser));
 	}
 
@@ -54,7 +53,7 @@ public class UserService {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.getUserByID(Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken)));
+			User user = userRepository.findByID(authenticationService.extractSubjectFromToken(sessionToken));
 			logger.info("Session token verified successfully.");
 			logger.info("Validating old password");
 			if (!user.confirmPassword(oldPassword)) {
@@ -69,7 +68,7 @@ public class UserService {
 				// different from old password
 			try{
 			user.changePassword(oldPassword, newPassword);
-			userRepository.updateUser(user);
+			userRepository.save(user);
 			logger.info("Password changed successfully");
 			return Result.makeOk(true);
 			}

@@ -18,7 +18,7 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.User;
 
 
 public class ProductionCompanyService {
@@ -27,11 +27,11 @@ public class ProductionCompanyService {
 
     private final IRepository<Order> orderRepo;
     private final IEventRepository eventRepo;
-    private final IUserRepository userRepo;
+    private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 
-    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IUserRepository userRepo, IProductionCompanyRepository productionRepo) {
+    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepo, IProductionCompanyRepository productionRepo) {
         this.authenticationService = authenticationService;
         this.productionRepo=productionRepo;
         this.orderRepo=orderRepo;
@@ -43,7 +43,7 @@ public class ProductionCompanyService {
         try {
             logger.info("ProductionCompanyService.viewSalesHistory: Retrieving sales history for specific company");
             
-            int userID=validateAndGetUserID(sessionToken);
+            String userID=validateAndGetUserID(sessionToken);
             logger.info("ProductionCompanyService.viewSalesHistory: Session token verified successfully.");
             
             logger.info("ProductionCompanyService.viewSalesHistory: retrieving company {}",productionCompanyID);
@@ -78,7 +78,7 @@ public class ProductionCompanyService {
         try {
             logger.info("ProductionCompanyService.displayTotalRevenue: Calculating total revenue for company {}",productionCompanyID);
 
-            int userID=validateAndGetUserID(sessionToken);
+            String userID=validateAndGetUserID(sessionToken);
             logger.info("ProductionCompanyService.displayTotalRevenue: Session token verified successfully.");
 
             logger.info("ProductionCompanyService.displayTotalRevenue: retrieving company {}",productionCompanyID);
@@ -136,7 +136,7 @@ public class ProductionCompanyService {
                 .sum();
     }
     
-    private int validateAndGetUserID(String sessionToken)
+    private String validateAndGetUserID(String sessionToken)
     {
         if (!authenticationService.validateToken(sessionToken)  ) {
             throw new AuthException("Invalid Token");
@@ -144,9 +144,9 @@ public class ProductionCompanyService {
         if (!authenticationService.isUserToken(sessionToken)) {
             throw new AuthException("Only users are allowed to perform operation");
         }
-        int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+        String userID=authenticationService.extractSubjectFromToken(sessionToken);
         //verify user exists in the database, i.e not a stale user
-        userRepo.getUserByID(userID);
+        userRepo.findByID(userID);
         return userID;
     }
 

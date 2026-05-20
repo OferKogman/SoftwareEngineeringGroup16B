@@ -4,24 +4,25 @@ package com.group16b.DomainLayer.User;
 import java.security.MessageDigest;
 
 public class User {
-	private static int idCounter = 1;
 
-	private int userID;
 	private String email;
 	private String password;
+	private long version;
 
 	public User(String email, String password) {
-		this.userID = idCounter++;
 		this.email = email;
 		setPassword(password);
+		version = 0;
 	}
 
-	public String getEmail() {
+	public User(User user) {
+		this.email = user.email;
+		this.password = user.password;
+		this.version = user.version;
+    }
+
+    public String getEmail() {
 		return email;
-	}
-	public int getUserID()
-	{
-		return userID;
 	}
 
 	private void setPassword(String newPassword) {
@@ -55,5 +56,20 @@ public class User {
 			return false;	
 		}
 	}
+
+    public long getVersion() {
+		return version;
+    }
+
+    public void update(User newUser) {
+		this.email = newUser.email;
+		this.password = newUser.password;
+		this.version++;
+		
+    }
+
+    public void setVersion(long newVersion) {
+		this.version = newVersion;
+    }
 
 }

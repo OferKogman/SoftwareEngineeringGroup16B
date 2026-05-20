@@ -11,10 +11,11 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.VenueRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -25,12 +26,12 @@ public class VenueEventConfigService {
 
     private final IVenueRepository venueRepository;
     private final IEventRepository eventRepository;
-    private final IUserRepository userRepository;
+    private final IRepository<User> userRepository;
     private final IAuthenticationService authService;
     private final IProductionCompanyRepository productionCompanyRepository;
     private final ILocationService locationService;
 
-    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IUserRepository userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository, ILocationService locationService) {
+    public VenueEventConfigService(IVenueRepository venueRepository, IEventRepository eventRepository, IRepository<User> userRepository, IAuthenticationService authService,IProductionCompanyRepository productionCompanyRepository, ILocationService locationService) {
         this.venueRepository = venueRepository;
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
@@ -54,13 +55,13 @@ public class VenueEventConfigService {
                 return Result.makeFail("Authentication failed. Please log in again.");    
             }
 
-            int userID = Integer.valueOf(authService.extractSubjectFromToken(sessionToken));
+            String userID = authService.extractSubjectFromToken(sessionToken);
             
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying event exists for id {}", eventID);
             Event targetEvent = eventRepository.findByID(String.valueOf(eventID));
             
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying user exists for id {}", userID);
-            userRepository.getUserByID(userID);
+            userRepository.findByID(userID);
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying company exists for id {}", companyID);
             ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
@@ -115,13 +116,13 @@ public class VenueEventConfigService {
                 return Result.makeFail("Authentication failed. Please log in again.");    
             }
 
-            int userID = Integer.valueOf(authService.extractSubjectFromToken(sessionToken));
+            String userID = authService.extractSubjectFromToken(sessionToken);
             
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying event exists for id {}", eventID);
             Event targetEvent = eventRepository.findByID(String.valueOf(eventID));
             
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying user exists for id {}", userID);
-            userRepository.getUserByID(userID);
+            userRepository.findByID(userID);
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying company exists for id {}", companyID);
             ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));

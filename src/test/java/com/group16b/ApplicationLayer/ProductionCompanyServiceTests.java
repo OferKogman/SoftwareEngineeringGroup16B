@@ -25,7 +25,6 @@ import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 
 public class ProductionCompanyServiceTests {
@@ -34,14 +33,14 @@ public class ProductionCompanyServiceTests {
     private IAuthenticationService mockAuthService;
     private IRepository<Order> mockOrderRepo;
     private IEventRepository mockEventRepo;
-    private IUserRepository mockUserRepo;
+    private IRepository<User> mockUserRepo;
     private IProductionCompanyRepository mockProductionCompanyRepository;
 
     private ProductionCompany mockCompany;
 
     private final String VALID_TOKEN = "valid-token";
     private final int COMPANY_ID = 100;
-    private final int USER_ID = 1;
+    private final String USER_ID = "1";
     private final int EVENT_ID = 50;
 
     @BeforeEach
@@ -49,7 +48,7 @@ public class ProductionCompanyServiceTests {
         mockAuthService = mock(IAuthenticationService.class);
         mockOrderRepo = mock(IRepository.class);
         mockEventRepo = mock(IEventRepository.class);
-        mockUserRepo = mock(IUserRepository.class);
+        mockUserRepo = mock(IRepository.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 
         mockCompany = mock(ProductionCompany.class);
@@ -67,7 +66,7 @@ public class ProductionCompanyServiceTests {
         doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
     
         User mockUser = mock(User.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
     }
 
 

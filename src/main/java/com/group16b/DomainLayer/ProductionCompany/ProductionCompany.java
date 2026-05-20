@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
@@ -19,9 +20,9 @@ public class ProductionCompany {
     private double rating;
     private long version;
     private String name;
-    private int founderID;
+    private String founderID;
 
-    private final HashMap<Integer, MembershipNode> membersNodes=new HashMap<>();
+    private final HashMap<String, MembershipNode> membersNodes=new HashMap<>();
     private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
 
     public ProductionCompany(ProductionCompany other)
@@ -31,7 +32,7 @@ public class ProductionCompany {
         this.version=other.version;
         this.name=other.name;
         this.founderID=other.founderID;
-        for (Map.Entry<Integer, MembershipNode> entry : other.membersNodes.entrySet()) {
+        for (Entry<String, MembershipNode> entry : other.membersNodes.entrySet()) {
             this.membersNodes.put(
                     entry.getKey(),
                     new MembershipNode(entry.getValue())
@@ -44,7 +45,7 @@ public class ProductionCompany {
             );
         }
     }
-    public ProductionCompany(int id, String name, double rating, int founderID)
+    public ProductionCompany(int id, String name, double rating, String founderID)
     {
         this.rating=rating;
         this.name=name;
@@ -95,7 +96,7 @@ public class ProductionCompany {
         return null;
     }
 
-    public boolean isFouder(int userID)
+    public boolean isFouder(String userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node!=null && node.getRoleType()==RoleType.FOUNDER)
@@ -103,7 +104,7 @@ public class ProductionCompany {
         return false;
     }
 
-    public boolean isOwner(int userID)
+    public boolean isOwner(String userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node==null || node.getRoleType() == RoleType.MANAGER)
@@ -111,7 +112,7 @@ public class ProductionCompany {
         return true;
     }
 
-    public boolean isManager(int userID)
+    public boolean isManager(String userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node==null)
@@ -124,7 +125,7 @@ public class ProductionCompany {
     assigner is set to be caller
     PRE CONDITIONS: target is not already owner, caller is owner
     */
-    public void AssignOwner(int callerID, int targetID)
+    public void AssignOwner(String callerID, String targetID)
     {
         if(!isOwner(callerID))
         {
@@ -138,7 +139,7 @@ public class ProductionCompany {
         invites.put(new InviteKey(targetID, callerID), newOnwerInvite);
     }
 
-    public void AssignManager(int callerID, int targetID,Set<ManagerPermissions> perms)
+    public void AssignManager(String callerID, String targetID,Set<ManagerPermissions> perms)
     {
         if(!isOwner(callerID))
         {
@@ -153,7 +154,7 @@ public class ProductionCompany {
     }
 
     //if invite is found then accept it and remove all invites with equivalent or lower role
-    public void acceptInvite(int targetID, int assignerID) 
+    public void acceptInvite(String targetID, String assignerID) 
     {
         InviteKey key = new InviteKey(targetID, assignerID);
         MembershipNode invite = invites.get(key);
@@ -168,12 +169,12 @@ public class ProductionCompany {
 
         // remove equivalent or lower roles only
         invites.entrySet().removeIf(e ->
-            e.getKey().targetId == targetID &&
+            e.getKey().targetId.equals(targetID) &&
             e.getValue().getRoleType().isLowerOrEqual(acceptedRole)
         );
     }
 
-    public void rejectInvite(int targetID, int assignerID) 
+    public void rejectInvite(String targetID, String assignerID) 
     {
         InviteKey key = new InviteKey(targetID, assignerID);
 
@@ -184,7 +185,7 @@ public class ProductionCompany {
         invites.remove(key);
     }
 
-    public void forfeitOwnership(int userID)
+    public void forfeitOwnership(String userID)
     {
         if(!isOwner(userID))
         {
@@ -198,26 +199,26 @@ public class ProductionCompany {
 
     }
 
-    public void removeMemberByOwner(int ownerID, int targetID)
+    public void removeMemberByOwner(String ownerID, String targetID)
     {
         canOwnerManageTarget(ownerID, targetID);
         removeMember(targetID);
     }
 
-    public void updatePermissionsOfManager(int ownerID, int targetID, Set<ManagerPermissions> newPerms)
+    public void updatePermissionsOfManager(String ownerID, String targetID, Set<ManagerPermissions> newPerms)
     {
         canOwnerManageTarget(ownerID, targetID);
         MembershipNode targetNode = membersNodes.get(targetID);
         targetNode.setPermissions(newPerms);
     }
 
-    public List<HierarchyNodeData> getHierarchyTree(int requesterID)
+    public List<HierarchyNodeData> getHierarchyTree(String requesterID)
     {
         if(!isOwner(requesterID)) {
             throw new IllegalArgumentException("Requester is not owner.");
         }
         List<HierarchyNodeData> result = new ArrayList<>();
-        for (Map.Entry<Integer, MembershipNode> entry : membersNodes.entrySet()) {
+        for (Map.Entry<String, MembershipNode> entry : membersNodes.entrySet()) {
             MembershipNode node = entry.getValue();
             result.add(new HierarchyNodeData(
                     entry.getKey(),
@@ -229,7 +230,7 @@ public class ProductionCompany {
         return result;
     }
 
-    public void validateUserPermissions(int userID, RoleType type)
+    public void validateUserPermissions(String userID, RoleType type)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node==null || node.getRoleType().isLowerOrEqual(type) && !(node.getRoleType().equals(type)))
@@ -237,7 +238,7 @@ public class ProductionCompany {
             throw new IllegalArgumentException("user "+userID+" dont have high enough permissions in company "+this.productionCompanyID);
         }
     }
-    public void validateUserPermissions(int userID, ManagerPermissions perm)
+    public void validateUserPermissions(String userID, ManagerPermissions perm)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node==null || !(node.getPermissions().contains(perm)))
@@ -246,11 +247,11 @@ public class ProductionCompany {
         }
     }
 
-    public List<Integer> getDirectSubordinates(int userID)
+    public List<String> getDirectSubordinates(String userID)
     {
-        List<Integer> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
 
-        for (Map.Entry<Integer, MembershipNode> entry : membersNodes.entrySet())
+        for (Map.Entry<String, MembershipNode> entry : membersNodes.entrySet())
         {
             MembershipNode node = entry.getValue();
 
@@ -263,20 +264,20 @@ public class ProductionCompany {
         return result;
     }
 
-    public List<Integer> getAllSubordinates(int userID)
+    public List<String> getAllSubordinates(String userID)
     {
-        List<Integer> result = new ArrayList<>();
+        List<String> result = new ArrayList<>();
 
         collectSubordinates(userID, result);
 
         return result;
     }
 
-    private void collectSubordinates(int userID, List<Integer> result)
+    private void collectSubordinates(String userID, List<String> result)
     {
-        List<Integer> directSubs = getDirectSubordinates(userID);
+        List<String> directSubs = getDirectSubordinates(userID);
 
-        for (Integer subordinateID : directSubs)
+        for (String subordinateID : directSubs)
         {
             result.add(subordinateID);
 
@@ -284,15 +285,15 @@ public class ProductionCompany {
         }
     }
 
-    private boolean isAssignedByOwner(int ownerID, int targetID)
+    private boolean isAssignedByOwner(String ownerID, String targetID)
     {
         MembershipNode current = membersNodes.get(targetID);
 
         while (current != null)
         {
-            int assignerID = current.getAssignerID();
+            String assignerID = current.getAssignerID();
 
-            if (assignerID == ownerID) {
+            if (assignerID.equals(ownerID)) {
                 return true;
             }
 
@@ -302,17 +303,17 @@ public class ProductionCompany {
         return false;
     }
 
-    private void removeMember(int userID)
+    private void removeMember(String userID)
     {
         MembershipNode node = membersNodes.get(userID);
 
         if (node == null) return;
 
-        int parentID = node.getAssignerID();
+        String parentID = node.getAssignerID();
 
         // reparent children
         for (MembershipNode child : membersNodes.values()) {
-            if (child.getAssignerID() == userID) {
+            if (child.getAssignerID().equals(userID)) {
                 child.setAssignerID(parentID);
             }
         }
@@ -326,7 +327,7 @@ public class ProductionCompany {
         );
     }
 
-    private void canOwnerManageTarget(int ownerID, int targetID)
+    private void canOwnerManageTarget(String ownerID, String targetID)
     {
         if (!isOwner(ownerID)) {
             throw new IllegalArgumentException("Caller is not an owner.");
@@ -344,12 +345,12 @@ public class ProductionCompany {
 
 
     private static class InviteKey {
-        private final int targetId;
-        private final int assignerId;
+        private final String targetId;
+        private final String assignerId;
 
-        public InviteKey(int targetId, int assignerId) {
-            this.targetId = targetId;
-            this.assignerId = assignerId;
+        public InviteKey(String targetId, String callerID) {
+                    this.targetId = targetId;
+                    this.assignerId = callerID;
         }
         public InviteKey(InviteKey other) {
             this.targetId = other.targetId;
@@ -371,7 +372,7 @@ public class ProductionCompany {
         }
     }
 
-    public void adminRemoveUser(int userID)
+    public void adminRemoveUser(String userID)
     {
         removeMember(userID);
     }

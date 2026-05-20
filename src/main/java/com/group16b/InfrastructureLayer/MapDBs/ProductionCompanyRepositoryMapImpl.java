@@ -8,6 +8,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.User.User;
 
 public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRepository {
 
@@ -102,9 +103,9 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
             companies.put(id, updated);
     }
 
-    public List<Integer> getAllUserComapnies(String user)
+    public List<Integer> getAllUserComapnies(User user)
     {
-        int userID = parseID(user);
+        String userID = user.getEmail();
         List<Integer> userCompanies = new ArrayList<>();
         for (ProductionCompany company : companies.values()) {
             if (company.isManager(userID)) {

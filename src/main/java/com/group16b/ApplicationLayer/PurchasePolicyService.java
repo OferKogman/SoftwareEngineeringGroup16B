@@ -9,8 +9,8 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
@@ -23,7 +23,7 @@ public class PurchasePolicyService {
     
     private final IAuthenticationService authenticationService;
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyRepository;
 
     public PurchasePolicyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
@@ -43,15 +43,15 @@ public class PurchasePolicyService {
                     logger.warn("PurchasePolicyService.createLotteryPolicy: Expected a user session token");
                     return Result.makeFail("Authentication failed. Please log in again.");    
                 }
-            int userID = Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
 
             logger.info("PurchasePolicyService.createLotteryPolicy: verifying user exists for id {}", userID);
-            User user = userRepository.getUserByID(userID);
+            User user = userRepository.findByID(userID);
 
             logger.info("PurchasePolicyService.createLotteryPolicy: retrieving production company for creating a lottery policy");
             ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepo.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
 
-            logger.info("PurchasePolicyService.createLotteryPolicy: Checking user permissions for userID: {}", user.getUserID());
+            logger.info("PurchasePolicyService.createLotteryPolicy: Checking user permissions for userID: {}", user.getEmail());
             company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
 
             logger.info("PurchasePolicyService.createLotteryPolicy: Creating lottery policy with ID: {}, Name: {}, Winner Amount: {}, Registration Due Date: {}", lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
@@ -89,10 +89,10 @@ public class PurchasePolicyService {
                 logger.warn("PurchasePolicyService.enrollInLottery: Expected a user session token");
                 return Result.makeFail("Authentication failed. Please log in again.");    
             }
-            int userID = Integer.valueOf(authenticationService.extractSubjectFromToken(sessionToken));
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
 
             logger.info("PurchasePolicyService.enrollInLottery: verifying user exists for id {}", userID);
-            User user = userRepository.getUserByID(userID);
+            User user = userRepository.findByID(userID);
 
             logger.info("PurchasePolicyService.enrollInLottery: Checking if user with id {} passed purchase policy checks", userID);
             //TODO: implement purchase policy checks for lottery enrollment
@@ -101,12 +101,12 @@ public class PurchasePolicyService {
             Event e = eventRepo.findByID(String.valueOf(eventID));
 
             logger.info("PurchasePolicyService.createLotteryPolicy: Enrolling in lottery");
-            e.enrollInLottery(user.getUserID());
+            e.enrollInLottery(user.getEmail());
 
             logger.info("PurchasePolicyService.createLotteryPolicy: Saving changes to repository");
             eventRepo.save(e);
 
-            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getUserID(), eventID);
+            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getEmail(), eventID);
             return Result.makeOk(true);
         }
         catch (IllegalArgumentException e) {

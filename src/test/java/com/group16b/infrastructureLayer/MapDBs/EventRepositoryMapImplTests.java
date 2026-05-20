@@ -301,7 +301,7 @@ public class EventRepositoryMapImplTests {
 	when(event.getEventPurchasePolicy()).thenReturn(new HashSet<>());
     when(event.getEventPrice()).thenReturn(price);
     when(event.getEventRating()).thenReturn(rating);
-	when(event.getOwnerId()).thenReturn(productionCompanyID);
+	// when(event.getOwnerId()).thenReturn(productionCompanyID);
 	when(event.getVersion()).thenReturn(0L);
     when(event.toString()).thenReturn("Event{" +
 				"eventID=" + eventID +

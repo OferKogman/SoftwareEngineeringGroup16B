@@ -9,6 +9,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -17,19 +18,19 @@ import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 
 public class UserLoginServiceTests {
 
-    private IUserRepository mockUserRepository;
+    private IRepository<User> mockUserRepository;
     private IAuthenticationService mockTokenService;
     private UserLoginService userLoginService;
 
     @BeforeEach
     void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockTokenService = mock(IAuthenticationService.class);
         userLoginService = new UserLoginService(mockTokenService);
         Field userRepo = userLoginService.getClass().getDeclaredField("userRepository");
@@ -64,7 +65,7 @@ public class UserLoginServiceTests {
 
 @Test
     void loginMember_ValidCredentials_ReturnsOkResult() {
-        int userID = 1;
+        String userID = "1";
         String correctPassword = "myPassword";
         String correctMail = "myEmail";
         
@@ -72,8 +73,7 @@ public class UserLoginServiceTests {
         when(mockUser.confirmPassword(correctPassword)).thenReturn(true); 
         when(mockUser.getEmail()).thenReturn(correctMail);
 
-        when(mockUserRepository.userExists(userID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
 
         Result<String> result = userLoginService.loginMember(userID, correctPassword, correctMail);
@@ -84,7 +84,7 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_WrongPassword_ReturnsFailResult() {
-        int userID = 1;
+        String userID = "1";
         String wrongPassword = "wrongPassword";
         String mail = "someEmail";
         
@@ -92,8 +92,7 @@ public class UserLoginServiceTests {
         when(mockUser.confirmPassword(wrongPassword)).thenReturn(false); 
         when(mockUser.getEmail()).thenReturn(mail);
 
-        when(mockUserRepository.userExists(userID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
         Result<String> result = userLoginService.loginMember(userID, wrongPassword, mail);
 
@@ -104,7 +103,7 @@ public class UserLoginServiceTests {
     
     @Test
     void loginMember_WrongEmail_ReturnsFailResult() {
-        int userID = 1;
+        String userID = "1";
         String correctPassword = "myPassword";
         String correctMail = "myEmail";
         String wrongMail = "my$Email";
@@ -113,8 +112,7 @@ public class UserLoginServiceTests {
         when(mockUser.confirmPassword(correctPassword)).thenReturn(true); 
         when(mockUser.getEmail()).thenReturn(correctMail);
 
-        when(mockUserRepository.userExists(userID)).thenReturn(true);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
 
         Result<String> result = userLoginService.loginMember(userID, correctPassword, wrongMail);
@@ -125,26 +123,26 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_UserDoesNotExist_ReturnsFailResult() {
-        int nonExistentUserID = 999;
-        when(mockUserRepository.userExists(nonExistentUserID)).thenReturn(false);
-
+        String nonExistentUserID = "999";
+        when(mockUserRepository.findByID(nonExistentUserID))
+                                .thenThrow(new IllegalArgumentException("User not found"));
+                                
         Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword", "someMail");
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID", result.getError());
         
-        verify(mockUserRepository, never()).getUserByID(anyInt());
-        verify(mockTokenService, never()).generateVisitor_SignedToken(anyInt());
+        verify(mockUserRepository, never()).findByID(anyString());
+        verify(mockTokenService, never()).generateVisitor_SignedToken(anyString());
     }
 
     @Test
     void logOutMember_SuccessfulLogout_ReturnsNewGuestToken() {
         String validToken = "valid.user.token";
         String newGuestToken = "new.guest.token";
-        int userID = 123;
+        String userID = "1";
         
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(userID));
-        when(mockUserRepository.userExists(userID)).thenReturn(true);
         when(mockTokenService.isUserToken(validToken)).thenReturn(true);
         
         when(mockTokenService.generateVisitor_GuestToken(any(SessionToken.class))).thenReturn(newGuestToken);
@@ -162,7 +160,6 @@ public class UserLoginServiceTests {
         
         when(mockTokenService.extractRoleFromToken(guestToken)).thenReturn("Guest");
         when(mockTokenService.extractSubjectFromToken(guestToken)).thenReturn(String.valueOf(guestID));//shouldnt be relevant won;t parse subject since incorrect role
-        when(mockUserRepository.userExists(guestID)).thenReturn(true);//should crash regardless since irrelevant token
 
         Result<String> result = userLoginService.logOutMember(guestToken);
 
@@ -173,11 +170,10 @@ public class UserLoginServiceTests {
     @Test
     void logOutMember_UserDoesNotExistInDB_ReturnsFailResult() {
         String validToken = "valid.user.token";
-        int nonExistentID = 999;
+        String nonExistentID = "999";
         
         when(mockTokenService.isUserToken(validToken)).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(nonExistentID));
-        when(mockUserRepository.userExists(nonExistentID)).thenReturn(false);
 
         Result<String> result = userLoginService.logOutMember(validToken);
 

@@ -34,11 +34,11 @@ import com.group16b.ApplicationLayer.Records.SeatRecord;
 import com.group16b.ApplicationLayer.Records.VenueRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -51,7 +51,7 @@ public class VenueEventConfigServiceTests {
 
     private IVenueRepository mockVenueRepository;
     private IEventRepository mockEventRepository;
-    private IUserRepository mockUserRepository;
+    private IRepository<User> mockUserRepository;
     private IAuthenticationService mockAuthService;
     private VenueEventConfigService configService;
     private IProductionCompanyRepository mockProductionCompanyRepository;
@@ -60,7 +60,7 @@ public class VenueEventConfigServiceTests {
     // Test Data
     private final String validToken = "valid.user.token";
     private final String userIDString = "1";
-    private final int userID = 1;
+    private final String userID = "1";
     private final int companyID = 10;
     private final int eventID = 100;
     private final String venueName = "Madison Square Garden";
@@ -71,7 +71,7 @@ public class VenueEventConfigServiceTests {
     void setUp() throws IOException, InterruptedException {
         mockVenueRepository = mock(IVenueRepository.class);
         mockEventRepository = mock(IEventRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockAuthService = mock(IAuthenticationService.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
         mockLocationService = mock(ILocationService.class);
@@ -129,7 +129,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
         doNothing().when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
         
@@ -166,7 +166,7 @@ public class VenueEventConfigServiceTests {
         
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
 
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockCompany.isOwner(userID)).thenReturn(false); 
         when(mockCompany.isOwner(userID)).thenReturn(true); // is a manager instead
         
@@ -222,7 +222,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenThrow(new IllegalArgumentException("User with ID " + userID + " not found."));
+        when(mockUserRepository.findByID(userID)).thenThrow(new IllegalArgumentException("User with ID " + userID + " not found."));
 
         Result<String> result = configService.configureNewLayoutAndInventory(
                 validToken, companyID, eventID, validRecord);
@@ -249,7 +249,7 @@ public class VenueEventConfigServiceTests {
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
         
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
         
         doThrow(new IllegalArgumentException("Permission denied. You must be an owner or manager of this company.")).when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
@@ -296,7 +296,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
         when(mockEvent.isActiveEvent()).thenReturn(false);
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mockUser);
+        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
         ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -336,7 +336,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mock(Event.class));
-        when(mockUserRepository.getUserByID(userID)).thenReturn(mock(User.class));
+        when(mockUserRepository.findByID(userID)).thenReturn(mock(User.class));
 
         ProductionCompany mockCompany=mock(ProductionCompany.class);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
