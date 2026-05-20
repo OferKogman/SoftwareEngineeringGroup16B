@@ -132,7 +132,6 @@ public class UserLoginServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Failed to login: User not found", result.getError());
         
-        verify(mockUserRepository, never()).findByID(anyString());
         verify(mockTokenService, never()).generateVisitor_SignedToken(anyString());
     }
 

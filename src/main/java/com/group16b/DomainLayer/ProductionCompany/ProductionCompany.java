@@ -96,7 +96,7 @@ public class ProductionCompany {
         return null;
     }
 
-    public boolean isFouder(String userID)
+    public boolean isFounder(String userID)
     {
         MembershipNode node=membersNodes.get(userID);
         if(node!=null && node.getRoleType()==RoleType.FOUNDER)
@@ -191,7 +191,7 @@ public class ProductionCompany {
         {
             throw new IllegalArgumentException("User is not owner in forfeit Ownership");
         }
-        if(isFouder(userID))
+        if(isFounder(userID))
         {
             throw new IllegalArgumentException("Founder cannot forfeit ownership in his company.");
         }
@@ -289,7 +289,7 @@ public class ProductionCompany {
     {
         MembershipNode current = membersNodes.get(targetID);
 
-        while (current != null)
+        while (current.getAssignerID() != null)
         {
             String assignerID = current.getAssignerID();
 
@@ -313,6 +313,9 @@ public class ProductionCompany {
 
         // reparent children
         for (MembershipNode child : membersNodes.values()) {
+            if (isFounder(child.getUserID())){
+                continue;
+            }
             if (child.getAssignerID().equals(userID)) {
                 child.setAssignerID(parentID);
             }

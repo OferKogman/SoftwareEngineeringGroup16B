@@ -34,7 +34,7 @@ public class AuthinticationServiceJWTImplTests {
 		String token = authService.generateVisitor_SignedToken(userID);
 		Assertions.assertNotNull(token, "generated token should not be null");
 		Assertions.assertTrue(authService.validateToken(token), "Token should be valid");
-		Assertions.assertEquals(userID, Integer.valueOf(authService.extractSubjectFromToken(token)));
+		Assertions.assertEquals(userID, authService.extractSubjectFromToken(token));
 	}
 
 	@Test

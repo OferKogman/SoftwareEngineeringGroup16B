@@ -197,7 +197,7 @@ public class AdminManagementService {
                     try
                     {
                         ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(companyID));
-                        if (company.isFouder(userID))
+                        if (company.isFounder(userID))
                         {
                             closeProductionCompany(companyID, sessionToken);
                             // company no longer exists after closure

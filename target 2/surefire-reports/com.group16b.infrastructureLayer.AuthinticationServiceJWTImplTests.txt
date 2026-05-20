@@ -1,0 +1,17 @@
+-------------------------------------------------------------------------------
+Test set: com.group16b.infrastructureLayer.AuthinticationServiceJWTImplTests
+-------------------------------------------------------------------------------
+Tests run: 9, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.052 s <<< FAILURE! -- in com.group16b.infrastructureLayer.AuthinticationServiceJWTImplTests
+com.group16b.infrastructureLayer.AuthinticationServiceJWTImplTests.testUserTokenGenerationAndAuthentication -- Time elapsed: 0.003 s <<< FAILURE!
+org.opentest4j.AssertionFailedError: expected: java.lang.String@21c747a<42> but was: java.lang.Integer@3e36e320<42>
+	at org.junit.jupiter.api.AssertionFailureBuilder.build(AssertionFailureBuilder.java:151)
+	at org.junit.jupiter.api.AssertionFailureBuilder.buildAndThrow(AssertionFailureBuilder.java:132)
+	at org.junit.jupiter.api.AssertEquals.failNotEqual(AssertEquals.java:197)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:182)
+	at org.junit.jupiter.api.AssertEquals.assertEquals(AssertEquals.java:177)
+	at org.junit.jupiter.api.Assertions.assertEquals(Assertions.java:1145)
+	at com.group16b.infrastructureLayer.AuthinticationServiceJWTImplTests.testUserTokenGenerationAndAuthentication(AuthinticationServiceJWTImplTests.java:37)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+

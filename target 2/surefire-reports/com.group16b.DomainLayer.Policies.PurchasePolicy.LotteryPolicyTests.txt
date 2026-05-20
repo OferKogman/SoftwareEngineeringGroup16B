@@ -1,0 +1,11 @@
+-------------------------------------------------------------------------------
+Test set: com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicyTests
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 10.02 s <<< FAILURE! -- in com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicyTests
+com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicyTests.FailureValidateLotteryCodeBeenUsed -- Time elapsed: 0.004 s <<< FAILURE!
+java.lang.AssertionError
+	at com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicyTests.FailureValidateLotteryCodeBeenUsed(LotteryPolicyTests.java:94)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+

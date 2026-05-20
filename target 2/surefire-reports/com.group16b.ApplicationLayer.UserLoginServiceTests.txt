@@ -1,0 +1,18 @@
+-------------------------------------------------------------------------------
+Test set: com.group16b.ApplicationLayer.UserLoginServiceTests
+-------------------------------------------------------------------------------
+Tests run: 10, Failures: 1, Errors: 0, Skipped: 0, Time elapsed: 0.010 s <<< FAILURE! -- in com.group16b.ApplicationLayer.UserLoginServiceTests
+com.group16b.ApplicationLayer.UserLoginServiceTests.loginMember_UserDoesNotExist_ReturnsFailResult -- Time elapsed: 0.005 s <<< FAILURE!
+org.mockito.exceptions.verification.NeverWantedButInvoked: 
+
+iRepository.findByID(<any string>);
+Never wanted here:
+-> at com.group16b.ApplicationLayer.UserLoginServiceTests.loginMember_UserDoesNotExist_ReturnsFailResult(UserLoginServiceTests.java:135)
+But invoked here:
+-> at com.group16b.ApplicationLayer.UserLoginService.loginMember(UserLoginService.java:44) with arguments: [999]
+
+	at com.group16b.ApplicationLayer.UserLoginServiceTests.loginMember_UserDoesNotExist_ReturnsFailResult(UserLoginServiceTests.java:135)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
+

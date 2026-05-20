@@ -156,7 +156,6 @@ public class OrderServiceTests {
         Event event_2 = new Event(eventRecord, "2");
 
         venue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), EVENT_ID);
-        venue.bookEvent(event_2.getEventStartTime(), event_2.getEventEndTime(), event_2.getEventID());
     }
 
     @SuppressWarnings("unchecked")

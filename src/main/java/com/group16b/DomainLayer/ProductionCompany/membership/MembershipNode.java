@@ -39,7 +39,7 @@ public class MembershipNode {
     }
     public static MembershipNode createFounder(String userID)
     {
-        return new MembershipNode(userID, null, RoleType.OWNER, EnumSet.allOf(ManagerPermissions.class));
+        return new MembershipNode(userID, null, RoleType.FOUNDER, EnumSet.allOf(ManagerPermissions.class));
     }
 
     public String getUserID()

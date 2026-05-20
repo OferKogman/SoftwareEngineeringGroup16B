@@ -295,6 +295,6 @@ class ProductionCompanyTests {
                 .findFirst()
                 .orElseThrow();
 
-        assertEquals(1, child.getParentID());
+        assertEquals("1", child.getParentID());
     }
 }

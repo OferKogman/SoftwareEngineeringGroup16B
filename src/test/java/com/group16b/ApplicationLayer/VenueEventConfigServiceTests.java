@@ -325,7 +325,7 @@ public class VenueEventConfigServiceTests {
                 validToken, companyID, eventID, validRecord);
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Configuration failed: For input string: \"invalid_id_format\""));
+        assertEquals("An unexpected system error occurred while saving the layout.", result.getError());
     }
 
     @Test

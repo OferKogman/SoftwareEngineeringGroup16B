@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.Test;
 
 public class LotteryPolicyTests {
@@ -86,12 +88,12 @@ public class LotteryPolicyTests {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusMinutes(1));
             Field field = LotteryPolicy.class.getDeclaredField("winnersAndCodes");
             field.setAccessible(true);
-            field.set(lotteryPolicy, Map.of("invalid_code", 1));
+            field.set(lotteryPolicy, Map.of("invalid_code", "1"));
             lotteryPolicy.validateLotteryCode("invalid_code");
             lotteryPolicy.validateLotteryCode("invalid_code");
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
-            assert(e.getMessage().equals("Lottery code has already been used."));
+            assertEquals(e.getMessage(), "Lottery code has already been used.");
         }
     }
 
