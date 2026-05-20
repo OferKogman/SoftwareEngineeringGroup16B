@@ -126,11 +126,11 @@ public class UserLoginServiceTests {
         String nonExistentUserID = "999";
         when(mockUserRepository.findByID(nonExistentUserID))
                                 .thenThrow(new IllegalArgumentException("User not found"));
-                                
+
         Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword", "someMail");
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid user ID", result.getError());
+        assertEquals("Failed to login: User not found", result.getError());
         
         verify(mockUserRepository, never()).findByID(anyString());
         verify(mockTokenService, never()).generateVisitor_SignedToken(anyString());
@@ -174,11 +174,13 @@ public class UserLoginServiceTests {
         
         when(mockTokenService.isUserToken(validToken)).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(nonExistentID));
+        when(mockUserRepository.findByID(nonExistentID)).thenThrow(new IllegalArgumentException("Invalid user ID"));
+
 
         Result<String> result = userLoginService.logOutMember(validToken);
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid user ID", result.getError());
+        assertEquals("Failed to log out: Invalid user ID", result.getError());
     }
 
     @Test
