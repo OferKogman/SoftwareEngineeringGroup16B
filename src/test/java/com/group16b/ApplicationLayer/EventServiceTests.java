@@ -28,7 +28,6 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
@@ -45,7 +44,7 @@ public class EventServiceTests {
     static private ILocationService mockLocationService;
     static private EventFilteringService eventFilteringService;
     static private ProductionCompanyRepositoryMapImpl mockProductionCompanyRepository;
-    static private IUserRepository mockUserRepository;
+    static private IRepository<User> mockUserRepository;
     static private IRepository<Venue> mockVenueRepository;
     static private IEventRepository mockEventRepository;
     static private IRepository<VirtualQueue> mockVirtualQueueRepository;
@@ -63,7 +62,7 @@ public class EventServiceTests {
         mockVirtualQueueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         eventFilteringService = new EventFilteringService(mockProductionCompanyRepository, mockEventRepository, mockVenueRepository);
         eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyRepository, mockVirtualQueueRepository, mockVenueRepository);
 
@@ -98,26 +97,26 @@ public class EventServiceTests {
         when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
 
         user = new User("testuser", "password");
-        when(mockUserRepository.getUserByID(user.getUserID())).thenReturn(user);
+        when(mockUserRepository.findByID(user.getEmail())).thenReturn(user);
         when(mockTokenService.validateToken("user1")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user1")).thenReturn(true);
-        when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getUserID()));
+        when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getEmail()));
         
 
         user2 = new User("testuser2", "password");
-        when(mockUserRepository.getUserByID(user2.getUserID())).thenReturn(user2);
+        when(mockUserRepository.findByID(user2.getEmail())).thenReturn(user2);
         when(mockTokenService.validateToken("user2")).thenReturn(true);
         when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
         when(mockTokenService.isUserToken("user2")).thenReturn(true);
-        when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getUserID()));
+        when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getEmail()));
 
         ProductionCompany mockCompany = mock(ProductionCompany.class);
 
         when(mockProductionCompanyRepository.findByID("999")).thenThrow(new IllegalArgumentException("Production company with ID 999 is not found."));
         when(mockProductionCompanyRepository.findByID("1")).thenReturn(mockCompany);
 
-        doThrow(new IllegalArgumentException("User does not have a role for this company.")).when(mockCompany).validateUserPermissions(user2.getUserID(), RoleType.OWNER);
+        doThrow(new IllegalArgumentException("User does not have a role for this company.")).when(mockCompany).validateUserPermissions(user2.getEmail(), RoleType.OWNER);
 
         when(mockEventRepository.findByID(String.valueOf(500))).thenThrow(new IllegalArgumentException("Event with ID 500 not found"));
 
@@ -133,7 +132,7 @@ public class EventServiceTests {
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
         
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getUserID());
+        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getEmail());
         when(mockEventRepository.findByID(String.valueOf(e1.getEventID()))).thenReturn(e1);
         when(mockEventRepository.searchEvents(List.of("empty"), null, null, null, null, null, null, null, null, null)).thenReturn(new ArrayList<>(List.of()));
         venue1.bookEvent(e1.getEventStartTime(), e1.getEventEndTime(), 1);
@@ -372,7 +371,7 @@ public class EventServiceTests {
     public void CreateEvent_Success() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         LocalDateTime now = LocalDateTime.now();
         EventRecord record = new EventRecord("venue1", "event2", now.plusDays(6), now.plusDays(7), "artist2", "category2", 1, 67.0, 4.5);
-        EventDTO e2 = new EventDTO(new Event(record, user.getUserID()));
+        EventDTO e2 = new EventDTO(new Event(record, user.getEmail()));
         Field eid = e2.getClass().getDeclaredField("eventID");
         eid.setAccessible(true);
         eid.set(e2, e2.getEventID() + 1);

@@ -18,7 +18,7 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
@@ -26,7 +26,7 @@ import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
-    private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
     private IProductionCompanyRepository productionCompanyRepo;
     private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
     private final IEventRepository eventRepo = new EventRepositoryMapImpl();
@@ -100,7 +100,7 @@ public class AdminManagementService {
         }
     }
 
-    public Result<List<OrderDTO>> viewPurchesHistoryByUser(String sTocken, int userId){
+    public Result<List<OrderDTO>> viewPurchesHistoryByUser(String sTocken, String userId){
         try {
             logger.info("AdminManagementService.viewPurchesHistoryByUser: Retrieving completed orders for specific user");
 
@@ -171,7 +171,7 @@ public class AdminManagementService {
 
     }
 
-    public Result<String> removeUser(int userID, String sessionToken){
+    public Result<String> removeUser(String userID, String sessionToken){
         try {
             logger.info("Attempting to remove the user subscription of user ID {}", userID);
             if (!authenticationService.validateToken(sessionToken)  ) {
@@ -184,13 +184,10 @@ public class AdminManagementService {
                 return Result.makeFail("Unauthorized access");
             }
             
-            if(!userRepository.userExists(userID)){
-                logger.error("user to remove doesn't exist! given ID: {}", userID);
-                return Result.makeFail("Invalid ID");    
-            }
+            User user = userRepository.findByID(userID);
 
             List<Integer> companyIDs =
-            productionCompanyRepo.getAllUserComapnies(String.valueOf(userID));
+            productionCompanyRepo.getAllUserComapnies(user);
             for (Integer companyID : companyIDs)
             {
                 boolean success = false;
@@ -200,7 +197,7 @@ public class AdminManagementService {
                     try
                     {
                         ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(companyID));
-                        if (company.isFouder(userID))
+                        if (company.isFounder(userID))
                         {
                             closeProductionCompany(companyID, sessionToken);
                             // company no longer exists after closure
@@ -223,7 +220,7 @@ public class AdminManagementService {
                     }
                 }
             }
-            userRepository.deleteUser(userID);
+            userRepository.delete(userID);
             
             return Result.makeOk("User with ID: " + userID + ", , has been removed");
         } catch (Exception e) {

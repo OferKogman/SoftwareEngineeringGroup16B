@@ -24,7 +24,7 @@ import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
-import com.group16b.DomainLayer.User.IUserRepository;
+import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -42,7 +42,7 @@ public class OrderService {
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
 	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
+	private final IRepository<User> userRepo = new UserRepositoryMapImpl();
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
 
@@ -53,7 +53,7 @@ public class OrderService {
 		this.paymentService = paymentGateway;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(int userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
+    public Result<List<TicketDTO>> CompleteActiveOrder(String userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
 		try {
 			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
 
@@ -152,7 +152,7 @@ public class OrderService {
 		try {
 			//auth
 			logger.info("OrderService.getUserOrders: Verifying session token for retrieving orders of user with session token {0}.", sessionToken);
-			int userID = validateAndGetUserID(sessionToken);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("OrderService.getUserOrders: Session token verified successfully.");
 
 			//get orders
@@ -427,7 +427,7 @@ public class OrderService {
         String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
         return subjectID;
     }
-	private int validateAndGetUserID(String sessionToken)
+	private String validateAndGetUserID(String sessionToken)
     {
         if (!authenticationService.validateToken(sessionToken)  ) {
             throw new AuthException("Invalid Token");
@@ -435,9 +435,9 @@ public class OrderService {
         if (!authenticationService.isUserToken(sessionToken)) {
             throw new AuthException("Only users are allowed to perform operation");
         }
-        int userID=Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
+        String userID=authenticationService.extractSubjectFromToken(sessionToken);
         //verify user exists in the database, i.e not a stale user
-        userRepo.getUserByID(userID);
+        userRepo.findByID(userID);
         return userID;
     }
 }

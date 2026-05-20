@@ -6,12 +6,12 @@ import com.group16b.DomainLayer.User.User;
 
 
 public class UserDTO {
-    private final int userID;
-	private String email;
+    private String userEmail;
+	private long version;
 
     public UserDTO(User user) {
-        this.userID = user.getUserID();
-        this.email = user.getEmail();
+        this.userEmail = user.getEmail();
+        this.version = user.getVersion();
     }
 
 }

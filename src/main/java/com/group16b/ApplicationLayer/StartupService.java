@@ -36,7 +36,7 @@ public class StartupService {
         logger.info("Initializing infrastructures...");
         AuthenticationServiceJWTImpl authService = new AuthenticationServiceJWTImpl("mySuperSecretKeyForUsers123456789", "mySuperSecretKeyForAdmins123456789");
         LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
-        UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
+        UserRepositoryMapImpl userRepositoryMapImpl = new UserRepositoryMapImpl();
         VenueRepositoryMapImpl venueRepositoryMapImpl = new VenueRepositoryMapImpl();
         IOrderRepository orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
         EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();

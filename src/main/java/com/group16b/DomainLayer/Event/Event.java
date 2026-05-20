@@ -27,11 +27,11 @@ public class Event {
 	private final Set<PurchasePolicy> purchasePolicy;
 	private double price;
 	private double rating;
-	private final int ownerId;
+	private final String ownerId;
 
 	private long version;
 
-	public Event(EventRecord eventRecord, int ownerId) {
+	public Event(EventRecord eventRecord, String ownerId) {
 		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
 		validateName(eventRecord.name());
@@ -193,7 +193,7 @@ public class Event {
 		return purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
 	}
 
-	public int getOwnerId() {
+	public String getOwnerId() {
 		return ownerId;
 	}
 
@@ -302,7 +302,7 @@ public class Event {
         return active; 
     }
 
-	public void enrollInLottery(int userID) {
+	public void enrollInLottery(String userID) {
 		if (!this.isActiveEvent()) {
 			throw new IllegalStateException("Can't enroll in lottery for an inactive event");
 		}

@@ -43,7 +43,6 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.FieldSeg;
@@ -63,13 +62,13 @@ public class OrderServiceTests {
     private IOrderRepository mockOrderRepository;
     private IRepository<Venue> mockVenueRepository;
     private IEventRepository mockEventRepository;
-    private IUserRepository mockUserRepository;
+    private IRepository<User> mockUserRepository;
     private IProductionCompanyRepository mockProductionCompanyRepository;
 
     private static final String SESSION_TOKEN = "valid-token";
     private static final String ADMIN_TOKEN = "admin-token";
     private static final String USER_ID_STRING = "42";
-    private static final int USER_ID = 42;
+    private static final String USER_ID = "42";
 
     private static final String ORDER_ID = "order_1";
     private static final int EVENT_ID = 1;
@@ -138,7 +137,8 @@ public class OrderServiceTests {
                 4.5
         );
 
-        event = new Event(eventRecord, PRODUCTION_COMPANY_ID);
+        // event = new Event(eventRecord, PRODUCTION_COMPANY_ID); //this constructor needs owner ID in string, not production company ID
+        event = new Event(eventRecord, "1");
 
 
         EventRecord eventRecord2 = new EventRecord(
@@ -152,9 +152,10 @@ public class OrderServiceTests {
                 50.0,
                 4.5
         );
-        Event event_2 = new Event(eventRecord2, PRODUCTION_COMPANY_ID);
+        // Event event_2 = new Event(eventRecord2, PRODUCTION_COMPANY_ID);
+        Event event_2 = new Event(eventRecord, "2");
+
         venue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), EVENT_ID);
-        venue.bookEvent(event_2.getEventStartTime(), event_2.getEventEndTime(), event_2.getEventID());
     }
 
     @SuppressWarnings("unchecked")
@@ -165,7 +166,7 @@ public class OrderServiceTests {
         mockOrderRepository = mock(IOrderRepository.class);
         mockVenueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
-        mockUserRepository = mock(IUserRepository.class);
+        mockUserRepository = mock(IRepository.class);
         mockPaymentService = mock(PaymentService.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
@@ -240,7 +241,7 @@ public class OrderServiceTests {
         TicketDTO ticket2 = mock(TicketDTO.class);
 
         when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeSeatOrder);
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+        when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
 
 
         when(mockTicketGateway.generateTicket(
@@ -424,7 +425,7 @@ public class OrderServiceTests {
         Order order2 = new Order(SEGMENT_ID, List.of("1-3"), 50.0, EVENT_ID, USER_ID_STRING);
         order1.CompleteOrder();
         order2.CompleteOrder();
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+        when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
         //USER_ID_STRING
         when(mockOrderRepository.getBySubjectId(USER_ID_STRING)).thenReturn(List.of(order1, order2));
 
@@ -436,7 +437,7 @@ public class OrderServiceTests {
         assertTrue(result.isSuccess());
         assertEquals(2, result.getValue().size());
 
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).findByID(USER_ID);
         verify(mockOrderRepository).getBySubjectId(USER_ID_STRING);
     }
     @Test
@@ -450,7 +451,7 @@ public class OrderServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Authentication failed: Invalid Token", result.getError());
 
-        verify(mockUserRepository, never()).getUserByID(anyInt());
+        verify(mockUserRepository, never()).findByID(anyString());
         verify(mockOrderRepository, never()).getAll();
     }
     @Test
@@ -466,26 +467,26 @@ public class OrderServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("Authentication failed: Only users are allowed to perform operation", result.getError());
 
-        verify(mockUserRepository, never()).getUserByID(anyInt());
+        verify(mockUserRepository, never()).findByID(anyString());
         verify(mockOrderRepository, never()).getAll();
     }
     @Test
     void getUserOrders_userNotFound_returnsFail() {
-        when(mockUserRepository.getUserByID(USER_ID)).thenThrow(new IllegalArgumentException("User not found"));
+        when(mockUserRepository.findByID(USER_ID)).thenThrow(new IllegalArgumentException("User not found"));
 
         Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
 
         assertFalse(result.isSuccess());
         assertEquals("User not found", result.getError());
 
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).findByID(USER_ID);
         verify(mockOrderRepository, never()).getAll();
     }
     @Test
     void getUserOrders_noOrders_returnsEmptyListSuccessfully() {
         User user = mock(User.class);
 
-        when(mockUserRepository.getUserByID(USER_ID)).thenReturn(user);
+        when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
         when(mockOrderRepository.getBySubjectId(USER_ID_STRING))
                 .thenReturn(List.of());
 
@@ -495,7 +496,7 @@ public class OrderServiceTests {
         assertNotNull(result.getValue());
         assertTrue(result.getValue().isEmpty());
 
-        verify(mockUserRepository).getUserByID(USER_ID);
+        verify(mockUserRepository).findByID(USER_ID);
         verify(mockOrderRepository).getBySubjectId(USER_ID_STRING);
     }
 

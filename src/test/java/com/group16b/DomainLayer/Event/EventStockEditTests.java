@@ -27,7 +27,6 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
@@ -44,14 +43,14 @@ public class EventStockEditTests {
     private EventFilteringService mockEventFilteringService;
 
     // Injected via Reflection (Singletons)
-    private IUserRepository mockUserRepo;
+    private IRepository<User> mockUserRepo;
     private IRepository<Venue> mockVenueRepo;
     private IEventRepository mockEventRepo;
     private IRepository<VirtualQueue> mockQueueRepo;
     private IProductionCompanyRepository mockPolicyRepo;
 
     private final String VALID_TOKEN = "valid-session-token";
-    private final int USER_ID = 1;
+    private final String USER_ID = "1";
     private final int EVENT_ID = 10;
     private final int VENUE_ID = 50;
     private final int COMPANY_ID = 100;
@@ -62,7 +61,7 @@ public class EventStockEditTests {
         mockLocationService = mock(ILocationService.class);
         mockEventFilteringService = mock(EventFilteringService.class);
         
-        mockUserRepo = mock(IUserRepository.class);
+        mockUserRepo = mock(IRepository.class);
         mockVenueRepo = mock(IRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockQueueRepo = mock(IRepository.class);
@@ -92,7 +91,7 @@ public class EventStockEditTests {
     void editStockInSegmentsForEvent_Success() {
         User mockUser = mock(User.class);
         ProductionCompany mockCompany=mock(ProductionCompany.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         doNothing().when(mockCompany).validateUserPermissions(USER_ID,RoleType.OWNER);
 
@@ -146,7 +145,7 @@ public class EventStockEditTests {
     void editStockInSegmentsForEvent_PermissionDenied_CaughtByCatchBlock() {
         User mockUser = mock(User.class);
         ProductionCompany mockCompany=mock(ProductionCompany.class);
-        when(mockUserRepo.getUserByID(USER_ID)).thenReturn(mockUser);
+        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
         
         Event mockEvent = mock(Event.class);

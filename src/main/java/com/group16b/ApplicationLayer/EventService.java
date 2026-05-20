@@ -24,7 +24,6 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-import com.group16b.DomainLayer.User.IUserRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
@@ -44,7 +43,7 @@ public class EventService {
 	private final IAuthenticationService authenticationService;
     private final ILocationService locationService;
     private final EventFilteringService eventFilteringService;
-	private final IUserRepository userRepository = UserRepositoryMapImpl.getInstance();
+	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
 	private final IRepository<Venue> venueRepository;
 	private final IEventRepository eventRepository = new EventRepositoryMapImpl();
 	private final IRepository<VirtualQueue> queueRepository;
@@ -62,10 +61,10 @@ public class EventService {
 	// need to make event active manually
 	public Result<EventDTO> createEvent(EventRecord eventRecord, String sessionToken) {
 		try {
-			int userID = validateAndGetUserID(sessionToken);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.createEvent: Session token verified successfully.");
 
-			User user = userRepository.getUserByID(userID);
+			User user = userRepository.findByID(userID);
 	
 			logger.info("EventService.createEvent: retrieving production company for event creation");
 			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRecord.pcID()));
@@ -75,7 +74,7 @@ public class EventService {
 			logger.info("EventService.createEvent: User permissions validated successfully.");
 
 			logger.info("EventService.createEvent: Attempting to create event: " + eventRecord.name());
-			Event event = new Event(eventRecord, user.getUserID());
+			Event event = new Event(eventRecord, user.getEmail());
 
 			logger.info("EventService.createEvent: Creating queue for the new event");
 			VirtualQueue q = new VirtualQueue(event.getEventID());
@@ -111,7 +110,7 @@ public class EventService {
 
 	public Result<Boolean> activateEvent(int eventID, String sessionToken) {
 		try {
-			int userID = validateAndGetUserID(sessionToken);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.activateEvent: Session token verified successfully.");
 
 			logger.info("EventService.activateEvent: retrieving event for activation");
@@ -154,7 +153,7 @@ public class EventService {
 
 	public Result<Boolean> deactivateEvent(int eventID, String sessionToken) {
 		try {
-			int userID = validateAndGetUserID(sessionToken);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.deactivateEvent: Session token verified successfully.");
 
 			logger.info("EventService.deactivateEvent: retrieving event for deactivation");
@@ -214,7 +213,7 @@ public class EventService {
 	
 	public Result<EventDTO> editEvent(Map<String, Object> editParams, int eventID, String sessionToken) {
         try {
-			int userID = validateAndGetUserID(sessionToken);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.editEvent: Session token verified successfully.");
 
 			logger.info("EventService.editEvent: retrieving event for edition");
@@ -284,7 +283,7 @@ public class EventService {
 
 	public Result<String> editStockInSegmentsForEvent(Map<String, Integer> segmentsAndNewStock,  int eventID, String sessionToken){
 		try{
-			int userID = validateAndGetUserID(sessionToken);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.editStockInSegmentsForEvent: Session token verified successfully.");
 
 			logger.info("EventService.editStockInSegmentsForEvent: retrieving event for stock edition");
@@ -402,7 +401,7 @@ public class EventService {
         return (T) params.get(key);
     }
 
-	private int validateAndGetUserID(String sessionToken)
+	private String validateAndGetUserID(String sessionToken)
     {
         if (!authenticationService.validateToken(sessionToken)  ) {
             throw new AuthException("Invalid session token.");
@@ -410,8 +409,8 @@ public class EventService {
         if (!authenticationService.isUserToken(sessionToken)) {
             throw new AuthException("Only users are allowed to perform operation");
         }
-        int userID = Integer.parseInt(authenticationService.extractSubjectFromToken(sessionToken));
-        userRepository.getUserByID(userID);
+        String userID = (authenticationService.extractSubjectFromToken(sessionToken));
+        userRepository.findByID(userID);
         return userID;
     }
 }

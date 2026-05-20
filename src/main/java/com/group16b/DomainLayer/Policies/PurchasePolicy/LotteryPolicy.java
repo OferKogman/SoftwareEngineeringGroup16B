@@ -14,9 +14,9 @@ public class LotteryPolicy implements PurchasePolicy {
     private String lotteryName;
     private int winnerAmount;
     private LocalDateTime lotteryRegistrationDueDate;
-    private Set<Integer> participants;
-    private Map<String, Integer> winnersAndCodes;
-    private Map<String, Integer> usedCodes;
+    private Set<String> participants;
+    private Map<String, String> winnersAndCodes;
+    private Map<String, String> usedCodes;
 
     public LotteryPolicy(int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
         this.lotteryName = lotteryName;
@@ -53,11 +53,11 @@ public class LotteryPolicy implements PurchasePolicy {
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
     }
 
-    public Set<Integer> getParticipants() {
+    public Set<String> getParticipants() {
         return participants;
     }
 
-    public synchronized void enrollInLottery(int eventID, int userID) {
+    public synchronized void enrollInLottery(int eventID, String userID) {
         if(LocalDateTime.now().isAfter(lotteryRegistrationDueDate)) {
             throw new IllegalStateException("Lottery enrollment is closed since " + lotteryRegistrationDueDate + ".");
         }
@@ -68,13 +68,13 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
-        List<Integer> winners = new ArrayList<>(participants);
+        List<String> winners = new ArrayList<>(participants);
 
         Collections.shuffle(winners);
 
         winners = winners.subList(0, Math.min(winnerAmount, winners.size()));
 
-        for(Integer winnerID : winners) {
+        for(String winnerID : winners) {
             String uniqueCode = UUID.randomUUID().toString();
             winnersAndCodes.put(uniqueCode, winnerID);
         }
@@ -89,7 +89,7 @@ public class LotteryPolicy implements PurchasePolicy {
         if(!winnersAndCodes.containsKey(code)) {
             throw new IllegalArgumentException("Invalid lottery code.");
         }
-        Integer winnerID = winnersAndCodes.get(code);
+        String winnerID = winnersAndCodes.get(code);
         usedCodes.put(code, winnerID);
     }
 
@@ -99,7 +99,7 @@ public class LotteryPolicy implements PurchasePolicy {
 
     public synchronized void renewLotteryCode(String code) {
         if(winnersAndCodes.containsKey(code) && usedCodes.containsKey(code)) {
-            Integer userID = winnersAndCodes.get(code);
+            String userID = winnersAndCodes.get(code);
             winnersAndCodes.remove(code);
             winnersAndCodes.put(code, userID);
             usedCodes.remove(code);
