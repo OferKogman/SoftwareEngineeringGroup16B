@@ -45,7 +45,7 @@ public class EventStockEditTests {
 
     // Injected via Reflection (Singletons)
     private IUserRepository mockUserRepo;
-    private IVenueRepository mockVenueRepo;
+    private IRepository<Venue> mockVenueRepo;
     private IEventRepository mockEventRepo;
     private IRepository<VirtualQueue> mockQueueRepo;
     private IProductionCompanyRepository mockPolicyRepo;
@@ -63,12 +63,12 @@ public class EventStockEditTests {
         mockEventFilteringService = mock(EventFilteringService.class);
         
         mockUserRepo = mock(IUserRepository.class);
-        mockVenueRepo = mock(IVenueRepository.class);
+        mockVenueRepo = mock(IRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockQueueRepo = mock(IRepository.class);
         mockPolicyRepo = mock(IProductionCompanyRepository.class);
 
-        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo, mockQueueRepo);
+        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo, mockQueueRepo, mockVenueRepo);
 
         // 3. Inject Singleton Repositories via Reflection
         setPrivateField(eventService, "userRepository", mockUserRepo);
@@ -102,7 +102,7 @@ public class EventStockEditTests {
         when(mockEvent.getEventVenueID()).thenReturn(String.valueOf(VENUE_ID));
 
         Venue mockVenue = mock(Venue.class);
-        when(mockVenueRepo.getVenueByID(String.valueOf(VENUE_ID))).thenReturn(mockVenue);
+        when(mockVenueRepo.findByID(String.valueOf(VENUE_ID))).thenReturn(mockVenue);
 
         Segment mockSegmentA = mock(Segment.class);
         Segment mockSegmentB = mock(Segment.class);

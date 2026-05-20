@@ -18,20 +18,19 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.IUserRepository;
-import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.TicketGateway;
 
 import io.jsonwebtoken.JwtException;
@@ -41,15 +40,16 @@ public class OrderService {
 	private final IAuthenticationService authenticationService;
     private final ITicketGateway ticketGateway = new TicketGateway();
 	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
-	private final IVenueRepository venueRepo = VenueRepositoryMapImpl.getInstance();
+	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
 	private final IUserRepository userRepo = UserRepositoryMapImpl.getInstance();
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
 
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
+		this.venueRepo = venueRepo;
 		this.paymentService = paymentGateway;
 	}
 
@@ -131,7 +131,8 @@ public class OrderService {
 		orderRepo.delete(orderID);
 		int eventID = order.getEventId();
 		Event event = eventRepo.findByID(String.valueOf(eventID));
-		Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+
+		Venue venue = venueRepo.findByID(event.getEventVenueID());
 		Segment segment = venue.getSegmentByID(order.getSegmentId());
 		
 			switch (segment.getSegmentType()) {
@@ -223,7 +224,7 @@ public class OrderService {
             Event event = eventRepo.findByID(String.valueOf(eventID));
 
             logger.info("OrderService.changeSeatsToOrder: Reserving new seats {} for order {}.", seatsToAdd, orderId);
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
 			venue.reserveSeats(ReservationRequest.forSeats(order.getEventId(), seatsToAdd, order.getSegmentId()));
             
             // free seatsToRemove
@@ -293,7 +294,7 @@ public class OrderService {
             }
 			int eventID = order.getEventId();
             Event event = eventRepo.findByID(String.valueOf(eventID));
-			Venue venue = venueRepo.getVenueByID(event.getEventVenueID());
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
             if (oldNumOfTickets < newSeatsNum) {
                 // reserve new seatsToAdd
                 int seatsToAdd = newSeatsNum - oldNumOfTickets;
@@ -353,17 +354,17 @@ public class OrderService {
 		try {
 			logger.info("Attempting to cancel order {}.", orderId);
 			Order order = orderRepo.findByID(orderId);
+			
 			if (order == null) {
-				logger.error("Order {} not found for cancellation.", orderId);
-				return Result.makeFail("Order not found");
-			}
-			if (!order.isActive()) {
-				logger.error("Order {} is not active for cancellation.", orderId);
-				return Result.makeFail("Order is not active");
-			}
+    			return Result.makeFail("Order not found");
+}
+			order.validiteOrderIsActive();
 			_cancelOrder(orderId);
         return Result.makeOk(true);
 		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
 			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
 			return Result.makeFail(e.getMessage());
 		} catch (Exception e) {	

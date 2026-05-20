@@ -102,8 +102,8 @@ public class AdminManagementServiceTest1 {
 
         Map<String, Segment> segmentMap = new TreeMap<>();
         segmentMap.put("segment1", segment1);
-        venue1 = new Venue("Test Venue", location1, segmentMap);
-        when(mockVenueRepository.getVenueByID("venue1")).thenReturn(venue1);
+        venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID");
+        when(mockVenueRepository.findByID("venue1")).thenReturn(venue1);
         
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);

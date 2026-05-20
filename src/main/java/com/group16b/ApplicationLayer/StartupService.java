@@ -37,7 +37,7 @@ public class StartupService {
         AuthenticationServiceJWTImpl authService = new AuthenticationServiceJWTImpl("mySuperSecretKeyForUsers123456789", "mySuperSecretKeyForAdmins123456789");
         LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
         UserRepositoryMapImpl userRepositoryMapImpl = UserRepositoryMapImpl.getInstance();
-        VenueRepositoryMapImpl venueRepositoryMapImpl = VenueRepositoryMapImpl.getInstance();
+        VenueRepositoryMapImpl venueRepositoryMapImpl = new VenueRepositoryMapImpl();
         IOrderRepository orderRepositoryMapImpl = OrderRepositoryMapImpl.getInstance();
         EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
         VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = new VirtualQueueRepositoryMapImpl();
@@ -46,19 +46,19 @@ public class StartupService {
         TicketGateway ticketGateway = new TicketGateway();
 
         logger.info("Initializing domain services...");
-        EventFilteringService eventFilteringService = new EventFilteringService(productionCompanyRepositoryMapImpl);
+        EventFilteringService eventFilteringService = new EventFilteringService(productionCompanyRepositoryMapImpl, eventRepositoryMapImpl, venueRepositoryMapImpl);
         
 
         logger.info("Initializing application services...");
         adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl);
         companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl);
-        eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
-        orderService = new OrderService(authService,productionCompanyRepositoryMapImpl, paymentService);
+        eventService = new EventService(authService, locationService, eventFilteringService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl, venueRepositoryMapImpl);
+        orderService = new OrderService(authService,productionCompanyRepositoryMapImpl, paymentService, venueRepositoryMapImpl);
         productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl);
         purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl);
-        reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl);
+        reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl, venueRepositoryMapImpl);
         userLoginService = new UserLoginService(authService);
-        userService = new UserService(authService, ticketGateway);
+        userService = new UserService(authService, ticketGateway, venueRepositoryMapImpl);
 
         logger.info("Adding default system admin...");
         ISystemAdminRepository systemAdminRepository = new SystemAdminRepositoryMapImpl();

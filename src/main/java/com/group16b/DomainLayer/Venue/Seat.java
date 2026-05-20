@@ -1,9 +1,7 @@
 package com.group16b.DomainLayer.Venue;
 
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import com.group16b.ApplicationLayer.DTOs.SeatDTO;
 
 public class Seat {
 	private final String seatId;
@@ -18,6 +16,13 @@ public class Seat {
 		this.number = number;
 		stock = new ConcurrentHashMap<Integer, Boolean>();
 	}
+
+	public Seat(Seat other) {
+        this.seatId = other.seatId;
+        this.row = other.row;
+        this.number = other.number;
+        this.stock = new ConcurrentHashMap<>(other.stock);
+    }
 
 	public String getSeatId() {
 		return seatId;

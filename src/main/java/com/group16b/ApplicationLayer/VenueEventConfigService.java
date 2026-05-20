@@ -71,7 +71,7 @@ public class VenueEventConfigService {
             Location loc = locationService.search(newVenueLayout.location());
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: creating a new venue");
-            Venue venue = new Venue(newVenueLayout.name(), loc, newVenueLayout.fieldSeg(), newVenueLayout.seatSeg());
+            Venue venue = new Venue(newVenueLayout.name(), loc, newVenueLayout.fieldSeg(), newVenueLayout.seatSeg(), "venueID");
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: booking the event in the venue");
             venue.bookEvent(targetEvent.getEventStartTime(), targetEvent.getEventEndTime(), eventID);
@@ -130,7 +130,7 @@ public class VenueEventConfigService {
             company.validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying venue exists for id {}", venueID);
-            Venue venue = venueRepository.getVenueByID(venueID);
+            Venue venue = venueRepository.findByID(venueID);
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: booking the event in the venue");
             venue.bookEvent(targetEvent.getEventStartTime(), targetEvent.getEventEndTime(), eventID);

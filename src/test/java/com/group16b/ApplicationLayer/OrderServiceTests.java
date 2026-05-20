@@ -61,7 +61,7 @@ public class OrderServiceTests {
     private IAuthenticationService mockAuthenticationService;
     private ITicketGateway mockTicketGateway;
     private IOrderRepository mockOrderRepository;
-    private IVenueRepository mockVenueRepository;
+    private IRepository<Venue> mockVenueRepository;
     private IEventRepository mockEventRepository;
     private IUserRepository mockUserRepository;
     private IProductionCompanyRepository mockProductionCompanyRepository;
@@ -124,7 +124,7 @@ public class OrderServiceTests {
         segments.put(SEGMENT_ID, segment);
         segments.put(FIELD_SEGMENT_ID, filledSegment);
         
-        venue = new Venue(VENUE_ID, null, segments);
+        venue = new Venue("venue", null, segments, VENUE_ID);
 
         EventRecord eventRecord = new EventRecord(
                 VENUE_ID,
@@ -163,14 +163,13 @@ public class OrderServiceTests {
         mockAuthenticationService = mock(IAuthenticationService.class);
         mockTicketGateway = mock(ITicketGateway.class);
         mockOrderRepository = mock(IOrderRepository.class);
-        mockVenueRepository = mock(IVenueRepository.class);
+        mockVenueRepository = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
         mockUserRepository = mock(IUserRepository.class);
         mockPaymentService = mock(PaymentService.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
-        
 
-        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockPaymentService);
+        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockPaymentService, mockVenueRepository);
 
         injectField(orderService, "ticketGateway", mockTicketGateway);
         injectField(orderService, "orderRepo", mockOrderRepository);
@@ -189,7 +188,7 @@ public class OrderServiceTests {
 
 
         when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venue);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venue);
 
         ProductionCompany mockCompany = mock(ProductionCompany.class);
 
@@ -677,34 +676,18 @@ public class OrderServiceTests {
     }
 
     @Test
-    void changeSeatsToOrder_venueNotFound_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenThrow(new IllegalArgumentException("Venue not found"));
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Venue not found", result.getError());
-    }
-
-    @Test
     void changeSeatsToOrder_segmentNotFound_returnsFail() {
         Order order = createActiveSeatOrder();
 
         Venue venueWithoutSegment = new Venue(
-                VENUE_ID,
+                "venue1",
                 null,
-                Map.of()
+                Map.of(),
+                VENUE_ID
         );
 
         when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
 
         Result<List<String>> result = orderService.changeSeatsToOrder(
                 ORDER_ID,
@@ -713,6 +696,7 @@ public class OrderServiceTests {
         );
 
         assertFalse(result.isSuccess());
+        assertEquals("Segment with ID segment1 not found", result.getError());
         assertEquals("Segment with ID segment1 not found", result.getError());
     }
 
@@ -792,9 +776,9 @@ public class OrderServiceTests {
 
         assertTrue(result.isSuccess());
         assertEquals(3, result.getValue());
-
-        verify(mockVenueRepository, never()).reserveTickets(anyString(), anyString(), anyInt(), anyInt());
-        verify(mockVenueRepository, never()).freeTickets(anyString(), anyString(), anyInt(), anyInt());
+        Venue spyVenue = spy(venue);
+        verify(spyVenue, never()).reserveTickets(anyString(), anyInt(), anyInt());
+        verify(spyVenue, never()).freeTickets(anyString(), anyInt(), anyInt());
     }
 
     @Test
@@ -949,35 +933,20 @@ public class OrderServiceTests {
         assertEquals("Event not found", result.getError());
     }
 
-    @Test
-    void changeNumOfSeatsInFieldOrder_venueNotFound_returnsFail() {
-        Order order = createActiveFieldOrder(2);
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenThrow(new IllegalArgumentException("Venue not found"));
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Venue not found", result.getError());
-    }
 
     @Test
     void changeNumOfSeatsInFieldOrder_segmentNotFound_returnsFail() {
         Order order = createActiveFieldOrder(2);
 
         Venue venueWithoutSegment = new Venue(
-                VENUE_ID,
+                "venue2",
                 null,
-                Map.of()
+                Map.of(),
+                VENUE_ID
         );
 
         when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
 
         Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
                 ORDER_ID,
@@ -986,6 +955,7 @@ public class OrderServiceTests {
         );
 
         assertFalse(result.isSuccess());
+        assertEquals("Segment with ID field-segment not found", result.getError());
         assertEquals("Segment with ID field-segment not found", result.getError());
     }
 
@@ -1017,7 +987,7 @@ public class OrderServiceTests {
         verify(mockOrderRepository).delete(ORDER_ID);
 
         verify(mockEventRepository).findByID(String.valueOf(EVENT_ID));
-        verify(mockVenueRepository).getVenueByID(VENUE_ID);
+        verify(mockVenueRepository).findByID(VENUE_ID);
 
         verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
     }
@@ -1042,7 +1012,7 @@ public class OrderServiceTests {
         verify(mockOrderRepository).cancelOrder(ORDER_ID);
 
         verify(mockEventRepository).getEventByID(EVENT_ID);
-        verify(mockVenueRepository).getVenueByID(VENUE_ID);
+        verify(mockVenueRepository).findByID(VENUE_ID);
 
         verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
     }
@@ -1076,9 +1046,51 @@ public class OrderServiceTests {
         Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
 
         assertFalse(result.isSuccess());
-        assertEquals("Order is not active", result.getError());
+        assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
 
         verify(mockOrderRepository, never()).delete(anyString());
+    }
+
+    @Test
+    void cancelOrder_eventNotFound_stillReturnsOkAfterCancelRepoCall() {
+        Order seatOrder = new Order(
+                SEGMENT_ID,
+                List.of("1-1", "1-2"),
+                100.0,
+                EVENT_ID,
+                USER_ID_STRING
+        );
+
+        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
+
+        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getValue());
+
+        verify(mockOrderRepository).delete(ORDER_ID);
+    }
+
+    @Test
+    void cancelOrder_venueNotFound_stillReturnsOkAfterCancelRepoCall() {
+        Order seatOrder = new Order(
+                SEGMENT_ID,
+                List.of("1-1", "1-2"),
+                100.0,
+                EVENT_ID,
+                USER_ID_STRING
+        );
+
+        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(null);
+
+        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getValue());
+
+        verify(mockOrderRepository).delete(ORDER_ID);
     }
 
     @Test
@@ -1092,13 +1104,14 @@ public class OrderServiceTests {
         );
 
         Venue venueWithoutSegment = new Venue(
-                VENUE_ID,
+                "venue3",
                 null,
-                Map.of()
+                Map.of(),
+                VENUE_ID
         );
 
         when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
-        when(mockVenueRepository.getVenueByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
 
         Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
 

@@ -3,17 +3,10 @@ package com.group16b.DomainLayer.Venue;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.group16b.ApplicationLayer.DTOs.ChosenSeatingSegDTO;
-import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
-import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
-import com.group16b.ApplicationLayer.DTOs.SegmentDTO;
-import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
 import com.group16b.ApplicationLayer.Records.FieldSegRecord;
-import com.group16b.ApplicationLayer.Records.VenueRecord;
 
 public class Venue {
 	private volatile String name;
@@ -21,18 +14,21 @@ public class Venue {
 	private final Map<String, Segment> segments;
 	private final Map<Integer, EventSchedule> scheduledEvents;
 	private int IDForSeg = 0;
+	private long version;
+	private final String id;
 
-	public Venue(String name, Location location, Map<String, Segment> segments) {
+	public Venue(String name, Location location, Map<String, Segment> segments, String id) {
 		this.name = name;
 		this.location = location;
 		this.segments = segments;
 		this.scheduledEvents = new ConcurrentHashMap<>();
+		this.id = id;
 	}
 
-	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg) {
+	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg, String id) {
 		this.name = name;
 		this.location = location;
-		this.segments = new TreeMap<>();
+		this.segments = new ConcurrentHashMap<>();
 		for (FieldSegRecord fsr : fieldSeg) {
 			segments.put(fsr.segmentID(), new FieldSeg(fsr.segmentID(), fsr.size()));
 		}
@@ -40,6 +36,33 @@ public class Venue {
 			segments.put(cssr.segmentID(), new ChosenSeatingSeg(cssr.segmentID(), cssr.seats()));
 		}
 		this.scheduledEvents = new ConcurrentHashMap<>();
+		this.id = id;
+	}
+
+	
+	public Venue(Venue other) {
+		this.name = other.name;
+		this.location = other.location;
+
+        this.segments = new ConcurrentHashMap<>();
+        for (Map.Entry<String, Segment> entry : other.segments.entrySet()) {
+            Segment origSeg = entry.getValue();
+            
+            if (origSeg instanceof FieldSeg fieldSeg) {
+                this.segments.put(entry.getKey(), new FieldSeg(fieldSeg)); 
+            } else if (origSeg instanceof ChosenSeatingSeg seatingSeg) {
+                this.segments.put(entry.getKey(), new ChosenSeatingSeg(seatingSeg));
+            }
+        }
+
+        this.scheduledEvents = new ConcurrentHashMap<>();
+        for (Map.Entry<Integer, EventSchedule> entry : other.scheduledEvents.entrySet()) {
+            this.scheduledEvents.put(entry.getKey(), new EventSchedule(entry.getValue().getStartTime(), entry.getValue().getEndTime())); 
+        }
+
+		this.IDForSeg = other.IDForSeg;
+		this.version = other.version;
+		this.id = other.id;
 	}
 
 	public Map<String, Segment> getSegments(){
@@ -120,10 +143,26 @@ public class Venue {
     }
 	
 	public void cancelEvent(LocalDateTime starTime, int eventID) {
-		if (!scheduledEvents.remove(starTime, eventID)) {
+		if (scheduledEvents.remove(eventID) == null) {
 			throw new IllegalArgumentException("Venue is not reserved for this event at requested date !");
 		}
 	}
+
+	public void freeTickets(String segmentId, List<String> seatIds, int eventID){
+		this.freeSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
+	}
+
+	public void freeTickets(String segmentId, int quantity, int eventID){
+		this.freeSeats(ReservationRequest.forField(eventID, quantity, segmentId));
+	} 
+
+    public void reserveTickets(String segmentId, List<String> seatIds, int eventID) {
+        this.reserveSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
+    }
+
+    public void reserveTickets(String segmentId, int quantity, int eventID) {
+        this.reserveSeats(ReservationRequest.forField(eventID, quantity, segmentId));
+    }
 
 	public void reserveSeats(ReservationRequest request) {
 		Segment segment = segments.get(request.getSegmentId());
@@ -141,5 +180,15 @@ public class Venue {
 		segment.cancelReservation(request);
 	}
 	
+	public String getID(){
+		return id;
+	}
 
+	public long getVersion(){
+		return version;
+	}
+
+	public void setVersion(long version){
+		this.version = version;
+	}
 }

@@ -5,20 +5,24 @@ import java.util.List;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
+import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 
 public class EventFilteringService {
 
-    private final IEventRepository eventRepository = new EventRepositoryMapImpl();
-    private final IVenueRepository venueRepository = new VenueRepositoryMapImpl();
+    private final IEventRepository eventRepository;
+    private final IRepository<Venue> venueRepository;
     private final IProductionCompanyRepository productionCompanyPolicyRepository;
 
-    public EventFilteringService(IProductionCompanyRepository productionCompanyPolicyRepository) {
+    public EventFilteringService(IProductionCompanyRepository productionCompanyPolicyRepository, IEventRepository eventRepo, IRepository<Venue> venueRepository) {
         this.productionCompanyPolicyRepository=productionCompanyPolicyRepository;
+        this.eventRepository = eventRepo;
+        this.venueRepository = venueRepository;
     }
 
     public List<Event> searchEvents(List<String> name, List<String> artist, List<String> category, List<String> keyword, List<Double> minPrice,
@@ -26,7 +30,7 @@ public class EventFilteringService {
                 List<Event> events = eventRepository.searchEvents(name, artist, category, keyword, minPrice, maxPrice, startTime, endTime, eventRating, productionCompanyID);
                 events.removeIf(event -> !event.getEventStatus());
                 if(locations != null && !locations.isEmpty()) {
-                    events.removeIf(event -> locations.stream().noneMatch(location -> location.matches(venueRepository.getVenueByID(event.getEventVenueID()).getLocation())));
+                    events.removeIf(event -> locations.stream().noneMatch(location -> location.matches(venueRepository.findByID(event.getEventVenueID()).getLocation())));
                 }
                 if(productionCompanyID == null || productionCompanyID.isEmpty()) {
                     if(productionCompanyRating != null && !productionCompanyRating.isEmpty()) {

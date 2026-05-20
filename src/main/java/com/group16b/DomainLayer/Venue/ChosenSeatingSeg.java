@@ -3,11 +3,8 @@ package com.group16b.DomainLayer.Venue;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.group16b.ApplicationLayer.DTOs.ChosenSeatingSegDTO;
-import com.group16b.ApplicationLayer.DTOs.SeatDTO;
 import com.group16b.ApplicationLayer.Records.SeatRecord;
 
 
@@ -22,11 +19,20 @@ public class ChosenSeatingSeg extends Segment {
 
 	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats) {
 		super(segmentID);
-		this.seats = new TreeMap<>();
+		this.seats = new ConcurrentHashMap<>();
 		for (SeatRecord sr : seats) {
 			String seatId = sr.row() + "-" + sr.number();
 			this.seats.put(seatId, new Seat(sr.row(), sr.number()));
 		}
+	}
+
+	public ChosenSeatingSeg(ChosenSeatingSeg other){
+		super(other.segmentID);
+		this.IDforSeat = other.IDforSeat;
+        this.seats = new ConcurrentHashMap<>();
+        for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
+            this.seats.put(entry.getKey(), new Seat(entry.getValue())); 
+        }
 	}
 
 	@Override
