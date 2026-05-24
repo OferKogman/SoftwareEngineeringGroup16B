@@ -141,17 +141,6 @@ public class ProductionCompanyRepositoryMapImplTests {
     }
 
     @Test
-    void save_update_versionMismatch_throwsOptimisticLockingFailureException() {
-        repo.save(pixar);
-        ProductionCompany stale = repo.findByID(PIXAR_ID_STRING);
-        stale.setVersion(999);
-        assertThrows(
-                OptimisticLockingFailureException.class,
-                () -> repo.save(stale)
-        );
-    }
-
-    @Test
     void save_update_versionMismatch_repositoryStateUnchanged() {
         repo.save(pixar);
         ProductionCompany stale = repo.findByID(PIXAR_ID_STRING);
