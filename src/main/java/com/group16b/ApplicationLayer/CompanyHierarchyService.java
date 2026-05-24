@@ -24,12 +24,13 @@ public class CompanyHierarchyService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
     private final IAuthenticationService authenticationService;
-	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
+	private final IRepository<User> userRepository;
 	private final IProductionCompanyRepository productionCompanyRepository;
 
-    public CompanyHierarchyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
+    public CompanyHierarchyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, IRepository<User> userRepository) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepository=productionCompanyRepository;
+		this.userRepository = userRepository;
 	}
 
     public Result<Boolean> assignOwnerToCompany(int companyID, String targetID, String sessionToken) {

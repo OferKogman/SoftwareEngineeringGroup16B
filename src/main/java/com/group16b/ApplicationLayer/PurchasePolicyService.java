@@ -22,13 +22,15 @@ public class PurchasePolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
     
     private final IAuthenticationService authenticationService;
-    private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
+    private final IEventRepository eventRepo;
+	private final IRepository<User> userRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
 
-    public PurchasePolicyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
+    public PurchasePolicyService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, IEventRepository eventRepo, IRepository<User> userRepository) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepository=productionCompanyRepository;
+        this.eventRepo = eventRepo;
+        this.userRepository = userRepository;
     }
     
 

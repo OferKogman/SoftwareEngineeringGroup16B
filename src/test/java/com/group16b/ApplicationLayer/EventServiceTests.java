@@ -64,7 +64,7 @@ public class EventServiceTests {
         mockVenueRepository = mock(IRepository.class);
         mockUserRepository = mock(IRepository.class);
         eventFilteringService = new EventFilteringService(mockProductionCompanyRepository, mockEventRepository, mockVenueRepository);
-        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyRepository, mockVirtualQueueRepository, mockVenueRepository);
+        eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,mockProductionCompanyRepository, mockVirtualQueueRepository, mockVenueRepository, mockEventRepository, mockUserRepository);
 
         Field PCPR = eventService.getClass().getDeclaredField("productionCompanyRepository");
         PCPR.setAccessible(true);

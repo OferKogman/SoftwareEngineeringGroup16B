@@ -169,7 +169,7 @@ public class OrderServiceTests {
         mockPaymentService = mock(PaymentService.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockPaymentService, mockVenueRepository);
+        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockPaymentService, mockVenueRepository, mockEventRepository, mockUserRepository, mockOrderRepository, mockTicketGateway);
 
         injectField(orderService, "ticketGateway", mockTicketGateway);
         injectField(orderService, "orderRepo", mockOrderRepository);

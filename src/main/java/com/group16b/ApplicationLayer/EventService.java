@@ -43,19 +43,21 @@ public class EventService {
 	private final IAuthenticationService authenticationService;
     private final ILocationService locationService;
     private final EventFilteringService eventFilteringService;
-	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
+	private final IRepository<User> userRepository;
 	private final IRepository<Venue> venueRepository;
-	private final IEventRepository eventRepository = new EventRepositoryMapImpl();
+	private final IEventRepository eventRepository;
 	private final IRepository<VirtualQueue> queueRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
 
-	public EventService(IAuthenticationService authenticationService, ILocationService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository, IRepository<Venue> venueRepository) {
+	public EventService(IAuthenticationService authenticationService, ILocationService locationService, EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueRepository, IRepository<Venue> venueRepository, IEventRepository eventRepository, IRepository<User> userRepository) {
         this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
 		this.productionCompanyRepository = productionCompanyRepo;
 		this.queueRepository = queueRepository;
 		this.venueRepository = venueRepository;
+		this.eventRepository = eventRepository;
+		this.userRepository = userRepository;
 	}
 
 	// need to make event active manually

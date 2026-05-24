@@ -26,16 +26,20 @@ import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
-    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepository;
     private IProductionCompanyRepository productionCompanyRepo;
-    private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
-    private final IEventRepository eventRepo = new EventRepositoryMapImpl();
+    private final IRepository<Order> orderRepo;
+    private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
-    private ISystemAdminRepository systemAdminRepo = new SystemAdminRepositoryMapImpl();
+    private ISystemAdminRepository systemAdminRepo;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, ISystemAdminRepository systemAdminRepo) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
+        this.orderRepo = orderRepo;
+        this.eventRepo = eventRepo;
+        this.userRepository = userRepository;
+        this.systemAdminRepo = systemAdminRepo;
     }
 
 

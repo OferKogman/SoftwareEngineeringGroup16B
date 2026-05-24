@@ -23,26 +23,30 @@ import io.jsonwebtoken.JwtException;
 public class UserService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
-	private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
+	private final IRepository<Order> orderRepo;
 	private final IRepository<Venue> venueRepo;
-	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IRepository<User> userRepository = new UserRepositoryMapImpl();
+	private final IEventRepository eventRepo;
+	private final IRepository<User> userRepo;
 	private final ITicketGateway ticketGateway;
 
 	private final IAuthenticationService authenticationService;
 
 	
 
-	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway, IRepository<Venue> venueRepo) {
+	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway, IRepository<Venue> venueRepo, IRepository<User> userRepo, IRepository<Order> orderRepo, IEventRepository eventRepo) {
 		this.authenticationService = authenticationService;
 		this.ticketGateway = ticketGateway;
 		this.venueRepo = venueRepo;
+		this.userRepo = userRepo;
+		this.orderRepo = orderRepo;
+		this.eventRepo = eventRepo;
+
 	}
 
 	public Result<UserDTO> registerUser(String email, String password) {
 		logger.info("Creating new User with email: " + email);
 		User newUser = new User(email, password);
-		userRepository.save(newUser);
+		userRepo.save(newUser);
 		return Result.makeOk(new UserDTO(newUser));
 	}
 
@@ -53,7 +57,7 @@ public class UserService {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
 			}
-			User user = userRepository.findByID(authenticationService.extractSubjectFromToken(sessionToken));
+			User user = userRepo.findByID(authenticationService.extractSubjectFromToken(sessionToken));
 			logger.info("Session token verified successfully.");
 			logger.info("Validating old password");
 			if (!user.confirmPassword(oldPassword)) {
@@ -68,7 +72,7 @@ public class UserService {
 				// different from old password
 			try{
 			user.changePassword(oldPassword, newPassword);
-			userRepository.save(user);
+			userRepo.save(user);
 			logger.info("Password changed successfully");
 			return Result.makeOk(true);
 			}

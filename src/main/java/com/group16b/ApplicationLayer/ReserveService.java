@@ -29,17 +29,19 @@ public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
     private final IRepository<Venue> venueRepo;
-    private final IRepository<Order> orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final IRepository<Order> orderRepo;
     private final IRepository<VirtualQueue> queueImp;
-    private final IEventRepository eventRepository = new EventRepositoryMapImpl();
+    private final IEventRepository eventRepository;
     private final IProductionCompanyRepository productionCompanyRepo;
     private final IAuthenticationService authenticationService;
 
-    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp, IRepository<Venue> venueRepo) {
+    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp, IRepository<Venue> venueRepo, IEventRepository eventRepository, IRepository<Order> orderRepo) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepo;
         this.venueRepo = venueRepo;
         this.queueImp = queueImp;
+        this.eventRepository = eventRepository;
+        this.orderRepo = orderRepo;
     }
 
     public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId, String sessionToken) {

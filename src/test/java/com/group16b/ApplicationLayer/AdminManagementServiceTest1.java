@@ -69,7 +69,7 @@ public class AdminManagementServiceTest1 {
         mockOrderRepository = mock(IRepository.class); 
         mockProductonCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
 
-        adminManagementService = new AdminManagementService(mockTokenService,mockProductonCompanyRepository);
+        adminManagementService = new AdminManagementService(mockTokenService,mockProductonCompanyRepository, mockOrderRepository, mockEventRepository, mockUserRepository, mockSystemAdminRepository);
 
         setPrivateField(adminManagementService, "systemAdminRepo", mockSystemAdminRepository);
         setPrivateField(adminManagementService, "userRepository", mockUserRepository);
