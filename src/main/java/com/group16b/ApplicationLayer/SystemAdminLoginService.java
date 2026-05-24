@@ -26,11 +26,6 @@ public class SystemAdminLoginService {
 
         SystemAdmin admin = systemAdminRespotiry.findByID(adminID);
 
-        if (admin == null) {
-            logger.warn("Login failed: user ID {} does not exist!", adminID);
-            return Result.makeFail("Invalid admin ID");
-        }
-
         try{
             if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
                 logger.warn("Login failed: invalid password and email attempt for user ID {}", adminID);

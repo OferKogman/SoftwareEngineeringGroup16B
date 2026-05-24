@@ -37,7 +37,7 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	public SystemAdmin findByID(String ID) {
 		SystemAdmin admin = systemAdminsById.get(ID);
 		if(admin == null) {
-			return null;
+			throw new IllegalArgumentException("System admin with ID " + ID + " does not exist.");
 		}
 		return (new SystemAdmin(admin));
 	}
