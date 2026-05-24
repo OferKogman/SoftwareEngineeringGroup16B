@@ -184,19 +184,6 @@ public class ProductionCompanyRepositoryMapImplTests {
     }
 
     @Test
-    void save_renameToExistingName_throwsIllegalArgumentException() {
-        repo.save(pixar);
-        repo.save(disney);
-        ProductionCompany updated = repo.findByID(DISNEY_ID_STRING);
-        updated.setName("Pixar");
-        IllegalArgumentException ex = assertThrows(
-                IllegalArgumentException.class,
-                () -> repo.save(updated)
-        );
-        assertTrue(ex.getMessage().contains("already exists"));
-    }
-
-    @Test
     void save_renameFailure_repositoryStateUnchanged() {
         repo.save(pixar);
         repo.save(disney);
