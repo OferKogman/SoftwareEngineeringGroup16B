@@ -1,18 +1,16 @@
 package com.group16b.ApplicationLayer;
 
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -26,296 +24,467 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class ProductionCompanyServiceTests {
 
-    private ProductionCompanyService productionCompanyService;
-    private IAuthenticationService mockAuthService;
-    private IRepository<Order> mockOrderRepo;
-    private IEventRepository mockEventRepo;
-    private IRepository<User> mockUserRepo;
-    private IProductionCompanyRepository mockProductionCompanyRepository;
+    private ProductionCompanyService service;
 
-    private ProductionCompany mockCompany;
+    private IAuthenticationService authService;
+
+    private IRepository<Order> orderRepo;
+    private IEventRepository eventRepo;
+    private IRepository<User> userRepo;
+    private IProductionCompanyRepository companyRepo;
+
+    private ProductionCompany company;
+    private User manager;
 
     private final String VALID_TOKEN = "valid-token";
-    private final int COMPANY_ID = 100;
     private final String USER_ID = "1";
-    private final int EVENT_ID = 50;
+    private final int COMPANY_ID = 100;
 
     @BeforeEach
     void setUp() throws Exception {
-        mockAuthService = mock(IAuthenticationService.class);
-        mockOrderRepo = mock(IRepository.class);
-        mockEventRepo = mock(IEventRepository.class);
-        mockUserRepo = mock(IRepository.class);
-        mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 
-        mockCompany = mock(ProductionCompany.class);
+        authService = mock(IAuthenticationService.class);
+        when(authService.validateToken(VALID_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_TOKEN)).thenReturn(USER_ID);
 
-        productionCompanyService = new ProductionCompanyService(mockAuthService,mockOrderRepo,mockEventRepo,mockUserRepo,mockProductionCompanyRepository);
+        orderRepo = new OrderRepositoryMapImpl();
+        eventRepo = new EventRepositoryMapImpl();
+        userRepo = new UserRepositoryMapImpl();
+        companyRepo = new ProductionCompanyRepositoryMapImpl();
 
+        service = new ProductionCompanyService(
+            authService,
+            orderRepo,
+            eventRepo,
+            userRepo,
+            companyRepo
+        );
 
-        when(mockAuthService.validateToken(anyString())).thenReturn(true);
-        when(mockAuthService.isUserToken(anyString())).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(USER_ID));
-        
-        when(mockProductionCompanyRepository.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
-
-        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
-        doNothing().when(mockCompany).validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
-    
-        User mockUser = mock(User.class);
-        when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
+        seedBaseData();
     }
 
+    private void seedBaseData() throws Exception {
+
+        manager = createUser(USER_ID);
+        userRepo.save(manager);
+
+        company = createCompany(COMPANY_ID);
+        companyRepo.save(company);
+
+        addManagerPermissions(
+            USER_ID,
+            ManagerPermissions.SALES_REPORT,
+            ManagerPermissions.VIEW_PURCHASE_HISTORY
+        );
+    }
+
+    private User createUser(String userId) {
+
+        try {
+            return new User(
+                userId, "password");
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private ProductionCompany createCompany(int companyId) {
+
+        try {
+            return new ProductionCompany(
+                companyId,
+                "TestCompany"
+            );
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Event createEvent(int eventId, int companyId) {
+
+        try {
+            return new Event(
+                eventId,
+                "Test Event " + eventId,
+                "Description",
+                "Hall",
+                100,
+                null,
+                companyId
+            );
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private Order createOrder(int orderId, int eventId, double price) {
+
+        try {
+            return new Order(
+                orderId,
+                USER_ID,
+                eventId,
+                List.of(),
+                price,
+                OrderType.FIELD
+            );
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void addManagerPermissions(
+        String userId,
+        ManagerPermissions... permissions
+    ) {
+
+        try {
+            company.addManager(userId);
+
+            for (ManagerPermissions permission : permissions) {
+                company.addPermissionToManager(userId, permission);
+            }
+
+            companyRepo.update(company);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createCompanyEvent(int eventId) {
+
+        try {
+            Event event = createEvent(eventId, COMPANY_ID);
+            eventRepo.add(event);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createForeignEvent(int eventId) {
+
+        try {
+            Event event = createEvent(eventId, 999);
+            eventRepo.add(event);
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void createOrderForEvent(
+        int orderId,
+        int eventId,
+        double price
+    ) {
+
+        try {
+            orderRepo.add(createOrder(orderId, eventId, price));
+        }
+        catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    // =====================================================
+    // viewSalesHistory
+    // =====================================================
 
     @Test
-    void testViewSalesHistory_InvalidToken_Fail() {
-        when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(false);
+    void viewSalesHistory_InvalidToken_Fails() {
 
-        Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+        authService.validToken = false;
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid Token", result.getError());
     }
 
     @Test
-    void testViewSalesHistory_PermissionDenied_Fail() {
-        doThrow(new IllegalArgumentException("Not allowed")).when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.VIEW_PURCHASE_HISTORY);
+    void viewSalesHistory_NotUserToken_Fails() {
 
-        Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+        authService.userToken = false;
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Not allowed"));
+
+        assertEquals(
+            "Only users are allowed to perform operation",
+            result.getError()
+        );
     }
 
+    @Test
+    void viewSalesHistory_StaleUser_Fails() {
+
+        authService.subject = "999";
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("999"));
+    }
 
     @Test
-    void testDisplayTotalRevenue_AsOwner_Success() {
-        // company event
-        Event matchingEvent = mock(Event.class);
+    void viewSalesHistory_CompanyNotFound_Fails() {
 
-        when(matchingEvent.getEventID())
-            .thenReturn(EVENT_ID);
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, 99999);
 
-        when(mockEventRepo.searchEvents(
-                null, null, null, null,
-                null, null,
-                null, null,
-                null,
-                List.of(COMPANY_ID)))
-            .thenReturn(List.of(matchingEvent));
+        assertFalse(result.isSuccess());
+    }
 
-        // matching order
-        Order matchingOrder = mock(Order.class);
+    @Test
+    void viewSalesHistory_NoPermission_Fails() {
 
-        when(matchingOrder.getEventId())
-            .thenReturn(EVENT_ID);
+        try {
+            ProductionCompany noPermissionCompany = createCompany(500);
 
-        when(matchingOrder.getTotalOrderprice())
-            .thenReturn(500D);
+            companyRepo.add(noPermissionCompany);
 
-        // non-matching order
-        Order unrelatedOrder = mock(Order.class);
+            Result<List<OrderDTO>> result =
+                service.viewSalesHistory(VALID_TOKEN, 500);
 
-        when(unrelatedOrder.getEventId())
-            .thenReturn(999);
+            assertFalse(result.isSuccess());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
 
-        when(unrelatedOrder.getTotalOrderprice())
-            .thenReturn(1000D);
+    @Test
+    void viewSalesHistory_NoOrders_ReturnsEmptyList() {
 
-        when(mockOrderRepo.getAll())
-            .thenReturn(List.of(
-                matchingOrder,
-                unrelatedOrder
-            ));
-
-        Result<Double> result =
-            productionCompanyService.displayTotalRevenue(
-                VALID_TOKEN,
-                COMPANY_ID
-            );
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
 
         assertTrue(result.isSuccess(), result.getError());
-
-        // only matching company order counted
-        assertEquals(500D, result.getValue());
+        assertEquals(0, result.getValue().size());
     }
 
     @Test
-    void testDisplayTotalRevenue_MultipleEvents_SumsCorrectly() {
-        // Company has events
-        Event event1 = mock(Event.class);
-        when(event1.getEventID()).thenReturn(101);
+    void viewSalesHistory_ReturnsOnlyCompanyOrders() {
 
-        Event event2 = mock(Event.class);
-        when(event2.getEventID()).thenReturn(102);
+        createCompanyEvent(10);
+        createCompanyEvent(11);
 
-        when(mockEventRepo.searchEvents(
-                null, null, null, null,
-                null, null,
-                null, null,
-                null,
-                List.of(COMPANY_ID)))
-            .thenReturn(List.of(event1, event2));
+        createForeignEvent(99);
 
-        // Orders for event1 and event2
-        Order order1 = mock(Order.class);
-        when(order1.getEventId()).thenReturn(101);
-        when(order1.getTotalOrderprice()).thenReturn(500D);
+        createOrderForEvent(1, 10, 100);
+        createOrderForEvent(2, 11, 200);
+        createOrderForEvent(3, 99, 999);
 
-        Order order2 = mock(Order.class);
-        when(order2.getEventId()).thenReturn(102);
-        when(order2.getTotalOrderprice()).thenReturn(250D);
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
 
-        when(mockOrderRepo.getAll())
-            .thenReturn(List.of(order1, order2));
+        assertTrue(result.isSuccess(), result.getError());
+        assertEquals(2, result.getValue().size());
+    }
+
+    @Test
+    void viewSalesHistory_MultipleOrdersSameEvent_ReturnsAllOrders() {
+
+        createCompanyEvent(10);
+
+        createOrderForEvent(1, 10, 100);
+        createOrderForEvent(2, 10, 200);
+        createOrderForEvent(3, 10, 300);
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+
+        assertTrue(result.isSuccess(), result.getError());
+        assertEquals(3, result.getValue().size());
+    }
+
+    @Test
+    void viewSalesHistory_DoesNotModifyOrders() {
+
+        createCompanyEvent(10);
+
+        createOrderForEvent(1, 10, 100);
+
+        int beforeSize = orderRepo.getAll().size();
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+
+        int afterSize = orderRepo.getAll().size();
+
+        assertTrue(result.isSuccess(), result.getError());
+        assertEquals(beforeSize, afterSize);
+    }
+
+    // =====================================================
+    // displayTotalRevenue
+    // =====================================================
+
+    @Test
+    void displayTotalRevenue_InvalidToken_Fails() {
+
+        authService.validToken = false;
 
         Result<Double> result =
-            productionCompanyService.displayTotalRevenue(
-                VALID_TOKEN,
-                COMPANY_ID
-            );
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid Token", result.getError());
+    }
+
+    @Test
+    void displayTotalRevenue_NotUserToken_Fails() {
+
+        authService.userToken = false;
+
+        Result<Double> result =
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
+
+        assertEquals(
+            "Only users are allowed to perform operation",
+            result.getError()
+        );
+    }
+
+    @Test
+    void displayTotalRevenue_StaleUser_Fails() {
+
+        authService.subject = "999";
+
+        Result<Double> result =
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("999"));
+    }
+
+    @Test
+    void displayTotalRevenue_NoPermission_Fails() {
+
+        try {
+            ProductionCompany noPermissionCompany = createCompany(600);
+
+            companyRepo.add(noPermissionCompany);
+
+            Result<Double> result =
+                service.displayTotalRevenue(VALID_TOKEN, 600);
+
+            assertFalse(result.isSuccess());
+        }
+        catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void displayTotalRevenue_NoOrders_ReturnsZero() {
+
+        Result<Double> result =
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+
+        assertTrue(result.isSuccess(), result.getError());
+        assertEquals(0D, result.getValue());
+    }
+
+    @Test
+    void displayTotalRevenue_ReturnsCorrectSum() {
+
+        createCompanyEvent(10);
+        createCompanyEvent(11);
+
+        createOrderForEvent(1, 10, 500);
+        createOrderForEvent(2, 11, 250);
+
+        Result<Double> result =
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
         assertTrue(result.isSuccess(), result.getError());
         assertEquals(750D, result.getValue());
     }
 
     @Test
-    void testViewSalesHistory_Success() {
-        // EVENT (IMPORTANT: uses searchEvents now, NOT findByID)
-        Event mockEvent = mock(Event.class);
-        when(mockEvent.getEventID()).thenReturn(50);
+    void displayTotalRevenue_IgnoresForeignCompanyOrders() {
 
-        when(mockEventRepo.searchEvents(
-                null, null, null, null,
-                null, null,
-                null, null,
-                null,
-                List.of(COMPANY_ID)))
-            .thenReturn(List.of(mockEvent));
+        createCompanyEvent(10);
+        createForeignEvent(99);
 
-        // ORDER linked to event
-        Order mockOrder = mock(Order.class);
-        when(mockOrder.getEventId()).thenReturn(50);
+        createOrderForEvent(1, 10, 500);
+        createOrderForEvent(2, 99, 9999);
 
-        when(mockOrder.getOrderType()).thenReturn(OrderType.FIELD); // or whatever exists
-
-        when(mockOrderRepo.getAll())
-            .thenReturn(List.of(mockOrder));
-
-        Result<List<OrderDTO>> result =
-            productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+        Result<Double> result =
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
         assertTrue(result.isSuccess(), result.getError());
-        assertEquals(1, result.getValue().size());
+        assertEquals(500D, result.getValue());
     }
 
     @Test
-    void testViewSalesHistory_EventNotFound_SkipsOrder() {
-        Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
-        List<Order> orderList = new CopyOnWriteArrayList<>();
-        orderList.add(mockOrder);
-        
-        when(mockOrderRepo.getAll()).thenReturn(orderList);
-        when(mockOrder.getEventId()).thenReturn(50);
-        
-        when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(null); 
+    void displayTotalRevenue_MultipleOrdersSameEvent_SumsCorrectly() {
 
-        Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
+        createCompanyEvent(10);
 
-        assertTrue(result.isSuccess(), "Service crashed with error: " + result.getError());
-        assertEquals(0, result.getValue().size(), "Order should be skipped if event is missing");
-    }
+        createOrderForEvent(1, 10, 100);
+        createOrderForEvent(2, 10, 200);
+        createOrderForEvent(3, 10, 300);
 
-    @Test
-    void testViewSalesHistory_WrongCompany_SkipsOrder() {
-        Order mockOrder = mock(Order.class, org.mockito.Mockito.RETURNS_DEEP_STUBS);
-        Event mockEvent = mock(Event.class);
-        
-        List<Order> orderList = new CopyOnWriteArrayList<>();
-        orderList.add(mockOrder);
-    
-        when(mockOrderRepo.getAll()).thenReturn(orderList);
-        when(mockOrder.getEventId()).thenReturn(50);
-        when(mockEventRepo.findByID(String.valueOf(50))).thenReturn(mockEvent);
-        
-        when(mockEvent.getEventProductionCompanyID()).thenReturn(999); 
-
-        Result<List<OrderDTO>> result = productionCompanyService.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), "Service crashed with error: " + result.getError());
-        assertEquals(0, result.getValue().size(), "Order should be skipped if it belongs to a different company");
-    }
-
-    
-    @Test
-    void testDisplayTotalRevenue_AsManagerUnderOwner_Success() {
-        // ---------- EVENTS ----------
-        Event mockEvent = mock(Event.class);
-        when(mockEvent.getEventID()).thenReturn(100);
-
-        when(mockEventRepo.searchEvents(
-                null, null, null, null,
-                null, null,
-                null, null,
-                null,
-                List.of(COMPANY_ID)))
-            .thenReturn(List.of(mockEvent));
-
-        // ---------- ORDERS ----------
-        Order mockOrder = mock(Order.class);
-        when(mockOrder.getEventId()).thenReturn(100);
-        when(mockOrder.getTotalOrderprice()).thenReturn(300D);
-
-        // required by DTO (avoid previous crash)
-        when(mockOrder.getOrderType()).thenReturn(OrderType.FIELD);
-
-        when(mockOrderRepo.getAll())
-            .thenReturn(List.of(mockOrder));
-
-        // ---------- CALL ----------
         Result<Double> result =
-            productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
-        // ---------- ASSERT ----------
         assertTrue(result.isSuccess(), result.getError());
-        assertEquals(300D, result.getValue());
+        assertEquals(600D, result.getValue());
     }
 
     @Test
-    void testDisplayTotalRevenue_CompanyNotFound_Fails() {
-        doThrow(new IllegalArgumentException("No company")).when(mockProductionCompanyRepository).findByID(String.valueOf(COMPANY_ID));
+    void displayTotalRevenue_DecimalRevenue_SumsCorrectly() {
 
-        Result<Double> result =productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+        createCompanyEvent(10);
 
-        assertFalse(result.isSuccess());
-    }
-
-    @Test
-    void testDisplayTotalRevenue_PermissionDenied_Fail() {
-        doThrow(new IllegalArgumentException("Not allowed"))
-            .when(mockCompany)
-            .validateUserPermissions(USER_ID, ManagerPermissions.SALES_REPORT);
+        createOrderForEvent(1, 10, 100.25);
+        createOrderForEvent(2, 10, 200.75);
 
         Result<Double> result =
-            productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
-        assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Not allowed"));
+        assertTrue(result.isSuccess(), result.getError());
+        assertEquals(301D, result.getValue());
     }
 
     @Test
-    void testDisplayTotalRevenue_CompanyRepoThrows_Fail() {
-        doThrow(new RuntimeException("DB error"))
-            .when(mockProductionCompanyRepository)
-            .findByID(String.valueOf(COMPANY_ID));
+    void displayTotalRevenue_DoesNotModifyOrders() {
+
+        createCompanyEvent(10);
+
+        createOrderForEvent(1, 10, 100);
+
+        int beforeSize = orderRepo.getAll().size();
 
         Result<Double> result =
-            productionCompanyService.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
+            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
 
-        assertFalse(result.isSuccess());
+        int afterSize = orderRepo.getAll().size();
+
+        assertTrue(result.isSuccess(), result.getError());
+        assertEquals(beforeSize, afterSize);
     }
+
 }
