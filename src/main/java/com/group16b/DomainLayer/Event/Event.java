@@ -1,13 +1,12 @@
 package com.group16b.DomainLayer.Event;
 
 import java.time.LocalDateTime;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Objects;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
-import com.group16b.DomainLayer.Policies.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 

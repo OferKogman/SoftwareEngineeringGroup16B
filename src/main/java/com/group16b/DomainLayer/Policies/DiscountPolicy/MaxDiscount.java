@@ -1,13 +1,13 @@
-package com.group16b.DomainLayer.Policies;
+package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 import java.util.List;
 
-public class SumDiscount implements DiscountPolicy {
+public class MaxDiscount implements DiscountPolicy {
     private List<DiscountPolicy> policies;
 
-    public SumDiscount(List<DiscountPolicy> policies) {
+    public MaxDiscount(List<DiscountPolicy> policies) {
         if (policies == null || policies.isEmpty()) {
-            throw new IllegalArgumentException("SumDiscount must have at least one policy.");
+            throw new IllegalArgumentException("MaxDiscount must have at least one policy.");
         }
         this.policies = policies;
     }

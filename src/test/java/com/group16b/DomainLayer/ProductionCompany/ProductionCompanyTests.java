@@ -1,19 +1,11 @@
 package com.group16b.DomainLayer.ProductionCompany;
 
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import com.group16b.DomainLayer.Policies.DiscountPolicy;
-import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
-import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
