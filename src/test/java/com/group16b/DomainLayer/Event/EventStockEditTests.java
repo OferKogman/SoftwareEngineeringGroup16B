@@ -67,13 +67,14 @@ public class EventStockEditTests {
         mockQueueRepo = mock(IRepository.class);
         mockPolicyRepo = mock(IProductionCompanyRepository.class);
 
-        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo, mockQueueRepo, mockVenueRepo);
+        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo, mockQueueRepo, mockVenueRepo, mockEventRepo, mockUserRepo);
 
         // 3. Inject Singleton Repositories via Reflection
         setPrivateField(eventService, "userRepository", mockUserRepo);
         setPrivateField(eventService, "venueRepository", mockVenueRepo);
         setPrivateField(eventService, "eventRepository", mockEventRepo);
         setPrivateField(eventService, "productionCompanyRepository", mockPolicyRepo);
+        setPrivateField(eventService, "userRepository", mockUserRepo);
 
         when(mockAuthService.validateToken(anyString())).thenReturn(true);
         when(mockAuthService.isUserToken(anyString())).thenReturn(true);

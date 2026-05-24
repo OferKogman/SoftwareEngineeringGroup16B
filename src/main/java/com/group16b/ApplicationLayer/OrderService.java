@@ -38,19 +38,23 @@ import io.jsonwebtoken.JwtException;
 public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 	private final IAuthenticationService authenticationService;
-    private final ITicketGateway ticketGateway = new TicketGateway();
-	private final IOrderRepository orderRepo = OrderRepositoryMapImpl.getInstance();
+    private final ITicketGateway ticketGateway;
+	private final IOrderRepository orderRepo;
 	private final IRepository<Venue> venueRepo;
-	private final IEventRepository eventRepo = new EventRepositoryMapImpl();
-	private final IRepository<User> userRepo = new UserRepositoryMapImpl();
+	private final IEventRepository eventRepo;
+	private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
 
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
 		this.venueRepo = venueRepo;
+		this.eventRepo = eventRepo;
+		this.userRepo = userRepo;
+		this.orderRepo = orderRepo;
 		this.paymentService = paymentGateway;
+		this.ticketGateway = ticketGateway;
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(String userId, String orderID, String sTocken, PaymentInfo paymentInfo) {

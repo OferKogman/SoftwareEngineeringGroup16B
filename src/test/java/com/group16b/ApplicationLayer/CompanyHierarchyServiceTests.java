@@ -53,7 +53,7 @@ public class CompanyHierarchyServiceTests {
         mockAuthService = mock(IAuthenticationService.class);
         mockProductionCompanyRepository=mock(IProductionCompanyRepository.class);
 
-        userService = new CompanyHierarchyService(mockAuthService,mockProductionCompanyRepository);
+        userService = new CompanyHierarchyService(mockAuthService,mockProductionCompanyRepository, mockUserRepository);
         Field userRepo = userService.getClass().getDeclaredField("userRepository");
         userRepo.setAccessible(true);
         userRepo.set(userService, mockUserRepository);

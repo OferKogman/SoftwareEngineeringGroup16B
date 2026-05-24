@@ -10,16 +10,10 @@ import com.group16b.DomainLayer.Order.Order;
 
 public class OrderRepositoryMapImpl implements IOrderRepository {
 	private final ConcurrentHashMap<String, Order> orders;
-	private final static OrderRepositoryMapImpl instance = new OrderRepositoryMapImpl();
 
 	public OrderRepositoryMapImpl() {
 		this.orders = new ConcurrentHashMap<>();
 	}
-
-	public static OrderRepositoryMapImpl getInstance() {
-		return instance;
-	}
-
 
 
 	@Override

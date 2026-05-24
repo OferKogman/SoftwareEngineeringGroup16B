@@ -150,7 +150,7 @@ public class ReservationServiceTests {
         mockEventRepository = mock(IEventRepository.class);
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        reserveService = new ReserveService(mockAuthenticationService,mockProductionCompanyRepository, mockQueueRepository, mockVenueRepository);
+        reserveService = new ReserveService(mockAuthenticationService,mockProductionCompanyRepository, mockQueueRepository, mockVenueRepository, mockEventRepository, mockOrderRepository);
 
         // inject venue repo
         Field venueRepoField = ReserveService.class.getDeclaredField("venueRepo");

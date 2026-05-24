@@ -14,10 +14,11 @@ public class UserLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserLoginService.class);
 
-    private final IRepository<User> userRepository = new UserRepositoryMapImpl();
+    private final IRepository<User> userRepository;
     private final IAuthenticationService tokenService;
 
-    public UserLoginService(IAuthenticationService tokenService) {
+    public UserLoginService(IRepository<User> userRepository, IAuthenticationService tokenService) {
+        this.userRepository = userRepository;
         this.tokenService = tokenService;
     }
 
