@@ -35,8 +35,7 @@ public class SystemAdminRepositoryMapImplTests {
 
 	@Test
 	void testGetSystemAdminByIdNotFound() {
-		SystemAdmin retrievedAdmin = repository.findByID("999");
-		assertEquals(null, retrievedAdmin);
+		assertThrows(IllegalArgumentException.class, () -> repository.findByID("999"));
 	}
 
 	@Test
