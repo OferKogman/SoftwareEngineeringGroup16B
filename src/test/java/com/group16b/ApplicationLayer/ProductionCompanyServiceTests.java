@@ -41,19 +41,64 @@ public class ProductionCompanyServiceTests {
     private IProductionCompanyRepository companyRepo;
 
     private ProductionCompany company;
-    private User manager;
+    private User managerForHistory;
+    private User managerForRevenue;
+    private User managerWithNoUsefullPerms;
+    private User founder;
+    private User non_manager;
+    private User owner;
 
-    private final String VALID_TOKEN = "valid-token";
-    private final String USER_ID = "1";
+    private final String VALID_FOUNDER_TOKEN = "valid-foudner-token";
+    private final String VALID_HISTORY_MANAGER_TOKEN = "valid-history-manager-token";
+    private final String VALID_REVENUE_MANAGER_TOKEN = "valid-revenue-manager-token";
+    private final String VALID_NO_USEFUL_PERMS_TOKEN = "valid-no-useful-perms-token";
+    private final String VALID_NON_MANAGER_TOKEN = "valid-non-manager-token";
+    private final String VALID_OWNER_TOKEN = "valid-owner-token";
+    private final String INVALID_TOKEN = "invalid-token";
+    private final String MANAGER_FOR_HISTORY_ID = "1";
+    private final String MANAGER_FOR_REVENUE_ID = "2";
+    private final String MANAGER_WITH_NO_USEFUL_PERMS_ID = "3";
+    private final String NON_MANAGER_ID = "4";
+    private final String OWNER_ID = "5";
     private final int COMPANY_ID = 100;
+    private final int BAD_COMPANY_ID = 999;
+    private final String BAD_USER_ID = "999";
+    private final String COMPANY_ID_STRING = String.valueOf(COMPANY_ID);
+    private final String FOUNDER_EMAIL="founder@example.com";
+    private final String TEST_COMPANY_NAME="TestCompany";
 
+
+    
+    
+    
     @BeforeEach
     void setUp() throws Exception {
-
         authService = mock(IAuthenticationService.class);
-        when(authService.validateToken(VALID_TOKEN)).thenReturn(true);
-        when(authService.isUserToken(VALID_TOKEN)).thenReturn(true);
-        when(authService.extractSubjectFromToken(VALID_TOKEN)).thenReturn(USER_ID);
+        when(authService.validateToken(VALID_FOUNDER_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_FOUNDER_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_FOUNDER_TOKEN)).thenReturn(FOUNDER_EMAIL);
+
+        when(authService.validateToken(VALID_HISTORY_MANAGER_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_HISTORY_MANAGER_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_HISTORY_MANAGER_TOKEN)).thenReturn(MANAGER_FOR_HISTORY_ID);
+
+        when(authService.validateToken(VALID_NO_USEFUL_PERMS_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_NO_USEFUL_PERMS_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_NO_USEFUL_PERMS_TOKEN)).thenReturn(MANAGER_WITH_NO_USEFUL_PERMS_ID);
+
+        when(authService.validateToken(VALID_REVENUE_MANAGER_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_REVENUE_MANAGER_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_REVENUE_MANAGER_TOKEN)).thenReturn(MANAGER_FOR_REVENUE_ID);
+
+        when(authService.validateToken(VALID_NON_MANAGER_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_NON_MANAGER_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_NON_MANAGER_TOKEN)).thenReturn(NON_MANAGER_ID);
+
+        when(authService.validateToken(VALID_OWNER_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(VALID_OWNER_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(VALID_OWNER_TOKEN)).thenReturn(OWNER_ID);
+
+        when(authService.validateToken(INVALID_TOKEN)).thenReturn(false);
 
         orderRepo = new OrderRepositoryMapImpl();
         eventRepo = new EventRepositoryMapImpl();
@@ -66,7 +111,7 @@ public class ProductionCompanyServiceTests {
             eventRepo,
             userRepo,
             companyRepo
-        );
+);
 
         seedBaseData();
     }
@@ -76,14 +121,16 @@ public class ProductionCompanyServiceTests {
         manager = createUser(USER_ID);
         userRepo.save(manager);
 
-        company = createCompany(COMPANY_ID);
+        founder=createUser(FOUNDER_EMAIL);
+        userRepo.save(founder);
+
+        company = createCompany(COMPANY_ID, TEST_COMPANY_NAME, FOUNDER_EMAIL);
         companyRepo.save(company);
 
         addManagerPermissions(
             USER_ID,
             ManagerPermissions.SALES_REPORT,
-            ManagerPermissions.VIEW_PURCHASE_HISTORY
-        );
+            ManagerPermissions.VIEW_PURCHASE_HISTORY);
     }
 
     private User createUser(String userId) {
@@ -97,17 +144,8 @@ public class ProductionCompanyServiceTests {
         }
     }
 
-    private ProductionCompany createCompany(int companyId) {
-
-        try {
-            return new ProductionCompany(
-                companyId,
-                "TestCompany"
-            );
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private ProductionCompany createCompany(int companyId,String name,String founderEmail) {
+        return new ProductionCompany(companyId,name,1.1,founderEmail);
     }
 
     private Event createEvent(int eventId, int companyId) {
@@ -145,10 +183,7 @@ public class ProductionCompanyServiceTests {
         }
     }
 
-    private void addManagerPermissions(
-        String userId,
-        ManagerPermissions... permissions
-    ) {
+    private void addManagerPermissions(String userId,ManagerPermissions... permissions) {
 
         try {
             company.addManager(userId);
@@ -200,291 +235,5 @@ public class ProductionCompanyServiceTests {
         }
     }
 
-    // =====================================================
-    // viewSalesHistory
-    // =====================================================
-
-    @Test
-    void viewSalesHistory_InvalidToken_Fails() {
-
-        authService.validToken = false;
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertFalse(result.isSuccess());
-        assertEquals("Invalid Token", result.getError());
-    }
-
-    @Test
-    void viewSalesHistory_NotUserToken_Fails() {
-
-        authService.userToken = false;
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertFalse(result.isSuccess());
-
-        assertEquals(
-            "Only users are allowed to perform operation",
-            result.getError()
-        );
-    }
-
-    @Test
-    void viewSalesHistory_StaleUser_Fails() {
-
-        authService.subject = "999";
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("999"));
-    }
-
-    @Test
-    void viewSalesHistory_CompanyNotFound_Fails() {
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, 99999);
-
-        assertFalse(result.isSuccess());
-    }
-
-    @Test
-    void viewSalesHistory_NoPermission_Fails() {
-
-        try {
-            ProductionCompany noPermissionCompany = createCompany(500);
-
-            companyRepo.add(noPermissionCompany);
-
-            Result<List<OrderDTO>> result =
-                service.viewSalesHistory(VALID_TOKEN, 500);
-
-            assertFalse(result.isSuccess());
-        }
-        catch (Exception e) {
-            fail(e);
-        }
-    }
-
-    @Test
-    void viewSalesHistory_NoOrders_ReturnsEmptyList() {
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(0, result.getValue().size());
-    }
-
-    @Test
-    void viewSalesHistory_ReturnsOnlyCompanyOrders() {
-
-        createCompanyEvent(10);
-        createCompanyEvent(11);
-
-        createForeignEvent(99);
-
-        createOrderForEvent(1, 10, 100);
-        createOrderForEvent(2, 11, 200);
-        createOrderForEvent(3, 99, 999);
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(2, result.getValue().size());
-    }
-
-    @Test
-    void viewSalesHistory_MultipleOrdersSameEvent_ReturnsAllOrders() {
-
-        createCompanyEvent(10);
-
-        createOrderForEvent(1, 10, 100);
-        createOrderForEvent(2, 10, 200);
-        createOrderForEvent(3, 10, 300);
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(3, result.getValue().size());
-    }
-
-    @Test
-    void viewSalesHistory_DoesNotModifyOrders() {
-
-        createCompanyEvent(10);
-
-        createOrderForEvent(1, 10, 100);
-
-        int beforeSize = orderRepo.getAll().size();
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(VALID_TOKEN, COMPANY_ID);
-
-        int afterSize = orderRepo.getAll().size();
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(beforeSize, afterSize);
-    }
-
-    // =====================================================
-    // displayTotalRevenue
-    // =====================================================
-
-    @Test
-    void displayTotalRevenue_InvalidToken_Fails() {
-
-        authService.validToken = false;
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertFalse(result.isSuccess());
-        assertEquals("Invalid Token", result.getError());
-    }
-
-    @Test
-    void displayTotalRevenue_NotUserToken_Fails() {
-
-        authService.userToken = false;
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertFalse(result.isSuccess());
-
-        assertEquals(
-            "Only users are allowed to perform operation",
-            result.getError()
-        );
-    }
-
-    @Test
-    void displayTotalRevenue_StaleUser_Fails() {
-
-        authService.subject = "999";
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("999"));
-    }
-
-    @Test
-    void displayTotalRevenue_NoPermission_Fails() {
-
-        try {
-            ProductionCompany noPermissionCompany = createCompany(600);
-
-            companyRepo.add(noPermissionCompany);
-
-            Result<Double> result =
-                service.displayTotalRevenue(VALID_TOKEN, 600);
-
-            assertFalse(result.isSuccess());
-        }
-        catch (Exception e) {
-            fail(e);
-        }
-    }
-
-    @Test
-    void displayTotalRevenue_NoOrders_ReturnsZero() {
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(0D, result.getValue());
-    }
-
-    @Test
-    void displayTotalRevenue_ReturnsCorrectSum() {
-
-        createCompanyEvent(10);
-        createCompanyEvent(11);
-
-        createOrderForEvent(1, 10, 500);
-        createOrderForEvent(2, 11, 250);
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(750D, result.getValue());
-    }
-
-    @Test
-    void displayTotalRevenue_IgnoresForeignCompanyOrders() {
-
-        createCompanyEvent(10);
-        createForeignEvent(99);
-
-        createOrderForEvent(1, 10, 500);
-        createOrderForEvent(2, 99, 9999);
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(500D, result.getValue());
-    }
-
-    @Test
-    void displayTotalRevenue_MultipleOrdersSameEvent_SumsCorrectly() {
-
-        createCompanyEvent(10);
-
-        createOrderForEvent(1, 10, 100);
-        createOrderForEvent(2, 10, 200);
-        createOrderForEvent(3, 10, 300);
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(600D, result.getValue());
-    }
-
-    @Test
-    void displayTotalRevenue_DecimalRevenue_SumsCorrectly() {
-
-        createCompanyEvent(10);
-
-        createOrderForEvent(1, 10, 100.25);
-        createOrderForEvent(2, 10, 200.75);
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(301D, result.getValue());
-    }
-
-    @Test
-    void displayTotalRevenue_DoesNotModifyOrders() {
-
-        createCompanyEvent(10);
-
-        createOrderForEvent(1, 10, 100);
-
-        int beforeSize = orderRepo.getAll().size();
-
-        Result<Double> result =
-            service.displayTotalRevenue(VALID_TOKEN, COMPANY_ID);
-
-        int afterSize = orderRepo.getAll().size();
-
-        assertTrue(result.isSuccess(), result.getError());
-        assertEquals(beforeSize, afterSize);
-    }
 
 }

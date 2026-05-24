@@ -72,10 +72,6 @@ public class ProductionCompany {
     {
         this.name=name;
     }
-    public List<User> getAssociatedUsers() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getAssociatedUsers'");
-    }
 
     public long getVersion()
     {
