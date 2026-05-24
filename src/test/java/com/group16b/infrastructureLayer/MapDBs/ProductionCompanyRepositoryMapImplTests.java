@@ -40,12 +40,17 @@ public class ProductionCompanyRepositoryMapImplTests {
     private final String OWNER_EMAIL = "owner";
     private final String MANAGER_EMAIL = "manager";
 
+    private final int PIXAR_ID = 1;
+    private final int DISNEY_ID = 2;
+    private final String PIXAR_ID_STRING = String.valueOf(PIXAR_ID);
+    private final String DISNEY_ID_STRING = String.valueOf(DISNEY_ID);
+
     @BeforeEach
     void setUp() {
         repo = new ProductionCompanyRepositoryMapImpl();
 
-        pixar = createCompany(1, "Pixar");
-        disney = createCompany(2, "Disney");
+        pixar = createCompany(PIXAR_ID, "Pixar");
+        disney = createCompany(DISNEY_ID, "Disney");
     }
 
     private ProductionCompany createCompany(int id, String name) {
@@ -61,9 +66,9 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void save_newCompany_success() {
         repo.save(pixar);
-        ProductionCompany result = repo.findByID("1");
+        ProductionCompany result = repo.findByID(PIXAR_ID_STRING);
         assertAll(
-                () -> assertEquals(1, result.getProductionCompanyID()),
+                () -> assertEquals(PIXAR_ID, result.getProductionCompanyID()),
                 () -> assertEquals("Pixar", result.getName()),
                 () -> assertEquals(1, result.getVersion())
         );
@@ -79,7 +84,7 @@ public class ProductionCompanyRepositoryMapImplTests {
         original.setName("CHANGED");
         original.setVersion(999);
 
-        ProductionCompany stored = repo.findByID("1");
+        ProductionCompany stored = repo.findByID(PIXAR_ID_STRING);
 
         assertAll(
                 () -> assertEquals("Pixar", stored.getName()),
@@ -96,7 +101,7 @@ public class ProductionCompanyRepositoryMapImplTests {
         original.setName("HACKED");
         original.setVersion(999);
 
-        ProductionCompany stored = repo.findByID("1");
+        ProductionCompany stored = repo.findByID(PIXAR_ID_STRING);
         // repository state must remain unchanged
         assertAll(
                 () -> assertEquals("Pixar", stored.getName()),
@@ -118,10 +123,10 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void save_update_success_incrementsVersion() {
         repo.save(pixar);
-        ProductionCompany updated = repo.findByID("1");
+        ProductionCompany updated = repo.findByID(PIXAR_ID_STRING);
         updated.setName("PixarUpdated");
         repo.save(updated);
-        ProductionCompany result = repo.findByID("1");
+        ProductionCompany result = repo.findByID(PIXAR_ID_STRING);
         assertAll(
                 () -> assertEquals("PixarUpdated", result.getName()),
                 () -> assertEquals(2, result.getVersion())
@@ -131,29 +136,29 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void save_update_onlyStoredCopyChangesVersion() {
         repo.save(pixar);
-        ProductionCompany detached =spy(repo.findByID("1"));
+        ProductionCompany detached =spy(repo.findByID(PIXAR_ID_STRING));
         long oldVersion = detached.getVersion();
         repo.save(detached);
         // detached object should NOT be mutated
         assertEquals(oldVersion, detached.getVersion());
         verify(detached, never()).setVersion(anyInt());
-        ProductionCompany stored = repo.findByID("1");
+        ProductionCompany stored = repo.findByID(PIXAR_ID_STRING);
         assertEquals(oldVersion + 1, stored.getVersion());
     }
 
     @Test
     void save_update_returnsDefensiveCopy() {
         repo.save(pixar);
-        ProductionCompany detached = repo.findByID("1");
+        ProductionCompany detached = repo.findByID(PIXAR_ID_STRING);
         repo.save(detached);
-        ProductionCompany stored = repo.findByID("1");
+        ProductionCompany stored = repo.findByID(PIXAR_ID_STRING);
         assertNotSame(detached, stored);
     }
 
     @Test
     void save_update_versionMismatch_throwsOptimisticLockingFailureException() {
         repo.save(pixar);
-        ProductionCompany stale = repo.findByID("1");
+        ProductionCompany stale = repo.findByID(PIXAR_ID_STRING);
         stale.setVersion(999);
         assertThrows(
                 OptimisticLockingFailureException.class,
@@ -164,14 +169,14 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void save_update_versionMismatch_repositoryStateUnchanged() {
         repo.save(pixar);
-        ProductionCompany stale = repo.findByID("1");
+        ProductionCompany stale = repo.findByID(PIXAR_ID_STRING);
         stale.setVersion(999);
         stale.setName("HACKED");
         assertThrows(
                 OptimisticLockingFailureException.class,
                 () -> repo.save(stale)
         );
-        ProductionCompany actual = repo.findByID("1");
+        ProductionCompany actual = repo.findByID(PIXAR_ID_STRING);
         assertAll(
                 () -> assertEquals("Pixar", actual.getName()),
                 () -> assertEquals(1, actual.getVersion())
@@ -181,7 +186,7 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void save_failedUpdate_doesNotMutateCallerObject() {
         repo.save(pixar);
-        ProductionCompany stale =spy(repo.findByID("1"));
+        ProductionCompany stale =spy(repo.findByID(PIXAR_ID_STRING));
         stale.setVersion(999);
         assertThrows(
                 OptimisticLockingFailureException.class,
@@ -194,21 +199,21 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void save_rename_updatesNameIndex() {
         repo.save(pixar);
-        ProductionCompany updated = repo.findByID("1");
+        ProductionCompany updated = repo.findByID(PIXAR_ID_STRING);
         updated.setName("NewPixar");
         repo.save(updated);
         assertThrows(
                 IllegalArgumentException.class,
                 () -> repo.getIDByName("Pixar")
         );
-        assertEquals(1, repo.getIDByName("NewPixar"));
+        assertEquals(PIXAR_ID, repo.getIDByName("NewPixar"));
     }
 
     @Test
     void save_renameToExistingName_throwsIllegalArgumentException() {
         repo.save(pixar);
         repo.save(disney);
-        ProductionCompany updated = repo.findByID("2");
+        ProductionCompany updated = repo.findByID(DISNEY_ID_STRING);
         updated.setName("Pixar");
         IllegalArgumentException ex = assertThrows(
                 IllegalArgumentException.class,
@@ -221,13 +226,13 @@ public class ProductionCompanyRepositoryMapImplTests {
     void save_renameFailure_repositoryStateUnchanged() {
         repo.save(pixar);
         repo.save(disney);
-        ProductionCompany updated = repo.findByID("2");
+        ProductionCompany updated = repo.findByID(DISNEY_ID_STRING);
         updated.setName("Pixar");
         assertThrows(
                 IllegalArgumentException.class,
                 () -> repo.save(updated)
         );
-        ProductionCompany actual = repo.findByID("2");
+        ProductionCompany actual = repo.findByID(DISNEY_ID_STRING);
         assertAll(
                 () -> assertEquals("Disney", actual.getName()),
                 () -> assertEquals(1, actual.getVersion())
@@ -238,8 +243,8 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void findByID_success() {
         repo.save(pixar);
-        ProductionCompany result = repo.findByID("1");
-        assertEquals(1, result.getProductionCompanyID());
+        ProductionCompany result = repo.findByID(PIXAR_ID_STRING);
+        assertEquals(PIXAR_ID, result.getProductionCompanyID());
     }
 
     @Test
@@ -261,9 +266,9 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void findByID_returnsDefensiveCopy() {
         repo.save(pixar);
-        ProductionCompany found = repo.findByID("1");
+        ProductionCompany found = repo.findByID(PIXAR_ID_STRING);
         found.setName("HACKED");
-        ProductionCompany actual = repo.findByID("1");
+        ProductionCompany actual = repo.findByID(PIXAR_ID_STRING);
         assertEquals("Pixar", actual.getName());
     }
 
@@ -273,7 +278,7 @@ public class ProductionCompanyRepositoryMapImplTests {
     void getIDByName_success() {
         repo.save(disney);
         int id = repo.getIDByName("Disney");
-        assertEquals(2, id);
+        assertEquals(DISNEY_ID, id);
     }
 
     @Test
@@ -289,17 +294,17 @@ public class ProductionCompanyRepositoryMapImplTests {
     @Test
     void delete_existingCompany_removedSuccessfully() {
         repo.save(pixar);
-        repo.delete("1");
+        repo.delete(PIXAR_ID_STRING);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> repo.findByID("1")
+                () -> repo.findByID(PIXAR_ID_STRING)
         );
     }
 
     @Test
     void delete_existingCompany_removesNameIndex() {
         repo.save(pixar);
-        repo.delete("1");
+        repo.delete(PIXAR_ID_STRING);
         assertThrows(
                 IllegalArgumentException.class,
                 () -> repo.getIDByName("Pixar")
@@ -325,14 +330,14 @@ public class ProductionCompanyRepositoryMapImplTests {
         repo.save(pixar);
         repo.save(disney);
 
-        repo.delete("1");
+        repo.delete(PIXAR_ID_STRING);
 
         assertAll(
-                () -> assertEquals(2, repo.getIDByName("Disney")),
-                () -> assertEquals("Disney", repo.findByID("2").getName()),
+                () -> assertEquals(DISNEY_ID, repo.getIDByName("Disney")),
+                () -> assertEquals("Disney", repo.findByID(DISNEY_ID_STRING).getName()),
                 () -> assertThrows(
                         IllegalArgumentException.class,
-                        () -> repo.findByID("1"))
+                        () -> repo.findByID(PIXAR_ID_STRING))
         );
     }
 
@@ -351,7 +356,7 @@ public class ProductionCompanyRepositoryMapImplTests {
         repo.save(disney);
         List<ProductionCompany> companies = repo.getAll();
         companies.get(0).setName("HACKED");
-        ProductionCompany fresh = repo.findByID("1");
+        ProductionCompany fresh = repo.findByID(PIXAR_ID_STRING);
         assertNotEquals("HACKED", fresh.getName());
     }
 
@@ -378,15 +383,35 @@ public class ProductionCompanyRepositoryMapImplTests {
 
         List<Integer> result =repo.getAllUserComapnies(user);
 
-        assertEquals(List.of(1), result);
+        assertEquals(List.of(PIXAR_ID), result);
+    }
+
+    @Test
+    void getAllUserCompanies_userManagesMultipleCompanies_returnsCorrectIDs() {
+        User user = mock(User.class);
+
+        when(user.getEmail()).thenReturn(MANAGER_EMAIL);
+
+        pixar.AssignManager(OWNER_EMAIL, MANAGER_EMAIL,Set.of( ManagerPermissions.PURCHASE_POLICY));
+        pixar.acceptInvite(MANAGER_EMAIL, OWNER_EMAIL);
+
+        disney.AssignManager(OWNER_EMAIL, MANAGER_EMAIL,Set.of( ManagerPermissions.PURCHASE_POLICY));
+        disney.acceptInvite(MANAGER_EMAIL, OWNER_EMAIL);
+
+        repo.save(pixar);
+        repo.save(disney);
+
+        List<Integer> result =repo.getAllUserComapnies(user);
+
+        assertEquals(List.of(PIXAR_ID, DISNEY_ID), result);
     }
 
     //concurrency tests
     @Test
     void concurrentUpdates_onlyOneSucceeds() throws Exception {
         repo.save(pixar);
-        ProductionCompany copy1 = repo.findByID("1");
-        ProductionCompany copy2 = repo.findByID("1");
+        ProductionCompany copy1 = repo.findByID(PIXAR_ID_STRING);
+        ProductionCompany copy2 = repo.findByID(PIXAR_ID_STRING);
 
         AtomicInteger successCount = new AtomicInteger();
         AtomicInteger failureCount = new AtomicInteger();
@@ -445,7 +470,7 @@ public class ProductionCompanyRepositoryMapImplTests {
         assertEquals(1, failureCount.get());
 
         ProductionCompany finalState =
-                repo.findByID("1");
+                repo.findByID(PIXAR_ID_STRING);
 
         assertEquals(2, finalState.getVersion());
     }
@@ -454,10 +479,10 @@ public class ProductionCompanyRepositoryMapImplTests {
     void concurrentInsert_sameName_onlyOneSucceeds() throws Exception {
 
         ProductionCompany company1 =
-                createCompany(1, "Sony");
+                createCompany(PIXAR_ID, "Sony");
 
         ProductionCompany company2 =
-                createCompany(2, "Sony");
+                createCompany(DISNEY_ID, "Sony");
 
         AtomicInteger successCount =
                 new AtomicInteger();
