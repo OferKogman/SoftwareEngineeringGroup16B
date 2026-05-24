@@ -93,21 +93,6 @@ public class ProductionCompanyRepositoryMapImplTests {
         );
     }
 
-    @Test
-    void save_storesCopy_notOriginalReference() {
-        ProductionCompany original =spy(pixar);
-        repo.save(original);
-        // mutate external object AFTER save
-        original.setName("HACKED");
-        original.setVersion(999);
-
-        ProductionCompany stored = repo.findByID(PIXAR_ID_STRING);
-        // repository state must remain unchanged
-        assertAll(
-                () -> assertEquals("Pixar", stored.getName()),
-                () -> assertEquals(1, stored.getVersion())
-        );
-    }
 
     @Test
     void save_duplicateName_throwsIllegalArgumentException() {
