@@ -40,6 +40,10 @@ public class SystemAdminLoginService {
             logger.warn("SystemAdminLoginService.loginAdmin: Login failed: user ID {} does not exist!", adminID);
             return Result.makeFail("Invalid user ID");
         }
+        catch(Exception e) {
+            logger.error("SystemAdminLoginService.loginAdmin: failed to log in admin ID {}: {}", adminID, e.getMessage(), e);
+            return Result.makeFail("Failed to log in: " + e.getMessage());
+        }
     }
 
     public Result<String> logOutAdmin(String sessionToken) {
