@@ -1,4 +1,4 @@
-package com.group16b.DomainLayer.Policies;
+package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 public class BuyXGetYDiscount implements DiscountPolicy {
     private int x;
