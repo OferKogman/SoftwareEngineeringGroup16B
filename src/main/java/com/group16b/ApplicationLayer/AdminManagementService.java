@@ -148,12 +148,8 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-            ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
+            ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId)); // validate company exists, throws error if not
             
-            if(company == null) {
-                System.out.println("Production company with ID " + productionCompanyId + " does not exist.");
-                return Result.makeFail("Production company with ID " + productionCompanyId + " does not exist.");
-            }
 
             List<Integer> productionCompanyIDs = new LinkedList<>();
             productionCompanyIDs.add(productionCompanyId);
@@ -166,7 +162,12 @@ public class AdminManagementService {
 
                 productionCompanyRepo.delete(String.valueOf(productionCompanyId));
                 logger.info("AdminManagementService.closeProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
+
             return Result.makeOk("Production company with ID " + productionCompanyId + " has been closed successfully.");
+        }
+        catch(IllegalArgumentException e) {
+            logger.error("AdminManagementService.closeProductionCompany: Production company with ID {} not found", productionCompanyId, e);
+            return Result.makeFail("Production company with ID " + productionCompanyId + " not found");
         }
         catch(Exception e) {
             logger.error("AdminManagementService.closeProductionCompany: Error occurred while closing production company with ID {}", productionCompanyId, e);
