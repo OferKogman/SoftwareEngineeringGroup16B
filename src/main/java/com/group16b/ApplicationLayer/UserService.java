@@ -11,17 +11,12 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
 public class UserService {
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
 	private final IRepository<Order> orderRepo;
 	private final IRepository<Venue> venueRepo;
@@ -31,9 +26,9 @@ public class UserService {
 
 	private final IAuthenticationService authenticationService;
 
-	
-
-	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway, IRepository<Venue> venueRepo, IRepository<User> userRepo, IRepository<Order> orderRepo, IEventRepository eventRepo) {
+	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway,
+			IRepository<Venue> venueRepo, IRepository<User> userRepo, IRepository<Order> orderRepo,
+			IEventRepository eventRepo) {
 		this.authenticationService = authenticationService;
 		this.ticketGateway = ticketGateway;
 		this.venueRepo = venueRepo;
@@ -52,7 +47,8 @@ public class UserService {
 
 	public Result<Boolean> updateUserPassword(String sessionToken, String oldPassword, String newPassword) {
 		try {
-			logger.info("Verifying session token for event deactivation."); //TODO: change log message to be more specific to password update
+			logger.info("Verifying session token for event deactivation."); // TODO: change log message to be more
+																			// specific to password update
 			if (!authenticationService.validateToken(sessionToken)) {
 				logger.warn("Invalid session token provided for event deactivation.");
 				return Result.makeFail("Invalid session token.");
@@ -70,18 +66,16 @@ public class UserService {
 				return Result.makeFail("New password cannot be the same as the old password.");
 			} // else, user is not null and old password is correct and new password is
 				// different from old password
-			try{
-			user.changePassword(oldPassword, newPassword);
-			userRepo.save(user);
-			logger.info("Password changed successfully");
-			return Result.makeOk(true);
-			}
-			catch (IllegalArgumentException e) {
+			try {
+				user.changePassword(oldPassword, newPassword);
+				userRepo.save(user);
+				logger.info("Password changed successfully");
+				return Result.makeOk(true);
+			} catch (IllegalArgumentException e) {
 				logger.error("Failed to change password: " + e.getMessage());
 				return Result.makeFail(e.getMessage());
 			}
-		}
-		catch (JwtException e) {
+		} catch (JwtException e) {
 			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
@@ -90,5 +84,4 @@ public class UserService {
 		}
 	}
 
-	
 }

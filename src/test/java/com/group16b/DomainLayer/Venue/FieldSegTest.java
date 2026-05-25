@@ -2,6 +2,7 @@ package com.group16b.DomainLayer.Venue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
 import org.junit.jupiter.api.Test;
 
 class FieldSegTest {
@@ -34,8 +35,7 @@ class FieldSegTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fieldSeg.reserve(ReservationRequest.forField(100, 11, "field1"))
-        );
+                () -> fieldSeg.reserve(ReservationRequest.forField(100, 11, "field1")));
 
         assertEquals(10, fieldSeg.getStock(100));
     }
@@ -47,8 +47,7 @@ class FieldSegTest {
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> fieldSeg.cancelReservation(ReservationRequest.forField(100, 1, "field1"))
-        );
+                () -> fieldSeg.cancelReservation(ReservationRequest.forField(100, 1, "field1")));
     }
 
     @Test
@@ -75,8 +74,7 @@ class FieldSegTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> fieldSeg.reserve(ReservationRequest.forField(999, 1, "field1")),
-                "Should throw when reserving for an event that hasn't been added to the segment"
-        );
+                "Should throw when reserving for an event that hasn't been added to the segment");
     }
 
     @Test
@@ -86,7 +84,6 @@ class FieldSegTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> fieldSeg.cancelReservation(ReservationRequest.forField(999, 1, "field1")),
-                "Should throw when canceling for an event that hasn't been added to the segment"
-        );
+                "Should throw when canceling for an event that hasn't been added to the segment");
     }
 }

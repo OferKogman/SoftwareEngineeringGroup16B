@@ -1,15 +1,8 @@
 package com.group16b.DomainLayer.Event;
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.context.support.BeanDefinitionDsl.Role;
-
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -17,6 +10,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.EventService;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -28,7 +28,6 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
@@ -60,14 +59,15 @@ public class EventStockEditTests {
         mockAuthService = mock(IAuthenticationService.class);
         mockLocationService = mock(ILocationService.class);
         mockEventFilteringService = mock(EventFilteringService.class);
-        
+
         mockUserRepo = mock(IRepository.class);
         mockVenueRepo = mock(IRepository.class);
         mockEventRepo = mock(IEventRepository.class);
         mockQueueRepo = mock(IRepository.class);
         mockPolicyRepo = mock(IProductionCompanyRepository.class);
 
-        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService,mockPolicyRepo, mockQueueRepo, mockVenueRepo, mockEventRepo, mockUserRepo);
+        eventService = new EventService(mockAuthService, mockLocationService, mockEventFilteringService, mockPolicyRepo,
+                mockQueueRepo, mockVenueRepo, mockEventRepo, mockUserRepo);
 
         // 3. Inject Singleton Repositories via Reflection
         setPrivateField(eventService, "userRepository", mockUserRepo);
@@ -81,7 +81,7 @@ public class EventStockEditTests {
         when(mockAuthService.extractSubjectFromToken(anyString())).thenReturn(String.valueOf(USER_ID));
     }
 
-    //helper for singelton injection in mocks
+    // helper for singelton injection in mocks
     private void setPrivateField(Object targetObject, String fieldName, Object valueToSet) throws Exception {
         Field field = targetObject.getClass().getDeclaredField(fieldName);
         field.setAccessible(true);
@@ -91,10 +91,10 @@ public class EventStockEditTests {
     @Test
     void editStockInSegmentsForEvent_Success() {
         User mockUser = mock(User.class);
-        ProductionCompany mockCompany=mock(ProductionCompany.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
         when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
-        doNothing().when(mockCompany).validateUserPermissions(USER_ID,RoleType.OWNER);
+        doNothing().when(mockCompany).validateUserPermissions(USER_ID, RoleType.OWNER);
 
         Event mockEvent = mock(Event.class);
         when(mockEventRepo.findByID(String.valueOf(EVENT_ID))).thenReturn(mockEvent);
@@ -145,15 +145,16 @@ public class EventStockEditTests {
     @Test
     void editStockInSegmentsForEvent_PermissionDenied_CaughtByCatchBlock() {
         User mockUser = mock(User.class);
-        ProductionCompany mockCompany=mock(ProductionCompany.class);
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
         when(mockUserRepo.findByID(USER_ID)).thenReturn(mockUser);
         when(mockPolicyRepo.findByID(String.valueOf(COMPANY_ID))).thenReturn(mockCompany);
-        
+
         Event mockEvent = mock(Event.class);
         when(mockEventRepo.findByID(String.valueOf(EVENT_ID))).thenReturn(mockEvent);
         when(mockEvent.getEventProductionCompanyID()).thenReturn(COMPANY_ID);
 
-        doThrow(new IllegalArgumentException("Unauthorized action")).when(mockCompany).validateUserPermissions(USER_ID, RoleType.OWNER);
+        doThrow(new IllegalArgumentException("Unauthorized action")).when(mockCompany).validateUserPermissions(USER_ID,
+                RoleType.OWNER);
 
         Map<String, Integer> stockMap = new HashMap<>();
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);

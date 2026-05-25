@@ -203,19 +203,19 @@ public class Event {
 	public void validateLotteryCode(String lotteryCode) {
 		LotteryPolicy lp = getLotteryPolicy();
 		if (lp == null) {
-			throw new IllegalStateException("Event does not have a lottery policy.");
+			throw new IllegalStateException("Event does not have a lottery purchase policy.");
 		}
 		lp.validateLotteryCode(lotteryCode);
 	}
 	public void verifiyHasLotteryPolicy() {
 		if (getLotteryPolicy() == null) {
-			throw new IllegalStateException("Event does not have a lottery policy.");
+			throw new IllegalStateException("Event does not have a lottery purchase policy.");
 		}
 	}
 	public void renewLotteryCode(String lotteryCode) {
 		LotteryPolicy lp = getLotteryPolicy();
 		if (lp == null) {
-			throw new IllegalStateException("Event does not have a lottery policy.");
+			throw new IllegalStateException("Event does not have a lottery purchase policy.");
 		}
 		lp.renewLotteryCode(lotteryCode);
 	}
@@ -226,13 +226,13 @@ public class Event {
 	public void lotteryUseCode(String lotteryCode) {
 		LotteryPolicy lp = getLotteryPolicy();
 		if (lp == null) {
-			throw new IllegalStateException("Event does not have a lottery policy.");
+			throw new IllegalStateException("Event does not have a lottery purchase policy.");
 		}
 		lp.useCode(lotteryCode);
 	}
 	public void verifyDoesNotHaveLotteryPolicy() {
 		if (getLotteryPolicy() != null) {
-			throw new IllegalStateException("Event has a lottery policy.");
+			throw new IllegalStateException("Event has a lottery purchase policy.");
 		}
 	}
 	public String getOwnerId() {
@@ -340,12 +340,9 @@ public class Event {
     }
 
 
-	public boolean isActiveEvent() {//relevant for venue assignment
-        return active; 
-    }
-
 	public void enrollInLottery(String userID) {
-		if (!this.isActiveEvent()) {
+		this.verifiyHasLotteryPolicy();
+		if (!this.getEventStatus()) {
 			throw new IllegalStateException("Can't enroll in lottery for an inactive event");
 		}
 		this.getLotteryPolicy().enrollInLottery(this.eventID, userID);

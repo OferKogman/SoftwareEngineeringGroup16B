@@ -9,8 +9,8 @@ public class VirtualQueue {
 	private final List<String> queueLine;
 	private final Map<String, Long> passedQueue;
 	private final int id;
-	private final int PASS_NUM = 50;
-	private final int PASS_TIMEOUT = 60 * 10 * 1000;
+	private final Integer PASS_NUM = 50;
+	private final Integer PASS_TIMEOUT = 60 * 10 * 1000;
 
 	public VirtualQueue(int id) {
 		queueLine = new LinkedList<>();
@@ -24,13 +24,12 @@ public class VirtualQueue {
 		this.passedQueue = new LinkedHashMap<>(other.passedQueue);
 	}
 
-	public boolean addToQueue(String subjectID) {
+	public void addToQueue(String subjectID) {
 		popFirstIn();
 		if (queueLine.contains(subjectID) || passedQueue.containsKey(subjectID))
-			return false;
+			return;
 		queueLine.add(subjectID);
 		popFirstIn();
-		return true;
 	}
 
 	private void popFirstIn() {
@@ -45,10 +44,9 @@ public class VirtualQueue {
 				break;
 			}
 		}
-		if (passedQueue.size() >= PASS_NUM) {
-			return;
+		while (passedQueue.size() < PASS_NUM && !queueLine.isEmpty()) {
+			passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
 		}
-		passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
 	}
 
 	public void removePassed(String subjectID) {

@@ -1,20 +1,20 @@
 package com.group16b.ApplicationLayer;
 
-import java.lang.reflect.Field;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Field;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -38,7 +38,6 @@ public class UserLoginServiceTests {
         userRepo.set(userLoginService, mockUserRepository);
     }
 
-
     @Test
     void createGuestSession_Success_ReturnsOkResult() {
         when(mockTokenService.generateVisitor_GuestToken(any(SessionToken.class)))
@@ -59,18 +58,17 @@ public class UserLoginServiceTests {
         Result<String> result = userLoginService.createGuestSession();
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Failed to create guest session"));//there is exception, not sure whitch
+        assertTrue(result.getError().contains("Failed to create guest session"));// there is exception, not sure whitch
     }
 
-
-@Test
+    @Test
     void loginMember_ValidCredentials_ReturnsOkResult() {
         String userID = "1";
         String correctPassword = "myPassword";
         String correctMail = "myEmail";
-        
+
         User mockUser = mock(User.class);
-        when(mockUser.confirmPassword(correctPassword)).thenReturn(true); 
+        when(mockUser.confirmPassword(correctPassword)).thenReturn(true);
         when(mockUser.getEmail()).thenReturn(correctMail);
 
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
@@ -87,9 +85,9 @@ public class UserLoginServiceTests {
         String userID = "1";
         String wrongPassword = "wrongPassword";
         String mail = "someEmail";
-        
+
         User mockUser = mock(User.class);
-        when(mockUser.confirmPassword(wrongPassword)).thenReturn(false); 
+        when(mockUser.confirmPassword(wrongPassword)).thenReturn(false);
         when(mockUser.getEmail()).thenReturn(mail);
 
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
@@ -100,16 +98,15 @@ public class UserLoginServiceTests {
         assertEquals("Invalid user ID or password + email", result.getError());
     }
 
-    
     @Test
     void loginMember_WrongEmail_ReturnsFailResult() {
         String userID = "1";
         String correctPassword = "myPassword";
         String correctMail = "myEmail";
         String wrongMail = "my$Email";
-        
+
         User mockUser = mock(User.class);
-        when(mockUser.confirmPassword(correctPassword)).thenReturn(true); 
+        when(mockUser.confirmPassword(correctPassword)).thenReturn(true);
         when(mockUser.getEmail()).thenReturn(correctMail);
 
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
@@ -125,13 +122,13 @@ public class UserLoginServiceTests {
     void loginMember_UserDoesNotExist_ReturnsFailResult() {
         String nonExistentUserID = "999";
         when(mockUserRepository.findByID(nonExistentUserID))
-                                .thenThrow(new IllegalArgumentException("User not found"));
+                .thenThrow(new IllegalArgumentException("User not found"));
 
         Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword", "someMail");
 
         assertFalse(result.isSuccess());
         assertEquals("Failed to login: User not found", result.getError());
-        
+
         verify(mockTokenService, never()).generateVisitor_SignedToken(anyString());
     }
 
@@ -140,10 +137,10 @@ public class UserLoginServiceTests {
         String validToken = "valid.user.token";
         String newGuestToken = "new.guest.token";
         String userID = "1";
-        
+
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(userID));
         when(mockTokenService.isUserToken(validToken)).thenReturn(true);
-        
+
         when(mockTokenService.generateVisitor_GuestToken(any(SessionToken.class))).thenReturn(newGuestToken);
 
         Result<String> result = userLoginService.logOutMember(validToken);
@@ -155,10 +152,14 @@ public class UserLoginServiceTests {
     @Test
     void logOutMember_TokenIsNotUserToken_ReturnsFailResult() {
         String guestToken = "guest.token";
-        int guestID = 0; 
-        
+        int guestID = 0;
+
         when(mockTokenService.extractRoleFromToken(guestToken)).thenReturn("Guest");
-        when(mockTokenService.extractSubjectFromToken(guestToken)).thenReturn(String.valueOf(guestID));//shouldnt be relevant won;t parse subject since incorrect role
+        when(mockTokenService.extractSubjectFromToken(guestToken)).thenReturn(String.valueOf(guestID));// shouldnt be
+                                                                                                       // relevant won;t
+                                                                                                       // parse subject
+                                                                                                       // since
+                                                                                                       // incorrect role
 
         Result<String> result = userLoginService.logOutMember(guestToken);
 
@@ -170,11 +171,10 @@ public class UserLoginServiceTests {
     void logOutMember_UserDoesNotExistInDB_ReturnsFailResult() {
         String validToken = "valid.user.token";
         String nonExistentID = "999";
-        
+
         when(mockTokenService.isUserToken(validToken)).thenReturn(true);
         when(mockTokenService.extractSubjectFromToken(validToken)).thenReturn(String.valueOf(nonExistentID));
         when(mockUserRepository.findByID(nonExistentID)).thenThrow(new IllegalArgumentException("Invalid user ID"));
-
 
         Result<String> result = userLoginService.logOutMember(validToken);
 
@@ -185,7 +185,7 @@ public class UserLoginServiceTests {
     @Test
     void logOutMember_MalformedTokenException_ReturnsFailResult() {
         String badToken = "malformed.token";
-        
+
         when(mockTokenService.extractSubjectFromToken(badToken))
                 .thenThrow(new RuntimeException("Invalid token signature"));
 
