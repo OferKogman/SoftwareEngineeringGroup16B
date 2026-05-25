@@ -485,6 +485,21 @@ public class ProductionCompanyServiceTests {
     }
 
     @Test
+    void displayTotalRevenue_ManagerWithNoEventsUnderHim_ReturnsAllCompanyRevenue() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_REVENUE_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        assertEquals(0.0, result.getValue());
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
     void displayTotalRevenue_ManagerWithoutSalesPermission_ReturnsFailure() {
         Result<Double> result =
             service.displayTotalRevenue(
