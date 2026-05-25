@@ -126,6 +126,7 @@ public class ProductionCompanyService {
                 .collect(Collectors.toSet());
         return orderRepo.getAll().stream()
                     .filter(order -> companyEventIDs.contains(order.getEventId()))
+                    .filter(Order::isCompleted)
                     .toList();
     }
 

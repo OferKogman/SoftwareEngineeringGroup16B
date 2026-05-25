@@ -82,6 +82,7 @@ public class ProductionCompanyServiceTests {
     private Order company1Order2;
     private Order company1Order3;
     private Order company2Order1;
+    private Order company1ActiveOrder1;
 
 
     
@@ -170,15 +171,18 @@ public class ProductionCompanyServiceTests {
         eventRepo.save(company1Event2);
         eventRepo.save(company2Event1);
 
-        company1Order1 = createOrder(company1Event1.getEventID(), 100, NON_MANAGER_ID);
-        company1Order2 = createOrder(company1Event2.getEventID(), 200, NON_MANAGER_ID);
-        company1Order3 = createOrder(company1Event2.getEventID(), 150, NON_MANAGER_ID);
-        company2Order1 = createOrder(company2Event1.getEventID(), 999, NON_MANAGER_ID);
+        company1Order1 = createCompletedOrder(company1Event1.getEventID(), 100, NON_MANAGER_ID);
+        company1Order2 = createCompletedOrder(company1Event2.getEventID(), 200, NON_MANAGER_ID);
+        company1Order3 = createCompletedOrder(company1Event2.getEventID(), 150, NON_MANAGER_ID);
+        company2Order1 = createCompletedOrder(company2Event1.getEventID(), 999, NON_MANAGER_ID);
+
+        company1ActiveOrder1 = createOrder(company1Event1.getEventID(), 50, NON_MANAGER_ID);
 
         orderRepo.save(company1Order1);
         orderRepo.save(company1Order2);
         orderRepo.save(company1Order3);
         orderRepo.save(company2Order1);
+        orderRepo.save(company1ActiveOrder1);
     }
 
     private User createUser(String userId) {
@@ -220,6 +224,10 @@ public class ProductionCompanyServiceTests {
             eventId,
             subjectID
         );
+        return order;
+    }
+    private Order createCompletedOrder(int eventId, double price, String subjectID) {
+        Order order = createOrder(eventId, price, subjectID);
         order.CompleteOrder();
         return order;
     }
