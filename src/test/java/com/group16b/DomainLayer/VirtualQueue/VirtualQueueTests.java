@@ -49,7 +49,7 @@ public class VirtualQueueTests {
         q.addToQueue(USER2);
         assertTrue(q.isUserPassedQueue(USER1));
         assertFalse(q.isUserPassedQueue(USER2));
-        Thread.sleep(1000);
+        Thread.sleep(5000);
         q.addToQueue(USER2);
         assertFalse(q.isUserPassedQueue(USER1));
         assertTrue(q.isUserPassedQueue(USER2));
