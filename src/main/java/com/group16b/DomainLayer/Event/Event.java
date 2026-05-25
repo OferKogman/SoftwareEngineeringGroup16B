@@ -200,10 +200,35 @@ public class Event {
 		//}
 		return lp;
 	}
+	public void validateLotteryCode(String lotteryCode) {
+		LotteryPolicy lp = getLotteryPolicy();
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+		lp.validateLotteryCode(lotteryCode);
+	}
 	public void verifiyHasLotteryPolicy() {
 		if (getLotteryPolicy() == null) {
 			throw new IllegalStateException("Event does not have a lottery policy.");
 		}
+	}
+	public void renewLotteryCode(String lotteryCode) {
+		LotteryPolicy lp = getLotteryPolicy();
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+		lp.renewLotteryCode(lotteryCode);
+	}
+	
+	public boolean hasLotteryPolicy() {
+		return getLotteryPolicy() != null;
+	}
+	public void lotteryUseCode(String lotteryCode) {
+		LotteryPolicy lp = getLotteryPolicy();
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+		lp.useCode(lotteryCode);
 	}
 	public void verifyDoesNotHaveLotteryPolicy() {
 		if (getLotteryPolicy() != null) {

@@ -14,7 +14,6 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
-import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.Venue.Segment;
@@ -199,7 +198,6 @@ public class ReserveService {
         // 0. log everything
         String subjectID = null;
         VirtualQueue q = null;
-        LotteryPolicy lotteryPolicy = null;
         try {
             logger.info("Verifying session token for reservation.");
 			
@@ -216,9 +214,7 @@ public class ReserveService {
             
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            event.verifiyHasLotteryPolicy();
-            lotteryPolicy = event.getLotteryPolicy();
-            lotteryPolicy.validateLotteryCode(lotteryCode);
+            event.validateLotteryCode(lotteryCode);
             
 
 
@@ -243,7 +239,6 @@ public class ReserveService {
             double pricePerSeat = segment.getPrice(eventID);
 
             validatePurchasePolicy(eventID);
-            lotteryPolicy = event.getLotteryPolicy();
 
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
 
@@ -253,7 +248,7 @@ public class ReserveService {
             orderRepo.save(order);
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
-            lotteryPolicy.useCode(lotteryCode);
+            event.lotteryUseCode(lotteryCode);
             return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (JwtException e) {
@@ -271,8 +266,10 @@ public class ReserveService {
 		}catch (Exception e) {
             logger.error("ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
             queueRemovePassed(q, subjectID);
-            if(lotteryPolicy != null) {
-                lotteryPolicy.renewLotteryCode(lotteryCode);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
+
+            if(event.hasLotteryPolicy()) {
+                event.renewLotteryCode(lotteryCode);
             }
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
@@ -280,7 +277,6 @@ public class ReserveService {
 
     public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId, String lotteryCode, String sessionToken) {
            // 0. log everything
-            LotteryPolicy lotteryPolicy = null;
             String subjectID = null;
             VirtualQueue q = null;
         try {
@@ -302,9 +298,7 @@ public class ReserveService {
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            lotteryPolicy = eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy();
-            event.verifiyHasLotteryPolicy();
-            lotteryPolicy.validateLotteryCode(lotteryCode);
+            event.validateLotteryCode(lotteryCode);
 
             //1. System - Checks user passed the queue.
             logger.info("Moving queue forward");
@@ -330,7 +324,7 @@ public class ReserveService {
             orderRepo.save(order);
             logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
             q.removePassed(subjectID);
-            lotteryPolicy.useCode(lotteryCode);
+            event.lotteryUseCode(lotteryCode);
             return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (JwtException e) {
@@ -347,8 +341,9 @@ public class ReserveService {
 			return Result.makeFail(e.getMessage());
 		}catch (Exception e) {
             logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
-            if(lotteryPolicy != null) {
-                lotteryPolicy.renewLotteryCode(lotteryCode);
+            Event event = eventRepository.findByID(String.valueOf(eventID));
+            if(event.hasLotteryPolicy()) {
+                event.renewLotteryCode(lotteryCode);
             }
             queueRemovePassed(q, subjectID);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
