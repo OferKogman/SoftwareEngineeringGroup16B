@@ -132,9 +132,10 @@ public class ProductionCompanyService {
         if(company.isFounder(userID))//divert for efficency if founder, as they have access to all events of the company
             return getCompanyEventIDs(company.getProductionCompanyID());
 
-        Set<String> allowedManagers =new HashSet<>(company.getOwnershipDescendants(userID));
+        //since in the current model, only ownners can create event, directly gather them for optimization
+        Set<String> allowedManager =new HashSet<>(company.getAllSubordinates(userID));
 
-        allowedManagers.add(userID);
+        allowedManager.add(userID);
 
         return eventRepo.searchEvents(
                 null, null, null, null,
@@ -144,7 +145,7 @@ public class ProductionCompanyService {
                 List.of(company.getProductionCompanyID())
             ).stream()
             .filter(event ->
-                allowedManagers.contains(event.getOwnerId())
+                allowedManager.contains(event.getOwnerId())
             )
             .map(Event::getEventID)
             .collect(Collectors.toSet());

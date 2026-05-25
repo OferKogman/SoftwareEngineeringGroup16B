@@ -171,10 +171,10 @@ public class ProductionCompanyServiceTests {
         companyRepo.save(companyWithNoEvents);
         companyRepo.save(companyWithNoOrders);
 
-        company1Event1 = createEvent(1, COMPANY1_ID);
-        company1Event2 = createEvent(2, COMPANY1_ID);
-        company2Event1 = createEvent(3, COMPANY2_ID);
-        companyWithNoOrdersEvent1 = createEvent(4, COMPANY_WITH_NO_ORDERS_ID);
+        company1Event1 = createEvent(1, COMPANY1_ID, FOUNDER_EMAIL);
+        company1Event2 = createEvent(2, COMPANY1_ID, OWNER_ID);
+        company2Event1 = createEvent(3, COMPANY2_ID, OWNER_ID);
+        companyWithNoOrdersEvent1 = createEvent(4, COMPANY_WITH_NO_ORDERS_ID, FOUNDER_EMAIL);
 
         eventRepo.save(company1Event1);
         eventRepo.save(company1Event2);
@@ -210,7 +210,7 @@ public class ProductionCompanyServiceTests {
         return new ProductionCompany(companyId,name,1.1,founderEmail);
     }
 
-    private Event createEvent(int eventId, int companyId) {
+    private Event createEvent(int eventId, int companyId,String ownerId) {
         return new Event(
             new EventRecord(
                 "venue1",
@@ -222,7 +222,7 @@ public class ProductionCompanyServiceTests {
                 companyId,
                 100,
                 4.5
-            ),"owner"
+            ),ownerId
             );
     }
 
@@ -403,10 +403,7 @@ public class ProductionCompanyServiceTests {
     private void assertCompany1SalesHistory(List<OrderDTO> orders) {
         assertEquals(3, orders.size());
 
-        double total =
-            orders.stream()
-                .mapToDouble(OrderDTO::getTocalOrderPrice)
-                .sum();
+        double total =orders.stream().mapToDouble(OrderDTO::getTocalOrderPrice).sum();
 
         assertEquals(450, total);
 
@@ -442,4 +439,151 @@ public class ProductionCompanyServiceTests {
         assertEquals(4, eventRepo.getAll().size());
         assertEquals(4, companyRepo.getAll().size());
     }
+
+    // =======================================================
+    // displayTotalRevenue TESTS
+    // =======================================================
+
+    @Test
+    void displayTotalRevenue_Founder_ReturnsAllCompanyRevenue() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_FOUNDER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        // company1:
+        // order1 = 100 (event1)
+        // order2 = 200 (event2)
+        // order3 = 150 (event2)
+        // active order excluded
+        // total = 450
+        assertEquals(450.0, result.getValue());
+
+        assertRepositoriesUnchanged();
+    }
+    @Test
+    void displayTotalRevenue_Owner_ReturnsAllCompanyRevenue() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_OWNER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        // company1:
+        // order2 = 200 (event2)
+        // order3 = 150 (event2)
+        // active order excluded
+        // total = 350
+        assertEquals(350.0, result.getValue());
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_ManagerWithoutSalesPermission_ReturnsFailure() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_HISTORY_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("permissions"));
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_NonManager_ReturnsFailure() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_NON_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("permissions"));
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_InvalidToken_ReturnsFailure() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                INVALID_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid Token", result.getError());
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_StaleUser_ReturnsFailure() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                STALE_USER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals(
+            "User with ID " + BAD_USER_ID + " not found.",
+            result.getError()
+        );
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_InvalidCompany_ReturnsFailure() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_FOUNDER_TOKEN,
+                BAD_COMPANY_ID
+            );
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("not found"));
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_CompanyWithNoEvents_ReturnsZero() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_FOUNDER_TOKEN,
+                COMPANY_WITH_NO_EVENTS_ID
+            );
+
+        assertTrue(result.isSuccess());
+        assertEquals(0.0, result.getValue());
+
+        assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void displayTotalRevenue_CompanyWithNoCompletedOrders_ReturnsZero() {
+        Result<Double> result =
+            service.displayTotalRevenue(
+                VALID_FOUNDER_TOKEN,
+                COMPANY_WITH_NO_ORDERS_ID
+            );
+
+        assertTrue(result.isSuccess());
+        assertEquals(0.0, result.getValue());
+
+        assertRepositoriesUnchanged();
+    }
+
+
 }
