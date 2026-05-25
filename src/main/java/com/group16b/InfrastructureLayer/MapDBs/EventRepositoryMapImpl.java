@@ -36,10 +36,12 @@ public class EventRepositoryMapImpl implements IEventRepository {
                     curr.getVersion()
                 );
 			}
-			e.incrementVersion();
-			events.put(e.getEventID(), e);
+			Event updated = new Event(e);
+			updated.incrementVersion();
+			events.put(updated.getEventID(), updated);
 		}else {
-			events.put(e.getEventID(), e);
+			Event updated = new Event(e);
+			events.put(updated.getEventID(), updated);
 		}
 
 	}
