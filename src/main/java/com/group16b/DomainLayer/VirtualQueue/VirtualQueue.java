@@ -40,7 +40,7 @@ public class VirtualQueue {
 		}
 		for (Map.Entry<String, Long> entry : passedQueue.entrySet()) {
 			long currentTime = System.currentTimeMillis();
-			if ((currentTime - entry.getValue()) > PASS_TIMEOUT){
+			if ((currentTime - entry.getValue()) > PASS_TIMEOUT) {
 				passedQueue.remove(entry.getKey());
 			} else {
 				break;
@@ -60,9 +60,10 @@ public class VirtualQueue {
 		return this.id;
 	}
 
-	public boolean isUserPassedQueue(String subjectID) throws NoSuchAlgorithmException {
+	public boolean isUserPassedQueue(String subjectID) {
 		return passedQueue.containsKey(subjectID);
 	}
+
 	public void validateUserPassedQueue(String subjectID) {
 		if (!passedQueue.containsKey(subjectID)) {
 			throw new IllegalStateException("User did not pass the queue.");

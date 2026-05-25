@@ -1,4 +1,4 @@
-package com.group16b.infrastructureLayer;
+package com.group16b.ApplicationLayer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
