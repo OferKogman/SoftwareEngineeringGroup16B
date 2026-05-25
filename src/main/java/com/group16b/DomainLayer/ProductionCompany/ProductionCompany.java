@@ -2,6 +2,7 @@ package com.group16b.DomainLayer.ProductionCompany;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,7 +12,6 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
@@ -24,6 +24,7 @@ public class ProductionCompany {
 
     private final HashMap<String, MembershipNode> membersNodes=new HashMap<>();
     private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
+    private final HashMap<String, Set<String>> childrenByUser = new HashMap<>();
 
     public ProductionCompany(ProductionCompany other)
     {
@@ -44,6 +45,7 @@ public class ProductionCompany {
                     new MembershipNode(entry.getValue())
             );
         }
+        childrenByUser.putAll(other.childrenByUser);
     }
     public ProductionCompany(int id, String name, double rating, String founderID)
     {
@@ -160,6 +162,7 @@ public class ProductionCompany {
         }
 
         membersNodes.put(targetID, invite);
+        addChild(assignerID, targetID);
 
         RoleType acceptedRole = invite.getRoleType();
 
@@ -243,41 +246,34 @@ public class ProductionCompany {
         }
     }
 
-    public List<String> getDirectSubordinates(String userID)
-    {
+    public List<String> getAllSubordinates(String userID) {
         List<String> result = new ArrayList<>();
-
-        for (Map.Entry<String, MembershipNode> entry : membersNodes.entrySet())
-        {
-            MembershipNode node = entry.getValue();
-
-            if (node.getAssignerID() == userID)
-            {
-                result.add(entry.getKey());
-            }
-        }
-
-        return result;
-    }
-
-    public List<String> getAllSubordinates(String userID)
-    {
-        List<String> result = new ArrayList<>();
-
         collectSubordinates(userID, result);
-
         return result;
     }
 
-    private void collectSubordinates(String userID, List<String> result)
+    private void collectSubordinates(String userID, List<String> result) {
+        for (String child : childrenByUser.getOrDefault(userID, Set.of())) {
+            result.add(child);
+            collectSubordinates(child, result);
+        }
+    }
+
+    public List<String> getOwnershipDescendants(String userID)
     {
-        List<String> directSubs = getDirectSubordinates(userID);
+        List<String> result = new ArrayList<>();
+        collectOwnershipDescendants(userID, result);
+        return result;
+    }
 
-        for (String subordinateID : directSubs)
-        {
-            result.add(subordinateID);
+    private void collectOwnershipDescendants(String userID, List<String> result) {
+        for (String child : childrenByUser.getOrDefault(userID, Set.of())) {
+            MembershipNode node = membersNodes.get(child);
 
-            collectSubordinates(subordinateID, result);
+            if (node != null && node.getRoleType() == RoleType.OWNER) {
+                result.add(child);
+                collectOwnershipDescendants(child, result);
+            }
         }
     }
 
@@ -306,23 +302,25 @@ public class ProductionCompany {
         if (node == null) return;
 
         String parentID = node.getAssignerID();
+        childrenByUser.get(parentID).remove(userID);
 
-        // reparent children
-        for (MembershipNode child : membersNodes.values()) {
-            if (isFounder(child.getUserID())){
-                continue;
-            }
-            if (child.getAssignerID().equals(userID)) {
-                child.setAssignerID(parentID);
+        Set<String> children = new HashSet<>(childrenByUser.getOrDefault(userID, Set.of()));
+        for (String child : children) {
+            MembershipNode childNode = membersNodes.get(child);
+            if (childNode != null) {
+                childNode.setAssignerID(parentID);
+                addChild(parentID, child);
             }
         }
+
+        childrenByUser.remove(userID);
 
         // remove user
         membersNodes.remove(userID);
 
         //remove all retaled invites
         invites.entrySet().removeIf(e ->
-            e.getKey().targetId == userID || e.getKey().assignerId==userID
+            e.getKey().targetId.equals(userID) || e.getKey().assignerId.equals(userID)
         );
     }
 
@@ -361,8 +359,8 @@ public class ProductionCompany {
             if (this == o) return true;
             if (!(o instanceof InviteKey)) return false;
             InviteKey other = (InviteKey) o;
-            return targetId == other.targetId &&
-                   assignerId == other.assignerId;
+            return targetId.equals(other.targetId) &&
+                   assignerId.equals(other.assignerId);
         }
 
         @Override
@@ -374,5 +372,9 @@ public class ProductionCompany {
     public void adminRemoveUser(String userID)
     {
         removeMember(userID);
+    }
+
+    private void addChild(String parent, String child) {
+        childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
     }
 }

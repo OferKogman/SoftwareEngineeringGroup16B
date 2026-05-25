@@ -313,7 +313,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void viewSalesHistory_CompanyWithoutEvents_ReturnsEmptyList() {
-
         Result<List<OrderDTO>> result =
             service.viewSalesHistory(
                 VALID_FOUNDER_TOKEN,
@@ -327,7 +326,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void viewSalesHistory_RevenueManagerWithoutHistoryPermission_ReturnsFailure() {
-
         Result<List<OrderDTO>> result =
             service.viewSalesHistory(
                 VALID_REVENUE_MANAGER_TOKEN,
@@ -341,7 +339,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void viewSalesHistory_NonManager_ReturnsFailure() {
-
         Result<List<OrderDTO>> result =
             service.viewSalesHistory(
                 VALID_NON_MANAGER_TOKEN,
@@ -355,7 +352,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void viewSalesHistory_InvalidToken_ReturnsFailure() {
-
         Result<List<OrderDTO>> result =
             service.viewSalesHistory(
                 INVALID_TOKEN,
@@ -373,7 +369,6 @@ public class ProductionCompanyServiceTests {
 
     @Test
     void viewSalesHistory_StaleUserToken_ReturnsFailure() {
-
         Result<List<OrderDTO>> result =
             service.viewSalesHistory(
                 STALE_USER_TOKEN,

@@ -4,19 +4,15 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
-
-import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-
 public class MembershipNode {
     private String userID;
     private String assignerID;
     private RoleType roleType;
     private Set<ManagerPermissions> permissions;
 
-    private MembershipNode(String userID2, String assignerID, RoleType roleType, Set<ManagerPermissions> perms)
+    private MembershipNode(String userID, String assignerID, RoleType roleType, Set<ManagerPermissions> perms)
         {
-            this.userID=userID2;
+        this.userID=userID;
         this.assignerID=assignerID;
         this.roleType=roleType;
         this.permissions=new HashSet<>(perms);
