@@ -43,15 +43,6 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 	}
 
 
-
-
-
-
-
-
-
-
-
     @Override
 	public List<Order> getAll() {
 		return this.orders.values().stream().map(Order::new).toList();

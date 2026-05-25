@@ -28,12 +28,12 @@ public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IRepository<User> userRepository;
     private IProductionCompanyRepository productionCompanyRepo;
-    private final IRepository<Order> orderRepo;
+    private final OrderRepositoryMapImpl orderRepo;
     private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
     private ISystemAdminRepository systemAdminRepo;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, ISystemAdminRepository systemAdminRepo) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, ISystemAdminRepository systemAdminRepo) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
         this.orderRepo = orderRepo;
@@ -85,11 +85,6 @@ public class AdminManagementService {
             List<Order> orders = orderRepo.getAll();
             for (Order order : orders) {
                 Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
-                if (event == null) {
-                    logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Event with ID {} not found for order {}", order.getEventId(), order.getOrderId());
-                    orders.remove(order);
-                    continue; 
-                }
                 if (event.getEventProductionCompanyID() != productionCompanyID) {
                     orders.remove(order);
                 }
@@ -148,12 +143,8 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-            ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
+            productionCompanyRepo.findByID(String.valueOf(productionCompanyId)); // validate company exists, throws error if not
             
-            if(company == null) {
-                System.out.println("Production company with ID " + productionCompanyId + " does not exist.");
-                return Result.makeFail("Production company with ID " + productionCompanyId + " does not exist.");
-            }
 
             List<Integer> productionCompanyIDs = new LinkedList<>();
             productionCompanyIDs.add(productionCompanyId);
@@ -166,7 +157,12 @@ public class AdminManagementService {
 
                 productionCompanyRepo.delete(String.valueOf(productionCompanyId));
                 logger.info("AdminManagementService.closeProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
+
             return Result.makeOk("Production company with ID " + productionCompanyId + " has been closed successfully.");
+        }
+        catch(IllegalArgumentException e) {
+            logger.error("AdminManagementService.closeProductionCompany: Production company with ID {} not found", productionCompanyId, e);
+            return Result.makeFail("Production company with ID " + productionCompanyId + " not found");
         }
         catch(Exception e) {
             logger.error("AdminManagementService.closeProductionCompany: Error occurred while closing production company with ID {}", productionCompanyId, e);
@@ -179,19 +175,18 @@ public class AdminManagementService {
         try {
             logger.info("Attempting to remove the user subscription of user ID {}", userID);
             if (!authenticationService.validateToken(sessionToken)  ) {
-                logger.error("Invalid token");
+                logger.error("AdminManagementService.removeUser: Invalid token");
                 return Result.makeFail("Invalid token");
             }
 
             if (!authenticationService.isAdminToken(sessionToken)) {
-                logger.error("Must be in an active admive session to remove user");
+                logger.error("AdminManagementService.removeUser: Must be in an active admive session to remove user");
                 return Result.makeFail("Unauthorized access");
             }
             
             User user = userRepository.findByID(userID);
 
-            List<Integer> companyIDs =
-            productionCompanyRepo.getAllUserComapnies(user);
+            List<Integer> companyIDs = productionCompanyRepo.getAllUserComapnies(user);
             for (Integer companyID : companyIDs)
             {
                 boolean success = false;
@@ -206,15 +201,17 @@ public class AdminManagementService {
                             closeProductionCompany(companyID, sessionToken);
                             // company no longer exists after closure
                             success = true;
+                            logger.info("AdminManagementService.removeUser: User {} was founder of company {}. Closed company as part of user removal process.", userID, companyID);
                             continue;
                         }
                         company.adminRemoveUser(userID);
                         productionCompanyRepo.save(company);
                         success = true;
+                        logger.info("AdminManagementService.removeUser: Successfully removed user {} from company {} as part of user removal process.", userID, companyID);
                     }
                     catch (IllegalArgumentException e)
                     {
-                        logger.warn("Company {} not found while removing user {}",companyID,userID);
+                        logger.warn("AdminManagementService.removeUser: Company {} not found while removing user {}",companyID,userID);
                         // stop retrying, company is gone
                         success = true;
                     }
@@ -225,17 +222,23 @@ public class AdminManagementService {
                 }
             }
             userRepository.delete(userID);
+            logger.info("AdminManagementService.removeUser: Successfully removed user with ID {}", userID);
             
             return Result.makeOk("User with ID: " + userID + ", , has been removed");
-        } catch (Exception e) {
-            logger.error("System error: {}", e.getMessage(), e);
+        }catch (IllegalArgumentException e) {
+            logger.error("AdminManagementService.removeUser: User with ID {} not found", userID, e);
+            return Result.makeFail("User with ID " + userID + " not found");
+        }catch (Exception e) {
+            logger.error("AdminManagementService.removeUser: System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while saving the layout.");
         }    
     }
 
     private void deactivateEvents(List<Event> events) {
+        logger.info("AdminManagementService.deactivateEvents: Deactivating {} events", events.size());
         for (Event e : events) {
             e.deactivateEvent();
+            logger.info("AdminManagementService.deactivateEvents: Deactivated event with ID {}", e.getEventID());
         }
     }
 

@@ -38,7 +38,7 @@ public class StartupService {
         LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
         UserRepositoryMapImpl userRepositoryMapImpl = new UserRepositoryMapImpl();
         VenueRepositoryMapImpl venueRepositoryMapImpl = new VenueRepositoryMapImpl();
-        IOrderRepository orderRepositoryMapImpl = new OrderRepositoryMapImpl();
+        OrderRepositoryMapImpl orderRepositoryMapImpl = new OrderRepositoryMapImpl();
         EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
         VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = new VirtualQueueRepositoryMapImpl();
         ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
