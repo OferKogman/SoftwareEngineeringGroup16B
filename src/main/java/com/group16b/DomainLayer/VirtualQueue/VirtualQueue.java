@@ -1,6 +1,5 @@
 package com.group16b.DomainLayer.VirtualQueue;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;

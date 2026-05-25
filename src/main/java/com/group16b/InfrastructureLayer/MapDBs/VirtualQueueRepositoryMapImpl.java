@@ -1,12 +1,10 @@
 package com.group16b.InfrastructureLayer.MapDBs;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
-import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 public class VirtualQueueRepositoryMapImpl implements IRepository<VirtualQueue> {
