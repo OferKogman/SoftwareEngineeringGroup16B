@@ -3,18 +3,17 @@ package com.group16b.ApplicationLayer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.ApplicationLayer.SystemAdminLoginService;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 
 public class SystemAdminLoginServiceTests {
@@ -28,14 +27,15 @@ public class SystemAdminLoginServiceTests {
     void setUp() throws Exception {
         mockTokenService = mock(IAuthenticationService.class);
         mockSystemAdminRepository = mock(ISystemAdminRepository.class);
-        
-        // Assuming your service takes these in the constructor. 
-        // If it uses reflection/singletons like the previous classes, apply the same reflection setup here!
+
+        // Assuming your service takes these in the constructor.
+        // If it uses reflection/singletons like the previous classes, apply the same
+        // reflection setup here!
         adminService = new SystemAdminLoginService(mockSystemAdminRepository, mockTokenService);
     }
 
     // -----------------------------------------------------------------
-    //  SUCCESS SCENARIO
+    // SUCCESS SCENARIO
     // -----------------------------------------------------------------
     @Test
     void testLogOutAdmin_Success() {
@@ -52,7 +52,6 @@ public class SystemAdminLoginServiceTests {
         // 4. The admin ID exists in the repository
         when(mockSystemAdminRepository.doesSystemAdminExist(String.valueOf(adminID))).thenReturn(true);
 
-
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
         assertTrue(result.isSuccess(), "Logout should be successful");
@@ -60,7 +59,7 @@ public class SystemAdminLoginServiceTests {
     }
 
     // -----------------------------------------------------------------
-    //  FAILURE: TOKEN IS NOT AN ADMIN TOKEN
+    // FAILURE: TOKEN IS NOT AN ADMIN TOKEN
     // -----------------------------------------------------------------
     @Test
     void testLogOutAdmin_NotAdminToken_Fail() {
@@ -75,13 +74,13 @@ public class SystemAdminLoginServiceTests {
 
         assertFalse(result.isSuccess(), "Logout should fail if token is not an admin token");
         assertEquals("Invalid ID for logout", result.getError());
-        
+
         // Verify we never checked the database since it failed early
         verify(mockSystemAdminRepository, never()).doesSystemAdminExist(any(String.class));
     }
 
     // -----------------------------------------------------------------
-    //  FAILURE: ADMIN DOES NOT EXIST IN REPOSITORY
+    // FAILURE: ADMIN DOES NOT EXIST IN REPOSITORY
     // -----------------------------------------------------------------
     @Test
     void testLogOutAdmin_AdminDoesNotExist_Fail() {
@@ -98,13 +97,14 @@ public class SystemAdminLoginServiceTests {
     }
 
     // -----------------------------------------------------------------
-    //  FAILURE: EXCEPTION THROWN (e.g. malformed token)
+    // FAILURE: EXCEPTION THROWN (e.g. malformed token)
     // -----------------------------------------------------------------
     @Test
     void testLogOutAdmin_ExceptionThrown_Fail() {
         String badToken = "malformed-token";
 
-        // Force the parsing to throw an exception (e.g. if the subject isn't an integer)
+        // Force the parsing to throw an exception (e.g. if the subject isn't an
+        // integer)
         when(mockTokenService.extractSubjectFromToken(badToken)).thenThrow(new NumberFormatException("Not a number"));
 
         Result<String> result = adminService.logOutAdmin(badToken);

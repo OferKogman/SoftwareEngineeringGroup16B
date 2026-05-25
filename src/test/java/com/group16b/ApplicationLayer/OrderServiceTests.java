@@ -54,1070 +54,1035 @@ import com.group16b.InfrastructureLayer.PaymentService;
 
 public class OrderServiceTests {
 
-    private OrderService orderService;
-    private PaymentService mockPaymentService;
-    private IAuthenticationService mockAuthenticationService;
-    private ITicketGateway mockTicketGateway;
-    private IOrderRepository mockOrderRepository;
-    private IRepository<Venue> mockVenueRepository;
-    private IEventRepository mockEventRepository;
-    private IRepository<User> mockUserRepository;
-    private IProductionCompanyRepository mockProductionCompanyRepository;
+        private OrderService orderService;
+        private PaymentService mockPaymentService;
+        private IAuthenticationService mockAuthenticationService;
+        private ITicketGateway mockTicketGateway;
+        private IOrderRepository mockOrderRepository;
+        private IRepository<Venue> mockVenueRepository;
+        private IEventRepository mockEventRepository;
+        private IRepository<User> mockUserRepository;
+        private IProductionCompanyRepository mockProductionCompanyRepository;
 
-    private static final String SESSION_TOKEN = "valid-token";
-    private static final String ADMIN_TOKEN = "admin-token";
-    private static final String USER_ID_STRING = "42";
-    private static final String USER_ID = "42";
+        private static final String SESSION_TOKEN = "valid-token";
+        private static final String ADMIN_TOKEN = "admin-token";
+        private static final String USER_ID_STRING = "42";
+        private static final String USER_ID = "42";
 
-    private static final String ORDER_ID = "order_1";
-    private static final int EVENT_ID = 1;
-    private static final String VENUE_ID = "venue1";
-    private static final String SEGMENT_ID = "segment1";
-    private static final String FIELD_SEGMENT_ID = "field-segment";
-    private static final int PRODUCTION_COMPANY_ID = 1;
+        private static final String ORDER_ID = "order_1";
+        private static final int EVENT_ID = 1;
+        private static final String VENUE_ID = "venue1";
+        private static final String SEGMENT_ID = "segment1";
+        private static final String FIELD_SEGMENT_ID = "field-segment";
+        private static final int PRODUCTION_COMPANY_ID = 1;
 
-    private static Event event;
-    private static Venue venue;
-    private static Segment segment;
-    private static Segment filledSegment;
+        private static Event event;
+        private static Venue venue;
+        private static Segment segment;
+        private static Segment filledSegment;
 
-    private static Set<PurchasePolicy> companyPurchasePolicies;
-    private static Set<DiscountPolicy> companyDiscountPolicies;
+        private static Set<PurchasePolicy> companyPurchasePolicies;
+        private static Set<DiscountPolicy> companyDiscountPolicies;
 
-    @BeforeAll
-    static void beforeAll() {
-        PurchasePolicy alwaysValidPurchasePolicy = new PurchasePolicy() {
-            @Override
-            public boolean validatePurchase() {
-                return true;
-            }
-        };
+        @BeforeAll
+        static void beforeAll() {
+                PurchasePolicy alwaysValidPurchasePolicy = new PurchasePolicy() {
+                        @Override
+                        public boolean validatePurchase() {
+                                return true;
+                        }
+                };
 
-        DiscountPolicy noDiscountPolicy = new DiscountPolicy() {
-            @Override
-            public double calculateDiscount(double price) {
-                return price;
-            }
-        };
+                DiscountPolicy noDiscountPolicy = new DiscountPolicy() {
+                        @Override
+                        public double calculateDiscount(double price) {
+                                return price;
+                        }
+                };
 
-        Set<PurchasePolicy> eventPurchasePolicies = new HashSet<>();
-        eventPurchasePolicies.add(alwaysValidPurchasePolicy);
+                Set<PurchasePolicy> eventPurchasePolicies = new HashSet<>();
+                eventPurchasePolicies.add(alwaysValidPurchasePolicy);
 
-        Set<DiscountPolicy> eventDiscountPolicies = new HashSet<>();
-        eventDiscountPolicies.add(noDiscountPolicy);
+                Set<DiscountPolicy> eventDiscountPolicies = new HashSet<>();
+                eventDiscountPolicies.add(noDiscountPolicy);
 
-        companyPurchasePolicies = new HashSet<>();
-        companyDiscountPolicies = new HashSet<>();
+                companyPurchasePolicies = new HashSet<>();
+                companyDiscountPolicies = new HashSet<>();
 
-        HashMap<String, Seat> seats = new HashMap<>();
-        seats.put("1-1", new Seat(1, 1));
-        seats.put("1-2", new Seat(1, 2));
-        seats.put("1-3", new Seat(1, 3));
+                HashMap<String, Seat> seats = new HashMap<>();
+                seats.put("1-1", new Seat(1, 1));
+                seats.put("1-2", new Seat(1, 2));
+                seats.put("1-3", new Seat(1, 3));
 
-        segment = new ChosenSeatingSeg(SEGMENT_ID, seats);
+                segment = new ChosenSeatingSeg(SEGMENT_ID, seats);
 
-        filledSegment = new FieldSeg(FIELD_SEGMENT_ID, 100);
+                filledSegment = new FieldSeg(FIELD_SEGMENT_ID, 100);
 
-        Map<String, Segment> segments = new HashMap<>();
-        segments.put(SEGMENT_ID, segment);
-        segments.put(FIELD_SEGMENT_ID, filledSegment);
-        
-        venue = new Venue("venue", null, segments, VENUE_ID);
+                Map<String, Segment> segments = new HashMap<>();
+                segments.put(SEGMENT_ID, segment);
+                segments.put(FIELD_SEGMENT_ID, filledSegment);
 
-        EventRecord eventRecord = new EventRecord(
-                VENUE_ID,
-                "event_1",
-                LocalDateTime.now().plusDays(1),
-                LocalDateTime.now().plusDays(1).plusHours(2),
-                "artist_1",
-                "category_1",
-                PRODUCTION_COMPANY_ID,
-                50.0,
-                4.5
-        );
+                venue = new Venue("venue", null, segments, VENUE_ID);
 
-        // event = new Event(eventRecord, PRODUCTION_COMPANY_ID); //this constructor needs owner ID in string, not production company ID
-        event = new Event(eventRecord, "1");
+                EventRecord eventRecord = new EventRecord(
+                                VENUE_ID,
+                                "event_1",
+                                LocalDateTime.now().plusDays(1),
+                                LocalDateTime.now().plusDays(1).plusHours(2),
+                                "artist_1",
+                                "category_1",
+                                PRODUCTION_COMPANY_ID,
+                                50.0,
+                                4.5);
 
+                // event = new Event(eventRecord, PRODUCTION_COMPANY_ID); //this constructor
+                // needs owner ID in string, not production company ID
+                event = new Event(eventRecord, "1");
 
-        EventRecord eventRecord2 = new EventRecord(
-                VENUE_ID,
-                "event_2",
-                LocalDateTime.now().plusDays(5),
-                LocalDateTime.now().plusDays(8).plusHours(2),
-                "artist_2",
-                "category_2",
-                PRODUCTION_COMPANY_ID,
-                50.0,
-                4.5
-        );
-        // Event event_2 = new Event(eventRecord2, PRODUCTION_COMPANY_ID);
-        Event event_2 = new Event(eventRecord, "2");
+                EventRecord eventRecord2 = new EventRecord(
+                                VENUE_ID,
+                                "event_2",
+                                LocalDateTime.now().plusDays(5),
+                                LocalDateTime.now().plusDays(8).plusHours(2),
+                                "artist_2",
+                                "category_2",
+                                PRODUCTION_COMPANY_ID,
+                                50.0,
+                                4.5);
+                // Event event_2 = new Event(eventRecord2, PRODUCTION_COMPANY_ID);
+                Event event_2 = new Event(eventRecord, "2");
 
-        venue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), EVENT_ID);
-    }
+                venue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), EVENT_ID);
+        }
 
-    @SuppressWarnings("unchecked")
-@BeforeEach
-    void setUp() throws Exception {
-        mockAuthenticationService = mock(IAuthenticationService.class);
-        mockTicketGateway = mock(ITicketGateway.class);
-        mockOrderRepository = mock(IOrderRepository.class);
-        mockVenueRepository = mock(IRepository.class);
-        mockEventRepository = mock(IEventRepository.class);
-        mockUserRepository = mock(IRepository.class);
-        mockPaymentService = mock(PaymentService.class);
-        mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
+        @SuppressWarnings("unchecked")
+        @BeforeEach
+        void setUp() throws Exception {
+                mockAuthenticationService = mock(IAuthenticationService.class);
+                mockTicketGateway = mock(ITicketGateway.class);
+                mockOrderRepository = mock(IOrderRepository.class);
+                mockVenueRepository = mock(IRepository.class);
+                mockEventRepository = mock(IEventRepository.class);
+                mockUserRepository = mock(IRepository.class);
+                mockPaymentService = mock(PaymentService.class);
+                mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
 
-        orderService = new OrderService(mockAuthenticationService,mockProductionCompanyRepository, mockPaymentService, mockVenueRepository, mockEventRepository, mockUserRepository, mockOrderRepository, mockTicketGateway);
+                orderService = new OrderService(mockAuthenticationService, mockProductionCompanyRepository,
+                                mockPaymentService, mockVenueRepository, mockEventRepository, mockUserRepository,
+                                mockOrderRepository, mockTicketGateway);
 
-        injectField(orderService, "ticketGateway", mockTicketGateway);
-        injectField(orderService, "orderRepo", mockOrderRepository);
-        injectField(orderService, "venueRepo", mockVenueRepository);
-        injectField(orderService, "eventRepo", mockEventRepository);
-        injectField(orderService, "userRepo", mockUserRepository);
-        injectField(orderService, "productionCompanyRepo", mockProductionCompanyRepository);
+                injectField(orderService, "ticketGateway", mockTicketGateway);
+                injectField(orderService, "orderRepo", mockOrderRepository);
+                injectField(orderService, "venueRepo", mockVenueRepository);
+                injectField(orderService, "eventRepo", mockEventRepository);
+                injectField(orderService, "userRepo", mockUserRepository);
+                injectField(orderService, "productionCompanyRepo", mockProductionCompanyRepository);
 
-        when(mockAuthenticationService.validateToken(SESSION_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.isUserToken(SESSION_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID_STRING);
+                when(mockAuthenticationService.validateToken(SESSION_TOKEN)).thenReturn(true);
+                when(mockAuthenticationService.isUserToken(SESSION_TOKEN)).thenReturn(true);
+                when(mockAuthenticationService.extractSubjectFromToken(SESSION_TOKEN)).thenReturn(USER_ID_STRING);
 
-        when(mockAuthenticationService.validateToken(ADMIN_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.isAdminToken(ADMIN_TOKEN)).thenReturn(true);
-        when(mockAuthenticationService.isUserToken(ADMIN_TOKEN)).thenReturn(false);
+                when(mockAuthenticationService.validateToken(ADMIN_TOKEN)).thenReturn(true);
+                when(mockAuthenticationService.isAdminToken(ADMIN_TOKEN)).thenReturn(true);
+                when(mockAuthenticationService.isUserToken(ADMIN_TOKEN)).thenReturn(false);
 
+                when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
+                when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venue);
 
-        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(event);
-        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venue);
+                ProductionCompany mockCompany = mock(ProductionCompany.class);
 
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
+                when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)))
+                                .thenReturn(mockCompany);
 
-        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)))
-                .thenReturn(mockCompany);
+                when(mockCompany.getPurchasePolicy())
+                                .thenReturn(companyPurchasePolicies);
 
-        when(mockCompany.getPurchasePolicy())
-                .thenReturn(companyPurchasePolicies);
+                when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)))
+                                .thenReturn(mockCompany);
 
-        when(mockProductionCompanyRepository.findByID(String.valueOf(PRODUCTION_COMPANY_ID)))
-                .thenReturn(mockCompany);
+                when(mockCompany.getDiscountPolicy())
+                                .thenReturn(companyDiscountPolicies);
+        }
 
-        when(mockCompany.getDiscountPolicy())
-                .thenReturn(companyDiscountPolicies);
-    }
+        private void injectField(Object target, String fieldName, Object value) throws Exception {
+                Field field = target.getClass().getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+        }
 
-    private void injectField(Object target, String fieldName, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
+        // ________ CompleteActiveOrder tests ________
 
+        @Test
+        void CompleteActiveOrder_validRequest_returnsTicketsSuccessfully() {
+                // Arrange
+                Order activeSeatOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
 
+                User user = mock(User.class);
 
-    // ________ CompleteActiveOrder tests ________
+                PaymentInfo paymentInfo = new PaymentInfo(
+                                "Ran",
+                                "1234567812345678",
+                                "123",
+                                "12/30");
 
+                TicketDTO ticket1 = mock(TicketDTO.class);
+                TicketDTO ticket2 = mock(TicketDTO.class);
 
-    @Test
-    void CompleteActiveOrder_validRequest_returnsTicketsSuccessfully() {
-        // Arrange
-        Order activeSeatOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeSeatOrder);
+                when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
 
-        User user = mock(User.class);
+                when(mockTicketGateway.generateTicket(
+                                EVENT_ID,
+                                USER_ID_STRING,
+                                SEGMENT_ID,
+                                "1-1",
+                                100.0)).thenReturn(ticket1);
 
-        PaymentInfo paymentInfo = new PaymentInfo(
-                "Ran",
-                "1234567812345678",
-                "123",
-                "12/30"
-        );
+                when(mockTicketGateway.generateTicket(
+                                EVENT_ID,
+                                USER_ID_STRING,
+                                SEGMENT_ID,
+                                "1-2",
+                                100.0)).thenReturn(ticket2);
 
-        TicketDTO ticket1 = mock(TicketDTO.class);
-        TicketDTO ticket2 = mock(TicketDTO.class);
+                // Act
+                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
+                                USER_ID,
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                paymentInfo);
 
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeSeatOrder);
-        when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
+                // Assert
+                assertTrue(result.isSuccess());
 
+                List<TicketDTO> tickets = result.getValue();
 
-        when(mockTicketGateway.generateTicket(
-                EVENT_ID,
-                USER_ID_STRING,
-                SEGMENT_ID,
-                "1-1",
-                100.0
-        )).thenReturn(ticket1);
+                assertEquals(2, tickets.size());
+                assertEquals(ticket1, tickets.get(0));
+                assertEquals(ticket2, tickets.get(1));
 
-        when(mockTicketGateway.generateTicket(
-                EVENT_ID,
-                USER_ID_STRING,
-                SEGMENT_ID,
-                "1-2",
-                100.0
-        )).thenReturn(ticket2);
+                verify(mockOrderRepository).findByID(ORDER_ID);
+                verify(mockPaymentService).processPayment(paymentInfo, 100.0);
 
-        // Act
-        Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
-                USER_ID,
-                ORDER_ID,
-                SESSION_TOKEN,
-                paymentInfo
-        );
+                verify(mockTicketGateway).generateTicket(
+                                EVENT_ID,
+                                USER_ID_STRING,
+                                SEGMENT_ID,
+                                "1-1",
+                                100.0);
 
-        // Assert
-        assertTrue(result.isSuccess());
+                verify(mockTicketGateway).generateTicket(
+                                EVENT_ID,
+                                USER_ID_STRING,
+                                SEGMENT_ID,
+                                "1-2",
+                                100.0);
 
-        List<TicketDTO> tickets = result.getValue();
-
-        assertEquals(2, tickets.size());
-        assertEquals(ticket1, tickets.get(0));
-        assertEquals(ticket2, tickets.get(1));
-
-        verify(mockOrderRepository).findByID(ORDER_ID);
-        verify(mockPaymentService).processPayment(paymentInfo, 100.0);
-
-        verify(mockTicketGateway).generateTicket(
-                EVENT_ID,
-                USER_ID_STRING,
-                SEGMENT_ID,
-                "1-1",
-                100.0
-        );
-
-        verify(mockTicketGateway).generateTicket(
-                EVENT_ID,
-                USER_ID_STRING,
-                SEGMENT_ID,
-                "1-2",
-                100.0
-        );
-
-        assertFalse(activeSeatOrder.isActive());
-    }
+                assertFalse(activeSeatOrder.isActive());
+        }
 
         @Test
         void CompleteActiveOrder_orderNotActive_returnsFail() {
-        PaymentInfo paymentInfo = mock(PaymentInfo.class);
-
-        Order completedOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
-
-        completedOrder.CompleteOrder();
-
-        when(mockOrderRepository.findByID(completedOrder.getOrderId())).thenReturn(completedOrder);
-        
-
-        Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
-                USER_ID,
-                completedOrder.getOrderId(),
-                SESSION_TOKEN,
-                paymentInfo
-        );
-
-        assertFalse(result.isSuccess());
-        String expexted_res = "Order " + completedOrder.getOrderId() + " is not active";
-        assertEquals(expexted_res, result.getError());
-
-        verify(mockPaymentService, never()).processPayment(any(), anyDouble());
-        verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(), anyDouble());
-    }
-    @Test
-    void CompleteActiveOrder_invalidToken_returnsFail() {
-        PaymentInfo paymentInfo = mock(PaymentInfo.class);
-        String invalidToken = "invalid-token";
-
-        Order activeOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeOrder);
-        when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
-
-        Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
-                USER_ID,
-                ORDER_ID,
-                invalidToken,
-                paymentInfo
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Invalid Token", result.getError());
-
-        verify(mockPaymentService, never()).processPayment(any(), anyDouble());
-        verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(), anyDouble());
-    }
-    @Test
-    void CompleteActiveOrder_adminToken_returnsFail() {
-        PaymentInfo paymentInfo = mock(PaymentInfo.class);
-
-        Order activeOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeOrder);
-
-        Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
-                USER_ID,
-                ORDER_ID,
-                ADMIN_TOKEN,
-                paymentInfo
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
-
-        verify(mockPaymentService, never()).processPayment(any(), anyDouble());
-        verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(), anyDouble());
-    }
-    @Test
-    void CompleteActiveOrder_orderDoesNotBelongToUser_returnsFail() {
-        PaymentInfo paymentInfo = mock(PaymentInfo.class);
-
-        Order activeOrderOfOtherUser = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                "999"
-        );
-
-        when(mockOrderRepository.findByID(activeOrderOfOtherUser.getOrderId())).thenReturn(activeOrderOfOtherUser);
-
-        Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
-                USER_ID,
-                activeOrderOfOtherUser.getOrderId(),
-                SESSION_TOKEN,
-                paymentInfo
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order " + activeOrderOfOtherUser.getOrderId() + " does not belong to subject " + USER_ID, result.getError());
-
-        verify(mockPaymentService, never()).processPayment(any(), anyDouble());
-        verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(), anyDouble());
-    }
-
-
-    // ________ getUserOrders tests ________
-
-    @Test
-    void getUserOrders_validUser_returnsOrderDTOsSuccessfully() {
-        User user = mock(User.class);
-
-        Order order1 = new Order(SEGMENT_ID, List.of("1-1", "1-2"), 100.0, EVENT_ID, USER_ID_STRING);
-        Order order2 = new Order(SEGMENT_ID, List.of("1-3"), 50.0, EVENT_ID, USER_ID_STRING);
-        order1.CompleteOrder();
-        order2.CompleteOrder();
-        when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
-        //USER_ID_STRING
-        when(mockOrderRepository.getBySubjectId(USER_ID_STRING)).thenReturn(List.of(order1, order2));
-
-        Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
-
-        if (!result.isSuccess()) {
-            System.out.println("Error: " + result.getError());
-        }
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getValue().size());
-
-        verify(mockUserRepository).findByID(USER_ID);
-        verify(mockOrderRepository).getBySubjectId(USER_ID_STRING);
-    }
-    @Test
-    void getUserOrders_invalidToken_returnsFail() {
-        String invalidToken = "invalid-token";
-
-        when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
-
-        Result<List<OrderDTO>> result = orderService.getUserOrders(invalidToken);
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Invalid Token", result.getError());
-
-        verify(mockUserRepository, never()).findByID(anyString());
-        verify(mockOrderRepository, never()).getAll();
-    }
-    @Test
-    void getUserOrders_nonSignedRole_returnsFail() {
-        String customerToken = "customer-token";
-
-        when(mockAuthenticationService.validateToken(customerToken)).thenReturn(true);
-        when(mockAuthenticationService.isAdminToken(customerToken)).thenReturn(false);
-        when(mockAuthenticationService.isUserToken(customerToken)).thenReturn(false);
-
-        Result<List<OrderDTO>> result = orderService.getUserOrders(customerToken);
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Only users are allowed to perform operation", result.getError());
-
-        verify(mockUserRepository, never()).findByID(anyString());
-        verify(mockOrderRepository, never()).getAll();
-    }
-    @Test
-    void getUserOrders_userNotFound_returnsFail() {
-        when(mockUserRepository.findByID(USER_ID)).thenThrow(new IllegalArgumentException("User not found"));
-
-        Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
-
-        assertFalse(result.isSuccess());
-        assertEquals("User not found", result.getError());
-
-        verify(mockUserRepository).findByID(USER_ID);
-        verify(mockOrderRepository, never()).getAll();
-    }
-    @Test
-    void getUserOrders_noOrders_returnsEmptyListSuccessfully() {
-        User user = mock(User.class);
-
-        when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
-        when(mockOrderRepository.getBySubjectId(USER_ID_STRING))
-                .thenReturn(List.of());
-
-        Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
-
-        assertTrue(result.isSuccess());
-        assertNotNull(result.getValue());
-        assertTrue(result.getValue().isEmpty());
-
-        verify(mockUserRepository).findByID(USER_ID);
-        verify(mockOrderRepository).getBySubjectId(USER_ID_STRING);
-    }
-
-
-    // ________ changeSeatsToOrder tests ________
-
-/* 
-    @Test
-    void changeSeatsToOrder_validSeatOrder_updatesSeatsSuccessfully() {
-        Order order = createActiveSeatOrder();
-        List<String> newSeats = List.of("1-2", "1-3");
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                newSeats
-        );
-
-        assertTrue(result.isSuccess());
-        assertEquals(newSeats, result.getValue());
-
-        verify(mockVenueRepository).reserveTickets(VENUE_ID, SEGMENT_ID, List.of("1-3"), EVENT_ID);
-        verify(mockVenueRepository).freeTickets(VENUE_ID, SEGMENT_ID, List.of("1-1"), EVENT_ID);
-        assertEquals(newSeats, order.getSeats());
-    }
-*/
-    @Test
-    void changeSeatsToOrder_nullNewSeats_returnsFail() {
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                null
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("New seat IDs list cannot be null or empty", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeSeatsToOrder_emptyNewSeats_returnsFail() {
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of()
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("New seat IDs list cannot be null or empty", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeSeatsToOrder_invalidToken_returnsFail() {
-        String invalidToken = "invalid-token";
-        when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                invalidToken,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Invalid Token", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeSeatsToOrder_adminToken_returnsFail() {
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                ADMIN_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeSeatsToOrder_orderNotFound_returnsFail() {
-        when(mockOrderRepository.findByID(ORDER_ID)).thenThrow(new IllegalArgumentException("Order not found"));
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order not found", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_orderDoesNotBelongToUser_returnsFail() {
-        Order otherUserOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                "999"
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(otherUserOrder);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order " + otherUserOrder.getOrderId() +" does not belong to subject " + USER_ID, result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_nonSeatOrder_returnsFail() {
-        Order fieldOrder = new Order(
-                FIELD_SEGMENT_ID,
-                2,
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(fieldOrder);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("This order is for field tickets, it does not have specific seats.", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_nonActiveOrder_returnsFail() {
-        Order completedOrder = createActiveSeatOrder();
-        completedOrder.CompleteOrder();
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_eventNotFound_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenThrow(new IllegalArgumentException("Event not found"));
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Event not found", result.getError());
-    }
-
-    @Test
-    void changeSeatsToOrder_segmentNotFound_returnsFail() {
-        Order order = createActiveSeatOrder();
-
-        Venue venueWithoutSegment = new Venue(
-                "venue1",
-                null,
-                Map.of(),
-                VENUE_ID
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
-
-        Result<List<String>> result = orderService.changeSeatsToOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                List.of("1-3")
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Segment with ID segment1 not found", result.getError());
-        assertEquals("Segment with ID segment1 not found", result.getError());
-    }
-
-    private Order createActiveSeatOrder() {
-    return new Order(
-            SEGMENT_ID,
-            List.of("1-1", "1-2"),
-            100.0,
-            EVENT_ID,
-            USER_ID_STRING
-    );
-}
-
-    // ________ changeNumOfSeatsInFieldOrder tests ________
-
-    private Order createActiveFieldOrder(int numOfTickets) {
-    return new Order(
-            FIELD_SEGMENT_ID,
-            numOfTickets,
-            100.0,
-            EVENT_ID,
-            USER_ID_STRING
-    );
-}
-/* 
-    @Test
-    void changeNumOfSeatsInFieldOrder_validIncrease_reservesMoreSeatsAndUpdatesOrder() {
-        Order order = createActiveFieldOrder(2);
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertTrue(result.isSuccess());
-        assertEquals(5, result.getValue());
-
-        verify(mockVenueRepository).reserveTickets(VENUE_ID, FIELD_SEGMENT_ID, 3, EVENT_ID);
-
-        assertEquals(5, order.getNumOfTickets());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_validDecrease_freesSeatsAndUpdatesOrder() {
-        Order order = createActiveFieldOrder(5);
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                2
-        );
-
-        assertTrue(result.isSuccess());
-        assertEquals(2, result.getValue());
-
-        verify(mockVenueRepository).freeTickets(VENUE_ID, FIELD_SEGMENT_ID, 3, EVENT_ID);
-
-        assertEquals(2, order.getNumOfTickets());
-    }
-*/
-    @Test
-    void changeNumOfSeatsInFieldOrder_sameAmount_returnsOkWithoutChangingReservation() {
-        Order order = createActiveFieldOrder(3);
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                3
-        );
-
-        assertTrue(result.isSuccess());
-        assertEquals(3, result.getValue());
-        Venue spyVenue = spy(venue);
-        verify(spyVenue, never()).reserveTickets(anyString(), anyInt(), anyInt());
-        verify(spyVenue, never()).freeTickets(anyString(), anyInt(), anyInt());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_zeroSeats_returnsFail() {
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                0
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("New number of seats must be greater than zero", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_negativeSeats_returnsFail() {
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                -5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("New number of seats must be greater than zero", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_invalidToken_returnsFail() {
-        String invalidToken = "invalid-token";
-
-        when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                invalidToken,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Invalid Token", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_adminToken_returnsFail() {
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                ADMIN_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
-
-        verify(mockOrderRepository, never()).findByID(anyString());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_orderNotFound_returnsFail() {
-        when(mockOrderRepository.findByID(ORDER_ID)).thenThrow(new IllegalArgumentException("Order not found"));
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order not found", result.getError());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_orderDoesNotBelongToUser_returnsFail() {
-        Order otherUserOrder = new Order(
-                FIELD_SEGMENT_ID,
-                2,
-                100.0,
-                EVENT_ID,
-                "999"
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(otherUserOrder);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order " + otherUserOrder.getOrderId() + " does not belong to subject " + USER_ID, result.getError());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_nonFieldOrder_returnsFail() {
-        Order seatOrder = new Order(
-                FIELD_SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("This order is for seat tickets, it must have specific seats.", result.getError());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_nonActiveOrder_returnsFail() {
-        Order completedOrder = createActiveFieldOrder(2);
-        completedOrder.CompleteOrder();
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
-    }
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_eventNotFound_returnsFail() {
-        Order order = createActiveFieldOrder(2);
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenThrow(new IllegalArgumentException("Event not found"));
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Event not found", result.getError());
-    }
-
-
-    @Test
-    void changeNumOfSeatsInFieldOrder_segmentNotFound_returnsFail() {
-        Order order = createActiveFieldOrder(2);
-
-        Venue venueWithoutSegment = new Venue(
-                "venue2",
-                null,
-                Map.of(),
-                VENUE_ID
-        );
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
-        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
-
-        Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
-                ORDER_ID,
-                SESSION_TOKEN,
-                5
-        );
-
-        assertFalse(result.isSuccess());
-        assertEquals("Segment with ID field-segment not found", result.getError());
-        assertEquals("Segment with ID field-segment not found", result.getError());
-    }
-
-
-    // _________ cancelOrder tests ________
-    @Test
-    void cancelOrder_validActiveSeatOrder_cancelsOrderAndFreesSeats() {
-        Order seatOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
-        venue.reserveSeats(ReservationRequest.forSeats(EVENT_ID, List.of("1-1", "1-2"), SEGMENT_ID));
-
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
-
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
-
-        if (!result.isSuccess()) {
-            String errorMessage = result.getError();
-            System.out.println("Error: " + errorMessage);
+                PaymentInfo paymentInfo = mock(PaymentInfo.class);
+
+                Order completedOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                completedOrder.CompleteOrder();
+
+                when(mockOrderRepository.findByID(completedOrder.getOrderId())).thenReturn(completedOrder);
+
+                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
+                                USER_ID,
+                                completedOrder.getOrderId(),
+                                SESSION_TOKEN,
+                                paymentInfo);
+
+                assertFalse(result.isSuccess());
+                String expexted_res = "Order " + completedOrder.getOrderId() + " is not active";
+                assertEquals(expexted_res, result.getError());
+
+                verify(mockPaymentService, never()).processPayment(any(), anyDouble());
+                verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(),
+                                anyDouble());
         }
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+        @Test
+        void CompleteActiveOrder_invalidToken_returnsFail() {
+                PaymentInfo paymentInfo = mock(PaymentInfo.class);
+                String invalidToken = "invalid-token";
 
-        verify(mockOrderRepository).delete(ORDER_ID);
+                Order activeOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
 
-        verify(mockEventRepository).findByID(String.valueOf(EVENT_ID));
-        verify(mockVenueRepository).findByID(VENUE_ID);
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeOrder);
+                when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
 
-        verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
-    }
-        /* 
-    @Test
-    void cancelOrder_validActiveFieldOrder_cancelsOrderAndFreesFieldTickets() {
-        Order fieldOrder = new Order(
-                FIELD_SEGMENT_ID,
-                5,
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
+                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
+                                USER_ID,
+                                ORDER_ID,
+                                invalidToken,
+                                paymentInfo);
 
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(fieldOrder);
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Invalid Token", result.getError());
 
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                verify(mockPaymentService, never()).processPayment(any(), anyDouble());
+                verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(),
+                                anyDouble());
+        }
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+        @Test
+        void CompleteActiveOrder_adminToken_returnsFail() {
+                PaymentInfo paymentInfo = mock(PaymentInfo.class);
 
-        verify(mockOrderRepository).cancelOrder(ORDER_ID);
+                Order activeOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
 
-        verify(mockEventRepository).getEventByID(EVENT_ID);
-        verify(mockVenueRepository).findByID(VENUE_ID);
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(activeOrder);
 
-        verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
-    }
-*/
-    @Test
-    void cancelOrder_orderNotFound_returnsFail() {
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(null);
+                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
+                                USER_ID,
+                                ORDER_ID,
+                                ADMIN_TOKEN,
+                                paymentInfo);
 
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
 
-        assertFalse(result.isSuccess());
-        assertEquals("Order not found", result.getError());
+                verify(mockPaymentService, never()).processPayment(any(), anyDouble());
+                verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(),
+                                anyDouble());
+        }
 
-        verify(mockOrderRepository, never()).delete(anyString());
-    }
+        @Test
+        void CompleteActiveOrder_orderDoesNotBelongToUser_returnsFail() {
+                PaymentInfo paymentInfo = mock(PaymentInfo.class);
 
-    @Test
-    void cancelOrder_orderNotActive_returnsFail() {
-        Order completedOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
+                Order activeOrderOfOtherUser = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                "999");
 
-        completedOrder.CompleteOrder();
+                when(mockOrderRepository.findByID(activeOrderOfOtherUser.getOrderId()))
+                                .thenReturn(activeOrderOfOtherUser);
 
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
+                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(
+                                USER_ID,
+                                activeOrderOfOtherUser.getOrderId(),
+                                SESSION_TOKEN,
+                                paymentInfo);
 
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Order " + activeOrderOfOtherUser.getOrderId() + " does not belong to subject " + USER_ID,
+                                result.getError());
 
-        assertFalse(result.isSuccess());
-        assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
+                verify(mockPaymentService, never()).processPayment(any(), anyDouble());
+                verify(mockTicketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), anyString(),
+                                anyDouble());
+        }
 
-        verify(mockOrderRepository, never()).delete(anyString());
-    }
+        // ________ getUserOrders tests ________
 
-    @Test
-    void cancelOrder_eventNotFound_stillReturnsOkAfterCancelRepoCall() {
-        Order seatOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
+        @Test
+        void getUserOrders_validUser_returnsOrderDTOsSuccessfully() {
+                User user = mock(User.class);
 
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
-        when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
+                Order order1 = new Order(SEGMENT_ID, List.of("1-1", "1-2"), 100.0, EVENT_ID, USER_ID_STRING);
+                Order order2 = new Order(SEGMENT_ID, List.of("1-3"), 50.0, EVENT_ID, USER_ID_STRING);
+                order1.CompleteOrder();
+                order2.CompleteOrder();
+                when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
+                // USER_ID_STRING
+                when(mockOrderRepository.getBySubjectId(USER_ID_STRING)).thenReturn(List.of(order1, order2));
 
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+                if (!result.isSuccess()) {
+                        System.out.println("Error: " + result.getError());
+                }
+                assertTrue(result.isSuccess());
+                assertEquals(2, result.getValue().size());
 
-        verify(mockOrderRepository).delete(ORDER_ID);
-    }
+                verify(mockUserRepository).findByID(USER_ID);
+                verify(mockOrderRepository).getBySubjectId(USER_ID_STRING);
+        }
 
-    @Test
-    void cancelOrder_venueNotFound_stillReturnsOkAfterCancelRepoCall() {
-        Order seatOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
+        @Test
+        void getUserOrders_invalidToken_returnsFail() {
+                String invalidToken = "invalid-token";
 
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
-        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(null);
+                when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
 
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<List<OrderDTO>> result = orderService.getUserOrders(invalidToken);
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Invalid Token", result.getError());
 
-        verify(mockOrderRepository).delete(ORDER_ID);
-    }
+                verify(mockUserRepository, never()).findByID(anyString());
+                verify(mockOrderRepository, never()).getAll();
+        }
 
-    @Test
-    void cancelOrder_segmentNotFound_stillReturnsOkAfterCancelRepoCall() {
-        Order seatOrder = new Order(
-                SEGMENT_ID,
-                List.of("1-1", "1-2"),
-                100.0,
-                EVENT_ID,
-                USER_ID_STRING
-        );
+        @Test
+        void getUserOrders_nonSignedRole_returnsFail() {
+                String customerToken = "customer-token";
 
-        Venue venueWithoutSegment = new Venue(
-                "venue3",
-                null,
-                Map.of(),
-                VENUE_ID
-        );
+                when(mockAuthenticationService.validateToken(customerToken)).thenReturn(true);
+                when(mockAuthenticationService.isAdminToken(customerToken)).thenReturn(false);
+                when(mockAuthenticationService.isUserToken(customerToken)).thenReturn(false);
 
-        when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
-        when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+                Result<List<OrderDTO>> result = orderService.getUserOrders(customerToken);
 
-        Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Only users are allowed to perform operation", result.getError());
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+                verify(mockUserRepository, never()).findByID(anyString());
+                verify(mockOrderRepository, never()).getAll();
+        }
 
-        verify(mockOrderRepository).delete(ORDER_ID);
-    }
+        @Test
+        void getUserOrders_userNotFound_returnsFail() {
+                when(mockUserRepository.findByID(USER_ID)).thenThrow(new IllegalArgumentException("User not found"));
+
+                Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
+
+                assertFalse(result.isSuccess());
+                assertEquals("User not found", result.getError());
+
+                verify(mockUserRepository).findByID(USER_ID);
+                verify(mockOrderRepository, never()).getAll();
+        }
+
+        @Test
+        void getUserOrders_noOrders_returnsEmptyListSuccessfully() {
+                User user = mock(User.class);
+
+                when(mockUserRepository.findByID(USER_ID)).thenReturn(user);
+                when(mockOrderRepository.getBySubjectId(USER_ID_STRING))
+                                .thenReturn(List.of());
+
+                Result<List<OrderDTO>> result = orderService.getUserOrders(SESSION_TOKEN);
+
+                assertTrue(result.isSuccess());
+                assertNotNull(result.getValue());
+                assertTrue(result.getValue().isEmpty());
+
+                verify(mockUserRepository).findByID(USER_ID);
+                verify(mockOrderRepository).getBySubjectId(USER_ID_STRING);
+        }
+
+        // ________ changeSeatsToOrder tests ________
+
+        /*
+         * @Test
+         * void changeSeatsToOrder_validSeatOrder_updatesSeatsSuccessfully() {
+         * Order order = createActiveSeatOrder();
+         * List<String> newSeats = List.of("1-2", "1-3");
+         * 
+         * when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+         * 
+         * Result<List<String>> result = orderService.changeSeatsToOrder(
+         * ORDER_ID,
+         * SESSION_TOKEN,
+         * newSeats
+         * );
+         * 
+         * assertTrue(result.isSuccess());
+         * assertEquals(newSeats, result.getValue());
+         * 
+         * verify(mockVenueRepository).reserveTickets(VENUE_ID, SEGMENT_ID,
+         * List.of("1-3"), EVENT_ID);
+         * verify(mockVenueRepository).freeTickets(VENUE_ID, SEGMENT_ID, List.of("1-1"),
+         * EVENT_ID);
+         * assertEquals(newSeats, order.getSeats());
+         * }
+         */
+        @Test
+        void changeSeatsToOrder_nullNewSeats_returnsFail() {
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                null);
+
+                assertFalse(result.isSuccess());
+                assertEquals("New seat IDs list cannot be null or empty", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeSeatsToOrder_emptyNewSeats_returnsFail() {
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of());
+
+                assertFalse(result.isSuccess());
+                assertEquals("New seat IDs list cannot be null or empty", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeSeatsToOrder_invalidToken_returnsFail() {
+                String invalidToken = "invalid-token";
+                when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                invalidToken,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Invalid Token", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeSeatsToOrder_adminToken_returnsFail() {
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                ADMIN_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeSeatsToOrder_orderNotFound_returnsFail() {
+                when(mockOrderRepository.findByID(ORDER_ID)).thenThrow(new IllegalArgumentException("Order not found"));
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order not found", result.getError());
+        }
+
+        @Test
+        void changeSeatsToOrder_orderDoesNotBelongToUser_returnsFail() {
+                Order otherUserOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                "999");
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(otherUserOrder);
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order " + otherUserOrder.getOrderId() + " does not belong to subject " + USER_ID,
+                                result.getError());
+        }
+
+        @Test
+        void changeSeatsToOrder_nonSeatOrder_returnsFail() {
+                Order fieldOrder = new Order(
+                                FIELD_SEGMENT_ID,
+                                2,
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(fieldOrder);
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("This order is for field tickets, it does not have specific seats.", result.getError());
+        }
+
+        @Test
+        void changeSeatsToOrder_nonActiveOrder_returnsFail() {
+                Order completedOrder = createActiveSeatOrder();
+                completedOrder.CompleteOrder();
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
+        }
+
+        @Test
+        void changeSeatsToOrder_eventNotFound_returnsFail() {
+                Order order = createActiveSeatOrder();
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+                when(mockEventRepository.findByID(String.valueOf(EVENT_ID)))
+                                .thenThrow(new IllegalArgumentException("Event not found"));
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Event not found", result.getError());
+        }
+
+        @Test
+        void changeSeatsToOrder_segmentNotFound_returnsFail() {
+                Order order = createActiveSeatOrder();
+
+                Venue venueWithoutSegment = new Venue(
+                                "venue1",
+                                null,
+                                Map.of(),
+                                VENUE_ID);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+                when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+
+                Result<List<String>> result = orderService.changeSeatsToOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                List.of("1-3"));
+
+                assertFalse(result.isSuccess());
+                assertEquals("Segment with ID segment1 not found", result.getError());
+                assertEquals("Segment with ID segment1 not found", result.getError());
+        }
+
+        private Order createActiveSeatOrder() {
+                return new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+        }
+
+        // ________ changeNumOfSeatsInFieldOrder tests ________
+
+        private Order createActiveFieldOrder(int numOfTickets) {
+                return new Order(
+                                FIELD_SEGMENT_ID,
+                                numOfTickets,
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+        }
+
+        /*
+         * @Test
+         * void
+         * changeNumOfSeatsInFieldOrder_validIncrease_reservesMoreSeatsAndUpdatesOrder()
+         * {
+         * Order order = createActiveFieldOrder(2);
+         * 
+         * when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+         * 
+         * Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+         * ORDER_ID,
+         * SESSION_TOKEN,
+         * 5
+         * );
+         * 
+         * assertTrue(result.isSuccess());
+         * assertEquals(5, result.getValue());
+         * 
+         * verify(mockVenueRepository).reserveTickets(VENUE_ID, FIELD_SEGMENT_ID, 3,
+         * EVENT_ID);
+         * 
+         * assertEquals(5, order.getNumOfTickets());
+         * }
+         * 
+         * @Test
+         * void changeNumOfSeatsInFieldOrder_validDecrease_freesSeatsAndUpdatesOrder() {
+         * Order order = createActiveFieldOrder(5);
+         * 
+         * when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+         * 
+         * Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+         * ORDER_ID,
+         * SESSION_TOKEN,
+         * 2
+         * );
+         * 
+         * assertTrue(result.isSuccess());
+         * assertEquals(2, result.getValue());
+         * 
+         * verify(mockVenueRepository).freeTickets(VENUE_ID, FIELD_SEGMENT_ID, 3,
+         * EVENT_ID);
+         * 
+         * assertEquals(2, order.getNumOfTickets());
+         * }
+         */
+        @Test
+        void changeNumOfSeatsInFieldOrder_sameAmount_returnsOkWithoutChangingReservation() {
+                Order order = createActiveFieldOrder(3);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                3);
+
+                assertTrue(result.isSuccess());
+                assertEquals(3, result.getValue());
+                Venue spyVenue = spy(venue);
+                verify(spyVenue, never()).reserveTickets(anyString(), anyInt(), anyInt());
+                verify(spyVenue, never()).freeTickets(anyString(), anyInt(), anyInt());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_zeroSeats_returnsFail() {
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                0);
+
+                assertFalse(result.isSuccess());
+                assertEquals("New number of seats must be greater than zero", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_negativeSeats_returnsFail() {
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                -5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("New number of seats must be greater than zero", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_invalidToken_returnsFail() {
+                String invalidToken = "invalid-token";
+
+                when(mockAuthenticationService.validateToken(invalidToken)).thenReturn(false);
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                invalidToken,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Invalid Token", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_adminToken_returnsFail() {
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                ADMIN_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
+
+                verify(mockOrderRepository, never()).findByID(anyString());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_orderNotFound_returnsFail() {
+                when(mockOrderRepository.findByID(ORDER_ID)).thenThrow(new IllegalArgumentException("Order not found"));
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order not found", result.getError());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_orderDoesNotBelongToUser_returnsFail() {
+                Order otherUserOrder = new Order(
+                                FIELD_SEGMENT_ID,
+                                2,
+                                100.0,
+                                EVENT_ID,
+                                "999");
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(otherUserOrder);
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order " + otherUserOrder.getOrderId() + " does not belong to subject " + USER_ID,
+                                result.getError());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_nonFieldOrder_returnsFail() {
+                Order seatOrder = new Order(
+                                FIELD_SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("This order is for seat tickets, it must have specific seats.", result.getError());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_nonActiveOrder_returnsFail() {
+                Order completedOrder = createActiveFieldOrder(2);
+                completedOrder.CompleteOrder();
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_eventNotFound_returnsFail() {
+                Order order = createActiveFieldOrder(2);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+                when(mockEventRepository.findByID(String.valueOf(EVENT_ID)))
+                                .thenThrow(new IllegalArgumentException("Event not found"));
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Event not found", result.getError());
+        }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_segmentNotFound_returnsFail() {
+                Order order = createActiveFieldOrder(2);
+
+                Venue venueWithoutSegment = new Venue(
+                                "venue2",
+                                null,
+                                Map.of(),
+                                VENUE_ID);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(order);
+                when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+
+                Result<Integer> result = orderService.changeNumOfSeatsInFieldOrder(
+                                ORDER_ID,
+                                SESSION_TOKEN,
+                                5);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Segment with ID field-segment not found", result.getError());
+                assertEquals("Segment with ID field-segment not found", result.getError());
+        }
+
+        // _________ cancelOrder tests ________
+        @Test
+        void cancelOrder_validActiveSeatOrder_cancelsOrderAndFreesSeats() {
+                Order seatOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+                venue.reserveSeats(ReservationRequest.forSeats(EVENT_ID, List.of("1-1", "1-2"), SEGMENT_ID));
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+                if (!result.isSuccess()) {
+                        String errorMessage = result.getError();
+                        System.out.println("Error: " + errorMessage);
+                }
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                verify(mockOrderRepository).delete(ORDER_ID);
+
+                verify(mockEventRepository).findByID(String.valueOf(EVENT_ID));
+                verify(mockVenueRepository).findByID(VENUE_ID);
+
+                verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
+        }
+
+        /*
+         * @Test
+         * void cancelOrder_validActiveFieldOrder_cancelsOrderAndFreesFieldTickets() {
+         * Order fieldOrder = new Order(
+         * FIELD_SEGMENT_ID,
+         * 5,
+         * 100.0,
+         * EVENT_ID,
+         * USER_ID_STRING
+         * );
+         * 
+         * when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(fieldOrder);
+         * 
+         * Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+         * 
+         * assertTrue(result.isSuccess());
+         * assertTrue(result.getValue());
+         * 
+         * verify(mockOrderRepository).cancelOrder(ORDER_ID);
+         * 
+         * verify(mockEventRepository).getEventByID(EVENT_ID);
+         * verify(mockVenueRepository).findByID(VENUE_ID);
+         * 
+         * verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
+         * }
+         */
+        @Test
+        void cancelOrder_orderNotFound_returnsFail() {
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(null);
+
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order not found", result.getError());
+
+                verify(mockOrderRepository, never()).delete(anyString());
+        }
+
+        @Test
+        void cancelOrder_orderNotActive_returnsFail() {
+                Order completedOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                completedOrder.CompleteOrder();
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
+
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
+
+                verify(mockOrderRepository, never()).delete(anyString());
+        }
+
+        @Test
+        void cancelOrder_eventNotFound_stillReturnsOkAfterCancelRepoCall() {
+                Order seatOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+                when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
+
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                verify(mockOrderRepository).delete(ORDER_ID);
+        }
+
+        @Test
+        void cancelOrder_venueNotFound_stillReturnsOkAfterCancelRepoCall() {
+                Order seatOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+                when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(null);
+
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                verify(mockOrderRepository).delete(ORDER_ID);
+        }
+
+        @Test
+        void cancelOrder_segmentNotFound_stillReturnsOkAfterCancelRepoCall() {
+                Order seatOrder = new Order(
+                                SEGMENT_ID,
+                                List.of("1-1", "1-2"),
+                                100.0,
+                                EVENT_ID,
+                                USER_ID_STRING);
+
+                Venue venueWithoutSegment = new Venue(
+                                "venue3",
+                                null,
+                                Map.of(),
+                                VENUE_ID);
+
+                when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
+                when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
+
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                verify(mockOrderRepository).delete(ORDER_ID);
+        }
 }
