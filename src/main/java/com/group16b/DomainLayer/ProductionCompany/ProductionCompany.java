@@ -239,7 +239,7 @@ public class ProductionCompany {
         MembershipNode node=membersNodes.get(userID);
         if(node==null || !(node.getPermissions().contains(perm)))
         {
-            throw new IllegalArgumentException("user "+userID+" dont have high enough permissions in company "+this.productionCompanyID);
+            throw new IllegalArgumentException("user "+userID+" dont have correct permissions in company "+this.productionCompanyID);
         }
     }
 

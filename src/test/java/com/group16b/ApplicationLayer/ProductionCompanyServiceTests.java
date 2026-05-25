@@ -3,13 +3,13 @@ package com.group16b.ApplicationLayer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,6 +44,8 @@ public class ProductionCompanyServiceTests {
 
     private ProductionCompany company1;
     private ProductionCompany company2;
+    private ProductionCompany companyWithNoEvents;
+    private ProductionCompany companyWithNoOrders;
     private User managerForHistory;
     private User managerForRevenue;
     private User managerWithNoUsefullPerms;
@@ -66,17 +68,19 @@ public class ProductionCompanyServiceTests {
     private final String OWNER_ID = "5";
     private final int COMPANY1_ID = 100;
     private final int COMPANY2_ID = 101;
+    private final int COMPANY_WITH_NO_EVENTS_ID = 102;
+    private final int COMPANY_WITH_NO_ORDERS_ID = 103; 
     private final int BAD_COMPANY_ID = 999;
     private final String BAD_USER_ID = "999";
-    private final String COMPANY1_ID_STRING = String.valueOf(COMPANY1_ID);
-    private final String COMPANY2_ID_STRING = String.valueOf(COMPANY2_ID);
     private final String FOUNDER_EMAIL="founder@example.com";
     private final String COMPANY1_NAME="Company1";
     private final String COMPANY2_NAME="Company2";
+    
 
     private Event company1Event1;
     private Event company1Event2;
     private Event company2Event1;
+    private Event companyWithNoOrdersEvent1;
 
     private Order company1Order1;
     private Order company1Order2;
@@ -154,6 +158,8 @@ public class ProductionCompanyServiceTests {
 
         company1 = createCompany(COMPANY1_ID, COMPANY1_NAME, FOUNDER_EMAIL);
         company2 = createCompany(COMPANY2_ID, COMPANY2_NAME, FOUNDER_EMAIL);
+        companyWithNoEvents = createCompany(COMPANY_WITH_NO_EVENTS_ID, "NoEventsCo", FOUNDER_EMAIL);
+        companyWithNoOrders = createCompany(COMPANY_WITH_NO_ORDERS_ID, "NoOrdersCo", FOUNDER_EMAIL);
 
         assignManagerToCompany(company1, MANAGER_FOR_HISTORY_ID, FOUNDER_EMAIL, Set.of(ManagerPermissions.VIEW_PURCHASE_HISTORY));
         assignOwnerToCompany(company1, OWNER_ID, FOUNDER_EMAIL);
@@ -162,14 +168,18 @@ public class ProductionCompanyServiceTests {
 
         companyRepo.save(company1);
         companyRepo.save(company2);
+        companyRepo.save(companyWithNoEvents);
+        companyRepo.save(companyWithNoOrders);
 
         company1Event1 = createEvent(1, COMPANY1_ID);
         company1Event2 = createEvent(2, COMPANY1_ID);
         company2Event1 = createEvent(3, COMPANY2_ID);
+        companyWithNoOrdersEvent1 = createEvent(4, COMPANY_WITH_NO_ORDERS_ID);
 
         eventRepo.save(company1Event1);
         eventRepo.save(company1Event2);
         eventRepo.save(company2Event1);
+        eventRepo.save(companyWithNoOrdersEvent1);
 
         company1Order1 = createCompletedOrder(company1Event1.getEventID(), 100, NON_MANAGER_ID);
         company1Order2 = createCompletedOrder(company1Event2.getEventID(), 200, NON_MANAGER_ID);
@@ -254,16 +264,8 @@ public class ProductionCompanyServiceTests {
 
         assertTrue(result.isSuccess());
 
-        List<OrderDTO> orders = result.getValue();
-
-        assertEquals(3, orders.size());
-
-        double total =
-            orders.stream()
-                .mapToDouble(OrderDTO::getTocalOrderPrice)
-                .sum();
-
-        assertEquals(450, total);
+        assertCompany1SalesHistory(result.getValue());
+        assertRepositoriesUnchanged();
     }
 
     @Test
@@ -277,16 +279,8 @@ public class ProductionCompanyServiceTests {
 
         assertTrue(result.isSuccess());
 
-        List<OrderDTO> orders = result.getValue();
-
-        assertEquals(3, orders.size());
-
-        double total =
-            orders.stream()
-                .mapToDouble(OrderDTO::getTocalOrderPrice)
-                .sum();
-
-        assertEquals(450, total);
+        assertCompany1SalesHistory(result.getValue());
+        assertRepositoriesUnchanged();
     }
 
     @Test
@@ -300,16 +294,35 @@ public class ProductionCompanyServiceTests {
 
         assertTrue(result.isSuccess());
 
-        List<OrderDTO> orders = result.getValue();
+        assertCompany1SalesHistory(result.getValue());
+        assertRepositoriesUnchanged();
+    }
 
-        assertEquals(3, orders.size());
+    @Test
+    void viewSalesHistory_NoCompletedOrders_ReturnsEmptyList() {
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_FOUNDER_TOKEN,
+                COMPANY_WITH_NO_ORDERS_ID
+            );
 
-        double total =
-            orders.stream()
-                .mapToDouble(OrderDTO::getTocalOrderPrice)
-                .sum();
+        assertTrue(result.isSuccess());
+        assertTrue(result.getValue().isEmpty());
+        assertRepositoriesUnchanged();
+    }
 
-        assertEquals(450, total);
+    @Test
+    void viewSalesHistory_CompanyWithoutEvents_ReturnsEmptyList() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_FOUNDER_TOKEN,
+                COMPANY_WITH_NO_EVENTS_ID
+            );
+
+        assertTrue(result.isSuccess());
+        assertTrue(result.getValue().isEmpty());
+        assertRepositoriesUnchanged();
     }
 
     @Test
@@ -322,18 +335,8 @@ public class ProductionCompanyServiceTests {
             );
 
         assertFalse(result.isSuccess());
-    }
-
-    @Test
-    void viewSalesHistory_ManagerWithoutPermission_ReturnsFailure() {
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(
-                VALID_NO_USEFUL_PERMS_TOKEN,
-                COMPANY1_ID
-            );
-
-        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("dont have correct permissions"));
+        assertRepositoriesUnchanged();
     }
 
     @Test
@@ -346,6 +349,8 @@ public class ProductionCompanyServiceTests {
             );
 
         assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("dont have correct permissions"));
+        assertRepositoriesUnchanged();
     }
 
     @Test
@@ -363,6 +368,7 @@ public class ProductionCompanyServiceTests {
             "Invalid Token",
             result.getError()
         );
+        assertRepositoriesUnchanged();
     }
 
     @Test
@@ -375,11 +381,16 @@ public class ProductionCompanyServiceTests {
             );
 
         assertFalse(result.isSuccess());
+
+        assertEquals(
+            "User with ID " + BAD_USER_ID + " not found.",
+            result.getError()
+        );
+        assertRepositoriesUnchanged();
     }
 
     @Test
     void viewSalesHistory_BadCompanyID_ReturnsFailure() {
-
         Result<List<OrderDTO>> result =
             service.viewSalesHistory(
                 VALID_FOUNDER_TOKEN,
@@ -387,33 +398,53 @@ public class ProductionCompanyServiceTests {
             );
 
         assertFalse(result.isSuccess());
+        assertEquals(
+            "Production company with ID " + BAD_COMPANY_ID + " is not found.",
+            result.getError()
+        );
+        assertRepositoriesUnchanged();
     }
 
-    @Test
-    void viewSalesHistory_DoesNotReturnForeignCompanyOrders() {
-
-        Result<List<OrderDTO>> result =
-            service.viewSalesHistory(
-                VALID_HISTORY_MANAGER_TOKEN,
-                COMPANY1_ID
-            );
-
-        assertTrue(result.isSuccess());
-
-        List<OrderDTO> orders = result.getValue();
-
+    private void assertCompany1SalesHistory(List<OrderDTO> orders) {
         assertEquals(3, orders.size());
 
-        boolean containsForeignOrder =
+        double total =
+            orders.stream()
+                .mapToDouble(OrderDTO::getTocalOrderPrice)
+                .sum();
+
+        assertEquals(450, total);
+
+        assertFalse(
             orders.stream()
                 .anyMatch(order ->
                     order.getTocalOrderPrice() == 999
-                );
+                )
+        );
 
-        assertFalse(containsForeignOrder);
+        assertFalse(
+            orders.stream()
+                .anyMatch(order ->
+                    order.getTocalOrderPrice() == 50
+                )
+        );
+
+        Set<Integer> returnedEventIds =
+            orders.stream()
+                .map(OrderDTO::getEventId)
+                .collect(Collectors.toSet());
+
+        assertEquals(
+            Set.of(
+                company1Event1.getEventID(),
+                company1Event2.getEventID()
+            ),
+            returnedEventIds
+        );
     }
-
-
-
-
+    private void assertRepositoriesUnchanged() {
+        assertEquals(5, orderRepo.getAll().size());
+        assertEquals(4, eventRepo.getAll().size());
+        assertEquals(4, companyRepo.getAll().size());
+    }
 }
