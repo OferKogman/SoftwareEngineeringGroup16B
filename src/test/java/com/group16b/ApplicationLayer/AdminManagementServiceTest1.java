@@ -36,6 +36,7 @@ import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 
 public class AdminManagementServiceTest1 {
@@ -46,7 +47,7 @@ public class AdminManagementServiceTest1 {
     private IEventRepository mockEventRepository;
     private IVenueRepository mockVenueRepository;
     private IRepository<User> mockUserRepository;
-    private IRepository<Order> mockOrderRepository;
+    private OrderRepositoryMapImpl mockOrderRepository;
     private IProductionCompanyRepository mockProductonCompanyRepository;
 
     private Location location1;
@@ -66,7 +67,7 @@ public class AdminManagementServiceTest1 {
         mockEventRepository = mock(IEventRepository.class);
         mockVenueRepository = mock(IVenueRepository.class);
         mockUserRepository = mock(IRepository.class);
-        mockOrderRepository = mock(IRepository.class); 
+        mockOrderRepository = mock(OrderRepositoryMapImpl.class); 
         mockProductonCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
 
         adminManagementService = new AdminManagementService(mockTokenService,mockProductonCompanyRepository, mockOrderRepository, mockEventRepository, mockUserRepository, mockSystemAdminRepository);
