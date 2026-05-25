@@ -7,19 +7,20 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
@@ -40,7 +41,8 @@ public class ProductionCompanyServiceTests {
     private IRepository<User> userRepo;
     private IProductionCompanyRepository companyRepo;
 
-    private ProductionCompany company;
+    private ProductionCompany company1;
+    private ProductionCompany company2;
     private User managerForHistory;
     private User managerForRevenue;
     private User managerWithNoUsefullPerms;
@@ -55,17 +57,30 @@ public class ProductionCompanyServiceTests {
     private final String VALID_NON_MANAGER_TOKEN = "valid-non-manager-token";
     private final String VALID_OWNER_TOKEN = "valid-owner-token";
     private final String INVALID_TOKEN = "invalid-token";
+    private final String STALE_USER_TOKEN = "stale-user-token";
     private final String MANAGER_FOR_HISTORY_ID = "1";
     private final String MANAGER_FOR_REVENUE_ID = "2";
     private final String MANAGER_WITH_NO_USEFUL_PERMS_ID = "3";
     private final String NON_MANAGER_ID = "4";
     private final String OWNER_ID = "5";
-    private final int COMPANY_ID = 100;
+    private final int COMPANY1_ID = 100;
+    private final int COMPANY2_ID = 101;
     private final int BAD_COMPANY_ID = 999;
     private final String BAD_USER_ID = "999";
-    private final String COMPANY_ID_STRING = String.valueOf(COMPANY_ID);
+    private final String COMPANY1_ID_STRING = String.valueOf(COMPANY1_ID);
+    private final String COMPANY2_ID_STRING = String.valueOf(COMPANY2_ID);
     private final String FOUNDER_EMAIL="founder@example.com";
-    private final String TEST_COMPANY_NAME="TestCompany";
+    private final String COMPANY1_NAME="Company1";
+    private final String COMPANY2_NAME="Company2";
+
+    private Event company1Event1;
+    private Event company1Event2;
+    private Event company2Event1;
+
+    private Order company1Order1;
+    private Order company1Order2;
+    private Order company1Order3;
+    private Order company2Order1;
 
 
     
@@ -98,6 +113,10 @@ public class ProductionCompanyServiceTests {
         when(authService.isUserToken(VALID_OWNER_TOKEN)).thenReturn(true);
         when(authService.extractSubjectFromToken(VALID_OWNER_TOKEN)).thenReturn(OWNER_ID);
 
+        when(authService.validateToken(STALE_USER_TOKEN)).thenReturn(true);
+        when(authService.isUserToken(STALE_USER_TOKEN)).thenReturn(true);
+        when(authService.extractSubjectFromToken(STALE_USER_TOKEN)).thenReturn(BAD_USER_ID);
+
         when(authService.validateToken(INVALID_TOKEN)).thenReturn(false);
 
         orderRepo = new OrderRepositoryMapImpl();
@@ -111,26 +130,54 @@ public class ProductionCompanyServiceTests {
             eventRepo,
             userRepo,
             companyRepo
-);
+        );
 
         seedBaseData();
     }
 
     private void seedBaseData() throws Exception {
+        founder = createUser(FOUNDER_EMAIL);
+        managerForHistory = createUser(MANAGER_FOR_HISTORY_ID);
+        managerForRevenue = createUser(MANAGER_FOR_REVENUE_ID);
+        managerWithNoUsefullPerms = createUser(MANAGER_WITH_NO_USEFUL_PERMS_ID);
+        non_manager = createUser(NON_MANAGER_ID);
+        owner = createUser(OWNER_ID);
 
-        manager = createUser(USER_ID);
-        userRepo.save(manager);
-
-        founder=createUser(FOUNDER_EMAIL);
         userRepo.save(founder);
+        userRepo.save(managerForHistory);
+        userRepo.save(managerForRevenue);
+        userRepo.save(managerWithNoUsefullPerms);
+        userRepo.save(non_manager);
+        userRepo.save(owner);
 
-        company = createCompany(COMPANY_ID, TEST_COMPANY_NAME, FOUNDER_EMAIL);
-        companyRepo.save(company);
+        company1 = createCompany(COMPANY1_ID, COMPANY1_NAME, FOUNDER_EMAIL);
+        company2 = createCompany(COMPANY2_ID, COMPANY2_NAME, FOUNDER_EMAIL);
 
-        addManagerPermissions(
-            USER_ID,
-            ManagerPermissions.SALES_REPORT,
-            ManagerPermissions.VIEW_PURCHASE_HISTORY);
+        assignManagerToCompany(company1, MANAGER_FOR_HISTORY_ID, FOUNDER_EMAIL, Set.of(ManagerPermissions.VIEW_PURCHASE_HISTORY));
+        assignOwnerToCompany(company1, OWNER_ID, FOUNDER_EMAIL);
+        assignManagerToCompany(company1, MANAGER_FOR_REVENUE_ID, OWNER_ID, Set.of(ManagerPermissions.SALES_REPORT));
+        assignManagerToCompany(company1, MANAGER_WITH_NO_USEFUL_PERMS_ID, OWNER_ID, Set.of(ManagerPermissions.CUSTOMER_SUPPORT));
+
+        companyRepo.save(company1);
+        companyRepo.save(company2);
+
+        company1Event1 = createEvent(1, COMPANY1_ID);
+        company1Event2 = createEvent(2, COMPANY1_ID);
+        company2Event1 = createEvent(3, COMPANY2_ID);
+
+        eventRepo.save(company1Event1);
+        eventRepo.save(company1Event2);
+        eventRepo.save(company2Event1);
+
+        company1Order1 = createOrder(company1Event1.getEventID(), 100, NON_MANAGER_ID);
+        company1Order2 = createOrder(company1Event2.getEventID(), 200, NON_MANAGER_ID);
+        company1Order3 = createOrder(company1Event2.getEventID(), 150, NON_MANAGER_ID);
+        company2Order1 = createOrder(company2Event1.getEventID(), 999, NON_MANAGER_ID);
+
+        orderRepo.save(company1Order1);
+        orderRepo.save(company1Order2);
+        orderRepo.save(company1Order3);
+        orderRepo.save(company2Order1);
     }
 
     private User createUser(String userId) {
@@ -149,91 +196,44 @@ public class ProductionCompanyServiceTests {
     }
 
     private Event createEvent(int eventId, int companyId) {
-
-        try {
-            return new Event(
-                eventId,
-                "Test Event " + eventId,
-                "Description",
-                "Hall",
+        return new Event(
+            new EventRecord(
+                "venue1",
+                "Event " + eventId,
+                LocalDateTime.now().plusDays(1),
+                LocalDateTime.now().plusDays(2),
+                "Artist",
+                "Category",
+                companyId,
                 100,
-                null,
-                companyId
+                4.5
+            ),"owner"
             );
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
-    private Order createOrder(int orderId, int eventId, double price) {
-
-        try {
-            return new Order(
-                orderId,
-                USER_ID,
-                eventId,
-                List.of(),
-                price,
-                OrderType.FIELD
-            );
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private Order createOrder(int eventId, double price, String subjectID) {
+        return new Order(
+            "seg",
+            List.of("A1", "A2"),
+            price,
+            eventId,
+            subjectID
+        );
     }
 
-    private void addManagerPermissions(String userId,ManagerPermissions... permissions) {
-
-        try {
-            company.addManager(userId);
-
-            for (ManagerPermissions permission : permissions) {
-                company.addPermissionToManager(userId, permission);
-            }
-
-            companyRepo.update(company);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private void assignManagerToCompany(ProductionCompany company, String managerId, String founderID,Set<ManagerPermissions> perms) {
+        company.AssignManager(founderID, managerId, perms);
+        company.acceptInvite(managerId, founderID);
     }
 
-    private void createCompanyEvent(int eventId) {
-
-        try {
-            Event event = createEvent(eventId, COMPANY_ID);
-            eventRepo.add(event);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    private void assignOwnerToCompany(ProductionCompany company, String newOwnerId, String founderID) {
+        company.AssignOwner(founderID, newOwnerId);
+        company.acceptInvite(newOwnerId, founderID);
     }
 
-    private void createForeignEvent(int eventId) {
 
-        try {
-            Event event = createEvent(eventId, 999);
-            eventRepo.add(event);
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
-    private void createOrderForEvent(
-        int orderId,
-        int eventId,
-        double price
-    ) {
 
-        try {
-            orderRepo.add(createOrder(orderId, eventId, price));
-        }
-        catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
 
 
 }
