@@ -1,38 +1,40 @@
 package com.group16b.DomainLayer.DomainServices;
 
-import java.lang.reflect.Field;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.AdditionalMatchers.not;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
-import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 
 public class EventFilteringServiceTests {
-    
-     IEventRepository eventRepository = mock(IEventRepository.class);
-     IRepository<Venue> venueRepository = mock(IRepository.class);
-     IProductionCompanyRepository productionCompanyPolicyRepository = mock(IProductionCompanyRepository.class);
-     EventFilteringService eventFilteringService;
-     List<Integer> compID = new ArrayList<>(List.of(1));
-     List<String> names = new ArrayList<>(List.of("Rock Legends"));
 
-     Event mockEvent(int eventID, String name, String artist, String category, String keyword, double price, LocalDateTime startTime, LocalDateTime endTime, double rating, int productionCompanyID, String venueID, boolean status) {
+    IEventRepository eventRepository = mock(IEventRepository.class);
+    IRepository<Venue> venueRepository = mock(IRepository.class);
+    IProductionCompanyRepository productionCompanyPolicyRepository = mock(IProductionCompanyRepository.class);
+    EventFilteringService eventFilteringService;
+    List<Integer> compID = new ArrayList<>(List.of(1));
+    List<String> names = new ArrayList<>(List.of("Rock Legends"));
+
+    Event mockEvent(int eventID, String name, String artist, String category, String keyword, double price,
+            LocalDateTime startTime, LocalDateTime endTime, double rating, int productionCompanyID, String venueID,
+            boolean status) {
         Event event = mock(Event.class);
         when(event.getEventID()).thenReturn(eventID);
         when(event.getEventName()).thenReturn(name);
@@ -49,76 +51,73 @@ public class EventFilteringServiceTests {
         return event;
     }
 
-     Event lowRatingEvent, wrongCompanyEvent, wrongVenueEvent, inactiveEvent;
-     LocalDateTime now = LocalDateTime.of(2026, 5, 9, 18, 0);
-    
+    Event lowRatingEvent, wrongCompanyEvent, wrongVenueEvent, inactiveEvent;
+    LocalDateTime now = LocalDateTime.of(2026, 5, 9, 18, 0);
+
     @BeforeEach
-     void setup() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+    void setup() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
         lowRatingEvent = mockEvent(
-            101,
-            "Jazz Evening",
-            "Miles Davis",
-            "Music",
-            "jazz performance",
-            150.0,
-            now.plusDays(3),
-            now.plusDays(4),
-            3,
-            1,
-            "1",
-            true
-        );
+                101,
+                "Jazz Evening",
+                "Miles Davis",
+                "Music",
+                "jazz performance",
+                150.0,
+                now.plusDays(3),
+                now.plusDays(4),
+                3,
+                1,
+                "1",
+                true);
         wrongCompanyEvent = mockEvent(
-            102,
-            "Pop Stars",
-            "Taylor Swift",
-            "Music",
-            "pop concert",
-            200.0,
-            now.plusDays(5),
-            now.plusDays(6),
-            4.5,
-            2,
-            "2",
-            true
-        );
+                102,
+                "Pop Stars",
+                "Taylor Swift",
+                "Music",
+                "pop concert",
+                200.0,
+                now.plusDays(5),
+                now.plusDays(6),
+                4.5,
+                2,
+                "2",
+                true);
         wrongVenueEvent = mockEvent(
-            103,
-            "Classical Night",
-            "Yo-Yo Ma",
-            "Music",
-            "classical performance",
-            120.0,
-            now.plusDays(7),
-            now.plusDays(8),
-            4.8,
-            1,
-            "1",
-            true
-        );
+                103,
+                "Classical Night",
+                "Yo-Yo Ma",
+                "Music",
+                "classical performance",
+                120.0,
+                now.plusDays(7),
+                now.plusDays(8),
+                4.8,
+                1,
+                "1",
+                true);
         inactiveEvent = mockEvent(
-            104,
-            "Rock Legends",
-            "Led Zeppelin",
-            "Music",
-            "rock concert",
-            180.0,
-            now.plusDays(9),
-            now.plusDays(10),
-            4.7,
-            2,
-            "2",
-            false
-        );
+                104,
+                "Rock Legends",
+                "Led Zeppelin",
+                "Music",
+                "rock concert",
+                180.0,
+                now.plusDays(9),
+                now.plusDays(10),
+                4.7,
+                2,
+                "2",
+                false);
         when(eventRepository.searchEvents(
-            not(same(names)), any(), any(), any(), any(), any(), any(), any(), any(), same(compID)
-        )).thenReturn(new ArrayList<>(List.of(lowRatingEvent, wrongVenueEvent, inactiveEvent)));
+                not(same(names)), any(), any(), any(), any(), any(), any(), any(), any(), same(compID)))
+                .thenReturn(new ArrayList<>(List.of(lowRatingEvent, wrongVenueEvent, inactiveEvent)));
         when(eventRepository.searchEvents(
-            not(same(names)), any(), any(), any(), any(), any(), any(), any(), any(), not(same(compID))
-        )).thenReturn(new ArrayList<>(List.of(lowRatingEvent, wrongCompanyEvent, wrongVenueEvent, inactiveEvent)));
+                not(same(names)), any(), any(), any(), any(), any(), any(), any(), any(), not(same(compID))))
+                .thenReturn(
+                        new ArrayList<>(List.of(lowRatingEvent, wrongCompanyEvent, wrongVenueEvent, inactiveEvent)));
         when(eventRepository.searchEvents(
-            same(names), any(), any(), any(), any(), any(), any(), any(), any(), not(same(compID))
-        )).thenReturn(new ArrayList<>(List.of(inactiveEvent)));
+                same(names), any(), any(), any(), any(), any(), any(), any(), any(), not(same(compID))))
+                .thenReturn(new ArrayList<>(List.of(inactiveEvent)));
         Venue v1 = mock(Venue.class);
         when(v1.getLocation()).thenReturn(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
         when(venueRepository.findByID("1")).thenReturn(v1);
@@ -131,7 +130,8 @@ public class EventFilteringServiceTests {
         when(pcp2.getRating()).thenReturn(5.0);
         when(productionCompanyPolicyRepository.findByID("1")).thenReturn(pcp1);
         when(productionCompanyPolicyRepository.findByID("2")).thenReturn(pcp2);
-        eventFilteringService = new EventFilteringService(productionCompanyPolicyRepository, eventRepository, venueRepository);
+        eventFilteringService = new EventFilteringService(productionCompanyPolicyRepository, eventRepository,
+                venueRepository);
         Field eventRepo = eventFilteringService.getClass().getDeclaredField("eventRepository");
         eventRepo.setAccessible(true);
         eventRepo.set(eventFilteringService, eventRepository);
@@ -146,16 +146,14 @@ public class EventFilteringServiceTests {
     @Test
     void SuccessfulSearchEventsCompanyIDOverridesRating() {
         List<Event> results = eventFilteringService.searchEvents(
-            null, null, null, null, null, null, null, null, null, compID, null, new ArrayList<>(List.of(4.0))
-        );
+                null, null, null, null, null, null, null, null, null, compID, null, new ArrayList<>(List.of(4.0)));
         assertEquals(new ArrayList<>(List.of(lowRatingEvent, wrongVenueEvent)), results);
     }
 
     @Test
     void SuccessfulSearchEventsNoCompanyIDFiltersByRating() {
         List<Event> results = eventFilteringService.searchEvents(
-            null, null, null, null, null, null, null, null, null, null, null, new ArrayList<>(List.of(4.0))
-        );
+                null, null, null, null, null, null, null, null, null, null, null, new ArrayList<>(List.of(4.0)));
         assertEquals(new ArrayList<>(List.of(wrongCompanyEvent)), results);
     }
 
@@ -163,29 +161,26 @@ public class EventFilteringServiceTests {
     void FailureSearchEventsInvalidRatingSize() {
         try {
             eventFilteringService.searchEvents(
-                null, null, null, null, null, null, null, null, null, null, null, new ArrayList<>(List.of(4.0, 5.0))
-            );
-        }
-        catch (IllegalArgumentException e) {
+                    null, null, null, null, null, null, null, null, null, null, null,
+                    new ArrayList<>(List.of(4.0, 5.0)));
+        } catch (IllegalArgumentException e) {
             assertEquals("Production company rating filter must have exactly one value.", e.getMessage());
         }
     }
 
     @Test
-    void FailureSearchEventsInactive(){
+    void FailureSearchEventsInactive() {
         List<Event> results = eventFilteringService.searchEvents(
-            names, null, null, null, null, null, null, null, null, null, null, null
-        );
+                names, null, null, null, null, null, null, null, null, null, null, null);
         assertEquals(new ArrayList<>(), results);
     }
 
-    @Test 
+    @Test
     void SuccessfulSearchEventsLocationFilter() {
         List<Location> locations = new ArrayList<>();
         locations.add(new Location("A", "A", "A", "A", "A", "A", 0.0, 0.0));
         List<Event> results = eventFilteringService.searchEvents(
-            null, null, null, null, null, null, null, null, null, null, locations, null
-        );
+                null, null, null, null, null, null, null, null, null, null, locations, null);
         assertEquals(new ArrayList<>(List.of(lowRatingEvent, wrongVenueEvent)), results);
     }
 }
