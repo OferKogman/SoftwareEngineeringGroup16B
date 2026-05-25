@@ -2,8 +2,8 @@ package com.group16b.DomainLayer.Event;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Set;
 import java.util.Objects;
+import java.util.Set;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
@@ -84,6 +84,11 @@ public class Event {
 			throw new IllegalStateException("Event is already active.");
 		}
 		active = true;
+	}
+	public void validateEventIsActive() {
+		if (!active) {
+			throw new IllegalStateException("Event is inactive.");
+		}
 	}
 
 	public void deactivateEvent() {
@@ -189,9 +194,47 @@ public class Event {
 	}
 
 	public LotteryPolicy getLotteryPolicy() {
-		return purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
+		LotteryPolicy lp = purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
+		//if (lp == null) {
+		//	throw new IllegalStateException("Event does not have a lottery policy.");
+		//}
+		return lp;
 	}
-
+	public void validateLotteryCode(String lotteryCode) {
+		LotteryPolicy lp = getLotteryPolicy();
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+		lp.validateLotteryCode(lotteryCode);
+	}
+	public void verifiyHasLotteryPolicy() {
+		if (getLotteryPolicy() == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+	}
+	public void renewLotteryCode(String lotteryCode) {
+		LotteryPolicy lp = getLotteryPolicy();
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+		lp.renewLotteryCode(lotteryCode);
+	}
+	
+	public boolean hasLotteryPolicy() {
+		return getLotteryPolicy() != null;
+	}
+	public void lotteryUseCode(String lotteryCode) {
+		LotteryPolicy lp = getLotteryPolicy();
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+		lp.useCode(lotteryCode);
+	}
+	public void verifyDoesNotHaveLotteryPolicy() {
+		if (getLotteryPolicy() != null) {
+			throw new IllegalStateException("Event has a lottery policy.");
+		}
+	}
 	public String getOwnerId() {
 		return ownerId;
 	}

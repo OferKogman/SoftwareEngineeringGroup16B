@@ -6,8 +6,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import com.group16b.ApplicationLayer.DTOs.EventDTO;
-
 public class VirtualQueue {
 	private final List<String> queueLine;
 	private final Map<String, Long> passedQueue;
@@ -64,5 +62,10 @@ public class VirtualQueue {
 
 	public boolean isUserPassedQueue(String subjectID) throws NoSuchAlgorithmException {
 		return passedQueue.containsKey(subjectID);
+	}
+	public void validateUserPassedQueue(String subjectID) {
+		if (!passedQueue.containsKey(subjectID)) {
+			throw new IllegalStateException("User did not pass the queue.");
+		}
 	}
 }
