@@ -2,9 +2,6 @@ package com.group16b.DomainLayer.ProductionCompany.membership;
 
 import java.util.Set;
 
-import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
-
 public class HierarchyNodeData {
     private final String userID;
     private final String parentID;

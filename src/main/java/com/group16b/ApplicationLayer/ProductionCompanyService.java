@@ -1,5 +1,6 @@
 package com.group16b.ApplicationLayer;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -56,9 +57,9 @@ public class ProductionCompanyService {
             
 
             logger.info("ProductionCompanyService.viewSalesHistory: collecting all orders for the company {} events",productionCompanyID);
-            List<OrderDTO> orderDTOs =getAllCompletedCompanyOrders(productionCompanyID).stream()
-                    .map(OrderDTO::new)
-                    .toList();
+            List<OrderDTO> orderDTOs =getCompletedOrdersByEventIDs(getCompanyEventIDs(productionCompanyID)).stream()
+                .map(OrderDTO::new)
+                .toList();
 
             logger.info("ProductionCompanyService.viewSalesHistory: succesfully collected all orders.");
             return Result.makeOk(orderDTOs);
@@ -89,7 +90,7 @@ public class ProductionCompanyService {
             company.validateUserPermissions(userID,ManagerPermissions.SALES_REPORT);
 
             logger.info("ProductionCompanyService.displayTotalRevenue: calculating total revenue for company {}",productionCompanyID);
-            double totalRevenue = getAllRevenue(getAllCompletedCompanyOrders(productionCompanyID));
+            double totalRevenue = getAllRevenue(getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company,userID)));
 
             logger.info("ProductionCompanyService.displayTotalRevenue: successfuly calculated total revenue for company {}.",productionCompanyID);
             return Result.makeOk(totalRevenue);
@@ -112,21 +113,50 @@ public class ProductionCompanyService {
     }
 
     //gets all orders for the company
-    private List<Order> getAllCompletedCompanyOrders(int companyID)
+    private Set<Integer> getCompanyEventIDs(int companyID)
     {
-        Set<Integer> companyEventIDs =
-                eventRepo.searchEvents(
-                    null, null, null, null,
-                    null, null,
-                    null, null,
-                    null,
-                    List.of(companyID)
-                ).stream()
-                .map(Event::getEventID)
-                .collect(Collectors.toSet());
+        return eventRepo.searchEvents(
+                null, null, null, null,
+                null, null,
+                null, null,
+                null,
+                List.of(companyID)
+            ).stream()
+            .map(Event::getEventID)
+            .collect(Collectors.toSet());
+    }
+
+    //duplication for efficency, instead of traversing the stream twice, traverse once and filter by permissions, then get the orders for those events
+    private Set<Integer> getManagedCompanyEventIDs(ProductionCompany company, String userID)
+    {
+        if(company.isFounder(userID))//divert for efficency if founder, as they have access to all events of the company
+            return getCompanyEventIDs(company.getProductionCompanyID());
+
+        //since in the current model, only ownners can create event, directly gather them for optimization
+        Set<String> allowedManager =new HashSet<>(company.getAllSubordinates(userID));
+
+        allowedManager.add(userID);
+
+        return eventRepo.searchEvents(
+                null, null, null, null,
+                null, null,
+                null, null,
+                null,
+                List.of(company.getProductionCompanyID())
+            ).stream()
+            .filter(event ->
+                allowedManager.contains(event.getOwnerId())
+            )
+            .map(Event::getEventID)
+            .collect(Collectors.toSet());
+    }
+
+    private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs)
+    {
         return orderRepo.getAll().stream()
-                    .filter(order -> companyEventIDs.contains(order.getEventId()))
-                    .toList();
+                .filter(Order::isCompleted)
+                .filter(order -> eventIDs.contains(order.getEventId()))
+                .toList();
     }
 
     private double getAllRevenue(List<Order> orders) 
