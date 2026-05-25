@@ -59,11 +59,8 @@ public class ReserveService {
             //2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            if (event.getLotteryPolicy() != null) { 
-                logger.error("ReserveService.reserveSeats: {} did not provide lottery keypass");
-                queueRemovePassed(q, subjectID);
-                return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
-            }
+            event.verifyDoesNotHaveLotteryPolicy();
+
 
             logger.info("ReserveService.reserveSeats: Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
@@ -140,10 +137,7 @@ public class ReserveService {
 
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ReserveService.reserveFieldSeats: Validating lottery for {}", subjectID);
-            if (eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy() != null) { 
-                logger.error("ReserveService.reserveFieldSeats: {} did not provide lottery keypass", subjectID);
-                return Result.makeFail("User did not provide lottery keypass to reserve seats for this event");
-            }
+            event.verifyDoesNotHaveLotteryPolicy();
             //1. System - Checks user passed the queue.
             logger.info("ReserveService.reserveFieldSeats: Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
@@ -222,12 +216,11 @@ public class ReserveService {
             
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            lotteryPolicy = eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy();
-            if (lotteryPolicy == null) { 
-                logger.error("ApplicationLayer.ReserveService.reserveSeats: no keypass required for {}", eventID);
-                return Result.makeFail("User provided lottery keypass to reserve seats for event that does not have lottery policy.");
-            }
+            event.verifiyHasLotteryPolicy();
+            lotteryPolicy = event.getLotteryPolicy();
             lotteryPolicy.validateLotteryCode(lotteryCode);
+            
+
 
             logger.info("Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
@@ -250,6 +243,7 @@ public class ReserveService {
             double pricePerSeat = segment.getPrice(eventID);
 
             validatePurchasePolicy(eventID);
+            lotteryPolicy = event.getLotteryPolicy();
 
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
 
@@ -309,10 +303,7 @@ public class ReserveService {
             //2. System - validates the event does NOT have a lottery policy.
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
             lotteryPolicy = eventRepository.findByID(String.valueOf(eventID)).getLotteryPolicy();
-            if (lotteryPolicy == null) {
-                logger.error("ApplicationLayer.ReserveService.reserveSeats: no keypass required for {}", eventID);
-                return Result.makeFail("User provided lottery keypass to reserve seats for event that does not have lottery policy.");
-            }
+            event.verifiyHasLotteryPolicy();
             lotteryPolicy.validateLotteryCode(lotteryCode);
 
             //1. System - Checks user passed the queue.

@@ -200,7 +200,16 @@ public class Event {
 		//}
 		return lp;
 	}
-	
+	public void verifiyHasLotteryPolicy() {
+		if (getLotteryPolicy() == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
+	}
+	public void verifyDoesNotHaveLotteryPolicy() {
+		if (getLotteryPolicy() != null) {
+			throw new IllegalStateException("Event has a lottery policy.");
+		}
+	}
 	public String getOwnerId() {
 		return ownerId;
 	}

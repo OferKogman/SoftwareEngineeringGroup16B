@@ -465,7 +465,7 @@ public class ReservationServiceTests {
 
         assertFalse(result.isSuccess());
         assertEquals(
-                "User did not provide lottery keypass to reserve seats for this event",
+                "Event has a lottery policy.",
                 result.getError()
         );
 
