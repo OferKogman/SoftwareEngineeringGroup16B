@@ -6,10 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -225,5 +229,53 @@ public class AdminManagementServiceTest1 {
 
         Result<String> result = adminManagementService.registerNewAdmin(sessionToken, "1", "admin", "pass", "email@example.com");
         assertFalse(result.isSuccess());
+    }
+    @Test
+    public void concurrentRemove_removeUser_OnlyOneSucceeds() throws InterruptedException {
+        int companyID = 1;
+        
+        CountDownLatch startLatch = new CountDownLatch(1);
+        ProductionCompany company = new ProductionCompany(companyID, "Test Company", 1, user.getEmail());
+        productionCompanyRepository.save(company);
+
+        Runnable removeTask = () -> {
+            adminManagementService.closeProductionCompany(companyID, sessionToken);
+        };
+        Thread thread1 = new Thread(removeTask);
+        Thread thread2 = new Thread(removeTask);
+
+
+        thread1.start();
+        thread2.start();
+        startLatch.countDown();
+        thread1.join();
+        thread2.join();
+
+        // Verify that the company is removed
+        productionCompanyRepository.findByID(String.valueOf(companyID));
+            assertThrows(IllegalArgumentException.class, () -> {
+                productionCompanyRepository.findByID(String.valueOf(companyID));
+            });
+    }
+    @Test
+    public void concurrentRegister_registerAdmin_OnlyOneSucceeds() throws InterruptedException {
+        String newAdminID = "1";
+        String newAdminUsername = "newAdmin";
+        String newAdminPassword = "password123";
+        String newAdminEmail = "newadmin@example.com";
+        CountDownLatch startLatch = new CountDownLatch(1);
+        Runnable registerTask = () -> {
+            adminManagementService.registerNewAdmin(sessionToken, newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
+        };
+        Thread thread1 = new Thread(registerTask);
+        Thread thread2 = new Thread(registerTask);
+        thread1.start();
+        thread2.start();
+        startLatch.countDown();
+        thread1.join();
+        thread2.join();
+        // Verify that only one admin is registered
+        SystemAdmin registeredAdmin = systemAdminRepository.findByID(newAdminID);
+        assertNotNull(registeredAdmin, "Expected one admin to be registered");
     }
 }

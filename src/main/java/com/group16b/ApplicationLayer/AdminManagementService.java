@@ -258,23 +258,31 @@ public class AdminManagementService {
             
             boolean checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
             boolean checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;
-            
-            if(checkIfAdminAlreadyExists ) {
-                logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing ID {}", newAdminID);
-                return Result.makeFail("Admin with ID " + newAdminID + " already exists");
+            boolean success = false;
+            while(!success){
+                if(checkIfAdminAlreadyExists ) {
+                    logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing ID {}", newAdminID);
+                    return Result.makeFail("Admin with ID " + newAdminID + " already exists");
+                }
+                if(checkIfUsernameAlreadyExists){
+                    logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing username {}", newAdminUsername);
+                    return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
+                }
+                SystemAdmin newAdmin = new SystemAdmin(newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
+                systemAdminRepo.save(newAdmin);
+                success = true;
+                logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
+                return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
             }
-            if(checkIfUsernameAlreadyExists){
-                logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing username {}", newAdminUsername);
-                return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
-            }
-            SystemAdmin newAdmin = new SystemAdmin(newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
-            systemAdminRepo.save(newAdmin);
-            logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
-            return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
+        }
+        catch(IllegalArgumentException e) {
+            logger.error("AdminManagementService.registerNewAdmin: Invalid input provided for new admin registration with ID {}", newAdminID, e);
+            return Result.makeFail("Invalid input: " + e.getMessage());
         }
         catch(Exception e) {
             logger.error("AdminManagementService.registerNewAdmin: Error occurred while registering new admin with ID {}", newAdminID, e);
             return Result.makeFail("Error occurred while registering new admin with ID " + newAdminID);
         }
+        return Result.makeFail("Failed to register new admin with ID " + newAdminID);
     }
 }
