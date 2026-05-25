@@ -14,6 +14,7 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
@@ -212,13 +213,15 @@ public class ProductionCompanyServiceTests {
     }
 
     private Order createOrder(int eventId, double price, String subjectID) {
-        return new Order(
+        Order order=new Order(
             "seg",
             List.of("A1", "A2"),
             price,
             eventId,
             subjectID
         );
+        order.CompleteOrder();
+        return order;
     }
 
     private void assignManagerToCompany(ProductionCompany company, String managerId, String founderID,Set<ManagerPermissions> perms) {
@@ -232,6 +235,175 @@ public class ProductionCompanyServiceTests {
     }
 
 
+    @Test
+    void viewSalesHistory_Founder_ReturnsAllCompanyOrders() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_FOUNDER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        List<OrderDTO> orders = result.getValue();
+
+        assertEquals(3, orders.size());
+
+        double total =
+            orders.stream()
+                .mapToDouble(OrderDTO::getTocalOrderPrice)
+                .sum();
+
+        assertEquals(450, total);
+    }
+
+    @Test
+    void viewSalesHistory_HistoryManager_ReturnsAllCompanyOrders() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_HISTORY_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        List<OrderDTO> orders = result.getValue();
+
+        assertEquals(3, orders.size());
+
+        double total =
+            orders.stream()
+                .mapToDouble(OrderDTO::getTocalOrderPrice)
+                .sum();
+
+        assertEquals(450, total);
+    }
+
+    @Test
+    void viewSalesHistory_Owner_ReturnsAllCompanyOrders() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_OWNER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        List<OrderDTO> orders = result.getValue();
+
+        assertEquals(3, orders.size());
+
+        double total =
+            orders.stream()
+                .mapToDouble(OrderDTO::getTocalOrderPrice)
+                .sum();
+
+        assertEquals(450, total);
+    }
+
+    @Test
+    void viewSalesHistory_RevenueManagerWithoutHistoryPermission_ReturnsFailure() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_REVENUE_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void viewSalesHistory_ManagerWithoutPermission_ReturnsFailure() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_NO_USEFUL_PERMS_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void viewSalesHistory_NonManager_ReturnsFailure() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_NON_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void viewSalesHistory_InvalidToken_ReturnsFailure() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                INVALID_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+
+        assertEquals(
+            "Invalid Token",
+            result.getError()
+        );
+    }
+
+    @Test
+    void viewSalesHistory_StaleUserToken_ReturnsFailure() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                STALE_USER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void viewSalesHistory_BadCompanyID_ReturnsFailure() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_FOUNDER_TOKEN,
+                BAD_COMPANY_ID
+            );
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void viewSalesHistory_DoesNotReturnForeignCompanyOrders() {
+
+        Result<List<OrderDTO>> result =
+            service.viewSalesHistory(
+                VALID_HISTORY_MANAGER_TOKEN,
+                COMPANY1_ID
+            );
+
+        assertTrue(result.isSuccess());
+
+        List<OrderDTO> orders = result.getValue();
+
+        assertEquals(3, orders.size());
+
+        boolean containsForeignOrder =
+            orders.stream()
+                .anyMatch(order ->
+                    order.getTocalOrderPrice() == 999
+                );
+
+        assertFalse(containsForeignOrder);
+    }
 
 
 
