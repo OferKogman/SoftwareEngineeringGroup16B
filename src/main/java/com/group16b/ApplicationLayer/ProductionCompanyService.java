@@ -126,6 +126,7 @@ public class ProductionCompanyService {
             .collect(Collectors.toSet());
     }
 
+    //duplication for efficency, instead of traversing the stream twice, traverse once and filter by permissions, then get the orders for those events
     private Set<Integer> getManagedCompanyEventIDs(ProductionCompany company, String userID)
     {
         if(company.isFounder(userID))//divert for efficency if founder, as they have access to all events of the company
