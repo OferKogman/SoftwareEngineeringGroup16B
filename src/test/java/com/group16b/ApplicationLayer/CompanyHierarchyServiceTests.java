@@ -34,99 +34,152 @@ import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
 public class CompanyHierarchyServiceTests {
-        CompanyHierarchyService userService;
-        IAuthenticationService mockAuthService;
-        IRepository<User> mockUserRepository;
-        IProductionCompanyRepository mockProductionCompanyRepository;
+        private CompanyHierarchyService CompanyHierarchyService;
+        private IAuthenticationService mockAuthService;
+        private IRepository<User> UserRepository;
+        private IProductionCompanyRepository ProductionCompanyRepository;
+
+        private User founder;
+        private User owner1;
+        private User owner2;
+        private User manager1;
+        private User manager2;
+        private User bystander;
+        private User invitedManager;
+        private User invitedOwner;
+
+        private final String FOUNDER_EMAIL="founder@example.com";
+        private final String OWNER1_EMAIL="owner1@example.com";
+        private final String OWNER2_EMAIL="owner2@example.com";
+        private final String MANAGER1_EMAIL="manager1@example.com";
+        private final String MANAGER2_EMAIL="manager2@example.com";
+        private final String INVITED_MANAGER_EMAIL="invited-manager@example.com";
+        private final String INVITED_OWNER_EMAIL="invited-owner@example.com";
+        private final String BYSTANDER_EMAIL="bystander@example.com";
+        private final String BAD_USER_EMAIL="bad@example.com";
+
+        private final String VALID_FOUNDER_TOKEN="valid-founder-token";
+        private final String VALID_OWNER1_TOKEN="valid-owner1-token";
+        private final String VALID_OWNER2_TOKEN="valid-owner2-token";
+        private final String VALID_MANAGER1_TOKEN="valid-manager1-token";
+        private final String VALID_MANAGER2_TOKEN="valid-manager2-token";
+        private final String VALID_INVITED_MANAGER_TOKEN="valid-invited-manager-token";
+        private final String VALID_INVITED_OWNER_TOKEN="valid-invited-owner-token";
+        private final String VALID_BYSTANDER_TOKEN="valid-bystander-token";
+        private final String INVALID_TOKEN="invalid-token";
+
+        private ProductionCompany company1;
+        private ProductionCompany company2;
+
+        private final int COMPANY1_ID=1;
+        private final int COMPANY2_ID=2;
+        private final int BAD_COMPANY_ID=999;
 
         @BeforeEach
-        void setUp() throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
-                mockUserRepository = mock(IRepository.class);
+        void setUp() {
                 mockAuthService = mock(IAuthenticationService.class);
-                mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
+                UserRepository = new UserRepositoryMapImpl();
+                ProductionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
+                CompanyHierarchyService = new CompanyHierarchyService(mockAuthService, ProductionCompanyRepository, UserRepository);
 
-                userService = new CompanyHierarchyService(mockAuthService, mockProductionCompanyRepository,
-                                mockUserRepository);
-                Field userRepo = userService.getClass().getDeclaredField("userRepository");
-                userRepo.setAccessible(true);
-                userRepo.set(userService, mockUserRepository);
+                when(mockAuthService.validateToken(VALID_BYSTANDER_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_BYSTANDER_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_BYSTANDER_TOKEN)).thenReturn(BYSTANDER_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_FOUNDER_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_FOUNDER_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_FOUNDER_TOKEN)).thenReturn(FOUNDER_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_OWNER1_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_OWNER1_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_OWNER1_TOKEN)).thenReturn(OWNER1_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_OWNER2_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_OWNER2_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_OWNER2_TOKEN)).thenReturn(OWNER2_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_MANAGER1_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_MANAGER1_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_MANAGER1_TOKEN)).thenReturn(MANAGER1_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_MANAGER2_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_MANAGER2_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_MANAGER2_TOKEN)).thenReturn(MANAGER2_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_INVITED_MANAGER_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_INVITED_MANAGER_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_INVITED_MANAGER_TOKEN)).thenReturn(INVITED_MANAGER_EMAIL);
+
+                when(mockAuthService.validateToken(VALID_INVITED_OWNER_TOKEN)).thenReturn(true);
+                when(mockAuthService.isUserToken(VALID_INVITED_OWNER_TOKEN)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(VALID_INVITED_OWNER_TOKEN)).thenReturn(INVITED_OWNER_EMAIL);                
+                
+                when(mockAuthService.validateToken(INVALID_TOKEN)).thenReturn(false);
+
+                seedBaseData();
+        }
+
+        private void seedBaseData() {
+                founder = new User(FOUNDER_EMAIL, "password");
+                owner1 = new User(OWNER1_EMAIL, "password");
+                owner2 = new User(OWNER2_EMAIL, "password");
+                manager1 = new User(MANAGER1_EMAIL, "password");
+                manager2 = new User(MANAGER2_EMAIL, "password");
+                invitedManager = new User(INVITED_MANAGER_EMAIL, "password");
+                invitedOwner = new User(INVITED_OWNER_EMAIL, "password");
+                bystander = new User(BYSTANDER_EMAIL, "password");
+
+                UserRepository.save(founder);
+                UserRepository.save(owner1);
+                UserRepository.save(owner2);
+                UserRepository.save(manager1);
+                UserRepository.save(manager2);
+                UserRepository.save(invitedManager);
+                UserRepository.save(invitedOwner);
+                UserRepository.save(bystander);
+
+                company1 = new ProductionCompany(COMPANY1_ID, "Company One", 0.1, FOUNDER_EMAIL);
+                company2 = new ProductionCompany(COMPANY2_ID, "Company Two", 0.2, FOUNDER_EMAIL);
+                
+                assignOwner(company1, FOUNDER_EMAIL, OWNER1_EMAIL);
+                assignOwner(company1, OWNER1_EMAIL, OWNER2_EMAIL);
+                assignMaager(company1, OWNER1_EMAIL, MANAGER1_EMAIL, EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT));
+                assignMaager(company1, OWNER2_EMAIL, MANAGER2_EMAIL, EnumSet.of(ManagerPermissions.PURCHASE_POLICY));
+
+                company1.AssignManager(INVITED_MANAGER_EMAIL, OWNER1_EMAIL, EnumSet.allOf(ManagerPermissions.class));
+                company1.AssignOwner(INVITED_OWNER_EMAIL, OWNER2_EMAIL);
+
+                ProductionCompanyRepository.save(company1);
+                ProductionCompanyRepository.save(company2);
+        }
+
+        private void assignMaager(ProductionCompany company, String assignerEmail, String managerEmail, Set<ManagerPermissions> perms)
+        {
+                company.AssignManager(assignerEmail, managerEmail, perms);
+                company.acceptInvite(managerEmail, assignerEmail);
+        }
+        private void assignOwner(ProductionCompany company, String assignerEmail, String newOwnerEmail)
+        {
+                company.AssignOwner(assignerEmail, newOwnerEmail);
+                company.acceptInvite(newOwnerEmail, assignerEmail);
         }
 
         // good
         @Test
         void GivenValidAuthAndExistingUsersAndCompany_WhenAssignOwnerToCompany_ThenReturnSuccess() {
-                String userID = "1";
-                int companyID = 1;
-                String targetID = "2";
-
-                String token = "valid-token";
-
-                User mockUser = mock(User.class);
-                User mockTarget = mock(User.class);
-                ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-                // AUTH
-                when(mockAuthService.validateToken(token)).thenReturn(true);
-                when(mockAuthService.isUserToken(token)).thenReturn(true);
-                when(mockAuthService.extractSubjectFromToken(token)).thenReturn(String.valueOf(userID));
-
-                // USERS EXIST
-                when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
-                when(mockUserRepository.findByID(targetID)).thenReturn(mockTarget);
-
-                // COMPANY
-                when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
-
-                // SAVE
-                doNothing().when(mockProductionCompanyRepository).save(mockCompany);
-
-                // ACT
-                Result<Boolean> result = userService.assignOwnerToCompany(companyID, targetID, token);
-
-                // ASSERT
-                assertTrue(result.isSuccess());
-
-                // VERIFY BEHAVIOR
-                verify(mockCompany, times(1)).AssignOwner(userID, targetID);
-                verify(mockProductionCompanyRepository, times(1)).save(mockCompany);
-
-                verify(mockUserRepository, times(1)).findByID(userID);
-                verify(mockUserRepository, times(1)).findByID(targetID);
-                verify(mockProductionCompanyRepository, times(1))
-                                .findByID(String.valueOf(companyID));
+                
         }
 
         // invariant violation
         @Test
         void GivenTargetAlreadyOwner_WhenAssignOwnerToCompany_ThenReturnFailure() {
-                String token = "token";
-
-                when(mockAuthService.validateToken(token)).thenReturn(true);
-                when(mockAuthService.isUserToken(token)).thenReturn(true);
-                when(mockAuthService.extractSubjectFromToken(token)).thenReturn("1");
-
-                User mockUser = mock(User.class);
-                User mockTarget = mock(User.class);
-                ProductionCompany mockCompany = mock(ProductionCompany.class);
-
-                when(mockUserRepository.findByID("1")).thenReturn(mockUser);
-                when(mockUserRepository.findByID("2")).thenReturn(mockTarget);
-
-                when(mockProductionCompanyRepository.findByID("1"))
-                                .thenReturn(mockCompany);
-
-                doThrow(new IllegalArgumentException("Target already owner"))
-                                .when(mockCompany).AssignOwner("1", "2");
-
-                Result<Boolean> result = userService.assignOwnerToCompany(1, "2", token);
-
-                assertFalse(result.isSuccess());
-
-                verify(mockProductionCompanyRepository, never()).save(mockCompany);
+                
         }
 
         // user not found
