@@ -82,17 +82,17 @@ public class AdminManagementServiceTest1 {
 
     @BeforeEach
     void setUp() throws Exception {
-        mockSystemAdminRepository = mock(ISystemAdminRepository.class);
-        mockTokenService = mock(IAuthenticationService.class);
-        mockEventRepository = mock(IEventRepository.class);
-        mockVenueRepository = mock(IRepository.class);
-        mockUserRepository = mock(IRepository.class);
-        mockOrderRepository = mock(OrderRepositoryMapImpl.class);
-        mockProductonCompanyRepository = mock(ProductionCompanyRepositoryMapImpl.class);
+        mockSystemAdminRepository = new SystemAdminRepositoryMapImpl();
+        mockTokenService = new AuthenticationServiceJWTImpl(sessionToken, sessionToken);
+        mockEventRepository = new EventRepositoryMapImpl();
+        mockVenueRepository = new VenueRepositoryMapImpl();
+        mockUserRepository = new UserRepositoryMapImpl();
+        mockOrderRepository = new OrderRepositoryMapImpl();
+        mockProductonCompanyRepository = new ProductionCompanyRepositoryMapImpl();
         systemAdminRepository = new SystemAdminRepositoryMapImpl();
         tokenService = new AuthenticationServiceJWTImpl(sessionToken, sessionToken);
         eventRepository = new EventRepositoryMapImpl();
-        venueRepository = mock(VenueRepositoryMapImpl.class);
+        venueRepository = new VenueRepositoryMapImpl();
         userRepository = new UserRepositoryMapImpl();
         orderRepository = new OrderRepositoryMapImpl(); 
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();

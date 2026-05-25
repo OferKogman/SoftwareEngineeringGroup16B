@@ -260,6 +260,7 @@ public class AdminManagementService {
             boolean checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;
             boolean success = false;
             while(!success){
+                try{
                 if(checkIfAdminAlreadyExists ) {
                     logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing ID {}", newAdminID);
                     return Result.makeFail("Admin with ID " + newAdminID + " already exists");
@@ -273,7 +274,20 @@ public class AdminManagementService {
                 success = true;
                 logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
                 return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
+                }
+                catch(IllegalArgumentException e) {
+                    logger.warn("AdminManagementService.registerNewAdmin: Illegal argument while registering new admin with ID {}. Retrying...", newAdminID, e);
+                    success = true; // stop retrying, this is not a transient error
+                }
+                catch(OptimisticLockingFailureException e) {
+                    logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with ID {}. Retrying...", newAdminID, e);
+                }
             }
+        }
+        catch(OptimisticLockingFailureException e) {
+            logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with ID {}. Retrying...", newAdminID, e);
+            //go back to while loop
+
         }
         catch(IllegalArgumentException e) {
             logger.error("AdminManagementService.registerNewAdmin: Invalid input provided for new admin registration with ID {}", newAdminID, e);
