@@ -7,7 +7,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.Records.SeatRecord;
 
-
 public class ChosenSeatingSeg extends Segment {
 	protected final Map<String, Seat> seats;
 	private int IDforSeat = 0;
@@ -26,13 +25,13 @@ public class ChosenSeatingSeg extends Segment {
 		}
 	}
 
-	public ChosenSeatingSeg(ChosenSeatingSeg other){
+	public ChosenSeatingSeg(ChosenSeatingSeg other) {
 		super(other.segmentID);
 		this.IDforSeat = other.IDforSeat;
-        this.seats = new ConcurrentHashMap<>();
-        for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
-            this.seats.put(entry.getKey(), new Seat(entry.getValue())); 
-        }
+		this.seats = new ConcurrentHashMap<>();
+		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
+			this.seats.put(entry.getKey(), new Seat(entry.getValue()));
+		}
 	}
 
 	@Override
@@ -45,12 +44,10 @@ public class ChosenSeatingSeg extends Segment {
 		reserveSeats(request.getSeatIds(), request.getEventID());
 	}
 
-
 	@Override
 	public void cancelReservation(ReservationRequest request) {
 		returnSeats(request.getSeatIds(), request.getEventID());
 	}
-
 
 	@Override
 	public double getPrice(int eventID) {
@@ -67,7 +64,7 @@ public class ChosenSeatingSeg extends Segment {
 				}
 				throw new IllegalArgumentException("Seat with ID " + seatId + " not found");
 			}
-			if (!seat.reserveSeat(eventID)){
+			if (!seat.reserveSeat(eventID)) {
 				for (Seat _seat : reservedSeats) {
 					_seat.returnSeat(eventID);
 				}
@@ -76,6 +73,7 @@ public class ChosenSeatingSeg extends Segment {
 			reservedSeats.add(seat);
 		}
 	}
+
 	public void returnSeats(List<String> seatIds, int eventID) {
 		for (String seatId : seatIds) {
 			Seat seat = seats.get(seatId);
@@ -85,10 +83,10 @@ public class ChosenSeatingSeg extends Segment {
 		}
 	}
 
-	private List<Seat> getSeatsInThisField(int eventID){
+	private List<Seat> getSeatsInThisField(int eventID) {
 		List<Seat> list = new LinkedList<>();
-		for(Seat seat : seats.values()){
-			if(seat.isSeatReserved(eventID)){
+		for (Seat seat : seats.values()) {
+			if (seat.isSeatReserved(eventID)) {
 				list.add(seat);
 			}
 		}
@@ -96,22 +94,23 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	@Override
-	public void setStockForEvent(int eventID, int newStock){
+	public void setStockForEvent(int eventID, int newStock) {
 		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
-		if(seatsInEvent.size() <= newStock){
-			throw new IllegalArgumentException("removing too much from the segment: " + segmentID + " for event :" + eventID);
+		if (seatsInEvent.size() <= newStock) {
+			throw new IllegalArgumentException(
+					"removing too much from the segment: " + segmentID + " for event :" + eventID);
 		}
 
-		int startIndex = newStock;//we only keep the newStock amount of seats in seg
+		int startIndex = newStock;// we only keep the newStock amount of seats in seg
 
 		for (int index = startIndex; index < seatsInEvent.size(); index++) {
 			Seat seat = seatsInEvent.get(index);
 			seat.returnSeat(eventID);
-		}	
+		}
 	}
 
 	@Override
-	public Map<String, Seat> getMap(){
+	public Map<String, Seat> getMap() {
 		return seats;
 	}
 }
