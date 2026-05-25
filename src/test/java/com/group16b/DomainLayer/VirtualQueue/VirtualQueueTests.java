@@ -44,7 +44,7 @@ public class VirtualQueueTests {
         PQ.set(q, 1);
         Field PT = q.getClass().getDeclaredField("PASS_TIMEOUT");
         PT.setAccessible(true);
-        PT.set(q, 5000);
+        PT.set(q, 4000);
         q.addToQueue(USER1);
         q.addToQueue(USER2);
         assertTrue(q.isUserPassedQueue(USER1));
