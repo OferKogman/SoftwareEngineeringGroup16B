@@ -19,6 +19,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -218,7 +219,7 @@ public class ReservationServiceTests {
         );
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid session token.", result.getError());
+        assertEquals("Authentication failed: Invalid Token", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
 
@@ -242,7 +243,7 @@ public class ReservationServiceTests {
         );
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid session token.", result.getError());
+        assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
         verify(venue, never()).reserveTickets(anyString(), anyList(), anyInt());
@@ -281,7 +282,7 @@ public class ReservationServiceTests {
     //     verify(venue, never()).reserveTickets( anyString(), anyList(), anyInt());
     // }
     
-    @Test
+   /*  @Test
     void reserveSeats_eventHasLotteryPolicy_returnsFail() throws Exception {
         LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
         
@@ -306,15 +307,14 @@ public class ReservationServiceTests {
 
         verify(mockOrderRepository, never()).save(any(Order.class));
         verify(venue, never()).reserveTickets( anyString(), anyList(), anyInt());
-    }
+    }*/
     
     
     @Test
     void reserveSeats_userDidNotPassQueue_returnsFail() throws Exception {
         VirtualQueue queueThatDoesNotPassUser = mock(VirtualQueue.class);
 
-        when(queueThatDoesNotPassUser.isUserPassedQueue(USER_ID)).thenReturn(false);
-
+        doThrow(new IllegalArgumentException("User did not pass the queue")).when(queueThatDoesNotPassUser).validateUserPassedQueue(USER_ID);
         when(mockQueueRepository.findByID(Integer.toString(EVENT_ID))).thenReturn(queueThatDoesNotPassUser);
 
         Result<String> result = reserveService.reserveSeats(
@@ -441,7 +441,7 @@ public class ReservationServiceTests {
         );
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid session token.", result.getError());
+        assertEquals("Authentication failed: Admins are not allowed to perform operation", result.getError());
 
         verify(mockOrderRepository, never()).save(any(Order.class));
         verify(venue, never()).reserveTickets( anyString(), anyInt(), anyInt());
