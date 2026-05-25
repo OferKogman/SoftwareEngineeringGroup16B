@@ -1,20 +1,9 @@
 package com.group16b.ApplicationLayer;
 
-import java.io.IOError;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
@@ -24,6 +13,14 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
@@ -38,13 +35,9 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.IVenueRepository;
 import com.group16b.DomainLayer.Venue.Location;
-import com.group16b.DomainLayer.Venue.Seat;
-import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 
 public class VenueEventConfigServiceTests {
@@ -127,7 +120,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
-        when(mockEvent.isActiveEvent()).thenReturn(false);
+        when(mockEvent.getEventStatus()).thenReturn(false);
         
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -162,7 +155,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
-        when(mockEvent.isActiveEvent()).thenReturn(false);
+        when(mockEvent.getEventStatus()).thenReturn(false);
         
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
 
@@ -220,7 +213,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
-        when(mockEvent.isActiveEvent()).thenReturn(false);
+        when(mockEvent.getEventStatus()).thenReturn(false);
         
         when(mockUserRepository.findByID(userID)).thenThrow(new IllegalArgumentException("User with ID " + userID + " not found."));
 
@@ -247,7 +240,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
-        when(mockEvent.isActiveEvent()).thenReturn(false);
+        when(mockEvent.getEventStatus()).thenReturn(false);
         
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -295,7 +288,7 @@ public class VenueEventConfigServiceTests {
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
         when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
         when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
-        when(mockEvent.isActiveEvent()).thenReturn(false);
+        when(mockEvent.getEventStatus()).thenReturn(false);
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
         ProductionCompany mockCompany=mock(ProductionCompany.class);

@@ -1,20 +1,8 @@
 package com.group16b.ApplicationLayer;
 
-import java.lang.reflect.Field;
-import java.security.NoSuchAlgorithmException;
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -25,6 +13,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.lang.reflect.Field;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -465,7 +465,7 @@ public class ReservationServiceTests {
 
         assertFalse(result.isSuccess());
         assertEquals(
-                "Event has a lottery policy.",
+                "Event has a lottery purchase policy.",
                 result.getError()
         );
 
