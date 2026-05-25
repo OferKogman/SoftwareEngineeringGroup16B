@@ -131,7 +131,7 @@ public class ProductionCompanyService {
         if(company.isFounder(userID))//divert for efficency if founder, as they have access to all events of the company
             return getCompanyEventIDs(company.getProductionCompanyID());
 
-        Set<String> allowedManagers =new HashSet<>(company.getAllSubordinates(userID));
+        Set<String> allowedManagers =new HashSet<>(company.getOwnershipDescendants(userID));
 
         allowedManagers.add(userID);
 

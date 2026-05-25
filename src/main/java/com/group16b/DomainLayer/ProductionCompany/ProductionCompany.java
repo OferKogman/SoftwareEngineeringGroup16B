@@ -45,7 +45,12 @@ public class ProductionCompany {
                     new MembershipNode(entry.getValue())
             );
         }
-        childrenByUser.putAll(other.childrenByUser);
+        for (Map.Entry<String, Set<String>> entry : other.childrenByUser.entrySet()) {
+            this.childrenByUser.put(
+                entry.getKey(),
+                new HashSet<>(entry.getValue())
+            );
+        }
     }
     public ProductionCompany(int id, String name, double rating, String founderID)
     {
@@ -160,7 +165,13 @@ public class ProductionCompany {
         if (invite == null) {
             throw new IllegalArgumentException("Invite not found.");
         }
-
+        MembershipNode curRole = membersNodes.get(targetID);
+        if(curRole!=null)
+        {//remove from the child list of the parent
+            String parentID = curRole.getAssignerID();
+            if(parentID!=null)
+                childrenByUser.get(parentID).remove(targetID);
+        }
         membersNodes.put(targetID, invite);
         addChild(assignerID, targetID);
 
@@ -269,7 +280,6 @@ public class ProductionCompany {
     private void collectOwnershipDescendants(String userID, List<String> result) {
         for (String child : childrenByUser.getOrDefault(userID, Set.of())) {
             MembershipNode node = membersNodes.get(child);
-
             if (node != null && node.getRoleType() == RoleType.OWNER) {
                 result.add(child);
                 collectOwnershipDescendants(child, result);
@@ -304,7 +314,7 @@ public class ProductionCompany {
         String parentID = node.getAssignerID();
         childrenByUser.get(parentID).remove(userID);
 
-        Set<String> children = new HashSet<>(childrenByUser.getOrDefault(userID, Set.of()));
+        Set<String> children = childrenByUser.getOrDefault(userID, Set.of());
         for (String child : children) {
             MembershipNode childNode = membersNodes.get(child);
             if (childNode != null) {
