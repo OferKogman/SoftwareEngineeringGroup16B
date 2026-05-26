@@ -17,7 +17,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
@@ -35,6 +34,7 @@ public class CompanyHierarchyService {
 	}
 
     public Result<Boolean> assignOwnerToCompany(int companyID, String targetID, String sessionToken) {
+		while(true){
 		try{
 			//auth
 			logger.info("CompanyHierarchyService.assignOwnerToCompany: Verifying session token for owner assignment of user {} to company {}.", targetID, companyID);
@@ -69,7 +69,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.assignOwnerToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.assignOwnerToCompany: JWT authentication error: " + e.getMessage());
@@ -79,6 +79,7 @@ public class CompanyHierarchyService {
 			logger.error("CompanyHierarchyService.assignOwnerToCompany: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}    
+	}
 	}
 
 	

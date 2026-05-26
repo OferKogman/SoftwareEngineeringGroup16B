@@ -399,4 +399,14 @@ public class ProductionCompany {
             new InviteKey(targetID, assignerID)
         );
     }
+    public boolean hasPendingOwnerInvite(String targetID,String assignerID) {
+        MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
+
+        return node != null && node.getRoleType() == RoleType.OWNER;
+    }
+    public boolean hasPendingManagerInvite(String targetID,String assignerID) {
+        MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
+
+        return node != null && node.getRoleType() == RoleType.MANAGER;
+    }
 }
