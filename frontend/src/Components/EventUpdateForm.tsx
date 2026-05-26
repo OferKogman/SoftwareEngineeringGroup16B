@@ -29,7 +29,7 @@ export default function EventUpdateForm({
   onUpdateEvent,
   onCancel,
 }: EventUpdateFormProps) {
-  const { eventID } = useParams();
+  const { id } = useParams();
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
 
   const [formData, setFormData] = useState<EventUpdateDetails>(initialFormData);
@@ -37,19 +37,20 @@ export default function EventUpdateForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!eventID) {
+    if (!id) {
       return;
     }
 
     async function loadEvent() {
       try {
-        //const response = await fetch(`/api/events/${eventID}`);
+        //const response = await fetch(`/api/events/${id}`);
 
         //if (!response.ok) {
         //  throw new Error("Failed to load event.");
         //}
 
         //const event: EventDTO = await response.json();
+
         const event: EventDTO = {
           eventID: 0,
           active: true,
@@ -80,7 +81,7 @@ export default function EventUpdateForm({
     }
 
     void loadEvent();
-  }, [eventID]);
+  }, [id]);
 
   function updateField<K extends keyof EventUpdateDetails>(
     field: K,
@@ -115,7 +116,7 @@ export default function EventUpdateForm({
     }
   }
 
-  if (!eventID) {
+  if (!id) {
     return <p>Missing event ID.</p>;
   }
 

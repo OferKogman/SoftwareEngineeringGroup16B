@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import EventCreationForm, {
   type EventCreationData,
 } from "./Components/EventCreationForm";
@@ -8,6 +9,7 @@ import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
+import ViewEvent from "./Components/ViewEvent";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -43,8 +45,15 @@ function App() {
       <h1>Create Event</h1>
       <EventCreationForm onCreateEvent={handleCreateEvent} />
 
-      <h1>Update Event</h1>
-      <EventUpdateForm onUpdateEvent={handleUpdateEvent} />
+      <BrowserRouter>
+        <Routes>
+          <Route path="/events/:id" element={<ViewEvent />} />
+          <Route
+            path="/eventupdate/:id"
+            element={<EventUpdateForm onUpdateEvent={handleUpdateEvent} />}
+          />
+        </Routes>
+      </BrowserRouter>
     </>
   );
 }
