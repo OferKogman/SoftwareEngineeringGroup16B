@@ -1,3 +1,4 @@
+import EventCreationForm, { type EventCreationData } from "./EventCreationForm";
 import PaymentForm from "./PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
@@ -20,6 +21,9 @@ function App() {
   ) {
     console.log("Purchase policy created:", policyData);
   }
+  async function handleCreateEvent(eventData: EventCreationData) {
+    console.log("Event created:", eventData);
+  }
   return (
     <>
       <h1>Payment</h1>
@@ -27,6 +31,9 @@ function App() {
 
       <h1>Create Purchase Policy</h1>
       <PurchasePolicyCreationForm onCreatePolicy={handleCreatePurchasePolicy} />
+
+      <h1>Create Event</h1>
+      <EventCreationForm onCreateEvent={handleCreateEvent} />
     </>
   );
 }
