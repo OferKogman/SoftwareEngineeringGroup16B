@@ -429,4 +429,12 @@ public class ProductionCompany {
         Set<String> directSubs = childrenByUser.getOrDefault(parentID, Set.of());
         return childIDs.stream().allMatch(directSubs::contains);
     }
+
+    public boolean hasManagerWithPermissions(String userID, Set<ManagerPermissions> perms)
+    {
+        MembershipNode node = membersNodes.get(userID);
+        if(node==null || node.getRoleType() != RoleType.MANAGER)
+            return false;
+        return node.getPermissions().containsAll(perms);
+    }
 }

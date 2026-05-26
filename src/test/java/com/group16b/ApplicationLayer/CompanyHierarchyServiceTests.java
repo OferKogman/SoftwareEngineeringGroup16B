@@ -77,6 +77,7 @@ public class CompanyHierarchyServiceTests {
         private final int BAD_COMPANY_ID=999;
 
         private final Set<ManagerPermissions> ALL_MANAGER_PERMISSIONS = EnumSet.allOf(ManagerPermissions.class);
+        private final Set<ManagerPermissions> NEW_MANAGER_PERMISSIONS = EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT);
 
         private Set<String> OWNER2_DEFAULT_CHILDREN;
         private Set<String> OWNER1_DEFAULT_CHILDREN;
@@ -154,8 +155,8 @@ public class CompanyHierarchyServiceTests {
                 
                 assignOwner(company1, FOUNDER_EMAIL, OWNER1_EMAIL);
                 assignOwner(company1, OWNER1_EMAIL, OWNER2_EMAIL);
-                assignManager(company1, OWNER1_EMAIL, MANAGER1_EMAIL, EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT));
-                assignManager(company1, OWNER2_EMAIL, MANAGER2_EMAIL, EnumSet.of(ManagerPermissions.PURCHASE_POLICY));
+                assignManager(company1, OWNER1_EMAIL, MANAGER1_EMAIL, ALL_MANAGER_PERMISSIONS);
+                assignManager(company1, OWNER2_EMAIL, MANAGER2_EMAIL, ALL_MANAGER_PERMISSIONS);
 
                 company1.AssignManager(OWNER1_EMAIL, INVITED_MANAGER_EMAIL, ALL_MANAGER_PERMISSIONS);
                 company1.AssignOwner(OWNER2_EMAIL,INVITED_OWNER_EMAIL);
@@ -2264,8 +2265,451 @@ public class CompanyHierarchyServiceTests {
         executor.shutdown();
         }
 
-        
+        //changeManagerPermission tests
+        @Test
+        void changeManagerPermissions_success() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        VALID_OWNER1_TOKEN
+                        );
 
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                        MANAGER1_EMAIL,
+                        NEW_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void changeManagerPermissions_invalidToken_fails() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                        MANAGER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void changeManagerPermissions_staleUser_fails() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                        MANAGER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+         @Test
+         void changeManagerPermissions_companyNotFound() {
+                 Result<Boolean> result =
+                         CompanyHierarchyService.changeManagerPermission(
+                         MANAGER1_EMAIL,
+                         BAD_COMPANY_ID,
+                         NEW_MANAGER_PERMISSIONS,
+                         VALID_OWNER1_TOKEN
+                         );
+
+                 assertFalse(result.isSuccess());
+                 assertEquals(
+                         "Production company with ID "
+                                 + BAD_COMPANY_ID
+                                 + " is not found.",
+                         result.getError()
+                 );
+
+                 //permissions didn't change
+                 ProductionCompany updated =
+                         ProductionCompanyRepository.findByID(
+                                 String.valueOf(COMPANY1_ID)
+                         );
+
+                 assertTrue(
+                         updated.hasManagerWithPermissions(
+                                 MANAGER1_EMAIL,
+                                 ALL_MANAGER_PERMISSIONS
+                         )
+                 );
+         }
+
+        @Test
+        void changeManagerPermissions_targetNotManager_fail() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        BYSTANDER_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Target is not a member.",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(
+                        updated.isManager(BAD_USER_EMAIL)
+                        );
+        }
+
+        @Test
+        void updateManagerPermissions_callerNotOwner_fail() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        VALID_MANAGER2_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Caller is not an owner.",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                        MANAGER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void updateManagerPermissions_targerIsOwner_fail() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        OWNER2_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "cant update permissions for owner and founder!",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.isOwner(OWNER2_EMAIL)
+                );
+        }
+
+        @Test
+        void updateManagerPermissions_emptyPermissions_fail() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        Set.of(),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "permissions can't be null or empty!",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                                MANAGER1_EMAIL,
+                                ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void updateManagerPermissions_nullPermissions_fail() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        null,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "permissions can't be null or empty!",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                                MANAGER1_EMAIL,
+                                ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void updateManagerPermissions_managerNotAssignedByOwner_fail() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        NEW_MANAGER_PERMISSIONS,
+                        VALID_OWNER2_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Target was not assigned by this owner (directly or transitively).",
+                        result.getError()
+                );
+
+                //permissions didn't change
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                                MANAGER1_EMAIL,
+                                ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void changeManagerPermissions_samePermissions_isIdempotent() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        ALL_MANAGER_PERMISSIONS,
+                        VALID_OWNER1_TOKEN
+                );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                );
+
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                                MANAGER1_EMAIL,
+                                ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void concurrentChangeManagerPermissions_bothSucceed()
+                throws Exception {
+
+        ExecutorService executor =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        Set<ManagerPermissions> permsA = Set.of(ManagerPermissions.CUSTOMER_SUPPORT, ManagerPermissions.EVENT_INVENTORY);
+        Set<ManagerPermissions> permsB = Set.of(ManagerPermissions.PURCHASE_POLICY);
+
+        Callable<Result<Boolean>> task1 = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        permsA,
+                        VALID_OWNER1_TOKEN
+                );
+        };
+
+        Callable<Result<Boolean>> task2 = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        permsB,
+                        VALID_OWNER1_TOKEN
+                );
+        };
+
+        Future<Result<Boolean>> future1 = executor.submit(task1);
+        Future<Result<Boolean>> future2 = executor.submit(task2);
+
+        startLatch.countDown();
+
+        Result<Boolean> result1 = future1.get();
+        Result<Boolean> result2 = future2.get();
+
+        assertTrue(result1.isSuccess());
+        assertTrue(result2.isSuccess());
+
+        ProductionCompany updated =
+                ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                );
+
+        // final state must be one of the two valid outcomes
+        boolean isA = updated.hasManagerWithPermissions(MANAGER1_EMAIL, permsA);
+        boolean isB = updated.hasManagerWithPermissions(MANAGER1_EMAIL, permsB);
+
+        assertTrue(isA || isB);
+
+        executor.shutdown();
+        }
+
+        @Test
+        void concurrentRemoveManager_andChangePermissions_consistentResult()
+                throws Exception {
+
+        ExecutorService executor =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        Set<ManagerPermissions> NEW_PERMS = Set.of(ManagerPermissions.CUSTOMER_SUPPORT, ManagerPermissions.EVENT_INVENTORY);
+
+        Callable<Result<Boolean>> removeTask = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                );
+        };
+
+        Callable<Result<Boolean>> updatePermTask = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.changeManagerPermission(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        NEW_PERMS,
+                        VALID_OWNER1_TOKEN
+                );
+        };
+
+        Future<Result<Boolean>> removeFuture =
+                executor.submit(removeTask);
+
+        Future<Result<Boolean>> updateFuture =
+                executor.submit(updatePermTask);
+
+        startLatch.countDown();
+
+        Result<Boolean> removeResult = removeFuture.get();
+        Result<Boolean> updateResult = updateFuture.get();
+
+        ProductionCompany updated =
+                ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                );
+
+        // --- Both outcomes must be safe (no partial corruption)
+        assertTrue(removeResult.isSuccess() || updateResult.isSuccess());
+
+        // CASE 1: manager got removed
+        if (!updated.isManager(MANAGER1_EMAIL)) {
+
+                // must be fully removed
+                assertFalse(
+                        updated.isDirectSubordinate(
+                                OWNER1_EMAIL,
+                                MANAGER1_EMAIL
+                        )
+                );
+        }
+        else {
+                // CASE 2: manager still exists → permissions must be valid
+                assertTrue(
+                        updated.hasManagerWithPermissions(
+                                MANAGER1_EMAIL,
+                                NEW_PERMS
+                        )
+                );
+        }
+
+        executor.shutdown();
+        }
 
 
 

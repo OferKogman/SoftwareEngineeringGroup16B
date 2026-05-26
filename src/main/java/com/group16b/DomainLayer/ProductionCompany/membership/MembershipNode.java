@@ -60,6 +60,8 @@ public class MembershipNode {
     {
         if(this.roleType.isHigherOrEqual(RoleType.OWNER))
             throw new IllegalArgumentException("cant update permissions for owner and founder!");
+        if(newPermissions==null || newPermissions.isEmpty())
+            throw new IllegalArgumentException("permissions can't be null or empty!");
         this.permissions=new HashSet<>(newPermissions);
     }
     public RoleType getRoleType()
