@@ -351,7 +351,15 @@ public class ProductionCompany {
     }
 
 
-    private static class InviteKey {
+    public void adminRemoveUser(String userID)
+    {
+        removeMember(userID);
+    }
+
+    private void addChild(String parent, String child) {
+        childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
+    }
+        private static class InviteKey {
         private final String targetId;
         private final String assignerId;
 
@@ -379,12 +387,16 @@ public class ProductionCompany {
         }
     }
 
-    public void adminRemoveUser(String userID)
-    {
-        removeMember(userID);
+    //FOR TESTS PURPOSES ONLY, TO VERIFY CORRECTNESS
+    public boolean hasPendingInvite(String userID) {
+        return invites.keySet()
+                    .stream()
+                    .anyMatch(k -> k.targetId.equals(userID));
     }
-
-    private void addChild(String parent, String child) {
-        childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
+    public boolean hasPendingInvite(String targetID,String assignerID)
+    {
+        return invites.containsKey(
+            new InviteKey(targetID, assignerID)
+        );
     }
 }
