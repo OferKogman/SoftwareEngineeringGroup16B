@@ -390,7 +390,7 @@ public class CompanyHierarchyServiceTests {
         }
 
         @Test
-        void concurrentAssignOwner_sameTarget_systemRemainsConsistent()throws Exception {
+        void concurrentAssignOwner_sameTargetDifferentOwners_systemRemainsConsistent()throws Exception {
 
                 ExecutorService executor =
                         Executors.newFixedThreadPool(2);
@@ -441,6 +441,60 @@ public class CompanyHierarchyServiceTests {
                 assertTrue(updated.hasPendingOwnerInvite(BYSTANDER_EMAIL,OWNER1_EMAIL) &&
                         updated.hasPendingOwnerInvite(BYSTANDER_EMAIL,OWNER2_EMAIL)
                 );
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentAssignOwner_sameTargetSameOwner_systemRemainsConsistent()throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() || result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.hasPendingOwnerInvite(BYSTANDER_EMAIL,OWNER1_EMAIL));
 
                 executor.shutdown();
         }
