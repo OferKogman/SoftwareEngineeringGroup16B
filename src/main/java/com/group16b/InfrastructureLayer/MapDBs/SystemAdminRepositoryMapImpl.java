@@ -3,6 +3,8 @@ package com.group16b.InfrastructureLayer.MapDBs;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.dao.OptimisticLockingFailureException;
+
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 
@@ -64,7 +66,7 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 			long newVersion = systemAdmin.getVersion();
 			long currentVersion = existingAdmin.getVersion();
 			if (newVersion != currentVersion) {
-				throw new IllegalArgumentException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
+				throw new OptimisticLockingFailureException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
 			}
 			existingAdmin.updateAdmin(systemAdmin);
 			systemAdminsByUsername.put(systemAdmin.getUsername(), existingAdmin);
