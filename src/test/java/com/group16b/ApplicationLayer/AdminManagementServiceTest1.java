@@ -55,17 +55,10 @@ import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 public class AdminManagementServiceTest1 {
 
     private AdminManagementService adminManagementService;
-    private IAuthenticationService mockTokenService;
-    private ISystemAdminRepository mockSystemAdminRepository;
-    private IEventRepository mockEventRepository;
-    private IRepository<Venue> mockVenueRepository;
-    private IRepository<User> mockUserRepository;
-    private OrderRepositoryMapImpl mockOrderRepository;
-    private IProductionCompanyRepository mockProductonCompanyRepository;
     private IAuthenticationService tokenService;
     private ISystemAdminRepository systemAdminRepository;
     private IEventRepository eventRepository;
-    private VenueRepositoryMapImpl venueRepository;
+    private IRepository<Venue> venueRepository;
     private IRepository<User> userRepository;
     private OrderRepositoryMapImpl orderRepository;
     private IProductionCompanyRepository productionCompanyRepository;
@@ -75,20 +68,11 @@ public class AdminManagementServiceTest1 {
     private Venue venue1;
     private Event e1;
     private User user;
-    private User user2;
     private String sessionToken;
     private String invalidToken;
-    private SystemAdmin systemAdmin;
 
     @BeforeEach
     void setUp() throws Exception {
-        mockSystemAdminRepository = new SystemAdminRepositoryMapImpl();
-        mockTokenService = new AuthenticationServiceJWTImpl(sessionToken, sessionToken);
-        mockEventRepository = new EventRepositoryMapImpl();
-        mockVenueRepository = new VenueRepositoryMapImpl();
-        mockUserRepository = new UserRepositoryMapImpl();
-        mockOrderRepository = new OrderRepositoryMapImpl();
-        mockProductonCompanyRepository = new ProductionCompanyRepositoryMapImpl();
         systemAdminRepository = new SystemAdminRepositoryMapImpl();
         tokenService = new AuthenticationServiceJWTImpl(sessionToken, sessionToken);
         eventRepository = new EventRepositoryMapImpl();
@@ -97,27 +81,15 @@ public class AdminManagementServiceTest1 {
         orderRepository = new OrderRepositoryMapImpl(); 
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
-        adminManagementService = new AdminManagementService(mockTokenService, mockProductonCompanyRepository,
-                mockOrderRepository, mockEventRepository, mockUserRepository, mockSystemAdminRepository);
+        adminManagementService = new AdminManagementService(tokenService, productionCompanyRepository,
+                orderRepository, eventRepository, userRepository, systemAdminRepository);
         adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository);
-
-        setPrivateField(adminManagementService, "systemAdminRepo", systemAdminRepository);
-        setPrivateField(adminManagementService, "userRepository", userRepository);
-        setPrivateField(adminManagementService, "orderRepo", orderRepository);
-        setPrivateField(adminManagementService, "eventRepo", eventRepository);
 
         sessionToken = "validToken";
         invalidToken = "invalidToken";
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
-        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-        when(mockTokenService.validateToken(invalidToken)).thenReturn(false);
-
-        
-        systemAdmin = new SystemAdmin("1", "username", "password", "email");
-        
+            
         user = new User("testuser", "password");
         
-        user2 = new User("testuser2", "password");
         
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
         segment1 = new FieldSeg("segment1", 50);
@@ -125,7 +97,6 @@ public class AdminManagementServiceTest1 {
         Map<String, Segment> segmentMap = new TreeMap<>();
         segmentMap.put("segment1", segment1);
         venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID");
-        when(mockVenueRepository.findByID("venue1")).thenReturn(venue1);
 
         
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
@@ -133,19 +104,11 @@ public class AdminManagementServiceTest1 {
 
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5),
                 user.getEmail());
-        when(mockEventRepository.findByID(String.valueOf(e1.getEventID()))).thenReturn(e1);
-        when(mockEventRepository.searchEvents(List.of("empty"), null, null, null, null, null, null, null, null, null))
-                .thenReturn(new ArrayList<>(List.of()));
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getEmail());
     }
 
     // Helper method to keep reflection injection clean
-    private void setPrivateField(Object target, String fieldName, Object mock) throws Exception {
-        Field field = target.getClass().getDeclaredField(fieldName);
-        field.setAccessible(true);
-        field.set(target, mock);
-    }
 
     @Test
     void testViewAllPurchaseHistory() {
@@ -157,7 +120,6 @@ public class AdminManagementServiceTest1 {
         List<Order> databaseOrders = new ArrayList<>();
         databaseOrders.add(completedOrder);
 
-        when(mockOrderRepository.getAll()).thenReturn(databaseOrders);
 
         
         
@@ -177,7 +139,6 @@ public class AdminManagementServiceTest1 {
         Order order2 = new Order("segment2", 2, 2.0, eventID, String.valueOf(user.getEmail()));
         order2.CompleteOrder();
 
-        when(mockOrderRepository.getAll()).thenReturn(List.of(order1, order2));
 
         
         
@@ -202,14 +163,6 @@ public class AdminManagementServiceTest1 {
         Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
-
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
-        when(mockProductonCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
-
-        when(mockEventRepository.searchEvents(any(), any(), any(), any(), any(), any(), any(), any(), any(), anyList()))
-                .thenReturn(new ArrayList<>());
-
-        
         
         Result<String> result = adminManagementService.closeProductionCompany(companyID, sessionToken);
 
@@ -219,8 +172,6 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
-        when(mockUserRepository.findByID(newUser.getEmail())).thenReturn(newUser);
-        when(mockOrderRepository.getAll()).thenReturn(new ArrayList<>());
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken,
                 newUser.getEmail());
 
@@ -245,8 +196,6 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testViewPurchaseHistoryUnauthorizedUser() {
         User otherUser = new User("other@example.com", "password123");
-        when(mockUserRepository.findByID(otherUser.getEmail())).thenReturn(otherUser);
-
         
         // Simulating the user trying to fetch their own history without admin token
 
@@ -285,14 +234,11 @@ public class AdminManagementServiceTest1 {
     }
     @Test
     public void concurrentRemove_removeUser_OnlyOneSucceeds() throws InterruptedException {
-        int companyID = 1;
-        
+        User user = new User("email", "password");
+        userRepository.save(user);
         CountDownLatch startLatch = new CountDownLatch(1);
-        ProductionCompany company = new ProductionCompany(companyID, "Test Company", 1, user.getEmail());
-        productionCompanyRepository.save(company);
-
         Runnable removeTask = () -> {
-            adminManagementService.closeProductionCompany(companyID, sessionToken);
+            adminManagementService.removeUser(user.getEmail(), sessionToken);
         };
         Thread thread1 = new Thread(removeTask);
         Thread thread2 = new Thread(removeTask);
@@ -304,10 +250,10 @@ public class AdminManagementServiceTest1 {
         thread1.join();
         thread2.join();
 
-        // Verify that the company is removed
-        productionCompanyRepository.findByID(String.valueOf(companyID));
+        // Verify that the user is removed
+        userRepository.findByID(user.getEmail());
             assertThrows(IllegalArgumentException.class, () -> {
-                productionCompanyRepository.findByID(String.valueOf(companyID));
+                userRepository.findByID(user.getEmail());
             });
     }
     @Test
@@ -330,5 +276,115 @@ public class AdminManagementServiceTest1 {
         // Verify that only one admin is registered
         SystemAdmin registeredAdmin = systemAdminRepository.findByID(newAdminID);
         assertNotNull(registeredAdmin, "Expected one admin to be registered");
+    }
+    @Test
+    public void concurrentViewPurchaseHistoryByCompany_OnlyOneProcessesAtATime() throws InterruptedException {
+        ProductionCompany company = new ProductionCompany(1, "Company1", 1, user.getEmail());
+        productionCompanyRepository.save(company);
+        int companyID = company.getProductionCompanyID();
+
+        Order order1 = new Order("segment1", 1, 1.0, e1.getEventID(), user.getEmail());
+        order1.CompleteOrder();
+        orderRepository.save(order1);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        List<Result<List<OrderDTO>>> results = new ArrayList<>();
+
+        Runnable viewTask = () -> {
+            try {
+                startLatch.await();
+                Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(sessionToken, companyID);
+                synchronized (results) {
+                    results.add(result);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Thread thread1 = new Thread(viewTask);
+        Thread thread2 = new Thread(viewTask);
+
+        thread1.start();
+        thread2.start();
+        startLatch.countDown();
+        thread1.join();
+        thread2.join();
+
+        assertEquals(2, results.size());
+        assertTrue(results.get(0).isSuccess());
+        assertTrue(results.get(1).isSuccess());
+        assertEquals(1, results.get(0).getValue().size());
+        assertEquals(1, results.get(1).getValue().size());
+    }
+
+    @Test
+    public void concurrentRemoveUser_OnlyOneSucceeds() throws InterruptedException {
+        User targetUser = new User("target@example.com", "password123");
+        userRepository.save(targetUser);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        List<Result<String>> results = new ArrayList<>();
+
+        Runnable removeTask = () -> {
+            try {
+                startLatch.await();
+                Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), sessionToken);
+                synchronized (results) {
+                    results.add(result);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Thread thread1 = new Thread(removeTask);
+        Thread thread2 = new Thread(removeTask);
+
+        thread1.start();
+        thread2.start();
+        startLatch.countDown();
+        thread1.join();
+        thread2.join();
+
+        assertEquals(2, results.size());
+        long successCount = results.stream().filter(Result::isSuccess).count();
+        assertEquals(1, successCount, "Exactly one removal should succeed");
+        assertThrows(IllegalArgumentException.class, () -> userRepository.findByID(targetUser.getEmail()));
+    }
+
+    @Test
+    public void concurrentCloseProductionCompany_OnlyOneSucceeds() throws InterruptedException {
+        ProductionCompany company = new ProductionCompany(1, "Company1", 1, user.getEmail());
+        productionCompanyRepository.save(company);
+        int companyID = company.getProductionCompanyID();
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        List<Result<String>> results = new ArrayList<>();
+
+        Runnable closeTask = () -> {
+            try {
+                startLatch.await();
+                Result<String> result = adminManagementService.closeProductionCompany(companyID, sessionToken);
+                synchronized (results) {
+                    results.add(result);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Thread thread1 = new Thread(closeTask);
+        Thread thread2 = new Thread(closeTask);
+
+        thread1.start();
+        thread2.start();
+        startLatch.countDown();
+        thread1.join();
+        thread2.join();
+
+        assertEquals(2, results.size());
+        long successCount = results.stream().filter(Result::isSuccess).count();
+        assertEquals(1, successCount, "Exactly one closure should succeed");
     }
 }
