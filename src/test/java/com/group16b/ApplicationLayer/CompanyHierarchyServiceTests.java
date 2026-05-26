@@ -5,16 +5,11 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -27,7 +22,6 @@ import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -38,8 +32,6 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-
-import io.jsonwebtoken.JwtException;
 
 public class CompanyHierarchyServiceTests {
         private CompanyHierarchyService CompanyHierarchyService;
@@ -165,8 +157,10 @@ public class CompanyHierarchyServiceTests {
                 assignManager(company1, OWNER1_EMAIL, MANAGER1_EMAIL, EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT));
                 assignManager(company1, OWNER2_EMAIL, MANAGER2_EMAIL, EnumSet.of(ManagerPermissions.PURCHASE_POLICY));
 
-                company1.AssignManager(OWNER1_EMAIL, INVITED_MANAGER_EMAIL, EnumSet.allOf(ManagerPermissions.class));
+                company1.AssignManager(OWNER1_EMAIL, INVITED_MANAGER_EMAIL, ALL_MANAGER_PERMISSIONS);
                 company1.AssignOwner(OWNER2_EMAIL,INVITED_OWNER_EMAIL);
+                company1.AssignManager(OWNER1_EMAIL, INVITED_OWNER_EMAIL, ALL_MANAGER_PERMISSIONS);
+                company1.AssignOwner(OWNER1_EMAIL, MANAGER2_EMAIL);
 
                 ProductionCompanyRepository.save(company1);
                 ProductionCompanyRepository.save(company2);
@@ -1438,6 +1432,274 @@ public class CompanyHierarchyServiceTests {
 
                 executor.shutdown();
         }
+
+        @Test
+        void acceptInviteToCompany_success_ownerInvite() {
+                assertTrue(
+                        company1.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER2_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isOwner(INVITED_OWNER_EMAIL));
+                assertFalse(
+                        updated.hasPendingInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER1_EMAIL
+                        )
+                );
+        }
+
+        @Test
+        void acceptInviteToCompany_success_managerInvite() {
+                assertTrue(
+                        company1.hasPendingManagerInvite(
+                        INVITED_MANAGER_EMAIL,
+                        OWNER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isManager(INVITED_OWNER_EMAIL));
+                assertFalse(
+                        updated.hasPendingManagerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+                assertTrue(
+                        updated.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+        }
+
+        @Test
+        void acceptInviteToCompany_invalidToken_fails() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+        }
+
+        @Test
+        void acceptInviteToCompany_staleUser_fails() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+        }
+
+        @Test
+        void acceptInviteToCompany_assignerNotFound() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        BAD_USER_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+        }
+
+        @Test
+        void acceptInviteToCompany_companyNotFound() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        BAD_COMPANY_ID,
+                        OWNER1_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Production company with ID " +
+                        BAD_COMPANY_ID +
+                        " is not found.",
+                        result.getError()
+                );
+        }
+
+        @Test
+        void acceptInviteToCompany_inviteNotFound() {
+                assertFalse(
+                        company1.hasPendingInvite(BYSTANDER_EMAIL)
+                );
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        VALID_BYSTANDER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invite not found.", result.getError());
+        }
+
+        @Test
+        void acceptInviteToCompany_existingManagerAcceptsOwnerInvite_roleUpgraded() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        VALID_MANAGER2_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isOwner(MANAGER2_EMAIL));
+        }
+
+
+        @Test
+        void acceptInviteToCompany_unexpectedException() {
+
+                IProductionCompanyRepository repo =
+                        mock(IProductionCompanyRepository.class);
+
+                when(repo.findByID(anyString()))
+                        .thenThrow(new RuntimeException("DB exploded"));
+
+                CompanyHierarchyService service =
+                        new CompanyHierarchyService(
+                        mockAuthService,
+                        repo,
+                        UserRepository
+                        );
+
+                Result<Boolean> result =
+                        service.acceptInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertTrue(
+                        result.getError().contains("unexpected")
+                );
+
+                verify(repo, never()).save(any());
+        }
+
+        @Test
+        void concurrentAcceptInvite_sameInvite_systemRemainsConsistent()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.acceptInviteToCompany(
+                                COMPANY1_ID,
+                                OWNER2_EMAIL,
+                                VALID_INVITED_OWNER_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.acceptInviteToCompany(
+                                COMPANY1_ID,
+                                OWNER2_EMAIL,
+                                VALID_INVITED_OWNER_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() ||
+                        result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isOwner(INVITED_OWNER_EMAIL));
+
+                assertFalse(
+                        updated.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER1_EMAIL
+                        )
+                );
+
+                executor.shutdown();
+        }
+
 
 
 }
