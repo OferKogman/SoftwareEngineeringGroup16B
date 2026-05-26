@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -23,6 +24,7 @@ import java.util.concurrent.Future;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -2707,9 +2709,150 @@ public class CompanyHierarchyServiceTests {
                         )
                 );
         }
-
         executor.shutdown();
         }
+
+        @Test
+        void hierarchyTree_success_returnsFullCorrectTree() {
+
+                Result<List<HierarchyNodeDTO>> result =
+                        CompanyHierarchyService.hierarchyTree(
+                                COMPANY1_ID,
+                                VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                List<HierarchyNodeDTO> tree = result.getValue();
+
+                assertEquals(5, tree.size());
+
+                // founder → owner1
+                assertTrue(tree.stream().anyMatch(n ->
+                        n.getUserId().equals(OWNER1_EMAIL) &&
+                        n.getAssignerId().equals(FOUNDER_EMAIL) &&
+                        company1.isOwner(n.getUserId())
+                ));
+
+                // owner1 → owner2
+                assertTrue(tree.stream().anyMatch(n ->
+                        n.getUserId().equals(OWNER2_EMAIL) &&
+                        n.getAssignerId().equals(OWNER1_EMAIL) &&
+                        company1.isOwner(n.getUserId())
+                ));
+
+                // owner1 → manager1
+                assertTrue(tree.stream().anyMatch(n ->
+                        n.getUserId().equals(MANAGER1_EMAIL) &&
+                        n.getAssignerId().equals(OWNER1_EMAIL) &&
+                        company1.isManager(n.getUserId())
+                ));
+
+                // owner2 → manager2
+                assertTrue(tree.stream().anyMatch(n ->
+                        n.getUserId().equals(MANAGER2_EMAIL) &&
+                        n.getAssignerId().equals(OWNER2_EMAIL) &&
+                        company1.isManager(n.getUserId())
+                ));
+
+                assertTrue(tree.stream().anyMatch(n ->
+                        n.getUserId().equals(FOUNDER_EMAIL) &&
+                        n.getAssignerId()==null &&
+                        company1.isFounder(n.getUserId())
+                ));
+        }
+
+        @Test
+        void hierarchyTree_nonOwner_fails() {
+
+                Result<List<HierarchyNodeDTO>> result =
+                        CompanyHierarchyService.hierarchyTree(
+                                COMPANY1_ID,
+                                VALID_MANAGER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Requester is not owner.", result.getError());
+        }
+
+        @Test
+        void hierarchyTree_companyNotFound_fails() {
+
+                Result<List<HierarchyNodeDTO>> result =
+                        CompanyHierarchyService.hierarchyTree(
+                                BAD_COMPANY_ID,
+                                VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Production company with ID "
+                        + BAD_COMPANY_ID
+                        + " is not found.",
+                        result.getError()
+                );
+        }
+
+        @Test
+        //includes user not found
+        void hierarchyTree_staleUser_fails() {
+                Result<List<HierarchyNodeDTO>> result =
+                        CompanyHierarchyService.hierarchyTree(
+                                COMPANY1_ID,
+                                STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+        }
+        @Test
+        void hierarchyTree_invalidToken_fails() {
+
+                Result<List<HierarchyNodeDTO>> result =
+                        CompanyHierarchyService.hierarchyTree(
+                                COMPANY1_ID,
+                                INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+        }
+
+        @Test
+        void hierarchyTree_afterMutations_reflectsCorrectStructure() {
+
+                // remove a manager first
+                CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                );
+
+                Result<List<HierarchyNodeDTO>> result =
+                        CompanyHierarchyService.hierarchyTree(
+                                COMPANY1_ID,
+                                VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                List<HierarchyNodeDTO> tree = result.getValue();
+
+                // manager1 must be gone
+                assertTrue(tree.stream().noneMatch(n ->
+                        n.getUserId().equals(MANAGER1_EMAIL)
+                ));
+
+                // owner1 still exists
+                assertTrue(tree.stream().anyMatch(n ->
+                        n.getUserId().equals(OWNER1_EMAIL)
+                ));
+        }
+
+
 
 
 
