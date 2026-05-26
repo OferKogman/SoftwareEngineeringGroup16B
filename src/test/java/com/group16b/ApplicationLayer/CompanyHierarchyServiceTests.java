@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +27,8 @@ import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
+
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -82,6 +85,9 @@ public class CompanyHierarchyServiceTests {
         private final int BAD_COMPANY_ID=999;
 
         private final Set<ManagerPermissions> ALL_MANAGER_PERMISSIONS = EnumSet.allOf(ManagerPermissions.class);
+
+        private Set<String> OWNER2_DEFAULT_CHILDREN;
+        private Set<String> OWNER1_DEFAULT_CHILDREN;
 
         @BeforeEach
         void setUp() {
@@ -164,6 +170,10 @@ public class CompanyHierarchyServiceTests {
 
                 ProductionCompanyRepository.save(company1);
                 ProductionCompanyRepository.save(company2);
+                
+                OWNER2_DEFAULT_CHILDREN =new HashSet<>(Set.of(MANAGER2_EMAIL));
+
+                OWNER1_DEFAULT_CHILDREN =new HashSet<>(Set.of(OWNER2_EMAIL,MANAGER1_EMAIL));
         }
 
         private void assignManager(ProductionCompany company, String assignerEmail, String managerEmail, Set<ManagerPermissions> perms)
@@ -1129,6 +1139,304 @@ public class CompanyHierarchyServiceTests {
                 assertFalse(company1.hasPendingInvite(userEmail));
                 ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
                 assertFalse(updated.hasPendingInvite(userEmail));
+        }
+
+        private void children_didnt_change()
+        {
+                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
+                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER1_DEFAULT_CHILDREN));
+                assertTrue(updated.areDirectSubordinates(OWNER2_EMAIL, OWNER2_DEFAULT_CHILDREN));
+        }
+
+        @Test
+        void forfeitOwnership_success() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        COMPANY1_ID,
+                        VALID_OWNER2_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isOwner(OWNER2_EMAIL));
+                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER2_DEFAULT_CHILDREN));
+                assertTrue(updated.areDirectSubordinates(OWNER2_EMAIL, Collections.emptySet()));
+                OWNER1_DEFAULT_CHILDREN.remove(OWNER2_EMAIL);
+                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER1_DEFAULT_CHILDREN));
+        }
+
+        @Test
+        void forfeitOwnership_invalidToken_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        COMPANY1_ID,
+                        INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isOwner(OWNER2_EMAIL));
+                children_didnt_change();
+                
+        }
+
+        @Test
+        void forfeitOwnership_staleUser_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        COMPANY1_ID,
+                        STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isOwner(OWNER2_EMAIL));
+                children_didnt_change();
+        }
+
+        @Test
+        void forfeitOwnership_companyNotFound() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        BAD_COMPANY_ID,
+                        VALID_OWNER2_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "Production company with ID "
+                        + BAD_COMPANY_ID
+                        + " is not found.",
+                        result.getError()
+                );
+                children_didnt_change();
+        }
+
+        @Test
+        void forfeitOwnership_bystanderCannotForfeit() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        COMPANY1_ID,
+                        VALID_BYSTANDER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "User " + BYSTANDER_EMAIL + " is not owner in forfeit Ownership",
+                        result.getError()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isOwner(BYSTANDER_EMAIL));
+                children_didnt_change();
+        }
+
+        @Test
+        void forfeitOwnership_managerCannotForfeit() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        COMPANY1_ID,
+                        VALID_MANAGER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "User " + MANAGER1_EMAIL + " is not owner in forfeit Ownership",
+                        result.getError()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isOwner(MANAGER1_EMAIL));
+                children_didnt_change();
+        }
+
+        @Test
+        void forfeitOwnership_founderCannotForfeit() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.forfeitOwnership(
+                        COMPANY1_ID,
+                        VALID_FOUNDER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.isFounder(FOUNDER_EMAIL));
+                children_didnt_change();
+        }
+
+        @Test
+        void forfeitOwnership_unexpectedException() {
+                IProductionCompanyRepository repo =
+                        mock(IProductionCompanyRepository.class);
+
+                when(repo.findByID(anyString()))
+                        .thenThrow(new RuntimeException("DB exploded"));
+
+                CompanyHierarchyService service =
+                        new CompanyHierarchyService(
+                        mockAuthService,
+                        repo,
+                        UserRepository
+                        );
+
+                Result<Boolean> result =
+                        service.forfeitOwnership(
+                        COMPANY1_ID,
+                        VALID_OWNER2_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertTrue(
+                        result.getError().contains("unexpected")
+                );
+
+                verify(repo, never()).save(any());
+        }
+
+
+        @Test
+        void concurrentForfeitOwnership_sameOwner_onlyOneSucceeds()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.forfeitOwnership(
+                                COMPANY1_ID,
+                                VALID_OWNER2_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() || result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isOwner(OWNER2_EMAIL));
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentForfeitOwnership_differentOwners_bothSucceed()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.forfeitOwnership(
+                                COMPANY1_ID,
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.forfeitOwnership(
+                                COMPANY1_ID,
+                                VALID_OWNER2_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(result1.isSuccess());
+                assertTrue(result2.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isOwner(OWNER1_EMAIL));
+                assertFalse(updated.isOwner(OWNER2_EMAIL));
+
+                executor.shutdown();
         }
 
 

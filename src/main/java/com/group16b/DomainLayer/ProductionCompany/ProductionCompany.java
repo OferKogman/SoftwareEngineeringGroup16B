@@ -413,4 +413,20 @@ public class ProductionCompany {
 
         return node != null && node.getRoleType() == RoleType.MANAGER && node.getPermissions().equals(perms);
     }
+
+    public Set<String> getDirectSubordinates(String userID)
+    {
+        return childrenByUser.getOrDefault(userID, Set.of());
+    }
+
+    public boolean isDirectSubordinate(String parentID, String childID)
+    {
+        return childrenByUser.getOrDefault(parentID, Set.of()).contains(childID);
+    }
+
+    public boolean areDirectSubordinates(String parentID, Set<String> childIDs)
+    {
+        Set<String> directSubs = childrenByUser.getOrDefault(parentID, Set.of());
+        return childIDs.stream().allMatch(directSubs::contains);
+    }
 }

@@ -134,6 +134,7 @@ public class CompanyHierarchyService {
 
 
 	public Result<Boolean> acceptInviteToCompany(int companyID, String assignerID, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.acceptInviteToCompany: Verifying session token for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
@@ -169,7 +170,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.acceptInviteToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.acceptInviteToCompany: JWT authentication error: " + e.getMessage());
@@ -180,8 +181,11 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}  
 	}
+	}
 
 	public Result<Boolean> rejectInviteToCompany( int companyID, String assignerID, String sessionToken) {
+		
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.rejectInviteToCompany: Verifying session token for rejection invite assignment to company {} by assigner {}.", companyID, assignerID);
@@ -218,7 +222,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.rejectInviteToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.rejectInviteToCompany: JWT authentication error: " + e.getMessage());
@@ -229,8 +233,10 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
 
     public Result<Boolean> forfeitOwnership(int companyID, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.forfeitOwnership: Verifying session token for Forfeit ownership in company {}.", companyID);
@@ -264,7 +270,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.forfeitOwnership: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.forfeitOwnership: JWT authentication error: " + e.getMessage());
@@ -275,7 +281,10 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
+	
 	public Result<Boolean> removeOwnerManager(String targetID, int companyID, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.removeOwnerManager: Verifying session token for remove membership in company {}.", companyID);
@@ -312,7 +321,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.removeOwnerManager: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.removeOwnerManager: JWT authentication error: " + e.getMessage());
@@ -323,8 +332,10 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
 
 	public Result<Boolean> changeManagerPermission(String targetID, int companyID, Set<ManagerPermissions> newPermissions, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.changeManagerPermission: Verifying session token for update manager permissions of target {} in company {}.",targetID, companyID);
@@ -361,7 +372,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.changeManagerPermission: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.changeManagerPermission: JWT authentication error: " + e.getMessage());
@@ -371,6 +382,7 @@ public class CompanyHierarchyService {
 			logger.error("CompanyHierarchyService.changeManagerPermission: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
+	}
 	}
 
 	public Result<List<HierarchyNodeDTO>> hierarchyTree(int companyID, String sessionToken) {
