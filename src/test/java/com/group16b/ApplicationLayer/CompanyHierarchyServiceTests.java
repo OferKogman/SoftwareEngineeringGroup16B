@@ -81,6 +81,8 @@ public class CompanyHierarchyServiceTests {
         private final int COMPANY2_ID=2;
         private final int BAD_COMPANY_ID=999;
 
+        private final Set<ManagerPermissions> ALL_MANAGER_PERMISSIONS = EnumSet.allOf(ManagerPermissions.class);
+
         @BeforeEach
         void setUp() {
                 mockAuthService = mock(IAuthenticationService.class);
@@ -495,6 +497,627 @@ public class CompanyHierarchyServiceTests {
                         );
 
                 assertTrue(updated.hasPendingOwnerInvite(BYSTANDER_EMAIL,OWNER1_EMAIL));
+
+                executor.shutdown();
+        }
+
+        @Test
+        void assignManagerToCompany_success() {
+                assertFalse(company1.hasPendingInvite(BYSTANDER_EMAIL));
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        ALL_MANAGER_PERMISSIONS,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        BYSTANDER_EMAIL,
+                        OWNER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+        }
+
+        @Test
+        void assignManagerToCompany_invalidToken_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_staleUser_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError());
+
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_targetUserNotFound() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BAD_USER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+
+                verifyUserDidntGetInvite(BAD_USER_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_companyNotFound() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        BAD_COMPANY_ID,
+                        BYSTANDER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "Production company with ID "
+                        + BAD_COMPANY_ID
+                        + " is not found.",
+                        result.getError()
+                );
+        }
+
+        @Test
+        void assignManagerToCompany_bystanderCannotAssign() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_BYSTANDER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertTrue(
+                        result.getError().contains(
+                        "caller User is not owner in Assign Manager"
+                        )
+                );
+
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_managerCannotAssign() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_MANAGER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertTrue(
+                        result.getError().contains(
+                        "caller User is not owner in Assign Manager"
+                        )
+                );
+
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_existingManager_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        MANAGER1_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "Target " + MANAGER1_EMAIL +
+                        " is already a manager of the company.",
+                        result.getError()
+                );
+
+                verifyUserDidntGetInvite(MANAGER1_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_existingOwner_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        OWNER2_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                verifyUserDidntGetInvite(OWNER2_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_duplicatePendingInvite_allowed() {
+
+                assertTrue(
+                        company1.hasPendingInvite(INVITED_MANAGER_EMAIL)
+                );
+
+                Set<ManagerPermissions> permissions =
+                        EnumSet.allOf(ManagerPermissions.class);
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        INVITED_MANAGER_EMAIL,
+                        permissions,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        INVITED_MANAGER_EMAIL,
+                        OWNER1_EMAIL,
+                        permissions
+                        )
+                );
+        }
+         @Test
+        void assignManagerToCompany_InviteSomeoneWithOwnerInvite_allowed() {
+
+                assertTrue(
+                        company1.hasPendingInvite(INVITED_MANAGER_EMAIL)
+                );
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        INVITED_OWNER_EMAIL,
+                        ALL_MANAGER_PERMISSIONS,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+                assertTrue(updated.hasPendingOwnerInvite(INVITED_OWNER_EMAIL, OWNER2_EMAIL));
+        }
+
+        @Test
+        void assignManagerToCompany_emptyPermissions_fails() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        Collections.emptySet(),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "Manager must have at least one permission.",
+                        result.getError()
+                );
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+
+        @Test
+        void assignManagerToCompany_nullPermissions_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        null,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Manager must have at least one permission.",
+                        result.getError()
+                );
+
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+        @Test
+        void assignManagerToCompany_unexpectedException() {
+
+                IProductionCompanyRepository repo =
+                        mock(IProductionCompanyRepository.class);
+
+                when(repo.findByID(anyString()))
+                        .thenThrow(new RuntimeException("DB exploded"));
+
+                CompanyHierarchyService service =
+                        new CompanyHierarchyService(
+                        mockAuthService,
+                        repo,
+                        UserRepository
+                        );
+
+                Result<Boolean> result =
+                        service.assignManagerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertTrue(
+                        result.getError().contains("unexpected")
+                );
+
+                verify(repo, never()).save(any());
+        }
+
+        @Test
+        void concurrentAssignManager_differentTargets_bothSucceed()
+        throws Exception {
+
+                User userA = new User("managerA@test.com", "password");
+                User userB = new User("managerB@test.com", "password");
+
+                UserRepository.save(userA);
+                UserRepository.save(userB);
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                "managerA@test.com",
+                                EnumSet.of(
+                                        ManagerPermissions.CUSTOMER_SUPPORT
+                                ),
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                "managerB@test.com",
+                                EnumSet.of(
+                                        ManagerPermissions.PURCHASE_POLICY
+                                ),
+                                VALID_OWNER2_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(result1.isSuccess());
+                assertTrue(result2.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        "managerA@test.com",
+                        OWNER1_EMAIL,
+                        EnumSet.of(
+                                ManagerPermissions.CUSTOMER_SUPPORT
+                        )
+                        )
+                );
+
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        "managerB@test.com",
+                        OWNER2_EMAIL,
+                        EnumSet.of(
+                                ManagerPermissions.PURCHASE_POLICY
+                        )
+                        )
+                );
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentAssignManager_sameTargetDifferentOwners_consistent()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                BYSTANDER_EMAIL,
+                                EnumSet.of(
+                                        ManagerPermissions.CUSTOMER_SUPPORT
+                                ),
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                BYSTANDER_EMAIL,
+                                EnumSet.of(
+                                        ManagerPermissions.PURCHASE_POLICY
+                                ),
+                                VALID_OWNER2_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() || result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingInvite(BYSTANDER_EMAIL)
+                );
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentAssignManager_sameTargetSameOwner_consistent()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                BYSTANDER_EMAIL,
+                                EnumSet.of(
+                                        ManagerPermissions.CUSTOMER_SUPPORT
+                                ),
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                BYSTANDER_EMAIL,
+                                EnumSet.of(
+                                        ManagerPermissions.CUSTOMER_SUPPORT
+                                ),
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() || result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        BYSTANDER_EMAIL,
+                        OWNER1_EMAIL,
+                        EnumSet.of(
+                                ManagerPermissions.CUSTOMER_SUPPORT
+                        )
+                        )
+                );
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentAssignManager_sameTargetDifferentPermissions_consistent()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Set<ManagerPermissions> permissions1 =
+                        EnumSet.of(
+                        ManagerPermissions.CUSTOMER_SUPPORT
+                        );
+
+                Set<ManagerPermissions> permissions2 =
+                        EnumSet.of(
+                        ManagerPermissions.PURCHASE_POLICY
+                        );
+
+                Callable<Result<Boolean>> task1 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                BYSTANDER_EMAIL,
+                                permissions1,
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignManagerToCompany(
+                                COMPANY1_ID,
+                                BYSTANDER_EMAIL,
+                                permissions2,
+                                VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() || result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(
+                        updated.hasPendingInvite(BYSTANDER_EMAIL)
+                );
 
                 executor.shutdown();
         }

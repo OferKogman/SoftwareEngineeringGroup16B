@@ -84,6 +84,7 @@ public class CompanyHierarchyService {
 
 	
 	public Result<Boolean> assignManagerToCompany(int companyID, String targetID, Set<ManagerPermissions> permissions, String sessionToken) {
+		while(true){
 		try{
 			//auth
 			logger.info("CompanyHierarchyService.assignManagerToCompany: Verifying session token for manager assignment of user {} to company {}.", targetID, companyID);
@@ -118,7 +119,7 @@ public class CompanyHierarchyService {
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.assignManagerToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.assignManagerToCompany: JWT authentication error: " + e.getMessage());
@@ -127,7 +128,8 @@ public class CompanyHierarchyService {
 		catch (Exception e) {
 			logger.error("CompanyHierarchyService.assignManagerToCompany: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}    
+		}   
+	} 
 	}
 
 

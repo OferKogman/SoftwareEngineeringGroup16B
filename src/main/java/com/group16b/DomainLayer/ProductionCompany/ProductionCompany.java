@@ -152,6 +152,10 @@ public class ProductionCompany {
         {
             throw new IllegalArgumentException("Target " + targetID + " is already a manager of the company.");
         }
+        if(perms==null || perms.isEmpty())
+        {
+            throw new IllegalArgumentException("Manager must have at least one permission.");
+        }
         MembershipNode newManagerInvite = MembershipNode.createManager(targetID, callerID,perms);
         invites.put(new InviteKey(targetID, callerID), newManagerInvite);
     }
@@ -404,9 +408,9 @@ public class ProductionCompany {
 
         return node != null && node.getRoleType() == RoleType.OWNER;
     }
-    public boolean hasPendingManagerInvite(String targetID,String assignerID) {
+    public boolean hasPendingManagerInvite(String targetID,String assignerID, Set<ManagerPermissions> perms) {
         MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
 
-        return node != null && node.getRoleType() == RoleType.MANAGER;
+        return node != null && node.getRoleType() == RoleType.MANAGER && node.getPermissions().equals(perms);
     }
 }
