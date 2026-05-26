@@ -1947,6 +1947,326 @@ public class CompanyHierarchyServiceTests {
                 executor.shutdown();
         }
 
+        @Test
+        void removeManager_success() {
+                //also tests transitive removal
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        MANAGER2_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isManager(MANAGER2_EMAIL));
+                assertFalse(updated.isDirectSubordinate(OWNER2_EMAIL, MANAGER2_EMAIL));
+        }
+
+        @Test
+        void removeOwner_success()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        OWNER2_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(updated.isOwner(OWNER2_EMAIL));
+                OWNER1_DEFAULT_CHILDREN.remove(OWNER2_EMAIL);
+                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER1_DEFAULT_CHILDREN));
+                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER2_DEFAULT_CHILDREN));
+                assertFalse(updated.isDirectSubordinate(OWNER1_EMAIL, OWNER2_EMAIL));
+        }
+
+        @Test
+        void removeOwnerManager_invalidToken_fails()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwnerManager_staleUser_fails()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwnerManager_companyNotFound()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        BAD_COMPANY_ID,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Production company with ID "
+                        + BAD_COMPANY_ID
+                        + " is not found.",
+                        result.getError()
+                );
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwnerManager_nonOwnerCannotRemove()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        VALID_MANAGER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Caller is not an owner.",
+                        result.getError()
+                );
+
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwnerManager_ownerCannotRemoveAManagerNotAssignedByHim()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        MANAGER1_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER2_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Target was not assigned by this owner (directly or transitively).",
+                        result.getError()
+                );
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwnerManager_targetIsntFound_failue()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        BAD_USER_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwnerManager_targetNotOwnerOrManager_failue()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        BYSTANDER_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Target is not a member.",
+                        result.getError()
+                );
+
+                children_didnt_change();
+        }
+
+        @Test
+        void removeOwner_removeItself_fail()
+        {
+                Result<Boolean> result =
+                        CompanyHierarchyService.removeOwnerManager(
+                        OWNER1_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals(
+                        "Target was not assigned by this owner (directly or transitively).",
+                        result.getError()
+                );
+
+                children_didnt_change();
+        }
+
+        @Test
+        void concurrentRemoveManager_sameTarget_onlyOneSucceeds()
+                throws Exception {
+
+        ExecutorService executor =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        Callable<Result<Boolean>> task1 = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.removeOwnerManager(
+                        MANAGER2_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                );
+        };
+
+        Callable<Result<Boolean>> task2 = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.removeOwnerManager(
+                        MANAGER2_EMAIL,
+                        COMPANY1_ID,
+                        VALID_OWNER1_TOKEN
+                );
+        };
+
+        Future<Result<Boolean>> future1 = executor.submit(task1);
+        Future<Result<Boolean>> future2 = executor.submit(task2);
+
+        startLatch.countDown();
+
+        Result<Boolean> result1 = future1.get();
+        Result<Boolean> result2 = future2.get();
+
+        ProductionCompany updated =
+                ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                );
+
+        // exactly one succeeds
+        assertTrue(result1.isSuccess() ^ result2.isSuccess());
+
+        // final state must be consistent
+        assertFalse(updated.isManager(MANAGER2_EMAIL));
+        assertFalse(updated.isDirectSubordinate(OWNER2_EMAIL, MANAGER2_EMAIL));
+
+        executor.shutdown();
+        }
+
+        @Test
+        void concurrentRemoveOwners_bothSucceed_subtreesReassignedToFounder()
+                throws Exception {
+
+        ExecutorService executor =
+                Executors.newFixedThreadPool(2);
+
+        CountDownLatch startLatch =
+                new CountDownLatch(1);
+
+        Callable<Result<Boolean>> task1 = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.removeOwnerManager(
+                        OWNER1_EMAIL,
+                        COMPANY1_ID,
+                        VALID_FOUNDER_TOKEN
+                );
+        };
+
+        Callable<Result<Boolean>> task2 = () -> {
+                startLatch.await();
+                return CompanyHierarchyService.removeOwnerManager(
+                        OWNER2_EMAIL,
+                        COMPANY1_ID,
+                        VALID_FOUNDER_TOKEN
+                );
+        };
+
+        Future<Result<Boolean>> future1 = executor.submit(task1);
+        Future<Result<Boolean>> future2 = executor.submit(task2);
+
+        startLatch.countDown();
+
+        Result<Boolean> result1 = future1.get();
+        Result<Boolean> result2 = future2.get();
+
+        assertTrue(result1.isSuccess());
+        assertTrue(result2.isSuccess());
+
+        ProductionCompany updated =
+                ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                );
+
+        // both owners removed
+        assertFalse(updated.isOwner(OWNER1_EMAIL));
+        assertFalse(updated.isOwner(OWNER2_EMAIL));
+
+        // founder should now own everything
+        assertTrue(updated.isOwner(FOUNDER_EMAIL));
+
+        Set<String> ALL_EXPECTED_CHILDREN_AFTER_MIGRATION = new HashSet<>();
+        ALL_EXPECTED_CHILDREN_AFTER_MIGRATION.addAll(OWNER1_DEFAULT_CHILDREN);
+        ALL_EXPECTED_CHILDREN_AFTER_MIGRATION.addAll(OWNER2_DEFAULT_CHILDREN);
+        ALL_EXPECTED_CHILDREN_AFTER_MIGRATION.remove(OWNER2_EMAIL);
+        // critical structural invariant:
+        // all children must now belong to founder
+        assertTrue(updated.areDirectSubordinates(
+                FOUNDER_EMAIL,
+                ALL_EXPECTED_CHILDREN_AFTER_MIGRATION
+        ));
+
+        // no dangling links
+        assertFalse(updated.isDirectSubordinate(OWNER1_EMAIL, MANAGER1_EMAIL));
+        assertFalse(updated.isDirectSubordinate(OWNER2_EMAIL, MANAGER2_EMAIL));
+
+        executor.shutdown();
+        }
+
+        
+
+
 
 
 }
