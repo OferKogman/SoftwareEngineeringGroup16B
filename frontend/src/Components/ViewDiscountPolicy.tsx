@@ -1,12 +1,10 @@
 import { useState } from "react";
 
 export type DiscountPolicyDTO = {
-  discountType: string;
-  ticketCount: number;
-  buyX: number;
-  getY: number;
+  discountType: "SIMPLE" | "CONDITIONED" | "COUPON";
   discountPercentage: number;
   discountAmount: number;
+  minTickets: number;
   code: string;
   expirationDate: string;
 };
@@ -17,19 +15,16 @@ type ViewDiscountPolicyProps = {
 };
 
 const DISCOUNT_TYPES = [
-  { value: "PERCENTAGE", label: "Percentage off" },
-  { value: "FIXED_AMOUNT", label: "Fixed amount off" },
-  { value: "BUY_X_GET_Y", label: "Buy X get Y" },
-  { value: "BULK", label: "Bulk / ticket count" },
+  { value: "SIMPLE", label: "Simple discount" },
+  { value: "CONDITIONED", label: "Conditioned discount" },
+  { value: "COUPON", label: "Coupon discount" },
 ];
 
 const initialFormData: DiscountPolicyDTO = {
-  discountType: "",
-  ticketCount: 0,
-  buyX: 0,
-  getY: 0,
+  discountType: "SIMPLE",
   discountPercentage: 0,
   discountAmount: 0,
+  minTickets: 2,
   code: "",
   expirationDate: "",
 };
@@ -60,8 +55,7 @@ export default function ViewDiscountPolicy({
     try {
       await onSubmit({
         ...formData,
-        discountType: formData.discountType.trim(),
-        code: formData.code.trim(),
+        code: formData.discountType === "COUPON" ? formData.code.trim() : "",
       });
       setFormData(initialFormData);
     } catch (err) {
@@ -73,10 +67,9 @@ export default function ViewDiscountPolicy({
     }
   }
 
-  const isBuyXGetY = formData.discountType === "BUY_X_GET_Y";
-  const isBulk = formData.discountType === "BULK";
-  const isPercentage = formData.discountType === "PERCENTAGE";
-  const isFixed = formData.discountType === "FIXED_AMOUNT";
+  const isSimple = formData.discountType === "SIMPLE";
+  const isConditioned = formData.discountType === "CONDITIONED";
+  const isCoupon = formData.discountType === "COUPON";
 
   return (
     <form className="event-creation-form" onSubmit={handleSubmit}>
@@ -89,19 +82,13 @@ export default function ViewDiscountPolicy({
         <select
           required
           value={formData.discountType}
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Please select a discount type.",
-            )
-          }
           onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("discountType", event.target.value);
+            updateField(
+              "discountType",
+              event.target.value as DiscountPolicyDTO["discountType"],
+            );
           }}
         >
-          <option value="" disabled>
-            Select a discount type
-          </option>
           {DISCOUNT_TYPES.map(({ value, label }) => (
             <option key={value} value={value}>
               {label}
@@ -110,25 +97,92 @@ export default function ViewDiscountPolicy({
         </select>
       </label>
 
-      <label>
-        Promo code
+      {/* All types share discount amount and percentage */}
+      {/* <label>
+        Discount percentage (%)
         <input
-          type="text"
+          type="number"
+          min="0"
+          max="100"
+          step="0.01"
           required
-          pattern=".*\S.*"
-          value={formData.code}
+          value={formData.discountPercentage}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
-              "Promo code cannot be empty or whitespace.",
+              "Discount percentage must be between 0 and 100.",
             )
           }
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
-            updateField("code", event.target.value);
+            updateField("discountPercentage", Number(event.target.value));
           }}
-          placeholder="e.g. SUMMER25"
         />
       </label>
+
+      <label>
+        Discount amount
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          required
+          value={formData.discountAmount}
+          onInvalid={(event) =>
+            event.currentTarget.setCustomValidity(
+              "Discount amount must be 0 or greater.",
+            )
+          }
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity("");
+            updateField("discountAmount", Number(event.target.value));
+          }}
+        />
+      </label> */}
+
+      {/* Conditioned: minimum ticket predicate */}
+      {isConditioned && (
+        <label>
+          Minimum tickets required
+          <input
+            type="number"
+            min="2"
+            required
+            value={formData.minTickets}
+            onInvalid={(event) =>
+              event.currentTarget.setCustomValidity(
+                "Minimum tickets must be at least 2.",
+              )
+            }
+            onChange={(event) => {
+              event.currentTarget.setCustomValidity("");
+              updateField("minTickets", Number(event.target.value));
+            }}
+          />
+        </label>
+      )}
+
+      {/* Coupon only */}
+      {isCoupon && (
+        <label>
+          Coupon code
+          <input
+            type="text"
+            required
+            pattern=".*\S.*"
+            value={formData.code}
+            onInvalid={(event) =>
+              event.currentTarget.setCustomValidity(
+                "Coupon code cannot be empty or whitespace.",
+              )
+            }
+            onChange={(event) => {
+              event.currentTarget.setCustomValidity("");
+              updateField("code", event.target.value);
+            }}
+            placeholder="e.g. SUMMER25"
+          />
+        </label>
+      )}
 
       <label>
         Expiration date
@@ -148,114 +202,6 @@ export default function ViewDiscountPolicy({
           }}
         />
       </label>
-
-      {isBulk && (
-        <label>
-          Minimum ticket count
-          <input
-            type="number"
-            min="1"
-            required
-            value={formData.ticketCount}
-            onInvalid={(event) =>
-              event.currentTarget.setCustomValidity(
-                "Ticket count must be at least 1.",
-              )
-            }
-            onChange={(event) => {
-              event.currentTarget.setCustomValidity("");
-              updateField("ticketCount", Number(event.target.value));
-            }}
-          />
-        </label>
-      )}
-
-      {isBuyXGetY && (
-        <>
-          <label>
-            Buy X (tickets to purchase)
-            <input
-              type="number"
-              min="1"
-              required
-              value={formData.buyX}
-              onInvalid={(event) =>
-                event.currentTarget.setCustomValidity(
-                  "Buy X must be at least 1.",
-                )
-              }
-              onChange={(event) => {
-                event.currentTarget.setCustomValidity("");
-                updateField("buyX", Number(event.target.value));
-              }}
-            />
-          </label>
-
-          <label>
-            Get Y (free tickets)
-            <input
-              type="number"
-              min="1"
-              required
-              value={formData.getY}
-              onInvalid={(event) =>
-                event.currentTarget.setCustomValidity(
-                  "Get Y must be at least 1.",
-                )
-              }
-              onChange={(event) => {
-                event.currentTarget.setCustomValidity("");
-                updateField("getY", Number(event.target.value));
-              }}
-            />
-          </label>
-        </>
-      )}
-
-      {(isPercentage || isBulk) && (
-        <label>
-          Discount percentage (%)
-          <input
-            type="number"
-            min="0"
-            max="100"
-            step="0.01"
-            required
-            value={formData.discountPercentage}
-            onInvalid={(event) =>
-              event.currentTarget.setCustomValidity(
-                "Discount percentage must be between 0 and 100.",
-              )
-            }
-            onChange={(event) => {
-              event.currentTarget.setCustomValidity("");
-              updateField("discountPercentage", Number(event.target.value));
-            }}
-          />
-        </label>
-      )}
-
-      {isFixed && (
-        <label>
-          Discount amount
-          <input
-            type="number"
-            min="0"
-            step="0.01"
-            required
-            value={formData.discountAmount}
-            onInvalid={(event) =>
-              event.currentTarget.setCustomValidity(
-                "Discount amount must be 0 or greater.",
-              )
-            }
-            onChange={(event) => {
-              event.currentTarget.setCustomValidity("");
-              updateField("discountAmount", Number(event.target.value));
-            }}
-          />
-        </label>
-      )}
 
       <div className="form-actions">
         {onCancel && (
