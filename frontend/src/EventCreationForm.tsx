@@ -46,7 +46,8 @@ export default function EventCreationForm({
     }
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-        event.preventDefault();
+        event.preventDefault()
+
         setIsSubmitting(true);
         setError("");
     
