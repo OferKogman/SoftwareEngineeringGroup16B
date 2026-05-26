@@ -1,6 +1,8 @@
 import { useState } from "react";
 
 export type DiscountPolicyDTO = {
+  maxTickets: number;
+  effectiveFrom: string;
   discountType: "SIMPLE" | "CONDITIONED" | "COUPON";
   discountPercentage: number;
   discountAmount: number;
@@ -27,6 +29,8 @@ const initialFormData: DiscountPolicyDTO = {
   minTickets: 2,
   code: "",
   expirationDate: "",
+  effectiveFrom: "",
+  maxTickets: 1000,
 };
 
 export default function ViewDiscountPolicy({
@@ -36,6 +40,7 @@ export default function ViewDiscountPolicy({
   const [formData, setFormData] = useState<DiscountPolicyDTO>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [noExpiration, setNoExpiration] = useState(false);
 
   function updateField<K extends keyof DiscountPolicyDTO>(
     field: K,
@@ -52,12 +57,19 @@ export default function ViewDiscountPolicy({
     setIsSubmitting(true);
     setError("");
 
+    if (!noExpiration && !formData.expirationDate) {
+      setError("Please enter a valid expiration date, or check 'No expiration date'.");
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       await onSubmit({
         ...formData,
         code: formData.discountType === "COUPON" ? formData.code.trim() : "",
       });
       setFormData(initialFormData);
+      setNoExpiration(false);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to save discount policy.",
@@ -67,12 +79,11 @@ export default function ViewDiscountPolicy({
     }
   }
 
-  const isSimple = formData.discountType === "SIMPLE";
   const isConditioned = formData.discountType === "CONDITIONED";
   const isCoupon = formData.discountType === "COUPON";
 
   return (
-    <form className="event-creation-form" onSubmit={handleSubmit}>
+    <form className="event-creation-form" onSubmit={handleSubmit} noValidate>
       <h2>Discount Policy</h2>
 
       {error && <p className="form-error">{error}</p>}
@@ -97,8 +108,7 @@ export default function ViewDiscountPolicy({
         </select>
       </label>
 
-      {/* All types share discount amount and percentage */}
-      {/* <label>
+      <label>
         Discount percentage (%)
         <input
           type="number"
@@ -137,9 +147,8 @@ export default function ViewDiscountPolicy({
             updateField("discountAmount", Number(event.target.value));
           }}
         />
-      </label> */}
+      </label>
 
-      {/* Conditioned: minimum ticket predicate */}
       {isConditioned && (
         <label>
           Minimum tickets required
@@ -161,7 +170,27 @@ export default function ViewDiscountPolicy({
         </label>
       )}
 
-      {/* Coupon only */}
+      {isConditioned && (
+        <label>
+          Maximum tickets required
+          <input
+            type="number"
+            max="1000"
+            required
+            value={formData.maxTickets}
+            onInvalid={(event) =>
+              event.currentTarget.setCustomValidity(
+                "Maximum tickets must be at most 1000.",
+              )
+            }
+            onChange={(event) => {
+              event.currentTarget.setCustomValidity("");
+              updateField("maxTickets", Number(event.target.value));
+            }}
+          />
+        </label>
+      )}
+
       {isCoupon && (
         <label>
           Coupon code
@@ -185,23 +214,51 @@ export default function ViewDiscountPolicy({
       )}
 
       <label>
-        Expiration date
+        Effective from date
         <input
           type="datetime-local"
           required
-          value={formData.expirationDate}
+          value={formData.effectiveFrom}
           min={getMinimumDateTime()}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
-              "Please enter a valid expiration date and time in the future.",
+              "Please enter a valid effective from date and time in the future.",
             )
           }
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
-            updateField("expirationDate", event.target.value);
+            updateField("effectiveFrom", event.target.value);
           }}
         />
       </label>
+
+      <label>
+        <input
+          type="checkbox"
+          checked={noExpiration}
+          onChange={(event) => {
+            setNoExpiration(event.target.checked);
+            if (event.target.checked) {
+              updateField("expirationDate", "");
+            }
+          }}
+        />
+        No expiration date
+      </label>
+
+      {!noExpiration && (
+        <label>
+          Expiration date
+          <input
+            type="datetime-local"
+            value={formData.expirationDate}
+            min={getMinimumDateTime()}
+            onChange={(event) => {
+              updateField("expirationDate", event.target.value);
+            }}
+          />
+        </label>
+      )}
 
       <div className="form-actions">
         {onCancel && (
