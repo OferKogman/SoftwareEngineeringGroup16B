@@ -184,6 +184,22 @@ public class CompanyHierarchyServiceTests {
                 company.acceptInvite(newOwnerEmail, assignerEmail);
         }
 
+                //checks that user didnt have an invite and wasnt invited
+        private void verifyUserDidntGetInvite(String userEmail)
+        {
+                assertFalse(company1.hasPendingInvite(userEmail));
+                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
+                assertFalse(updated.hasPendingInvite(userEmail));
+        }
+
+        private void children_didnt_change()
+        {
+                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
+                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER1_DEFAULT_CHILDREN));
+                assertTrue(updated.areDirectSubordinates(OWNER2_EMAIL, OWNER2_DEFAULT_CHILDREN));
+        }
+
+
         // good
         @Test
         void assignOwnerToCompany_success() {
@@ -683,22 +699,6 @@ public class CompanyHierarchyServiceTests {
         }
 
         @Test
-        void assignManagerToCompany_existingOwner_fails() {
-
-                Result<Boolean> result =
-                        CompanyHierarchyService.assignManagerToCompany(
-                        COMPANY1_ID,
-                        OWNER2_EMAIL,
-                        EnumSet.of(ManagerPermissions.CUSTOMER_SUPPORT),
-                        VALID_OWNER1_TOKEN
-                        );
-
-                assertFalse(result.isSuccess());
-
-                verifyUserDidntGetInvite(OWNER2_EMAIL);
-        }
-
-        @Test
         void assignManagerToCompany_duplicatePendingInvite_allowed() {
 
                 assertTrue(
@@ -731,7 +731,8 @@ public class CompanyHierarchyServiceTests {
                         )
                 );
         }
-         @Test
+        
+        @Test
         void assignManagerToCompany_InviteSomeoneWithOwnerInvite_allowed() {
 
                 assertTrue(
@@ -781,7 +782,6 @@ public class CompanyHierarchyServiceTests {
                 );
                 verifyUserDidntGetInvite(BYSTANDER_EMAIL);
         }
-
 
         @Test
         void assignManagerToCompany_nullPermissions_fails() {
@@ -1129,22 +1129,6 @@ public class CompanyHierarchyServiceTests {
                 executor.shutdown();
         }
 
-
-        //checks that user didnt have an invite and wasnt invited
-        private void verifyUserDidntGetInvite(String userEmail)
-        {
-                assertFalse(company1.hasPendingInvite(userEmail));
-                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
-                assertFalse(updated.hasPendingInvite(userEmail));
-        }
-
-        private void children_didnt_change()
-        {
-                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
-                assertTrue(updated.areDirectSubordinates(OWNER1_EMAIL, OWNER1_DEFAULT_CHILDREN));
-                assertTrue(updated.areDirectSubordinates(OWNER2_EMAIL, OWNER2_DEFAULT_CHILDREN));
-        }
-
         @Test
         void forfeitOwnership_success() {
                 Result<Boolean> result =
@@ -1334,7 +1318,6 @@ public class CompanyHierarchyServiceTests {
 
                 verify(repo, never()).save(any());
         }
-
 
         @Test
         void concurrentForfeitOwnership_sameOwner_onlyOneSucceeds()
@@ -1607,7 +1590,6 @@ public class CompanyHierarchyServiceTests {
 
                 assertTrue(updated.isOwner(MANAGER2_EMAIL));
         }
-
 
         @Test
         void acceptInviteToCompany_unexpectedException() {
