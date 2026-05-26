@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
@@ -63,7 +64,7 @@ public class SystemAdminRepositoryMapImplTests {
 		SystemAdmin admin5 = new SystemAdmin("5", "admin5", "pass1", "email5");
 		SystemAdmin admin5duplicateId = new SystemAdmin("5", "admin6", "pass2", "email6"); // same id
 		repository.save(admin5);
-		assertThrows(IllegalArgumentException.class, () -> repository.save(admin5duplicateId));
+		assertThrows(OptimisticLockingFailureException.class, () -> repository.save(admin5duplicateId));
 
 		SystemAdmin retrievedById = repository.findByID("5");
 		assertEquals(admin5, retrievedById); // should still be the first one added
