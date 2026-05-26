@@ -1,8 +1,13 @@
-import EventCreationForm, { type EventCreationData } from "./EventCreationForm";
-import PaymentForm from "./PaymentForm";
+import EventCreationForm, {
+  type EventCreationData,
+} from "./Components/EventCreationForm";
+import EventUpdateForm, {
+  type EventUpdateDetails,
+} from "./Components/EventUpdateForm";
+import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
-} from "./PurchasePolicyCreationForm";
+} from "./Components/PurchasePolicyCreationForm";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -24,6 +29,9 @@ function App() {
   async function handleCreateEvent(eventData: EventCreationData) {
     console.log("Event created:", eventData);
   }
+  async function handleUpdateEvent(eventData: EventUpdateDetails) {
+    console.log("Event updated:", eventData);
+  }
   return (
     <>
       <h1>Payment</h1>
@@ -34,6 +42,9 @@ function App() {
 
       <h1>Create Event</h1>
       <EventCreationForm onCreateEvent={handleCreateEvent} />
+
+      <h1>Update Event</h1>
+      <EventUpdateForm onUpdateEvent={handleUpdateEvent} />
     </>
   );
 }
