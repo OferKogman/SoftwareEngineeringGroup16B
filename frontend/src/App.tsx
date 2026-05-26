@@ -10,6 +10,9 @@ import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
 import ViewEvent from "./Components/ViewEvent";
+import ViewDiscountPolicy, {
+  type DiscountPolicyDTO,
+} from "./Components/ViewDiscountPolicy";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -34,6 +37,10 @@ function App() {
   async function handleUpdateEvent(eventData: EventUpdateDetails) {
     console.log("Event updated:", eventData);
   }
+  async function handleDiscountPolicySubmit(policyData: DiscountPolicyDTO) {
+    console.log("Discount policy submitted:", policyData);
+  }
+
   return (
     <>
       <h1>Payment</h1>
@@ -44,13 +51,18 @@ function App() {
 
       <h1>Create Event</h1>
       <EventCreationForm onCreateEvent={handleCreateEvent} />
-
+      <h1>Discount Policy</h1>
+      <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
       <BrowserRouter>
         <Routes>
           <Route path="/events/:id" element={<ViewEvent />} />
           <Route
             path="/eventupdate/:id"
             element={<EventUpdateForm onUpdateEvent={handleUpdateEvent} />}
+          />
+          <Route
+            path="/discount-policies/:id"
+            element={<ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />}
           />
         </Routes>
       </BrowserRouter>
