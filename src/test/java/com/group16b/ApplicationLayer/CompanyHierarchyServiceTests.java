@@ -18,6 +18,11 @@ import java.lang.reflect.Field;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -185,14 +190,11 @@ public class CompanyHierarchyServiceTests {
                 assertTrue(result.getValue());
 
                 ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
-
-                assertTrue(updated.hasPendingInvite(BYSTANDER_EMAIL));
+                assertTrue(updated.hasPendingOwnerInvite(BYSTANDER_EMAIL, OWNER1_EMAIL));
         }
 
         @Test
         void assignOwnerToCompany_invalidToken_fails() {
-                assertFalse(company1.hasPendingInvite(BYSTANDER_EMAIL));
-                
                 Result<Boolean> result =
                         CompanyHierarchyService.assignOwnerToCompany(
                         COMPANY1_ID,
@@ -203,13 +205,11 @@ public class CompanyHierarchyServiceTests {
                 assertFalse(result.isSuccess());
                 assertEquals("Invalid Token", result.getError());
 
-                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
-                assertFalse(updated.hasPendingInvite(BYSTANDER_EMAIL));
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
         }
 
         @Test
         void assignOwnerToCompany_staleUser_fails() {
-                assertFalse(company1.hasPendingInvite(BYSTANDER_EMAIL));
                 Result<Boolean> result =
                         CompanyHierarchyService.assignOwnerToCompany(
                         COMPANY1_ID,
@@ -221,9 +221,237 @@ public class CompanyHierarchyServiceTests {
                 assertEquals(
                 "User with ID " + BAD_USER_EMAIL + " not found.",
                 result.getError());
+                
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
 
+        @Test
+        void assignOwnerToCompany_managerCannotAssignOwner() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_MANAGER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("caller User is not owner in Assign Owner"));
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+        @Test
+        void assignOwnerToCompany_bystanderCannotAssignOwner() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_BYSTANDER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("caller User is not owner in Assign Owner"));
+                verifyUserDidntGetInvite(BYSTANDER_EMAIL);
+        }
+
+        @Test
+        void assignOwnerToCompany_targetUserNotFound() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BAD_USER_EMAIL,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("User with ID " + BAD_USER_EMAIL + " not found.", result.getError());
+                verifyUserDidntGetInvite(BAD_USER_EMAIL);
+        }
+
+        @Test
+        void assignOwnerToCompany_companyNotFound() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignOwnerToCompany(
+                        BAD_COMPANY_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Production company with ID "+BAD_COMPANY_ID+" is not found.", result.getError());
+        }
+
+        @Test
+        void assignOwnerToCompany_existingOwner_fails() {
+        Result<Boolean> result =
+                CompanyHierarchyService.assignOwnerToCompany(
+                COMPANY1_ID,
+                OWNER2_EMAIL,
+                VALID_OWNER1_TOKEN
+                );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Target " + OWNER2_EMAIL + " is already an owner of the company.", result.getError());
+        verifyUserDidntGetInvite(OWNER2_EMAIL);
+        }
+
+        @Test
+        void assignOwnerToCompany_duplicatePendingInvite_allowed() {
+                assertTrue(company1.hasPendingInvite(INVITED_OWNER_EMAIL));
+                Result<Boolean> result =
+                        CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        INVITED_OWNER_EMAIL,
+                        VALID_OWNER2_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
                 ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
-                assertFalse(updated.hasPendingInvite(BYSTANDER_EMAIL));
+                assertTrue(updated.hasPendingOwnerInvite(INVITED_OWNER_EMAIL, OWNER2_EMAIL));
+        }
+
+        @Test
+        void assignOwnerToCompany_unexpectedException() {
+                IProductionCompanyRepository repo =mock(IProductionCompanyRepository.class);
+
+                when(repo.findByID(anyString()))
+                        .thenThrow(new RuntimeException("DB exploded"));
+
+                CompanyHierarchyService service =
+                        new CompanyHierarchyService(
+                        mockAuthService,
+                        repo,
+                        UserRepository
+                        );
+
+                Result<Boolean> result =
+                        service.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_OWNER1_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("unexpected"));
+                verify(repo, never()).save(any());
+        }
+
+        @Test
+        void concurrentAssignOwner_differentTargets_bothSucceed() throws Exception {
+
+                User userA = new User("a@test.com", "password");
+                User userB = new User("b@test.com", "password");
+
+                UserRepository.save(userA);
+                UserRepository.save(userB);
+
+                ExecutorService executor = Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch = new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        "a@test.com",
+                        VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        "b@test.com",
+                        VALID_OWNER2_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 = executor.submit(task1);
+                Future<Result<Boolean>> future2 = executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(result1.isSuccess());
+                assertTrue(result2.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.hasPendingOwnerInvite("a@test.com",OWNER1_EMAIL));
+                assertTrue(updated.hasPendingOwnerInvite("b@test.com",OWNER2_EMAIL));
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentAssignOwner_sameTarget_systemRemainsConsistent()throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_OWNER1_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.assignOwnerToCompany(
+                        COMPANY1_ID,
+                        BYSTANDER_EMAIL,
+                        VALID_OWNER2_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() || result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertTrue(updated.hasPendingOwnerInvite(BYSTANDER_EMAIL,OWNER1_EMAIL) &&
+                        updated.hasPendingOwnerInvite(BYSTANDER_EMAIL,OWNER2_EMAIL)
+                );
+
+                executor.shutdown();
+        }
+
+
+        //checks that user didnt have an invite and wasnt invited
+        private void verifyUserDidntGetInvite(String userEmail)
+        {
+                assertFalse(company1.hasPendingInvite(userEmail));
+                ProductionCompany updated =ProductionCompanyRepository.findByID(String.valueOf(COMPANY1_ID));
+                assertFalse(updated.hasPendingInvite(userEmail));
         }
 
 

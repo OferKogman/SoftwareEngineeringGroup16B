@@ -136,7 +136,7 @@ public class ProductionCompany {
         }
         if(isOwner(targetID))
         {
-            throw new IllegalArgumentException("Target is already owner in Assign Owner.");
+            throw new IllegalArgumentException("Target " + targetID + " is already an owner of the company.");
         }
         MembershipNode newOnwerInvite = MembershipNode.createOwner(targetID, callerID);
         invites.put(new InviteKey(targetID, callerID), newOnwerInvite);
@@ -150,7 +150,7 @@ public class ProductionCompany {
         }
         if(isManager(targetID))
         {
-            throw new IllegalArgumentException("Target is already owner in Assign Manager.");
+            throw new IllegalArgumentException("Target " + targetID + " is already a manager of the company.");
         }
         MembershipNode newManagerInvite = MembershipNode.createManager(targetID, callerID,perms);
         invites.put(new InviteKey(targetID, callerID), newManagerInvite);
@@ -199,7 +199,7 @@ public class ProductionCompany {
     {
         if(!isOwner(userID))
         {
-            throw new IllegalArgumentException("User is not owner in forfeit Ownership");
+            throw new IllegalArgumentException("User " + userID + " is not owner in forfeit Ownership");
         }
         if(isFounder(userID))
         {
