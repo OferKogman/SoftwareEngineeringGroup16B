@@ -1700,6 +1700,253 @@ public class CompanyHierarchyServiceTests {
                 executor.shutdown();
         }
 
+        @Test
+        void rejectInviteToCompany_success_ownerInviteRejected() {
+
+                assertTrue(
+                        company1.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.rejectInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER2_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(
+                        updated.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+                assertTrue(
+                        updated.hasPendingManagerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+
+                assertFalse(updated.isOwner(INVITED_OWNER_EMAIL));
+        }
+
+        @Test
+        void rejectInviteToCompany_invalidToken_fails() {
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.rejectInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER2_EMAIL,
+                        INVALID_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid Token", result.getError());
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+                assertTrue(updated.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+        }
+
+        @Test
+        void rejectInviteToCompany_staleUser_fails() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.rejectInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER2_EMAIL,
+                        STALE_USER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "User with ID " + BAD_USER_EMAIL + " not found.",
+                        result.getError()
+                );
+                
+        }
+
+        @Test
+        void rejectInviteToCompany_companyNotFound() {
+                Result<Boolean> result =
+                        CompanyHierarchyService.rejectInviteToCompany(
+                        BAD_COMPANY_ID,
+                        OWNER1_EMAIL,
+                        VALID_INVITED_OWNER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+
+                assertEquals(
+                        "Production company with ID " +
+                        BAD_COMPANY_ID +
+                        " is not found.",
+                        result.getError()
+                );
+        }
+
+        @Test
+        void rejectInviteToCompany_inviteNotFound() {
+                assertFalse(
+                        company1.hasPendingInvite(BYSTANDER_EMAIL)
+                );
+
+                Result<Boolean> result =
+                        CompanyHierarchyService.rejectInviteToCompany(
+                        COMPANY1_ID,
+                        OWNER1_EMAIL,
+                        VALID_BYSTANDER_TOKEN
+                        );
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invite not found.", result.getError());
+        }
+
+        @Test
+        void concurrentRejectInvite_sameInvite_onlyOneSucceeds()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.rejectInviteToCompany(
+                                COMPANY1_ID,
+                                OWNER2_EMAIL,
+                                VALID_INVITED_OWNER_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.rejectInviteToCompany(
+                                COMPANY1_ID,
+                                OWNER2_EMAIL,
+                                VALID_INVITED_OWNER_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(
+                        result1.isSuccess() ^
+                        result2.isSuccess()
+                );
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(
+                        updated.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+
+                executor.shutdown();
+        }
+
+        @Test
+        void concurrentRejectInvite_differentInvites_bothSucceed()
+        throws Exception {
+
+                ExecutorService executor =
+                        Executors.newFixedThreadPool(2);
+
+                CountDownLatch startLatch =
+                        new CountDownLatch(1);
+
+                Callable<Result<Boolean>> task1 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.rejectInviteToCompany(
+                                COMPANY1_ID,
+                                OWNER2_EMAIL,
+                                VALID_INVITED_OWNER_TOKEN
+                        );
+                };
+
+                Callable<Result<Boolean>> task2 = () -> {
+                        startLatch.await();
+
+                        return CompanyHierarchyService.rejectInviteToCompany(
+                                COMPANY1_ID,
+                                OWNER1_EMAIL,
+                                VALID_INVITED_MANAGER_TOKEN
+                        );
+                };
+
+                Future<Result<Boolean>> future1 =
+                        executor.submit(task1);
+
+                Future<Result<Boolean>> future2 =
+                        executor.submit(task2);
+
+                startLatch.countDown();
+
+                Result<Boolean> result1 = future1.get();
+                Result<Boolean> result2 = future2.get();
+
+                assertTrue(result1.isSuccess());
+                assertTrue(result2.isSuccess());
+
+                ProductionCompany updated =
+                        ProductionCompanyRepository.findByID(
+                        String.valueOf(COMPANY1_ID)
+                        );
+
+                assertFalse(
+                        updated.hasPendingOwnerInvite(
+                        INVITED_OWNER_EMAIL,
+                        OWNER2_EMAIL
+                        )
+                );
+
+                assertFalse(
+                        updated.hasPendingManagerInvite(
+                        INVITED_MANAGER_EMAIL,
+                        OWNER1_EMAIL,
+                        ALL_MANAGER_PERMISSIONS
+                        )
+                );
+
+                executor.shutdown();
+        }
+
 
 
 }
