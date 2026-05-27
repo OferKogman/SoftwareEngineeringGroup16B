@@ -15,7 +15,7 @@ import PurchasePolicyCreationForm, {
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
-} from "./Components/ViewDiscountPolicy";
+} from "./Components/CreateDiscountPolicy";
 import ViewEvent from "./Components/ViewEvent";
 
 function App() {
