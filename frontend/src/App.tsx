@@ -12,6 +12,7 @@ import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
+import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
 } from "./Components/ViewDiscountPolicy";
@@ -46,28 +47,51 @@ function App() {
   async function handleAdminLogin(adminLoginData: AdminLoginData) {
     console.log("Admin Logged in:", adminLoginData);
   }
+  async function handleDeleteEvent(id: number) {
+    console.log("Event Deleted:", id);
+  }
+  async function handleEditEvent(companyID: number, eventID: number) {
+    window.location.href = `/company/${companyID}/event-update/${eventID}`;
+  }
 
   return (
     <>
-      <h1>Payment</h1>
-      <PaymentForm amount={250} onPaymentSubmit={handlePayment} />
-
-      <h1>Create Purchase Policy</h1>
-      <PurchasePolicyCreationForm onCreatePolicy={handleCreatePurchasePolicy} />
-
-      <h1>Create Event</h1>
-      <EventCreationForm onCreateEvent={handleCreateEvent} />
-      <h1>Discount Policy</h1>
-      <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
       <BrowserRouter>
         <Routes>
-          <Route path="/events/:id" element={<ViewEvent />} />
+          <Route path="/events/:eventID" element={<ViewEvent />} />
           <Route
-            path="/eventupdate/:id"
+            path="/checkout/"
+            element={
+              <PaymentForm amount={250} onPaymentSubmit={handlePayment} />
+            }
+          />
+          <Route
+            path="/create-purchase-policy/"
+            element={
+              <PurchasePolicyCreationForm
+                onCreatePolicy={handleCreatePurchasePolicy}
+              />
+            }
+          />
+          <Route
+            path="/company/:companyID/events"
+            element={
+              <ViewCompanyEvents
+                onEditEvent={handleEditEvent}
+                onDeleteEvent={handleDeleteEvent}
+              />
+            }
+          />
+          <Route
+            path="/create-event/"
+            element={<EventCreationForm onCreateEvent={handleCreateEvent} />}
+          />
+          <Route
+            path="/company/:companyID/event-update/:eventID"
             element={<EventUpdateForm onUpdateEvent={handleUpdateEvent} />}
           />
           <Route
-            path="/discount-policies/:id"
+            path="/create-discount-policy/"
             element={
               <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
             }
