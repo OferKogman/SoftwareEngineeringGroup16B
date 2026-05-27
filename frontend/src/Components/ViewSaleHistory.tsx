@@ -8,8 +8,6 @@ export default function ViewSaleHistory() {
   const [error, setError] = useState<string>("");
   const [orders, setOrders] = useState<OrderDTO[] | null>(null);
 
-  const [eventIdFilter, setEventIdFilter] = useState("");
-  const [subjectIdFilter, setSubjectIdFilter] = useState("");
 
   useEffect(() => {
     async function loadOrders() {
@@ -77,17 +75,7 @@ export default function ViewSaleHistory() {
     return <div>No orders found.</div>;
   }
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesEventId =
-      eventIdFilter === "" ||
-      order.eventId.toString().includes(eventIdFilter);
 
-    const matchesSubjectId =
-      subjectIdFilter === "" ||
-      order.subjectId.includes(subjectIdFilter);
-
-    return matchesEventId && matchesSubjectId;
-  });
 
   return (
     <div>
@@ -95,30 +83,12 @@ export default function ViewSaleHistory() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <div>
-        <label>
-          Filter by Event ID:
-          <input
-            type="text"
-            value={eventIdFilter}
-            onChange={(e) => setEventIdFilter(e.target.value)}
-          />
-        </label>
+      
 
-        <label>
-          Filter by Subject ID:
-          <input
-            type="text"
-            value={subjectIdFilter}
-            onChange={(e) => setSubjectIdFilter(e.target.value)}
-          />
-        </label>
-      </div>
-
-      {filteredOrders.length === 0 ? (
+      {orders.length === 0 ? (
         <p>No orders found.</p>
       ) : (
-        filteredOrders.map((order) => (
+        orders.map((order) => (
           <div key={order.orderId}>
             <h3>Order {order.orderId}</h3>
 
