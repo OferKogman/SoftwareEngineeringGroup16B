@@ -5,47 +5,86 @@ type DiscountPolicyProps = {
 };
 
 export default function ViewDiscountPolicies({ discountPolicy }: DiscountPolicyProps) {
-    if (!discountPolicy) { 
-        return <span>No discount policy.</span>;
-    }
+  if (!discountPolicy) {
+    return <span>No discount policy.</span>;
+  }
+
+  return (
+    <InnerDiscountPolicy
+      discountPolicy={discountPolicy}
+      isRoot={true}
+    />
+  );
+}
+
+
+function InnerDiscountPolicy({
+  discountPolicy,
+  isRoot,
+}: {
+  discountPolicy: DiscountPolicyDTO;
+  isRoot: boolean;
+}) {
   // LEAF
-  if (discountPolicy && discountPolicy.type !== "Composite") {
+  if (discountPolicy.type !== "Composite") {
     return (
       <span>
-        {discountPolicy.type === "Regular" && `Discount: ${discountPolicy.percentage}%`}
-        {discountPolicy.type === "Early Bird" && `Discount: ${discountPolicy.percentage}% until ${new Date(discountPolicy.earlyBirdEndDate).toLocaleDateString()}`}
+        {discountPolicy.type === "Regular" &&
+          `Discount: ${discountPolicy.percentage}%`}
+
+        {discountPolicy.type === "Early Bird" &&
+          `Discount: ${discountPolicy.percentage}% until ${new Date(
+            discountPolicy.earlyBirdEndDate
+          ).toLocaleDateString()}`}
+
         {discountPolicy.type === "Last Minute" &&
-          `Discount: ${discountPolicy.percentage}% from ${new Date(discountPolicy.lastMinuteStartDate).toLocaleDateString()}`}
+          `Discount: ${discountPolicy.percentage}% from ${new Date(
+            discountPolicy.lastMinuteStartDate
+          ).toLocaleDateString()}`}
+
         {discountPolicy.type === "Minimum Purchase" &&
-          `Discount: ${discountPolicy.percentage}% from minimum tickets: $${discountPolicy.minimumAmount.toFixed(2)})`}
+          `Discount: ${discountPolicy.percentage}% from minimum tickets: $${discountPolicy.minimumAmount.toFixed(
+            2
+          )}`}
+
         {discountPolicy.type === "Maximum Purchase" &&
-          `Discount: ${discountPolicy.percentage}% up to maximum tickets: $${discountPolicy.maximumAmount.toFixed(2)})`}
-        {discountPolicy.type === "Coupon Code" &&
-          (<span>
+          `Discount: ${discountPolicy.percentage}% up to maximum tickets: $${discountPolicy.maximumAmount.toFixed(
+            2
+          )}`}
+
+        {discountPolicy.type === "Coupon Code" && (
+          <span>
             Coupon Code: {discountPolicy.code}{" "}
-            Discount Percentage: {discountPolicy.percentage}%
-            Expiration Date: {new Date(discountPolicy.expirationDate).toLocaleDateString()}
-          </span>)}
+            Discount Percentage: {discountPolicy.percentage}%{" "}
+            Expiration Date:{" "}
+            {new Date(discountPolicy.expirationDate).toLocaleDateString()}
+          </span>
+        )}
       </span>
     );
   }
 
   // COMPOSITE
-  return (
+  const content = (
     <span>
-      ({" "}
-
       {discountPolicy.leftPolicy && (
-        <ViewDiscountPolicies discountPolicy={discountPolicy.leftPolicy} />
+        <InnerDiscountPolicy
+          discountPolicy={discountPolicy.leftPolicy}
+          isRoot={false}
+        />
       )}
 
       {" "}{discountPolicy.operator}{" "}
 
       {discountPolicy.rightPolicy && (
-        <ViewDiscountPolicies discountPolicy={discountPolicy.rightPolicy} />
+        <InnerDiscountPolicy
+          discountPolicy={discountPolicy.rightPolicy}
+          isRoot={false}
+        />
       )}
-
-      {" "})
     </span>
   );
+
+  // put parentheses if needed in inner structure
+  return isRoot ? content : <span>( {content} )</span>;
 }
