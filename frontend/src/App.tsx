@@ -1,4 +1,7 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import AdminLoginForm, {
+  type AdminLoginData,
+} from "./Components/AdminLoginForm";
 import EventCreationForm, {
   type EventCreationData,
 } from "./Components/EventCreationForm";
@@ -9,10 +12,10 @@ import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
-import ViewEvent from "./Components/ViewEvent";
 import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
 } from "./Components/ViewDiscountPolicy";
+import ViewEvent from "./Components/ViewEvent";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -34,11 +37,14 @@ function App() {
   async function handleCreateEvent(eventData: EventCreationData) {
     console.log("Event created:", eventData);
   }
-  async function handleUpdateEvent(eventData: EventUpdateDetails) {
-    console.log("Event updated:", eventData);
+  async function handleUpdateEvent(eventDetails: EventUpdateDetails) {
+    console.log("Event updated:", eventDetails);
   }
   async function handleDiscountPolicySubmit(policyData: DiscountPolicyDTO) {
     console.log("Discount policy submitted:", policyData);
+  }
+  async function handleAdminLogin(adminLoginData: AdminLoginData) {
+    console.log("Admin Logged in:", adminLoginData);
   }
 
   return (
@@ -62,7 +68,13 @@ function App() {
           />
           <Route
             path="/discount-policies/:id"
-            element={<ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />}
+            element={
+              <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
+            }
+          />
+          <Route
+            path="/admin/login"
+            element={<AdminLoginForm onAdminLogin={handleAdminLogin} />}
           />
         </Routes>
       </BrowserRouter>
