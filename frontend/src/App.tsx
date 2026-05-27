@@ -18,10 +18,13 @@ import ViewEvent from "./Components/ViewEvent";
 import ViewOrder from "./Components/ViewOrder";
 import CreateProductionCompany, {type ProductionCompanyDTO,} from "./Components/ProdctionCompanyForm";
 import LoginForm, { type LoginData } from "./Components/LoginFrom";
-import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/AdminViewPurcheseHistory";
+import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/ViewAdminPurcheseHistory";
 
 import { type VenueData } from "./DTOs/VenueDTO";
 import ViewSaleHistory from "./Components/ViewSaleHistory";
+import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
+import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
+import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -154,16 +157,15 @@ function App() {
         />
         <Route
           path="/admin/purchase-history"
-          element={<AdminViewPurchaseHistory title="Search Purchase History" onSearch={handleAdminPurchaseHistory}/>
-          }
+          element={<AdminPurchaseHistory />}
         />
         <Route
           path="/user/purchase-history"
-          element={<ViewSaleHistory filter="subjectId" />}//subjectId
+          element={<UserPurchaseHistory />}
         />
         <Route
           path="/company/:companyID/purchase-history"
-          element={<ViewSaleHistory filter="companyID" id={"0"}/>}//companyID
+          element={<ProductionCompanyPurchaseHistory />}
         />
 
         <Route
