@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import type {
+  ChosenSeatingSegData,
+  FieldSegData,
+  GridRectangleData,
+  SeatData,
+  VenueData,
+  VenueGridData,
+} from "../DTOs/VenueDTO";
 
 const fieldAreaColor = "#13c3f6";
 const fieldAreaBorder = "2px solid #0b6c97";
@@ -14,47 +22,9 @@ const singleSeatHoverColor = "#fff2a8";
 const singleSeatBorder = "2px solid #5f6f00";
 const singleSeatHoverBorder = "2px solid #ff9800";
 
-export type VenueData = {
-  name: string;
-  location: string;
-  grid: VenueGridData;
-  fieldSeg: FieldSegData[];
-  seatSeg: ChosenSeatingSegData[];
-};
-
-export type VenueGridData = {
-  rows: number;
-  columns: number;
-};
-
-export type FieldSegData = {
-  segmentID: string;
-  area: GridRectangleData;
-  size: number;
-};
-
-export type ChosenSeatingSegData = {
-  segmentID: string;
-  area: GridRectangleData;
-  seats: SeatData[];
-};
-
-export type GridRectangleData = {
-  startRow: number;
-  startColumn: number;
-  rowCount: number;
-  columnCount: number;
-};
-
-export type SeatData = {
-  row: number;
-  column: number;
-};
-
 type VenueEditorProps = {
   onSubmitVenue: (venue: VenueData) => void | Promise<void>;
   onCancel?: () => void;
-  venue?: VenueData;
 };
 
 const initialGrid: VenueGridData = {
