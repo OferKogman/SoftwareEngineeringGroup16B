@@ -16,6 +16,14 @@ import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewDiscountPolicy, {type DiscountPolicyDTO, } from "./Components/ViewDiscountPolicy";
 import ViewEvent from "./Components/ViewEvent";
 import UserLoginForm, { type UserLoginData, } from "./Components/UserLoginFrom";
+import ViewDiscountPolicy, {
+  type DiscountPolicyDTO,
+} from "./Components/ViewDiscountPolicy";
+import ViewEvent from "./Components/ViewEvent";
+import CreateProductionCompany, {
+  type ProductionCompanyDTO,
+} from "./Components/ProdctionCompanyForm";
+import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -46,11 +54,16 @@ function App() {
   async function handleAdminLogin(adminLoginData: AdminLoginData) {
     console.log("Admin Logged in:", adminLoginData);
   }
-  async function handleDeleteEvent(id: number) {
-    console.log("Event Deleted:", id);
+  async function handleCreateProductionCompany(
+    companyData: ProductionCompanyDTO,
+  ) {
+    console.log("Production company created:", companyData);
   }
-  async function handleEditEvent(companyID: number, eventID: number) {
-    window.location.href = `/company/${companyID}/event-update/${eventID}`;
+async function handleEditEvent(companyID: number, eventID: number) {
+    console.log("Edit event:", companyID, eventID);
+  }
+  async function handleDeleteEvent(eventID: number) {
+    console.log("Delete event:", eventID);
   }
   async function handleUserLogin(userLoginData: UserLoginData) {
     console.log("User Logged in:", userLoginData);
@@ -109,6 +122,58 @@ function App() {
         </Routes>
       </BrowserRouter>
     </>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/events/:eventID" element={<ViewEvent />} />
+        <Route
+          path="/checkout/"
+          element={
+            <PaymentForm amount={250} onPaymentSubmit={handlePayment} />
+          }
+        />
+        <Route
+          path="/create-purchase-policy/"
+          element={
+            <PurchasePolicyCreationForm
+              onCreatePolicy={handleCreatePurchasePolicy}
+            />
+          }
+        />
+        <Route
+          path="/create-production-company/"
+          element={
+            <CreateProductionCompany onSubmit={handleCreateProductionCompany} />
+          }
+        />
+        <Route
+          path="/company/:companyID/events"
+          element={
+            <ViewCompanyEvents
+              onEditEvent={handleEditEvent}
+              onDeleteEvent={handleDeleteEvent}
+            />
+          }
+        />
+        <Route
+          path="/create-event/"
+          element={<EventCreationForm onCreateEvent={handleCreateEvent} />}
+        />
+        <Route
+          path="/company/:companyID/event-update/:eventID"
+          element={<EventUpdateForm onUpdateEvent={handleUpdateEvent} />}
+        />
+        <Route
+          path="/create-discount-policy/"
+          element={
+            <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
+          }
+        />
+        <Route
+          path="/admin/login"
+          element={<AdminLoginForm onAdminLogin={handleAdminLogin} />}
+        />
+      </Routes>
+    </BrowserRouter>
   );
 }
 export default App;
