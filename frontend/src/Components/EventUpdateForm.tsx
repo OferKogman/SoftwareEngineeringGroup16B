@@ -29,7 +29,7 @@ export default function EventUpdateForm({
   onUpdateEvent,
   onCancel,
 }: EventUpdateFormProps) {
-  const { id } = useParams();
+  const { eventID } = useParams();
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
 
   const [formData, setFormData] = useState<EventUpdateDetails>(initialFormData);
@@ -37,7 +37,7 @@ export default function EventUpdateForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!id) {
+    if (!eventID) {
       return;
     }
 
@@ -81,7 +81,7 @@ export default function EventUpdateForm({
     }
 
     void loadEvent();
-  }, [id]);
+  }, [eventID]);
 
   function updateField<K extends keyof EventUpdateDetails>(
     field: K,
@@ -116,7 +116,7 @@ export default function EventUpdateForm({
     }
   }
 
-  if (!id) {
+  if (!eventID) {
     return <p>Missing event ID.</p>;
   }
 

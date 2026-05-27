@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import type { EventDTO } from "../DTOs/EventDTO";
 
 export default function ViewEvent() {
-  const { id } = useParams();
+  const { eventID } = useParams();
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function ViewEvent() {
     // fetch(`/api/events/${id}`)
     //     .then(res => res.json())
     //     .then(data => setEventDTO(data));
-  }, [id]);
+  }, [eventID]);
 
   if (!eventDTO) {
     return <div>Loading...</div>;
