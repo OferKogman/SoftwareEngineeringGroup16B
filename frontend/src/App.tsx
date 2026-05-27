@@ -14,10 +14,16 @@ import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
 } from "./Components/CreateDiscountPolicy";
 import ViewEvent from "./Components/ViewEvent";
+import ViewOrder from "./Components/ViewOrder";
 import CreateProductionCompany, {
   type ProductionCompanyDTO,
 } from "./Components/ProdctionCompanyForm";
 import LoginForm, { type LoginData } from "./Components/LoginFrom";
+import AdminViewPurchaseHistory, {
+  type PurchaseHistorySearchData,
+} from "./Components/AdminViewPurcheseHistory";
+
+//import TestSaleHistory from "./testers/TestSaleHistory";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -62,12 +68,15 @@ function App() {
   async function handleUserLogin(userLoginData: LoginData) {
     console.log("User Logged in:", userLoginData);
   }
+  async function handleAdminPurchaseHistory(searchData: PurchaseHistorySearchData) {
+    console.log("Admin Search purchase history:", searchData);
+  }
 
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/events/:eventID" element={<ViewEvent />} />
-
+        <Route path="/orders/:orderid" element={<ViewOrder />} />
         <Route
           path="/checkout/"
           element={<PaymentForm amount={250} onPaymentSubmit={handlePayment} />}
@@ -123,7 +132,14 @@ function App() {
           path="/user/login"
           element={<LoginForm onLogin={handleUserLogin} title="User Login" />}
         />
+        <Route
+          path="/admin/purchase-history"
+          element={<AdminViewPurchaseHistory title="Search Purchase History" onSearch={handleAdminPurchaseHistory}/>
+          }
+        />
+        {/* <Route path="/test-sale-history" element={<TestSaleHistory />} /> */}
       </Routes>
+      
     </BrowserRouter>
   );
 }
