@@ -12,12 +12,13 @@ import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
-import VenueEditor, { type VenueData } from "./Components/VenueEditor";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
 } from "./Components/ViewDiscountPolicy";
 import ViewEvent from "./Components/ViewEvent";
+import { type VenueData } from "./DTOs/VenueDTO";
+import VenueEditor from "./Components/VenueEditor";
 
 function App() {
   async function handlePayment(paymentData: {

@@ -4,6 +4,8 @@ export type VenueData = {
   grid: VenueGridData;
   fieldSeg: FieldSegData[];
   seatSeg: ChosenSeatingSegData[];
+  stages: StageData[];
+  entrances: EntranceData[];
 };
 
 export type VenueGridData = {
@@ -21,6 +23,16 @@ export type ChosenSeatingSegData = {
   segmentID: string;
   area: GridRectangleData;
   seats: SeatData[];
+};
+
+export type StageData = {
+  stageID: string;
+  area: GridRectangleData;
+};
+
+export type EntranceData = {
+  entranceID: string;
+  area: GridRectangleData;
 };
 
 export type GridRectangleData = {

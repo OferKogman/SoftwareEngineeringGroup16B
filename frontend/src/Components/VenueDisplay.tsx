@@ -1,8 +1,10 @@
 import { useState } from "react";
 import type {
   ChosenSeatingSegData,
+  EntranceData,
   FieldSegData,
   SeatData,
+  StageData,
   VenueData,
 } from "../DTOs/VenueDTO";
 
@@ -20,6 +22,12 @@ const emptyHoverColor = "#ffe0b2";
 const seatBorder = "2px solid #5f6f00";
 const seatColor = "#f5f0c8";
 const seatHoverColor = "#fff2a8";
+
+const stageAreaColor = "#7c4dff";
+const stageAreaBorder = "2px solid #512da8";
+
+const entranceAreaColor = "#43a047";
+const entranceAreaBorder = "2px solid #1b5e20";
 
 type VenueDisplayProps = {
   handleEmptyCellClick: (
@@ -42,53 +50,73 @@ type VenueDisplayProps = {
     gridRow: number,
     gridColumn: number,
   ) => void | Promise<void>;
+  handleStageClick: (
+    stage: StageData,
+    gridRow: number,
+    gridColumn: number,
+  ) => void | Promise<void>;
+  handleEntranceClick: (
+    entrance: EntranceData,
+    gridRow: number,
+    gridColumn: number,
+  ) => void | Promise<void>;
   venue: VenueData;
   onCancel?: () => void;
+  pendingRectangle?: {
+    startRow: number;
+    startColumn: number;
+    endRow: number;
+    endColumn: number;
+  } | null;
+  selectionStartCell?: {
+    gridRow: number;
+    gridColumn: number;
+  } | null;
 };
 
-export default function VenueEditor({
+export default function VenueDisplay({
   handleEmptyCellClick,
   handleFieldSegmentClick,
   handleSeatSegmentClick,
   handleSeatClick,
+  handleStageClick,
+  handleEntranceClick,
   venue,
+  pendingRectangle,
+  selectionStartCell,
 }: VenueDisplayProps) {
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
     column: number;
   } | null>(null);
   const [hoveredFieldSeg, setHoveredFieldSeg] = useState<{
+    segment: FieldSegData;
     row: number;
     column: number;
   } | null>(null);
   const [hoveredSeatSeg, setHoveredSeatSeg] = useState<{
-    row: number;
-    column: number;
-  } | null>(null);
-  const [hoveredSeat, setHoveredSeat] = useState<{
+    segment: ChosenSeatingSegData;
     row: number;
     column: number;
   } | null>(null);
 
-  const [selectedCell, setSelectedCell] = useState<{
-    gridRow: number;
-    gridColumn: number;
+  const [hoveredStage, setHoveredStage] = useState<{
+    stage: StageData;
+    row: number;
+    column: number;
   } | null>(null);
-  const [selectedFieldSeg, setSelectedFieldSeg] = useState<{
-    segment: FieldSegData;
-    gridRow: number;
-    gridColumn: number;
+
+  const [hoveredEntrance, setHoveredEntrance] = useState<{
+    entrance: EntranceData;
+    row: number;
+    column: number;
   } | null>(null);
-  const [selectedSeatSeg, setSelectedSeatSeg] = useState<{
-    segment: ChosenSeatingSegData;
-    gridRow: number;
-    gridColumn: number;
-  } | null>(null);
-  const [selectedSeat, setSelectedSeat] = useState<{
+
+  const [hoveredSeat, setHoveredSeat] = useState<{
     seat: SeatData;
     segment: ChosenSeatingSegData;
-    gridRow: number;
-    gridColumn: number;
+    row: number;
+    column: number;
   } | null>(null);
 
   function getFieldSegment(row: number, column: number) {
@@ -111,6 +139,29 @@ export default function VenueEditor({
       );
     });
   }
+
+  function getStage(row: number, column: number) {
+    return venue.stages.find(({ area }) => {
+      return (
+        row >= area.startRow &&
+        row < area.startRow + area.rowCount &&
+        column >= area.startColumn &&
+        column < area.startColumn + area.columnCount
+      );
+    });
+  }
+
+  function getEntrance(row: number, column: number) {
+    return venue.entrances.find(({ area }) => {
+      return (
+        row >= area.startRow &&
+        row < area.startRow + area.rowCount &&
+        column >= area.startColumn &&
+        column < area.startColumn + area.columnCount
+      );
+    });
+  }
+
   function getSeat(row: number, column: number) {
     const seatSegment = getSeatSegment(row, column);
 
@@ -135,6 +186,27 @@ export default function VenueEditor({
       segment.area.startRow + Math.floor(segment.area.rowCount / 2);
     const centerColumn =
       segment.area.startColumn + Math.floor(segment.area.columnCount / 2);
+
+    return row === centerRow && column === centerColumn;
+  }
+
+  function isStageCenterCell(stage: StageData, row: number, column: number) {
+    const centerRow = stage.area.startRow + Math.floor(stage.area.rowCount / 2);
+    const centerColumn =
+      stage.area.startColumn + Math.floor(stage.area.columnCount / 2);
+
+    return row === centerRow && column === centerColumn;
+  }
+
+  function isEntranceCenterCell(
+    entrance: EntranceData,
+    row: number,
+    column: number,
+  ) {
+    const centerRow =
+      entrance.area.startRow + Math.floor(entrance.area.rowCount / 2);
+    const centerColumn =
+      entrance.area.startColumn + Math.floor(entrance.area.columnCount / 2);
 
     return row === centerRow && column === centerColumn;
   }
@@ -196,6 +268,42 @@ export default function VenueEditor({
       };
     }
 
+    const stageArea = getStage(row, column)?.area;
+
+    if (stageArea) {
+      const border = hovered ? hoverBorder : stageAreaBorder;
+
+      return {
+        borderTop: row === stageArea.startRow ? border : "none",
+        borderRight:
+          column === stageArea.startColumn + stageArea.columnCount - 1
+            ? border
+            : "none",
+        borderBottom:
+          row === stageArea.startRow + stageArea.rowCount - 1 ? border : "none",
+        borderLeft: column === stageArea.startColumn ? border : "none",
+      };
+    }
+
+    const entranceArea = getEntrance(row, column)?.area;
+
+    if (entranceArea) {
+      const border = hovered ? hoverBorder : entranceAreaBorder;
+
+      return {
+        borderTop: row === entranceArea.startRow ? border : "none",
+        borderRight:
+          column === entranceArea.startColumn + entranceArea.columnCount - 1
+            ? border
+            : "none",
+        borderBottom:
+          row === entranceArea.startRow + entranceArea.rowCount - 1
+            ? border
+            : "none",
+        borderLeft: column === entranceArea.startColumn ? border : "none",
+      };
+    }
+
     return {
       borderTop: "1px solid #bbbbbb",
       borderRight: "1px solid #bbbbbb",
@@ -207,45 +315,90 @@ export default function VenueEditor({
   function handleMouseEnter(row: number, column: number) {
     setHoveredFieldSeg(null);
     setHoveredSeatSeg(null);
-    setHoveredFieldSeg(null);
+    setHoveredSeat(null);
+    setHoveredStage(null);
+    setHoveredEntrance(null);
     setHoveredCell({ row, column });
     const seatSeg = getSeatSegment(row, column);
     if (seatSeg) {
-      setHoveredSeatSeg({ row, column });
+      setHoveredSeatSeg({ segment: seatSeg, row: row, column: column });
 
-      const seat = getSeat(row, column);
-      if (seat) {
-        setHoveredSeat({ row, column });
-      }
       return;
     }
 
     const fieldSeg = getFieldSegment(row, column);
     if (fieldSeg) {
-      setHoveredFieldSeg({ row, column });
+      setHoveredFieldSeg({ segment: fieldSeg, row: row, column: column });
+      return;
+    }
+
+    const stage = getStage(row, column);
+    if (stage) {
+      setHoveredStage({ stage, row, column });
+      return;
+    }
+
+    const entrance = getEntrance(row, column);
+    if (entrance) {
+      setHoveredEntrance({ entrance, row, column });
       return;
     }
   }
 
-  function isHovered(row: number, column: number) {
+  function isInsideArea(
+    area: {
+      startRow: number;
+      startColumn: number;
+      rowCount: number;
+      columnCount: number;
+    },
+    row: number,
+    column: number,
+  ) {
     return (
-      (hoveredSeat?.row === row && hoveredSeat.column === column) ||
-      (hoveredSeatSeg?.row === row && hoveredSeatSeg.column === column) ||
-      (hoveredFieldSeg?.row === row && hoveredFieldSeg.column === column) ||
+      row >= area.startRow &&
+      row < area.startRow + area.rowCount &&
+      column >= area.startColumn &&
+      column < area.startColumn + area.columnCount
+    );
+  }
+
+  function isSegmentHovered(row: number, column: number) {
+    return (
+      (hoveredSeatSeg &&
+        isInsideArea(hoveredSeatSeg.segment.area, row, column)) ||
+      (hoveredFieldSeg &&
+        isInsideArea(hoveredFieldSeg.segment.area, row, column)) ||
+      (hoveredStage && isInsideArea(hoveredStage.stage.area, row, column)) ||
+      (hoveredEntrance &&
+        isInsideArea(hoveredEntrance.entrance.area, row, column)) ||
       (hoveredCell?.row === row && hoveredCell.column === column)
     );
+  }
+
+  function isSeatHovered(row: number, column: number) {
+    return hoveredSeat?.row === row && hoveredSeat.column === column;
   }
 
   function handleGridCellClick(row: number, column: number) {
     const fieldSegment = getFieldSegment(row, column);
 
     if (fieldSegment) {
-      setSelectedFieldSeg({
-        segment: fieldSegment,
-        gridRow: row,
-        gridColumn: column,
-      });
       handleFieldSegmentClick(fieldSegment, row, column);
+      return;
+    }
+
+    const stage = getStage(row, column);
+
+    if (stage) {
+      handleStageClick(stage, row, column);
+      return;
+    }
+
+    const entrance = getEntrance(row, column);
+
+    if (entrance) {
+      handleEntranceClick(entrance, row, column);
       return;
     }
 
@@ -253,22 +406,11 @@ export default function VenueEditor({
     const seat = getSeat(row, column);
 
     if (seat && seatSegment) {
-      setSelectedSeat({
-        segment: seatSegment,
-        seat: seat,
-        gridRow: row,
-        gridColumn: column,
-      });
       handleSeatClick(seat, seatSegment, row, column);
       return;
     }
 
     if (seatSegment) {
-      setSelectedSeatSeg({
-        segment: seatSegment,
-        gridRow: row,
-        gridColumn: column,
-      });
       handleSeatSegmentClick(seatSegment, row, column);
       return;
     }
@@ -279,12 +421,17 @@ export default function VenueEditor({
   return (
     <div
       style={{
-        width: "100%",
-        height: "80vh",
+        width: "900px",
+        height: "700px",
+        minWidth: "900px",
+        minHeight: "700px",
+        maxWidth: "900px",
+        maxHeight: "700px",
         overflow: "auto",
         border: "1px solid gray",
         display: "flex",
         justifyContent: "center",
+        alignItems: "center",
       }}
     >
       <div
@@ -302,7 +449,39 @@ export default function VenueEditor({
             const fieldSegment = getFieldSegment(row, column);
             const seatSegment = getSeatSegment(row, column);
             const seat = getSeat(row, column);
-            const hovered = isHovered(row, column);
+            const stage = getStage(row, column);
+            const entrance = getEntrance(row, column);
+            const segmentHovered = isSegmentHovered(row, column);
+            const seatHovered = isSeatHovered(row, column);
+            const activeRectangle = pendingRectangle
+              ? pendingRectangle
+              : selectionStartCell && hoveredCell
+                ? {
+                    startRow: Math.min(
+                      selectionStartCell.gridRow,
+                      hoveredCell.row,
+                    ),
+                    startColumn: Math.min(
+                      selectionStartCell.gridColumn,
+                      hoveredCell.column,
+                    ),
+                    endRow: Math.max(
+                      selectionStartCell.gridRow,
+                      hoveredCell.row,
+                    ),
+                    endColumn: Math.max(
+                      selectionStartCell.gridColumn,
+                      hoveredCell.column,
+                    ),
+                  }
+                : null;
+
+            const rectangleHovered =
+              activeRectangle &&
+              row >= activeRectangle.startRow &&
+              row <= activeRectangle.endRow &&
+              column >= activeRectangle.startColumn &&
+              column <= activeRectangle.endColumn;
 
             return (
               <div
@@ -311,29 +490,32 @@ export default function VenueEditor({
                   handleMouseEnter(row, column);
                 }}
                 onMouseLeave={() => {
-                  setHoveredCell(null);
                   setHoveredFieldSeg(null);
                   setHoveredSeatSeg(null);
-                  setHoveredFieldSeg(null);
+                  setHoveredSeat(null);
+                  setHoveredStage(null);
+                  setHoveredEntrance(null);
                 }}
                 onClick={() => {
-                  setSelectedCell(null);
-                  setSelectedFieldSeg(null);
-                  setSelectedSeatSeg(null);
-                  setSelectedSeat(null);
                   handleGridCellClick(row, column);
                 }}
                 style={{
                   width: "40px",
                   height: "40px",
-                  ...getBorders(row, column, hovered),
+                  ...getBorders(row, column, segmentHovered),
                   boxSizing: "border-box",
-                  backgroundColor: getBackgroundColor(
-                    fieldSegment,
-                    seatSegment,
-                    seat,
-                    hovered,
-                  ),
+                  backgroundColor: rectangleHovered
+                    ? "#88bbff"
+                    : stage
+                      ? stageAreaColor
+                      : entrance
+                        ? entranceAreaColor
+                        : getBackgroundColor(
+                            fieldSegment,
+                            seatSegment,
+                            undefined,
+                            segmentHovered,
+                          ),
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -372,13 +554,51 @@ export default function VenueEditor({
                       </div>
                     </>
                   )}
+                {stage && isStageCenterCell(stage, row, column) && (
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: "16px",
+                      lineHeight: "16px",
+                      margin: 0,
+                    }}
+                  >
+                    {stage.stageID}
+                  </div>
+                )}
+
+                {entrance && isEntranceCenterCell(entrance, row, column) && (
+                  <div
+                    style={{
+                      color: "#ffffff",
+                      fontSize: "16px",
+                      lineHeight: "16px",
+                      margin: 0,
+                    }}
+                  >
+                    {entrance.entranceID}
+                  </div>
+                )}
                 {seat && (
                   <div
+                    onMouseEnter={() => {
+                      if (seatSegment) {
+                        setHoveredSeat({
+                          seat: seat,
+                          segment: seatSegment,
+                          row: row,
+                          column: column,
+                        });
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      setHoveredSeat(null);
+                    }}
                     style={{
                       width: "100%",
                       height: "100%",
-                      border: hovered ? seatHoverColor : seatBorder,
-                      backgroundColor: hovered ? seatHoverColor : seatColor,
+                      border: seatHovered ? hoverBorder : seatBorder,
+                      backgroundColor: seatHovered ? seatHoverColor : seatColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
