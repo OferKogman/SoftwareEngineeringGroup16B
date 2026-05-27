@@ -2,9 +2,21 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import ViewDiscountPolicy, { type DiscountPolicyData } from "./Components/CreateDiscountPolicy";
 import EventCreationForm, { type EventCreationData,} from "./Components/EventCreationForm";
 import EventUpdateForm, {type EventUpdateDetails,} from "./Components/EventUpdateForm";
+import ViewDiscountPolicy, {
+  type DiscountPolicyData,
+} from "./Components/CreateDiscountPolicy";
+import EventCreationForm, {
+  type EventCreationData,
+} from "./Components/EventCreationForm";
+import EventUpdateForm, {
+  type EventUpdateDetails,
+} from "./Components/EventUpdateForm";
+import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {type PurchasePolicyCreationData,} from "./Components/PurchasePolicyCreationForm";
 import RegistrationForm from "./Components/RegistrationForm";
+import SearchEvents from "./Components/SearchEvents";
+import VenueEditor from "./Components/VenueEditor";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewEvent from "./Components/ViewEvent";
 import ViewOrder from "./Components/ViewOrder";
@@ -12,6 +24,7 @@ import CreateProductionCompany, {type ProductionCompanyDTO,} from "./Components/
 import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/AdminViewPurcheseHistory";
 
+import { type VenueData } from "./DTOs/VenueDTO";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -60,10 +73,6 @@ function App() {
     console.log("Admin Search purchase history:", searchData);
   }
 
-  async function handleViewEvent(eventID: number) {
-    console.log("View event:", eventID);
-  }
-
   async function handleUserRegistration(registrationData: {
     email: string;
     password: string;
@@ -76,6 +85,9 @@ function App() {
     password: string;
   }) {
     console.log("Admin registered:", registrationData);
+  }
+  async function handleSubmitVenue(venueData: VenueData) {
+    console.log("Venue saved:", venueData);
   }
 
   return (
@@ -119,6 +131,8 @@ function App() {
           element={<EventCreationForm onCreateEvent={handleCreateEvent} />}
         />
 
+        <Route path="/events/search" element={<SearchEvents />} />
+
         <Route
           path="/company/:companyID/event-update/:eventID"
           element={<EventUpdateForm onUpdateEvent={handleUpdateEvent} />}
@@ -145,15 +159,29 @@ function App() {
         />
 
         <Route
-          path= "/user/register"
-          element={<RegistrationForm onRegistration={handleUserRegistration} title="User Registration" />}
+          path="/user/register"
+          element={
+            <RegistrationForm
+              onRegistration={handleUserRegistration}
+              title="User Registration"
+            />
+          }
         />
 
         <Route
           path="/admin/register"
-          element={<RegistrationForm onRegistration={handleAdminRegistration} title="Admin Registration" />}
+          element={
+            <RegistrationForm
+              onRegistration={handleAdminRegistration}
+              title="Admin Registration"
+            />
+          }
         />
 
+        <Route
+          path="/venue/:venueID?"
+          element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
+        />
       </Routes>
       
     </BrowserRouter>
