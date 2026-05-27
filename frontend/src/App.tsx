@@ -22,6 +22,7 @@ import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Compo
 
 import { type VenueData } from "./DTOs/VenueDTO";
 import ViewSaleHistory from "./Components/ViewSaleHistory";
+import CreateOrderPage from "./Components/CreateOrderPage";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -182,7 +183,7 @@ function App() {
           }
         />
         
-
+        <Route path="/create-order" element={<CreateOrderPage />} />
         <Route
           path="/venue/:venueID?"
           element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
