@@ -12,6 +12,7 @@ import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
+import VenueEditor, { type VenueData } from "./Components/VenueEditor";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
@@ -52,6 +53,9 @@ function App() {
   }
   async function handleEditEvent(companyID: number, eventID: number) {
     window.location.href = `/company/${companyID}/event-update/${eventID}`;
+  }
+  async function handleSubmitVenue(venueData: VenueData) {
+    console.log("Venue saved:", venueData);
   }
 
   return (
@@ -99,6 +103,10 @@ function App() {
           <Route
             path="/admin/login"
             element={<AdminLoginForm onAdminLogin={handleAdminLogin} />}
+          />
+          <Route
+            path="/venue/:venueID?"
+            element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
           />
         </Routes>
       </BrowserRouter>
