@@ -34,7 +34,29 @@ export default function ViewEvent() {
           category: "NOT Rock",
           productionCompanyID: 0,
           discountPolicy: null,
-          purchasePolicy: null,
+          purchasePolicy: {
+            type: "Composite",
+            operator: "AND",
+            leftPolicy: {
+                type: "Composite",
+                operator: "OR",
+                leftPolicy: {
+                    type: "Minimum Age",
+                    minAge: 18,
+                },
+                rightPolicy: {
+                    type: "Maximum Tickets Per Customer",
+                    maxTickets: 4,
+                },
+            },
+
+            rightPolicy: {
+                type: "Lottery",
+                lotteryName: "VIP Giveaway",
+                lotteryWinnerCount: 10,
+                lotteryRegistrationDueDate: "2026-06-01",
+            },
+},
           price: 1000.0,
           rating: -5.0,
         };
@@ -73,6 +95,7 @@ export default function ViewEvent() {
 
       <p>Rating: {eventDTO.rating}</p>
 
+      <h3>Purchase Policy:</h3>
       <ViewPurchasePolicies purchasePolicy={eventDTO.purchasePolicy} />
     </div>
   );

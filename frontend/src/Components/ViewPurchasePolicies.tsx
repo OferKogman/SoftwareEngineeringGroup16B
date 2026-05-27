@@ -1,5 +1,4 @@
 
-import { useEffect, useState } from "react";
 import type { PurchasePolicyDTO } from "../DTOs/PurchasePolicyDTO";
 
 type ViewPurchasePoliciesProps = {
@@ -7,13 +6,26 @@ type ViewPurchasePoliciesProps = {
 };
 
 export default function ViewPurchasePolicies(
-    { purchasePolicy }: ViewPurchasePoliciesProps ) { 
+    { purchasePolicy }: ViewPurchasePoliciesProps ) {
         return (
             <div>
-                <h2>Purchase Policies</h2>
                 {purchasePolicy ? (
                     <div>
-                        <p>Type: {purchasePolicy.type}</p>
+                        {purchasePolicy.type === "Composite" && (
+                            <div>
+                                {purchasePolicy.leftPolicy && (
+                                    <div>
+                                        <ViewPurchasePolicies purchasePolicy={purchasePolicy.leftPolicy} />
+                                    </div>
+                                )}
+                                <p>{purchasePolicy.operator}</p>
+                                {purchasePolicy.rightPolicy && (
+                                    <div>
+                                        <ViewPurchasePolicies purchasePolicy={purchasePolicy.rightPolicy} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                         {purchasePolicy.type === "Minimum Age" && (
                             <p>Minimum Age: {purchasePolicy.minAge}</p>
                         )}
