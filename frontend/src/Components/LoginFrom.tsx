@@ -1,31 +1,33 @@
 import { useState } from "react";
 
-export type AdminLoginData = {
+export type LoginData = {
   email: string;
   password: string;
 };
 
-type AdminLoginFormProps = {
-  onAdminLogin: (event: AdminLoginData) => void | Promise<void>;
+type LoginFormProps = {
+  title: string;
+  onLogin: (event: LoginData) => void | Promise<void>;
   onCancel?: () => void;
 };
 
-const initialFormData: AdminLoginData = {
+const initialFormData: LoginData = {
   email: "",
   password: "",
 };
 
-export default function AdminLoginForm({
-  onAdminLogin,
+export default function LoginForm({
+  title,
+  onLogin,
   onCancel,
-}: AdminLoginFormProps) {
-  const [formData, setFormData] = useState<AdminLoginData>(initialFormData);
+}: LoginFormProps) {
+  const [formData, setFormData] = useState<LoginData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function updateField<K extends keyof AdminLoginData>(
+  function updateField<K extends keyof LoginData>(
     field: K,
-    value: AdminLoginData[K],
+    value: LoginData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -39,7 +41,7 @@ export default function AdminLoginForm({
     setError("");
 
     try {
-      await onAdminLogin({
+      await onLogin({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
@@ -53,8 +55,8 @@ export default function AdminLoginForm({
   }
 
   return (
-    <form className="admin-login-form" onSubmit={handleSubmit}>
-      <h2>Admin Login</h2>
+    <form className="login-form" onSubmit={handleSubmit}>
+      <h2>{title}</h2>
 
       {error && <p className="form-error">{error}</p>}
 
@@ -99,7 +101,7 @@ export default function AdminLoginForm({
           </button>
         )}
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create event"}
+          {isSubmitting ? "Logging in..." : "Login"}
         </button>
       </div>
     </form>

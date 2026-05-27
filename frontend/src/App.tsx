@@ -1,7 +1,4 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import AdminLoginForm, {
-  type AdminLoginData,
-} from "./Components/AdminLoginForm";
 import EventCreationForm, {
   type EventCreationData,
 } from "./Components/EventCreationForm";
@@ -12,6 +9,7 @@ import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
+import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
 } from "./Components/CreateDiscountPolicy";
@@ -19,7 +17,7 @@ import ViewEvent from "./Components/ViewEvent";
 import CreateProductionCompany, {
   type ProductionCompanyDTO,
 } from "./Components/ProdctionCompanyForm";
-import ViewCompanyEvents from "./Components/ViewCompanyEventList";
+import LoginForm, { type LoginData } from "./Components/LoginFrom";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -47,7 +45,7 @@ function App() {
   async function handleDiscountPolicySubmit(policyData: DiscountPolicyDTO) {
     console.log("Discount policy submitted:", policyData);
   }
-  async function handleAdminLogin(adminLoginData: AdminLoginData) {
+  async function handleAdminLogin(adminLoginData: LoginData) {
     console.log("Admin Logged in:", adminLoginData);
   }
   async function handleCreateProductionCompany(
@@ -55,23 +53,26 @@ function App() {
   ) {
     console.log("Production company created:", companyData);
   }
-async function handleEditEvent(companyID: number, eventID: number) {
+  async function handleEditEvent(companyID: number, eventID: number) {
     console.log("Edit event:", companyID, eventID);
   }
   async function handleDeleteEvent(eventID: number) {
     console.log("Delete event:", eventID);
+  }
+  async function handleUserLogin(userLoginData: LoginData) {
+    console.log("User Logged in:", userLoginData);
   }
 
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/events/:eventID" element={<ViewEvent />} />
+
         <Route
           path="/checkout/"
-          element={
-            <PaymentForm amount={250} onPaymentSubmit={handlePayment} />
-          }
+          element={<PaymentForm amount={250} onPaymentSubmit={handlePayment} />}
         />
+
         <Route
           path="/create-purchase-policy/"
           element={
@@ -80,12 +81,14 @@ async function handleEditEvent(companyID: number, eventID: number) {
             />
           }
         />
+
         <Route
           path="/create-production-company/"
           element={
             <CreateProductionCompany onSubmit={handleCreateProductionCompany} />
           }
         />
+
         <Route
           path="/company/:companyID/events"
           element={
@@ -95,23 +98,30 @@ async function handleEditEvent(companyID: number, eventID: number) {
             />
           }
         />
+
         <Route
           path="/create-event/"
           element={<EventCreationForm onCreateEvent={handleCreateEvent} />}
         />
+
         <Route
           path="/company/:companyID/event-update/:eventID"
           element={<EventUpdateForm onUpdateEvent={handleUpdateEvent} />}
         />
+
         <Route
           path="/create-discount-policy/"
-          element={
-            <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
-          }
+          element={<ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />}
         />
+
         <Route
           path="/admin/login"
-          element={<AdminLoginForm onAdminLogin={handleAdminLogin} />}
+          element={<LoginForm onLogin={handleAdminLogin} title="Admin Login" />}
+        />
+
+        <Route
+          path="/user/login"
+          element={<LoginForm onLogin={handleUserLogin} title="User Login" />}
         />
       </Routes>
     </BrowserRouter>
