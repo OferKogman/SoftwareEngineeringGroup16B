@@ -172,25 +172,7 @@ export default function CreateProductionCompany({
         />
       </label>
 
-      <label>
-        Founder ID
-        <input
-          type="text"
-          required
-          pattern=".*\S.*"
-          value={formData.founderID}
-          placeholder="Founder ID"
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Founder ID cannot be empty or whitespace.",
-            )
-          }
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            setFormData((prev) => ({ ...prev, founderID: event.target.value }));
-          }}
-        />
-      </label>
+
 
       <ListField
         label="Members"
@@ -200,16 +182,6 @@ export default function CreateProductionCompany({
         items={formData.members}
         onAdd={() => addToList("members", memberInput, setMemberInput)}
         onRemove={(item) => removeFromList("members", item)}
-      />
-
-      <ListField
-        label="Invites"
-        value={inviteInput}
-        onChange={setInviteInput}
-        placeholder="User ID to invite"
-        items={formData.invites}
-        onAdd={() => addToList("invites", inviteInput, setInviteInput)}
-        onRemove={(item) => removeFromList("invites", item)}
       />
 
       <ListField
