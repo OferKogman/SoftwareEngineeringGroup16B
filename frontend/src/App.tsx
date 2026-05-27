@@ -15,6 +15,7 @@ import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
 import RegistrationForm from "./Components/RegistrationForm";
+import SearchEvents from "./Components/SearchEvents";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewEvent from "./Components/ViewEvent";
 
@@ -60,10 +61,6 @@ function App() {
   }
   async function handleUserLogin(userLoginData: LoginData) {
     console.log("User Logged in:", userLoginData);
-  }
-
-  async function handleViewEvent(eventID: number) {
-    console.log("View event:", eventID);
   }
 
   async function handleUserRegistration(registrationData: {
@@ -119,6 +116,11 @@ function App() {
         <Route
           path="/create-event/"
           element={<EventCreationForm onCreateEvent={handleCreateEvent} />}
+        />
+
+        <Route
+          path="/events/search"
+          element={<SearchEvents />}
         />
 
         <Route
