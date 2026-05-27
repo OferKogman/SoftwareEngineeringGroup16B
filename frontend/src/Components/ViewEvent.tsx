@@ -4,31 +4,48 @@ import type { EventDTO } from "../DTOs/EventDTO";
 import ViewPurchasePolicies from "./ViewPurchasePolicies";
 
 export default function ViewEvent() {
-  const { id } = useParams();
+  const { eventID } = useParams();
+  const [error, setError] = useState<string>("");
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
 
   useEffect(() => {
-    const fakeEventDTO: EventDTO = {
-      eventID: 1,
-      active: false,
-      venueID: "pizdez",
-      name: "DAMN ROCK",
-      startTime: "2026-03-23T20:00",
-      endTime: "2026-03-23T22:00",
-      artist: "Satan",
-      category: "NOT Rock",
-      productionCompanyID: 0,
-      discountPolicy: null,
-      purchasePolicy: null,
-      price: 1000.0,
-      rating: -5.0,
-    };
-    setEventDTO(fakeEventDTO);
+    if (!eventID) {
+      return;
+    }
 
-    // fetch(`/api/events/${id}`)
-    //     .then(res => res.json())
-    //     .then(data => setEventDTO(data));
-  }, [id]);
+    async function loadEvent() {
+      try {
+        //const response = await fetch(`/api/events/${id}`);
+
+        //if (!response.ok) {
+        //  throw new Error("Failed to load event.");
+        //}
+
+        //const event: EventDTO = await response.json();
+
+        const fakeEventDTO: EventDTO = {
+          eventID: 1,
+          active: false,
+          venueID: "pizdez",
+          name: "DAMN ROCK",
+          startTime: "2026-03-23T20:00",
+          endTime: "2026-03-23T22:00",
+          artist: "Satan",
+          category: "NOT Rock",
+          productionCompanyID: 0,
+          discountPolicy: null,
+          purchasePolicy: null,
+          price: 1000.0,
+          rating: -5.0,
+        };
+        setEventDTO(fakeEventDTO);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load event.");
+      }
+    }
+
+    void loadEvent();
+  }, [eventID]);
 
   if (!eventDTO) {
     return <div>Loading...</div>;
@@ -36,6 +53,8 @@ export default function ViewEvent() {
 
   return (
     <div>
+      {error && <p className="form-error">{error}</p>}
+
       <h1>{eventDTO.name}</h1>
 
       <p>Venue ID: {eventDTO.venueID}</p>

@@ -113,9 +113,6 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
             }
         }
         
-        if(userCompanies.isEmpty()) {
-            throw new IllegalArgumentException("User with email " + userID + " is not a manager of any production company.");
-        }
         return userCompanies;
     }
 

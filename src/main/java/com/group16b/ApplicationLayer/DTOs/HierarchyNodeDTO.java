@@ -18,4 +18,22 @@ public record HierarchyNodeDTO(
             data.getRoleType(),
             data.getPermissions()
         );
-    }}
+    }
+    public String getUserId()
+    {
+        return userID;
+    }
+    public String getAssignerId()
+    {
+        return parentID;
+    }
+    public RoleType getRoleType()
+    {
+        return roleType;
+    }
+    public Set<ManagerPermissions> getPermissions()
+    {
+        return permissions;
+    }
+    
+}
