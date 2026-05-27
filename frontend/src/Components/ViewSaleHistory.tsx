@@ -4,7 +4,7 @@ import type { OrderDTO } from "../DTOs/OrderDTO";
 
 type ViewSaleHistoryProps = {
   filter: "subjectId" | "companyID";
-  id: string;
+  id?: string;
 };
 
 export default function ViewSaleHistory({ filter, id }: ViewSaleHistoryProps) {

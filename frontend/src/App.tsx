@@ -159,7 +159,7 @@ function App() {
         />
         <Route
           path="/user/purchase-history"
-          element={<ViewSaleHistory filter="subjectId" id={"0"}/>}//subjectId
+          element={<ViewSaleHistory filter="subjectId" />}//subjectId
         />
         <Route
           path="/company/:companyID/purchase-history"
