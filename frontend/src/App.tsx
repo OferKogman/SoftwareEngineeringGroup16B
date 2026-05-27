@@ -1,32 +1,17 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import ViewDiscountPolicy, { type DiscountPolicyData } from "./Components/CreateDiscountPolicy";
-import EventCreationForm, {
-  type EventCreationData,
-} from "./Components/EventCreationForm";
-import EventUpdateForm, {
-  type EventUpdateDetails,
-} from "./Components/EventUpdateForm";
-import LoginForm, { type LoginData } from "./Components/LoginFrom";
+import EventCreationForm, { type EventCreationData,} from "./Components/EventCreationForm";
+import EventUpdateForm, {type EventUpdateDetails,} from "./Components/EventUpdateForm";
 import PaymentForm from "./Components/PaymentForm";
-import CreateProductionCompany, {
-  type ProductionCompanyDTO,
-} from "./Components/ProdctionCompanyForm";
-import PurchasePolicyCreationForm, {
-  type PurchasePolicyCreationData,
-} from "./Components/PurchasePolicyCreationForm";
+import PurchasePolicyCreationForm, {type PurchasePolicyCreationData,} from "./Components/PurchasePolicyCreationForm";
 import RegistrationForm from "./Components/RegistrationForm";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewEvent from "./Components/ViewEvent";
 import ViewOrder from "./Components/ViewOrder";
-import CreateProductionCompany, {
-  type ProductionCompanyDTO,
-} from "./Components/ProdctionCompanyForm";
+import CreateProductionCompany, {type ProductionCompanyDTO,} from "./Components/ProdctionCompanyForm";
 import LoginForm, { type LoginData } from "./Components/LoginFrom";
-import AdminViewPurchaseHistory, {
-  type PurchaseHistorySearchData,
-} from "./Components/AdminViewPurcheseHistory";
+import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/AdminViewPurcheseHistory";
 
-//import TestSaleHistory from "./testers/TestSaleHistory";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -158,7 +143,6 @@ function App() {
           element={<AdminViewPurchaseHistory title="Search Purchase History" onSearch={handleAdminPurchaseHistory}/>
           }
         />
-        {/* <Route path="/test-sale-history" element={<TestSaleHistory />} /> */}
 
         <Route
           path= "/user/register"

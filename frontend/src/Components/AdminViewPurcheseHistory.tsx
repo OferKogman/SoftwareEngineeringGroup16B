@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 export type PurchaseHistorySearchData = {
+  companyId: string
   subjectId: string;
   eventId: string;
 };
@@ -12,6 +13,7 @@ type AdminViewPurchaseHistoryProps = {
 };
 
 const initialFormData: PurchaseHistorySearchData = {
+  companyId: "",
   subjectId: "",
   eventId: "",
 };
@@ -22,8 +24,7 @@ export default function AdminViewPurchaseHistory({
   onSearch,
   onCancel,
 }: AdminViewPurchaseHistoryProps) {
-  const [formData, setFormData] =
-    useState<PurchaseHistorySearchData>(initialFormData);
+  const [formData, setFormData] = useState<PurchaseHistorySearchData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,6 +45,7 @@ export default function AdminViewPurchaseHistory({
 
     try {
       await onSearch({
+        companyId: formData.companyId.trim(),
         subjectId: formData.subjectId.trim(),
         eventId: formData.eventId.trim(),
       });
@@ -74,6 +76,18 @@ export default function AdminViewPurchaseHistory({
             updateField("subjectId", event.target.value);
           }}
           placeholder="Optional subject ID"
+        />
+      </label>
+       <label>
+        Company ID
+        <input
+          type="text"
+          value={formData.companyId}
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity("");
+            updateField("companyId", event.target.value);
+          }}
+          placeholder="Optional company ID"
         />
       </label>
 
