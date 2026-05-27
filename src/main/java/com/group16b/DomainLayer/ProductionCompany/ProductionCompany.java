@@ -136,7 +136,7 @@ public class ProductionCompany {
         }
         if(isOwner(targetID))
         {
-            throw new IllegalArgumentException("Target is already owner in Assign Owner.");
+            throw new IllegalArgumentException("Target " + targetID + " is already an owner of the company.");
         }
         MembershipNode newOnwerInvite = MembershipNode.createOwner(targetID, callerID);
         invites.put(new InviteKey(targetID, callerID), newOnwerInvite);
@@ -150,7 +150,11 @@ public class ProductionCompany {
         }
         if(isManager(targetID))
         {
-            throw new IllegalArgumentException("Target is already owner in Assign Manager.");
+            throw new IllegalArgumentException("Target " + targetID + " is already a manager of the company.");
+        }
+        if(perms==null || perms.isEmpty())
+        {
+            throw new IllegalArgumentException("Manager must have at least one permission.");
         }
         MembershipNode newManagerInvite = MembershipNode.createManager(targetID, callerID,perms);
         invites.put(new InviteKey(targetID, callerID), newManagerInvite);
@@ -199,7 +203,7 @@ public class ProductionCompany {
     {
         if(!isOwner(userID))
         {
-            throw new IllegalArgumentException("User is not owner in forfeit Ownership");
+            throw new IllegalArgumentException("User " + userID + " is not owner in forfeit Ownership");
         }
         if(isFounder(userID))
         {
@@ -351,7 +355,15 @@ public class ProductionCompany {
     }
 
 
-    private static class InviteKey {
+    public void adminRemoveUser(String userID)
+    {
+        removeMember(userID);
+    }
+
+    private void addChild(String parent, String child) {
+        childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
+    }
+        private static class InviteKey {
         private final String targetId;
         private final String assignerId;
 
@@ -379,12 +391,50 @@ public class ProductionCompany {
         }
     }
 
-    public void adminRemoveUser(String userID)
+    //FOR TESTS PURPOSES ONLY, TO VERIFY CORRECTNESS
+    public boolean hasPendingInvite(String userID) {
+        return invites.keySet()
+                    .stream()
+                    .anyMatch(k -> k.targetId.equals(userID));
+    }
+    public boolean hasPendingInvite(String targetID,String assignerID)
     {
-        removeMember(userID);
+        return invites.containsKey(
+            new InviteKey(targetID, assignerID)
+        );
+    }
+    public boolean hasPendingOwnerInvite(String targetID,String assignerID) {
+        MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
+
+        return node != null && node.getRoleType() == RoleType.OWNER;
+    }
+    public boolean hasPendingManagerInvite(String targetID,String assignerID, Set<ManagerPermissions> perms) {
+        MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
+
+        return node != null && node.getRoleType() == RoleType.MANAGER && node.getPermissions().equals(perms);
     }
 
-    private void addChild(String parent, String child) {
-        childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
+    public Set<String> getDirectSubordinates(String userID)
+    {
+        return childrenByUser.getOrDefault(userID, Set.of());
+    }
+
+    public boolean isDirectSubordinate(String parentID, String childID)
+    {
+        return childrenByUser.getOrDefault(parentID, Set.of()).contains(childID);
+    }
+
+    public boolean areDirectSubordinates(String parentID, Set<String> childIDs)
+    {
+        Set<String> directSubs = childrenByUser.getOrDefault(parentID, Set.of());
+        return childIDs.stream().allMatch(directSubs::contains);
+    }
+
+    public boolean hasManagerWithPermissions(String userID, Set<ManagerPermissions> perms)
+    {
+        MembershipNode node = membersNodes.get(userID);
+        if(node==null || node.getRoleType() != RoleType.MANAGER)
+            return false;
+        return node.getPermissions().containsAll(perms);
     }
 }
