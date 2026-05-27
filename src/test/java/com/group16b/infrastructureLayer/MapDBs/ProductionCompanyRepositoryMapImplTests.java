@@ -326,10 +326,7 @@ public class ProductionCompanyRepositoryMapImplTests {
     void getAllUserCompanies_noCompanies_returnsEmptyList() {
         User user = mock(User.class);
         when(user.getEmail()).thenReturn(MANAGER_EMAIL);
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> repo.getAllUserComapnies(user)
-        );
+        assertTrue(repo.getAllUserComapnies(user).isEmpty());
     }
 
     @Test

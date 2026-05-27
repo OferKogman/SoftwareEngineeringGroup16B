@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -16,7 +17,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 import io.jsonwebtoken.JwtException;
 
@@ -34,18 +34,11 @@ public class CompanyHierarchyService {
 	}
 
     public Result<Boolean> assignOwnerToCompany(int companyID, String targetID, String sessionToken) {
+		while(true){
 		try{
 			//auth
-			logger.info("CompanyHierarchyService.assignOwnerToCompany: Verifying session token for Owner assignment of user {} to company {}.", targetID, companyID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.assignOwnerToCompany: Invalid session token provided for Owner assignment of user {} to company {}.", targetID, companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.assignOwnerToCompany: Only USERS are allowed to assign owner.");
-				return Result.makeFail("Only signed-in users are allowed to assign owners. Please use a user account.");
-			}
-			String userID=authenticationService.extractSubjectFromToken(sessionToken);
+			logger.info("CompanyHierarchyService.assignOwnerToCompany: Verifying session token for owner assignment of user {} to company {}.", targetID, companyID);
+			String userID=validateAndGetUserID(sessionToken);
 			userRepository.findByID(userID);
 			logger.info("CompanyHierarchyService.assignOwnerToCompany: Session token verified successfully.");
 
@@ -69,10 +62,14 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.assignOwnerToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e){
+			logger.warn("CompanyHierarchyService.assignOwnerToCompany: Auth error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.assignOwnerToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.assignOwnerToCompany: JWT authentication error: " + e.getMessage());
@@ -83,22 +80,15 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}    
 	}
+	}
 
 	
 	public Result<Boolean> assignManagerToCompany(int companyID, String targetID, Set<ManagerPermissions> permissions, String sessionToken) {
+		while(true){
 		try{
 			//auth
 			logger.info("CompanyHierarchyService.assignManagerToCompany: Verifying session token for manager assignment of user {} to company {}.", targetID, companyID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.assignManagerToCompany: Invalid session token provided for manager assignment of user {} to company {}.", targetID, companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.assignManagerToCompany: Only USERS are allowed to assign manager.");
-				return Result.makeFail("Only signed-in users are allowed to assign managers. Please use a user account.");
-			}
-			String userID=authenticationService.extractSubjectFromToken(sessionToken);
-			userRepository.findByID(userID);
+			String userID = validateAndGetUserID(sessionToken);
 			logger.info("CompanyHierarchyService.assignManagerToCompany: Session token verified successfully.");
 
 			logger.info("CompanyHierarchyService.assignManagerToCompany: attempting to retrieve target User {}",targetID);
@@ -122,10 +112,14 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.assignManagerToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e){
+			logger.warn("CompanyHierarchyService.assignManagerToCompany: Auth error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.assignManagerToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.assignManagerToCompany: JWT authentication error: " + e.getMessage());
@@ -134,25 +128,17 @@ public class CompanyHierarchyService {
 		catch (Exception e) {
 			logger.error("CompanyHierarchyService.assignManagerToCompany: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}    
+		}   
+	} 
 	}
 
 
 	public Result<Boolean> acceptInviteToCompany(int companyID, String assignerID, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.acceptInviteToCompany: Verifying session token for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.acceptInviteToCompany: Invalid session token provided for accepting invite assignment to company {} by assigner {}.", companyID, assignerID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.acceptInviteToCompany: Only USERS are allowed to accept invite.");
-				return Result.makeFail("Only signed-in users are allowed to accept invites. Please use a user account.");
-			}
-			String userID=authenticationService.extractSubjectFromToken(sessionToken);
-			userRepository.findByID(userID);
-
+			String userID=validateAndGetUserID(sessionToken);
 			logger.info("CompanyHierarchyService.acceptInviteToCompany: Session token verified successfully.");
 
 			logger.info("CompanyHierarchyService.acceptInviteToCompany: ensuring assigner {} exists for accept invite",assignerID);
@@ -177,10 +163,14 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.acceptInviteToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e){
+			logger.warn("CompanyHierarchyService.acceptInviteToCompany: Auth error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.acceptInviteToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.acceptInviteToCompany: JWT authentication error: " + e.getMessage());
@@ -191,21 +181,15 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}  
 	}
+	}
 
 	public Result<Boolean> rejectInviteToCompany( int companyID, String assignerID, String sessionToken) {
+		
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.rejectInviteToCompany: Verifying session token for rejection invite assignment to company {} by assigner {}.", companyID, assignerID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.rejectInviteToCompany: Invalid session token provided for rejection invite assignment to company {} by assigner {}.", companyID, assignerID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.rejectInviteToCompany: Only USERS are allowed to reject invite.");
-				return Result.makeFail("Only signed-in users are allowed to reject invites. Please use a user account.");
-			}
-			String userID=authenticationService.extractSubjectFromToken(sessionToken);
-			userRepository.findByID(userID);
+			String userID=validateAndGetUserID(sessionToken);
 
 			logger.info("CompanyHierarchyService.rejectInviteToCompany: Session token verified successfully.");
 
@@ -231,10 +215,14 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.rejectInviteToCompany: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e){
+			logger.warn("CompanyHierarchyService.rejectInviteToCompany: Auth error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.rejectInviteToCompany: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.rejectInviteToCompany: JWT authentication error: " + e.getMessage());
@@ -245,22 +233,14 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
 
     public Result<Boolean> forfeitOwnership(int companyID, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.forfeitOwnership: Verifying session token for Forfeit ownership in company {}.", companyID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.forfeitOwnership: Invalid session token provided for Forfeit ownership in company {}.", companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.forfeitOwnership: Only USERS are allowed to Forfeit ownership.");
-				return Result.makeFail("Only signed-in users are allowed to Forfeit ownership. Please use a user account.");
-			}
-			String userID=authenticationService.extractSubjectFromToken(sessionToken);
-			userRepository.findByID(userID);
-
+			String userID=validateAndGetUserID(sessionToken);
 			logger.info("CompanyHierarchyService.forfeitOwnership: Session token verified successfully.");
 
 
@@ -283,10 +263,14 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.forfeitOwnership: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e){
+			logger.warn("CompanyHierarchyService.forfeitOwnership: Auth error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.forfeitOwnership: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.forfeitOwnership: JWT authentication error: " + e.getMessage());
@@ -297,21 +281,14 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
+	
 	public Result<Boolean> removeOwnerManager(String targetID, int companyID, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.removeOwnerManager: Verifying session token for remove membership in company {}.", companyID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.removeOwnerManager: Invalid session token provided for  remove membership in company {}.", companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.removeOwnerManager: Only USERS are allowed to  remove membership.");
-				return Result.makeFail("Only signed-in users are allowed to  remove membership. Please use a user account.");
-			}
-			String userID=authenticationService.extractSubjectFromToken(sessionToken);
-			userRepository.findByID(userID);
-
+			String userID=validateAndGetUserID(sessionToken);
 			logger.info("CompanyHierarchyService.removeOwnerManager: Session token verified successfully.");
 
 			logger.info("CompanyHierarchyService.removeOwnerManager: ensuring target user {} exists",targetID);
@@ -336,10 +313,15 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.removeOwnerManager: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e)
+		{
+			logger.warn("CompanyHierarchyService.removeOwnerManager: Authentication error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.removeOwnerManager: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.removeOwnerManager: JWT authentication error: " + e.getMessage());
@@ -350,22 +332,14 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
 
 	public Result<Boolean> changeManagerPermission(String targetID, int companyID, Set<ManagerPermissions> newPermissions, String sessionToken) {
+		while(true){
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.changeManagerPermission: Verifying session token for update manager permissions of target {} in company {}.",targetID, companyID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.changeManagerPermission: Invalid session token provided for update manager permissions of target {} in company {}.", targetID,companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.changeManagerPermission: Only USERS are allowed to update manager permissions.");
-				return Result.makeFail("Only signed-in users are allowed to update manager permissions. Please use a user account.");
-			}
-			String userID=(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.findByID(userID);
-
+			String userID=validateAndGetUserID(sessionToken);
 			logger.info("CompanyHierarchyService.changeManagerPermission: Session token verified successfully.");
 
 			logger.info("CompanyHierarchyService.changeManagerPermission: ensuring target user {} exists",targetID);
@@ -390,10 +364,15 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.changeManagerPermission: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
+		catch(AuthException e)
+		{
+			logger.warn("CompanyHierarchyService.changeManagerPermission: Authentication error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
+		}
 		catch(OptimisticLockingFailureException e)
 		{
 			logger.warn("CompanyHierarchyService.changeManagerPermission: Optimistic locking Failure: "+e.getMessage());
-			return Result.makeFail("Company was updated by another operation. Please retry.");
+			continue;
 		}
 		catch (JwtException e) {
 			logger.error("CompanyHierarchyService.changeManagerPermission: JWT authentication error: " + e.getMessage());
@@ -404,22 +383,13 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	}
 
 	public Result<List<HierarchyNodeDTO>> hierarchyTree(int companyID, String sessionToken) {
 		try {
 			//auth
 			logger.info("CompanyHierarchyService.hierarchyTree: Verifying session token for get hierarchy tree for company {}", companyID);
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("CompanyHierarchyService.hierarchyTree: Invalid session token provided for get hierarchy tree for company {}",companyID);
-				return Result.makeFail("Invalid session token.");
-			}
-			if(!authenticationService.isUserToken(sessionToken)){
-				logger.warn("CompanyHierarchyService.hierarchyTree: Only USERS are allowed to get hierarchy tree of a company.");
-				return Result.makeFail("Only signed-in users are allowed to get hierarchy tree of a company. Please use a user account.");
-			}
-			String userID=(authenticationService.extractSubjectFromToken(sessionToken));
-			userRepository.findByID(userID);
-
+			String userID=validateAndGetUserID(sessionToken);
 			logger.info("CompanyHierarchyService.hierarchyTree: Session token verified successfully.");
 
 			logger.info("CompanyHierarchyService.hierarchyTree: trying to retrieve company {} for retrieve hierarchy tree by user {}",companyID,userID);
@@ -440,15 +410,29 @@ public class CompanyHierarchyService {
 			logger.warn("CompanyHierarchyService.hierarchyTree: Runtime error: "+e.getMessage());
 			return Result.makeFail(e.getMessage());
 		}
-		catch (JwtException e) {
-			logger.error("CompanyHierarchyService.hierarchyTree: JWT authentication error: " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
+		catch(AuthException e){
+			logger.warn("CompanyHierarchyService.hierarchyTree: Auth error: "+e.getMessage());
+			return Result.makeFail(e.getMessage());
 		}
 		catch (Exception e) {
 			logger.error("CompanyHierarchyService.hierarchyTree: Unexpected error: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+
+	private String validateAndGetUserID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid Token");
+        }
+        if (!authenticationService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        String userID=authenticationService.extractSubjectFromToken(sessionToken);
+        //verify user exists in the database, i.e not a stale user
+        userRepository.findByID(userID);
+        return userID;
+    }
 
 
 }
