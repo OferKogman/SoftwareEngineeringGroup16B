@@ -1,23 +1,22 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+import ViewDiscountPolicy, { type DiscountPolicyData } from "./Components/CreateDiscountPolicy";
 import EventCreationForm, {
   type EventCreationData,
 } from "./Components/EventCreationForm";
 import EventUpdateForm, {
   type EventUpdateDetails,
 } from "./Components/EventUpdateForm";
+import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import PaymentForm from "./Components/PaymentForm";
-import PurchasePolicyCreationForm, {
-  type PurchasePolicyCreationData,
-} from "./Components/PurchasePolicyCreationForm";
-import ViewCompanyEvents from "./Components/ViewCompanyEventList";
-import ViewDiscountPolicy, {
-  type DiscountPolicyDTO,
-} from "./Components/CreateDiscountPolicy";
-import ViewEvent from "./Components/ViewEvent";
 import CreateProductionCompany, {
   type ProductionCompanyDTO,
 } from "./Components/ProdctionCompanyForm";
-import LoginForm, { type LoginData } from "./Components/LoginFrom";
+import PurchasePolicyCreationForm, {
+  type PurchasePolicyCreationData,
+} from "./Components/PurchasePolicyCreationForm";
+import RegistrationForm from "./Components/RegistrationForm";
+import ViewCompanyEvents from "./Components/ViewCompanyEventList";
+import ViewEvent from "./Components/ViewEvent";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -42,7 +41,7 @@ function App() {
   async function handleUpdateEvent(eventDetails: EventUpdateDetails) {
     console.log("Event updated:", eventDetails);
   }
-  async function handleDiscountPolicySubmit(policyData: DiscountPolicyDTO) {
+  async function handleDiscountPolicySubmit(policyData: DiscountPolicyData) {
     console.log("Discount policy submitted:", policyData);
   }
   async function handleAdminLogin(adminLoginData: LoginData) {
@@ -61,6 +60,24 @@ function App() {
   }
   async function handleUserLogin(userLoginData: LoginData) {
     console.log("User Logged in:", userLoginData);
+  }
+
+  async function handleViewEvent(eventID: number) {
+    console.log("View event:", eventID);
+  }
+
+  async function handleUserRegistration(registrationData: {
+    email: string;
+    password: string;
+  }) {
+    console.log("User registered:", registrationData);
+  }
+
+  async function handleAdminRegistration(registrationData: {
+    email: string;
+    password: string;
+  }) {
+    console.log("Admin registered:", registrationData);
   }
 
   return (
@@ -123,6 +140,17 @@ function App() {
           path="/user/login"
           element={<LoginForm onLogin={handleUserLogin} title="User Login" />}
         />
+
+        <Route
+          path= "/user/register"
+          element={<RegistrationForm onRegistration={handleUserRegistration} title="User Registration" />}
+        />
+
+        <Route
+          path="/admin/register"
+          element={<RegistrationForm onRegistration={handleAdminRegistration} title="Admin Registration" />}
+        />
+
       </Routes>
     </BrowserRouter>
   );
