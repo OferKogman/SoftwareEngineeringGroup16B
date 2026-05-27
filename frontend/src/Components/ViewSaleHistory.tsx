@@ -2,7 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { OrderDTO } from "../DTOs/OrderDTO";
 
-export default function ViewSaleHistory() {
+type ViewSaleHistoryProps = {
+  filter: "subjectId" | "companyID";
+  id: string;
+};
+
+export default function ViewSaleHistory({ filter, id }: ViewSaleHistoryProps) {
+  void filter;
+  void id;
   const navigate = useNavigate();
 
   const [error, setError] = useState<string>("");
@@ -71,6 +78,10 @@ export default function ViewSaleHistory() {
     navigate(`/events/${eventId}`);
   }
 
+  function openOrder(orderId: string) {
+    navigate(`/orders/${orderId}`);
+  }
+
   if (!orders) {
     return <div>No orders found.</div>;
   }
@@ -90,7 +101,14 @@ export default function ViewSaleHistory() {
       ) : (
         orders.map((order) => (
           <div key={order.orderId}>
-            <h3>Order {order.orderId}</h3>
+            <p>
+                <h3>Order: {" "}
+                  <button onClick={() => openOrder(order.orderId)}>
+                    {order.orderId}
+                  </button>
+                </h3>
+            </p>
+           
 
             <p>
               Event ID:{" "}
