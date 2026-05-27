@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export type DiscountPolicyDTO = {
+export type DiscountPolicyData = {
   maxTickets: number;
   effectiveFrom: string;
   discountType: "SIMPLE" | "CONDITIONED" | "COUPON";
@@ -11,8 +11,8 @@ export type DiscountPolicyDTO = {
   expirationDate: string;
 };
 
-type ViewDiscountPolicyProps = {
-  onSubmit: (policy: DiscountPolicyDTO) => void | Promise<void>;
+type CreateDiscountPolicyProps = {
+  onSubmit: (policy: DiscountPolicyData) => void | Promise<void>;
   onCancel?: () => void;
 };
 
@@ -22,7 +22,7 @@ const DISCOUNT_TYPES = [
   { value: "COUPON", label: "Coupon discount" },
 ];
 
-const initialFormData: DiscountPolicyDTO = {
+const initialFormData: DiscountPolicyData = {
   discountType: "SIMPLE",
   discountPercentage: 0,
   discountAmount: 0,
@@ -33,18 +33,18 @@ const initialFormData: DiscountPolicyDTO = {
   maxTickets: 1000,
 };
 
-export default function ViewDiscountPolicy({
+export default function CreateDiscountPolicy({
   onSubmit,
   onCancel,
-}: ViewDiscountPolicyProps) {
-  const [formData, setFormData] = useState<DiscountPolicyDTO>(initialFormData);
+}: CreateDiscountPolicyProps) {
+  const [formData, setFormData] = useState<DiscountPolicyData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [noExpiration, setNoExpiration] = useState(false);
 
-  function updateField<K extends keyof DiscountPolicyDTO>(
+  function updateField<K extends keyof DiscountPolicyData>(
     field: K,
-    value: DiscountPolicyDTO[K],
+    value: DiscountPolicyData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -96,7 +96,7 @@ export default function ViewDiscountPolicy({
           onChange={(event) => {
             updateField(
               "discountType",
-              event.target.value as DiscountPolicyDTO["discountType"],
+              event.target.value as DiscountPolicyData["discountType"],
             );
           }}
         >
