@@ -1,31 +1,33 @@
 import { useState } from "react";
 
-export type AdminLoginData = {
+export type RegistrationData = {
   email: string;
   password: string;
 };
 
-type AdminLoginFormProps = {
-  onAdminLogin: (event: AdminLoginData) => void | Promise<void>;
+type RegistrationFormProps = {
+  title: string;
+  onRegistration: (event: RegistrationData) => void | Promise<void>;
   onCancel?: () => void;
 };
 
-const initialFormData: AdminLoginData = {
+const initialFormData: RegistrationData = {
   email: "",
   password: "",
 };
 
-export default function AdminLoginForm({
-  onAdminLogin,
+export default function RegistrationForm({
+  title,
+  onRegistration,
   onCancel,
-}: AdminLoginFormProps) {
-  const [formData, setFormData] = useState<AdminLoginData>(initialFormData);
+}: RegistrationFormProps) {
+  const [formData, setFormData] = useState<RegistrationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function updateField<K extends keyof AdminLoginData>(
+  function updateField<K extends keyof RegistrationData>(
     field: K,
-    value: AdminLoginData[K],
+    value: RegistrationData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -39,22 +41,22 @@ export default function AdminLoginForm({
     setError("");
 
     try {
-      await onAdminLogin({
+      await onRegistration({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
       setFormData(initialFormData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create event.");
+      setError(err instanceof Error ? err.message : "Failed to register.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="admin-login-form" onSubmit={handleSubmit}>
-      <h2>Admin Login</h2>
+    <form className="registration-form" onSubmit={handleSubmit}>
+      <h2>{title}</h2>
 
       {error && <p className="form-error">{error}</p>}
 
@@ -75,19 +77,11 @@ export default function AdminLoginForm({
       <label>
         Password
         <input
-          type="text"
+          type="password"
           required
-          pattern=".*\S.*"
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Password cannot be empty or whitespace.",
-            )
-          }
           value={formData.password}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("password", event.target.value);
-          }}
+          onChange={(event) =>
+            updateField("password", event.target.value)}
           placeholder="Password"
         />
       </label>
@@ -99,7 +93,7 @@ export default function AdminLoginForm({
           </button>
         )}
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create event"}
+          {isSubmitting ? "Registering..." : "Register"}
         </button>
       </div>
     </form>
