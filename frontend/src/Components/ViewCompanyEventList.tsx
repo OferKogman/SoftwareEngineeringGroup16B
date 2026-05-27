@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/set-state-in-effect */
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { EventDTO } from "../DTOs/EventDTO";
