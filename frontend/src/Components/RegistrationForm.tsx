@@ -1,33 +1,33 @@
 import { useState } from "react";
 
-export type LoginData = {
+export type RegistrationData = {
   email: string;
   password: string;
 };
 
-type LoginFormProps = {
+type RegistrationFormProps = {
   title: string;
-  onLogin: (event: LoginData) => void | Promise<void>;
+  onRegistration: (event: RegistrationData) => void | Promise<void>;
   onCancel?: () => void;
 };
 
-const initialFormData: LoginData = {
+const initialFormData: RegistrationData = {
   email: "",
   password: "",
 };
 
-export default function LoginForm({
+export default function RegistrationForm({
   title,
-  onLogin,
+  onRegistration,
   onCancel,
-}: LoginFormProps) {
-  const [formData, setFormData] = useState<LoginData>(initialFormData);
+}: RegistrationFormProps) {
+  const [formData, setFormData] = useState<RegistrationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function updateField<K extends keyof LoginData>(
+  function updateField<K extends keyof RegistrationData>(
     field: K,
-    value: LoginData[K],
+    value: RegistrationData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -41,21 +41,21 @@ export default function LoginForm({
     setError("");
 
     try {
-      await onLogin({
+      await onRegistration({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
       setFormData(initialFormData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login.");
+      setError(err instanceof Error ? err.message : "Failed to register.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="login-form" onSubmit={handleSubmit}>
+    <form className="registration-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
 
       {error && <p className="form-error">{error}</p>}
@@ -80,7 +80,8 @@ export default function LoginForm({
           type="password"
           required
           value={formData.password}
-          onChange={(event) => updateField("password", event.target.value)}
+          onChange={(event) =>
+            updateField("password", event.target.value)}
           placeholder="Password"
         />
       </label>
@@ -92,7 +93,7 @@ export default function LoginForm({
           </button>
         )}
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Logging in..." : "Login"}
+          {isSubmitting ? "Registering..." : "Register"}
         </button>
       </div>
     </form>
