@@ -3,18 +3,18 @@ import { useParams } from "react-router-dom";
 import type { OrderDTO } from "../DTOs/OrderDTO.tsx";
 
 export default function ViewOrder() {
-  const { orderId } = useParams();
+  const { orderID } = useParams();
   const [error, setError] = useState<string>("");
   const [orderDTO, setOrderDTO] = useState<OrderDTO | null>(null);
 
   useEffect(() => {
-    if (!orderId) {
+    if (!orderID) {
       return;
     }
 
     async function loadOrder() {
       try {
-        // const response = await fetch(`/api/orders/${orderId}`);
+        // const response = await fetch(`/api/orders/${orderID}`);
 
         // if (!response.ok) {
         //   throw new Error("Failed to load order.");
@@ -23,7 +23,7 @@ export default function ViewOrder() {
         // const order: OrderDTO = await response.json();
 
         const fakeOrderDTO: OrderDTO = {
-          orderId: "order1",
+          orderID: "order1",
           segmentId: "segmentA",
           numOfTickets: 2,
           orderType: "Seat",
@@ -39,7 +39,7 @@ export default function ViewOrder() {
     }
 
     void loadOrder();
-  }, [orderId]);
+  }, [orderID]);
 
   if (!orderDTO) {
     return <div>Loading...</div>;
@@ -49,7 +49,7 @@ export default function ViewOrder() {
     <div>
       {error && <p className="form-error">{error}</p>}
 
-      <h1>Order {orderDTO.orderId}</h1>
+      <h1>Order {orderDTO.orderID}</h1>
 
       <p>Segment ID: {orderDTO.segmentId}</p>
 

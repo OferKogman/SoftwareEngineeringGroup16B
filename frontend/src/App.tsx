@@ -1,7 +1,4 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import ViewDiscountPolicy, { type DiscountPolicyData } from "./Components/CreateDiscountPolicy";
-import EventCreationForm, { type EventCreationData,} from "./Components/EventCreationForm";
-import EventUpdateForm, {type EventUpdateDetails,} from "./Components/EventUpdateForm";
 import ViewDiscountPolicy, {
   type DiscountPolicyData,
 } from "./Components/CreateDiscountPolicy";
@@ -11,7 +8,6 @@ import EventCreationForm, {
 import EventUpdateForm, {
   type EventUpdateDetails,
 } from "./Components/EventUpdateForm";
-import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import PaymentForm from "./Components/PaymentForm";
 import PurchasePolicyCreationForm, {type PurchasePolicyCreationData,} from "./Components/PurchasePolicyCreationForm";
 import RegistrationForm from "./Components/RegistrationForm";
@@ -25,6 +21,7 @@ import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/AdminViewPurcheseHistory";
 
 import { type VenueData } from "./DTOs/VenueDTO";
+import ViewSaleHistory from "./Components/ViewSaleHistory";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -72,6 +69,9 @@ function App() {
   async function handleAdminPurchaseHistory(searchData: PurchaseHistorySearchData) {
     console.log("Admin Search purchase history:", searchData);
   }
+  async function handleUserPurchaseHistory(searchData: PurchaseHistorySearchData) {
+    console.log("User Search purchase history:", searchData);
+  }
 
   async function handleUserRegistration(registrationData: {
     email: string;
@@ -94,7 +94,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/events/:eventID" element={<ViewEvent />} />
-        <Route path="/orders/:orderid" element={<ViewOrder />} />
+        <Route path="/orders/:orderID" element={<ViewOrder />} />
         <Route
           path="/checkout/"
           element={<PaymentForm amount={250} onPaymentSubmit={handlePayment} />}
@@ -157,6 +157,10 @@ function App() {
           element={<AdminViewPurchaseHistory title="Search Purchase History" onSearch={handleAdminPurchaseHistory}/>
           }
         />
+        <Route
+          path="/user/purchase-history"
+          element={<ViewSaleHistory orders={[]}/>}
+        />
 
         <Route
           path="/user/register"
@@ -177,6 +181,7 @@ function App() {
             />
           }
         />
+        
 
         <Route
           path="/venue/:venueID?"
