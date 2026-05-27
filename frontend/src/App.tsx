@@ -13,10 +13,9 @@ import PurchasePolicyCreationForm, {
   type PurchasePolicyCreationData,
 } from "./Components/PurchasePolicyCreationForm";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
-import ViewDiscountPolicy, {
-  type DiscountPolicyDTO,
-} from "./Components/ViewDiscountPolicy";
+import ViewDiscountPolicy, {type DiscountPolicyDTO, } from "./Components/ViewDiscountPolicy";
 import ViewEvent from "./Components/ViewEvent";
+import UserLoginForm, { type UserLoginData, } from "./Components/UserLoginFrom";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -52,6 +51,9 @@ function App() {
   }
   async function handleEditEvent(companyID: number, eventID: number) {
     window.location.href = `/company/${companyID}/event-update/${eventID}`;
+  }
+  async function handleUserLogin(userLoginData: UserLoginData) {
+    console.log("User Logged in:", userLoginData);
   }
 
   return (
@@ -99,6 +101,10 @@ function App() {
           <Route
             path="/admin/login"
             element={<AdminLoginForm onAdminLogin={handleAdminLogin} />}
+          />
+          <Route
+            path="/user/login"
+            element={<UserLoginForm onUserLogin={handleUserLogin} />}
           />
         </Routes>
       </BrowserRouter>
