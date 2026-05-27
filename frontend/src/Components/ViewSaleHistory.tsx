@@ -1,34 +1,99 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { OrderDTO } from "../DTOs/OrderDTO";
 
-type ViewSaleHistoryProps = {
-  orders: OrderDTO[];
-};
-
-export default function ViewSaleHistory({ orders }: ViewSaleHistoryProps) {
+export default function ViewSaleHistory() {
   const navigate = useNavigate();
+
+  const [error, setError] = useState<string>("");
+  const [orders, setOrders] = useState<OrderDTO[] | null>(null);
 
   const [eventIdFilter, setEventIdFilter] = useState("");
   const [subjectIdFilter, setSubjectIdFilter] = useState("");
 
-  const filteredOrders = orders.filter((order) => {
-    const matchesEventId =
-      eventIdFilter === "" || order.eventId.toString().includes(eventIdFilter);
+  useEffect(() => {
+    async function loadOrders() {
+      try {
+        // future backend fetch here
 
-    const matchesSubjectId =
-      subjectIdFilter === "" || order.subjectId.includes(subjectIdFilter);
+        /*
+        const response = await fetch("/api/orders/history");
 
-    return matchesEventId && matchesSubjectId;
-  });
+        if (!response.ok) {
+          throw new Error("Failed to load orders.");
+        }
+
+        const ordersFromServer: OrderDTO[] = await response.json();
+
+        setOrders(ordersFromServer);
+        */
+
+        const mockOrders: OrderDTO[] = [
+          {
+            orderId: "ORD-1001",
+            segmentId: "VIP-A",
+            numOfTickets: 2,
+            orderType: "Seat",
+            totalOrderPrice: 500,
+            eventId: 101,
+            subjectId: "Ran123",
+          },
+          {
+            orderId: "ORD-1002",
+            segmentId: "Grass",
+            numOfTickets: 4,
+            orderType: "Field",
+            totalOrderPrice: 800,
+            eventId: 202,
+            subjectId: "Ofer456",
+          },
+          {
+            orderId: "ORD-1003",
+            segmentId: "Front",
+            numOfTickets: 1,
+            orderType: "Seat",
+            totalOrderPrice: 350,
+            eventId: 101,
+            subjectId: "Ran123",
+          },
+        ];
+
+        setOrders(mockOrders);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Failed to load orders.",
+        );
+      }
+    }
+
+    void loadOrders();
+  }, []);
 
   function openEvent(eventId: number) {
     navigate(`/events/${eventId}`);
   }
 
+  if (!orders) {
+    return <div>No orders found.</div>;
+  }
+
+  const filteredOrders = orders.filter((order) => {
+    const matchesEventId =
+      eventIdFilter === "" ||
+      order.eventId.toString().includes(eventIdFilter);
+
+    const matchesSubjectId =
+      subjectIdFilter === "" ||
+      order.subjectId.includes(subjectIdFilter);
+
+    return matchesEventId && matchesSubjectId;
+  });
+
   return (
     <div>
       <h1>Sale History</h1>
+
+      {error && <p className="form-error">{error}</p>}
 
       <div>
         <label>

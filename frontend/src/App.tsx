@@ -94,7 +94,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/events/:eventID" element={<ViewEvent />} />
-        <Route path="/orders/:orderid" element={<ViewOrder />} />
+        <Route path="/orders/:orderID" element={<ViewOrder />} />
         <Route
           path="/checkout/"
           element={<PaymentForm amount={250} onPaymentSubmit={handlePayment} />}
