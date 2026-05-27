@@ -16,6 +16,9 @@ import ViewDiscountPolicy, {
   type DiscountPolicyDTO,
 } from "./Components/ViewDiscountPolicy";
 import ViewEvent from "./Components/ViewEvent";
+import CreateProductionCompany, {
+  type ProductionCompanyDTO,
+} from "./Components/ProdctionCompanyForm";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -46,6 +49,11 @@ function App() {
   async function handleAdminLogin(adminLoginData: AdminLoginData) {
     console.log("Admin Logged in:", adminLoginData);
   }
+  async function handleCreateProductionCompany(
+    companyData: ProductionCompanyDTO,
+  ) {
+    console.log("Production company created:", companyData);
+  }
 
   return (
     <>
@@ -55,10 +63,15 @@ function App() {
       <h1>Create Purchase Policy</h1>
       <PurchasePolicyCreationForm onCreatePolicy={handleCreatePurchasePolicy} />
 
+      <h1>Create Production Company</h1>
+      <CreateProductionCompany onSubmit={handleCreateProductionCompany} />
+
       <h1>Create Event</h1>
       <EventCreationForm onCreateEvent={handleCreateEvent} />
+
       <h1>Discount Policy</h1>
       <ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />
+
       <BrowserRouter>
         <Routes>
           <Route path="/events/:id" element={<ViewEvent />} />
