@@ -173,27 +173,6 @@ export default function CreateProductionCompany({
       </label>
 
 
-
-      <ListField
-        label="Members"
-        value={memberInput}
-        onChange={setMemberInput}
-        placeholder="Member ID"
-        items={formData.members}
-        onAdd={() => addToList("members", memberInput, setMemberInput)}
-        onRemove={(item) => removeFromList("members", item)}
-      />
-
-      <ListField
-        label="Children by user"
-        value={childInput}
-        onChange={setChildInput}
-        placeholder="User ID"
-        items={formData.childrenByUser}
-        onAdd={() => addToList("childrenByUser", childInput, setChildInput)}
-        onRemove={(item) => removeFromList("childrenByUser", item)}
-      />
-
       <div className="form-actions">
         {onCancel && (
           <button type="button" onClick={onCancel} disabled={isSubmitting}>
