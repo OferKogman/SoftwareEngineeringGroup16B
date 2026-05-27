@@ -11,8 +11,8 @@ export type EventDTO = {
   artist: string;
   category: string;
   productionCompanyID: number;
-  discountPolicy: DiscountPolicyDTO[];
-  purchasePolicy: PurchasePolicyDTO[];
+  discountPolicy: DiscountPolicyDTO | null;
+  purchasePolicy: PurchasePolicyDTO | null;
   price: number;
   rating: number;
 };

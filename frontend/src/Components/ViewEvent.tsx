@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { EventDTO } from "../DTOs/EventDTO";
+import ViewPurchasePolicies from "./ViewPurchasePolicies";
 
 export default function ViewEvent() {
   const { eventID } = useParams();
@@ -32,8 +33,30 @@ export default function ViewEvent() {
           artist: "Satan",
           category: "NOT Rock",
           productionCompanyID: 0,
-          discountPolicy: [],
-          purchasePolicy: [],
+          discountPolicy: null,
+          purchasePolicy: {
+            type: "Composite",
+            operator: "AND",
+            leftPolicy: {
+                type: "Composite",
+                operator: "OR",
+                leftPolicy: {
+                    type: "Minimum Age",
+                    minAge: 18,
+                },
+                rightPolicy: {
+                    type: "Maximum Tickets Per Customer",
+                    maxTickets: 4,
+                },
+            },
+
+            rightPolicy: {
+                type: "Lottery",
+                lotteryName: "VIP Giveaway",
+                lotteryWinnerCount: 10,
+                lotteryRegistrationDueDate: "2026-06-01",
+            },
+},
           price: 1000.0,
           rating: -5.0,
         };
@@ -71,6 +94,9 @@ export default function ViewEvent() {
       <p>Price: {eventDTO.price}</p>
 
       <p>Rating: {eventDTO.rating}</p>
+
+      <h3>Purchase Policy:</h3>
+      <ViewPurchasePolicies purchasePolicy={eventDTO.purchasePolicy} />
     </div>
   );
 }
