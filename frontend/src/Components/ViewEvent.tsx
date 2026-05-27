@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { EventDTO } from "../DTOs/EventDTO";
+import ViewPurchasePolicies from "./ViewPurchasePolicies";
 
 export default function ViewEvent() {
   const { id } = useParams();
@@ -17,8 +18,8 @@ export default function ViewEvent() {
       artist: "Satan",
       category: "NOT Rock",
       productionCompanyID: 0,
-      discountPolicy: [],
-      purchasePolicy: [],
+      discountPolicy: null,
+      purchasePolicy: null,
       price: 1000.0,
       rating: -5.0,
     };
@@ -52,6 +53,8 @@ export default function ViewEvent() {
       <p>Price: {eventDTO.price}</p>
 
       <p>Rating: {eventDTO.rating}</p>
+
+      <ViewPurchasePolicies purchasePolicy={eventDTO.purchasePolicy} />
     </div>
   );
 }
