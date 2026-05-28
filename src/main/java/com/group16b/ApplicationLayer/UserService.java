@@ -39,43 +39,42 @@ public class UserService {
 	}
 
 	public Result<UserDTO> registerUser(String email, String password) {
-		logger.info("Creating new User with email: " + email);
-		User newUser = new User(email, password);
-		userRepo.save(newUser);
-		return Result.makeOk(new UserDTO(newUser));
-	}
+        try {
+            logger.info("UserService: Attempting to create new User with email: " + email);
+            
+            User newUser = new User(email, password); 
+            userRepo.save(newUser);
+            
+            logger.info("UserService: Successfully registered user with email: " + email);
+            return Result.makeOk(new UserDTO(newUser));
+            
+        } catch (IllegalArgumentException e) {
+            logger.warn("UserService: Failed to register user due to invalid domain arguments: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("UserService: Unexpected system error during user registration: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
 
 	public Result<Boolean> updateUserPassword(String sessionToken, String oldPassword, String newPassword) {
 		try {
-			logger.info("Verifying session token for event deactivation."); // TODO: change log message to be more
-																			// specific to password update
-			if (!authenticationService.validateToken(sessionToken)) {
-				logger.warn("Invalid session token provided for event deactivation.");
-				return Result.makeFail("Invalid session token.");
-			}
-			User user = userRepo.findByID(authenticationService.extractSubjectFromToken(sessionToken));
-			logger.info("Session token verified successfully.");
-			logger.info("Validating old password");
-			if (!user.confirmPassword(oldPassword)) {
-				logger.error("Old password is incorrect.");
-				return Result.makeFail("Old password is incorrect.");
-			}
-			logger.info("Validating new password");
-			if (!user.confirmPassword(newPassword)) {
-				logger.error("New password cannot be the same as the old password.");
-				return Result.makeFail("New password cannot be the same as the old password.");
-			} // else, user is not null and old password is correct and new password is
-				// different from old password
-			try {
-				user.changePassword(oldPassword, newPassword);
-				userRepo.save(user);
-				logger.info("Password changed successfully");
-				return Result.makeOk(true);
-			} catch (IllegalArgumentException e) {
-				logger.error("Failed to change password: " + e.getMessage());
-				return Result.makeFail(e.getMessage());
-			}
-		} catch (JwtException e) {
+            logger.info("UserService: Extracting token subject and fetching User aggregate.");
+            
+			//test if token is valid and if there is a user with id from token in one line
+            User user = userRepo.findByID(authenticationService.extractSubjectFromToken(sessionToken));
+            
+            logger.info("UserService: Delegating password change logic to User domain object.");
+            
+			//here will be all of the errorrs regarding where and how a paswword could change
+            user.changePassword(oldPassword, newPassword);
+            
+            userRepo.save(user);
+            logger.info("UserService: Password changed successfully.");
+            return Result.makeOk(true);
+            
+        } catch (JwtException e) {
 			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
