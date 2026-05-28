@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -110,6 +111,10 @@ public class ProductionCompanyService {
             logger.error("ProductionCompanyService.displayTotalRevenue: Unexpected error",e);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    public Result<ProductionCompanyDTO> createProductionCompany(String sessionToken, String companyName) {
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 
     //gets all orders for the company

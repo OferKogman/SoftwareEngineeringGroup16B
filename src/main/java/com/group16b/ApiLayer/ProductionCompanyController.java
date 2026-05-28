@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.ProductionCompanyService;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
 
 @RestController
@@ -53,6 +54,25 @@ public class ProductionCompanyController {
             } else {
                 return ResponseEntity.badRequest().body(totalRevenue.getError());
             }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{companyId}/create-company")
+    public ResponseEntity<?> createProductionCompany(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable int companyId) 
+    {
+        try {
+            Result<ProductionCompanyDTO> result = productionCompanyService.createProductionCompany(authToken, "New Company Name");
+            if(result.isSuccess()) {
+                return ResponseEntity.ok(result.getValue());
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (UnsupportedOperationException e) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
