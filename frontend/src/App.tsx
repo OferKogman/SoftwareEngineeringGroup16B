@@ -152,7 +152,7 @@ function App() {
         />
 
         <Route
-          path="/user/login"
+          path="/user/login/member"
           element={<LoginForm onLogin={handleUserLogin} title="User Login" />}
         />
         <Route

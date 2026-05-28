@@ -8,7 +8,6 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class UserLoginService {
 
@@ -37,13 +36,13 @@ public class UserLoginService {
         }
     }
 
-    public Result<String> loginMember(String userID, String password, String email) {
+    public Result<String> loginMember(String userID, String password) {
         logger.info("Attempting login for user ID: ...", userID);
         
 
         try{
             User member = userRepository.findByID(userID);
-            if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
+            if (!member.confirmPassword(password) || !member.getEmail().equals(userID)) {
                 logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);
                 return Result.makeFail("Invalid user ID or password + email");
             }

@@ -1,8 +1,12 @@
 package com.group16b.ApplicationLayer;
 
+import java.lang.reflect.Field;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -10,11 +14,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.lang.reflect.Field;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -63,18 +62,17 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_ValidCredentials_ReturnsOkResult() {
-        String userID = "1";
         String correctPassword = "myPassword";
-        String correctMail = "myEmail";
+        String userID = "myEmail";
 
         User mockUser = mock(User.class);
         when(mockUser.confirmPassword(correctPassword)).thenReturn(true);
-        when(mockUser.getEmail()).thenReturn(correctMail);
+        when(mockUser.getEmail()).thenReturn(userID);
 
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
         when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
 
-        Result<String> result = userLoginService.loginMember(userID, correctPassword, correctMail);
+        Result<String> result = userLoginService.loginMember(userID, correctPassword);
 
         assertTrue(result.isSuccess());
         assertEquals("mock.member.token", result.getValue());
@@ -82,17 +80,16 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_WrongPassword_ReturnsFailResult() {
-        String userID = "1";
         String wrongPassword = "wrongPassword";
-        String mail = "someEmail";
+        String userID = "someEmail";
 
         User mockUser = mock(User.class);
         when(mockUser.confirmPassword(wrongPassword)).thenReturn(false);
-        when(mockUser.getEmail()).thenReturn(mail);
+        when(mockUser.getEmail()).thenReturn(userID);
 
         when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
 
-        Result<String> result = userLoginService.loginMember(userID, wrongPassword, mail);
+        Result<String> result = userLoginService.loginMember(userID, wrongPassword);
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID or password + email", result.getError());
@@ -100,19 +97,18 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_WrongEmail_ReturnsFailResult() {
-        String userID = "1";
         String correctPassword = "myPassword";
         String correctMail = "myEmail";
         String wrongMail = "my$Email";
 
         User mockUser = mock(User.class);
         when(mockUser.confirmPassword(correctPassword)).thenReturn(true);
-        when(mockUser.getEmail()).thenReturn(correctMail);
+        when(mockUser.getEmail()).thenReturn(wrongMail);
 
-        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
-        when(mockTokenService.generateVisitor_SignedToken(userID)).thenReturn("mock.member.token");
+        when(mockUserRepository.findByID(correctMail)).thenReturn(mockUser);
+        when(mockTokenService.generateVisitor_SignedToken(correctMail)).thenReturn("mock.member.token");
 
-        Result<String> result = userLoginService.loginMember(userID, correctPassword, wrongMail);
+        Result<String> result = userLoginService.loginMember(correctMail, correctPassword);
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID or password + email", result.getError());
@@ -124,7 +120,7 @@ public class UserLoginServiceTests {
         when(mockUserRepository.findByID(nonExistentUserID))
                 .thenThrow(new IllegalArgumentException("User not found"));
 
-        Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword", "someMail");
+        Result<String> result = userLoginService.loginMember(nonExistentUserID, "anyPassword");
 
         assertFalse(result.isSuccess());
         assertEquals("Failed to login: User not found", result.getError());
