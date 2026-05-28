@@ -1,8 +1,6 @@
 package com.group16b.ApiLayer;
 import java.util.List;
 
-import javax.annotation.processing.Generated;
-
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,7 +26,7 @@ public class ProductionCompanyController {
     @GetMapping("/{companyId}/sales-history")
     public ResponseEntity<?> getSalesHistory(
                     @RequestHeader("Authorization") String authToken, 
-                    @PathVariable int companyId) 
+                    @PathVariable("companyId") int companyId) 
     {
         try {
             Result<List<OrderDTO>> salesHistory = productionCompanyService.viewSalesHistory(authToken, companyId);
@@ -45,7 +43,7 @@ public class ProductionCompanyController {
     @GetMapping("/{companyId}/total-revenue")
     public ResponseEntity<?> getTotalRevenue(
                     @RequestHeader("Authorization") String authToken, 
-                    @PathVariable int companyId) 
+                    @PathVariable("companyId") int companyId) 
     {
         try {
             Result<Double> totalRevenue = productionCompanyService.displayTotalRevenue(authToken, companyId);
@@ -62,7 +60,7 @@ public class ProductionCompanyController {
     @GetMapping("/{companyId}/create-company")
     public ResponseEntity<?> createProductionCompany(
                     @RequestHeader("Authorization") String authToken, 
-                    @PathVariable int companyId) 
+                    @PathVariable("companyId") int companyId) 
     {
         try {
             Result<ProductionCompanyDTO> result = productionCompanyService.createProductionCompany(authToken, "New Company Name");
