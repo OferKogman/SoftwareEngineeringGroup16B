@@ -5,7 +5,7 @@ import type {
   SeatData,
   VenueData,
 } from "../DTOs/VenueDTO";
-import CreateOrderVenueDisplay from "./CreateOrderVenueDisplay";
+import VenueDisplay from "./VenueDisplay";
 
 type SegmentAvailability = {
   segmentID: string;
@@ -319,12 +319,22 @@ seats=${JSON.stringify(seats)}`,
       {error && <p className="form-error">{error}</p>}
 
      {!selectedFieldSeg && !selectedSeatSeg && (
-  <CreateOrderVenueDisplay
-    venue={venue}
-    availability={availability}
-    onFieldSegmentSelected={handleFieldSegmentSelected}
-    onSeatSegmentSelected={handleSeatSegmentSelected}
-  />
+  <VenueDisplay
+  venue={venue}
+  pendingRectangle={null}
+  handleEmptyCellClick={() => {}}
+  handleStageClick={() => {}}
+  handleEntranceClick={() => {}}
+  handleSeatClick={(seat, segment, gridRow, gridColumn) => {
+    handleSeatSegmentSelected(segment);
+  }}
+  handleFieldSegmentClick={(segment, gridRow, gridColumn) => {
+    handleFieldSegmentSelected(segment);
+  }}
+  handleSeatSegmentClick={(segment, gridRow, gridColumn) => {
+    handleSeatSegmentSelected(segment);
+  }}
+/>
 )}
 
 {selectedFieldSeg && (
