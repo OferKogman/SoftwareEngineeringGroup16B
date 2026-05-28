@@ -41,8 +41,18 @@ public class UserService {
 	public Result<UserDTO> registerUser(String email, String password) {
         try {
             logger.info("UserService: Attempting to create new User with email: " + email);
-            
-            User newUser = new User(email, password); 
+            try {
+                userRepo.findByID(email);
+                
+                // if the line above DOES NOT throw an error, it means the user exists and we must fail.
+                logger.warn("UserService: Failed to register user due to already existing user with email: " + email);
+                return Result.makeFail("User already exists");
+                
+            } catch (Exception e) {
+                // if it throws an error, the user wasn't found 
+                logger.info("UserService: Confirmed that the user doesn't exist yet.");
+            }
+			User newUser = new User(email, password);
             userRepo.save(newUser);
             
             logger.info("UserService: Successfully registered user with email: " + email);
