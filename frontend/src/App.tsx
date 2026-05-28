@@ -21,7 +21,7 @@ import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/ViewAdminPurcheseHistory";
 
 import { type VenueData } from "./DTOs/VenueDTO";
-import ViewSaleHistory from "./Components/ViewSaleHistory";
+import CreateOrderPage from "./Components/CreateOrder";
 import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
 import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
 import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
@@ -188,7 +188,7 @@ function App() {
           }
         />
         
-
+        <Route path="user/create-order" element={<CreateOrderPage />} />
         <Route
           path="/venue/:venueID?"
           element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
