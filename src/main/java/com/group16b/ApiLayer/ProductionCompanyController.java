@@ -31,9 +31,30 @@ public class ProductionCompanyController {
     {
         try {
             Result<List<OrderDTO>> salesHistory = productionCompanyService.viewSalesHistory(authToken, companyId);
-            return ResponseEntity.ok(salesHistory);
+            if(salesHistory.isSuccess()) {
+                return ResponseEntity.ok(salesHistory.getValue());
+            } else {
+                return ResponseEntity.badRequest().body(salesHistory.getError());
+            }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/{companyId}/total-revenue")
+    public ResponseEntity<?> getTotalRevenue(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable int companyId) 
+    {
+        try {
+            Result<Double> totalRevenue = productionCompanyService.displayTotalRevenue(authToken, companyId);
+            if(totalRevenue.isSuccess()) {
+                return ResponseEntity.ok(totalRevenue.getValue());
+            } else {
+                return ResponseEntity.badRequest().body(totalRevenue.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
     
