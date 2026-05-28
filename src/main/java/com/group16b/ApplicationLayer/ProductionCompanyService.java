@@ -22,7 +22,9 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 
+import org.springframework.stereotype.Service;
 
+@Service
 public class ProductionCompanyService {
     
     private static final Logger logger = LoggerFactory.getLogger(ProductionCompanyService.class);

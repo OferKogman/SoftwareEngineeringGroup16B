@@ -3,7 +3,9 @@ package com.group16b.InfrastructureLayer;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
+import org.springframework.stereotype.Service;
 
+@Service
 public class PaymentService implements IPaymentGateway {
     public void processPayment(PaymentInfo paymentInfo, double price){
         if (paymentInfo == null || price <= 0) {
