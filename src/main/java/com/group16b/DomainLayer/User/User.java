@@ -16,9 +16,9 @@ public class User {
 	}
 
 	public User(User user) {
-		this.email = user.email;
-		this.password = user.password;
-		this.version = user.version;
+		this.email = user.getEmail();//changed for mocked testing userRepo
+		this.password = user.getEmail();
+		this.version = user.getVersion();
     }
 
     public String getEmail() {
