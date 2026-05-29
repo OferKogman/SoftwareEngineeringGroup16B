@@ -1,18 +1,20 @@
 package com.group16b.ApplicationLayer;
 
-import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.TicketGateway; 
 
 public class UserServiceTests {
@@ -95,6 +97,22 @@ public class UserServiceTests {
         Result<Boolean> result = userService.updateUserPassword(badToken, "OldPassword123!", "NewPassword456!");
 
         assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Authentication failed"));
+        assertTrue(result.getError().contains("Invalid token for user update password"));
     }
+
+    @Test
+    void updateUserPassword_IncorrectTypewtToken_FailsAndDoesNotUpdateDomain() {
+        userRepo.save(new User("member@test.com", "OldPassword123!"));
+
+        //even admin with the same email as user can't be user with token admin
+        String IncorrectTypeToken = authService.generateAdminToken("member@test.com");
+
+        //so we know that error occurs only because of illegal token type for user functions
+        assertEquals("member@test.com", authService.extractSubjectFromToken(IncorrectTypeToken));
+
+        Result<Boolean> result = userService.updateUserPassword(IncorrectTypeToken, "OldPassword123!", "NewPassword456!");
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("Invalid token for user"));
+    }    
 }

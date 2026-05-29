@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.Order;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Order {
@@ -38,6 +39,7 @@ public class Order {
 		this.eventId = eventId;
 		this.subjectID = subjectID;
 		this.version = 0;
+		this.seats = new ArrayList<>();
 	}
 
 	public Order(Order other) { // deep copy constructor

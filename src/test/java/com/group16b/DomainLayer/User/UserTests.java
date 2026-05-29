@@ -10,17 +10,20 @@ import java.util.EnumSet;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
+import org.mockito.Mock;
 
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
-
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
+
 public class UserTests {
 
     private User user;
+    private IAuthenticationService authenticationService;
 
     @BeforeEach
     void setUp() {
