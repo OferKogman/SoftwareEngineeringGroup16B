@@ -41,11 +41,11 @@ public class Venue {
 
 	
 	public Venue(Venue other) {
-		this.name = other.name;
-		this.location = other.location;
+		this.name = other.getName();
+		this.location = other.getLocation();
 
         this.segments = new ConcurrentHashMap<>();
-        for (Map.Entry<String, Segment> entry : other.segments.entrySet()) {
+        for (Map.Entry<String, Segment> entry : other.getSegments().entrySet()) {
             Segment origSeg = entry.getValue();
             
             if (origSeg instanceof FieldSeg fieldSeg) {
@@ -56,13 +56,17 @@ public class Venue {
         }
 
         this.scheduledEvents = new ConcurrentHashMap<>();
-        for (Map.Entry<Integer, EventSchedule> entry : other.scheduledEvents.entrySet()) {
+        for (Map.Entry<Integer, EventSchedule> entry : other.getScheduledEvents().entrySet()) {
             this.scheduledEvents.put(entry.getKey(), new EventSchedule(entry.getValue().getStartTime(), entry.getValue().getEndTime())); 
         }
 
-		this.IDForSeg = other.IDForSeg;
-		this.version = other.version;
-		this.id = other.id;
+		this.IDForSeg = other.getIDForSeg();
+		this.version = other.getVersion();
+		this.id = other.getID();
+	}
+
+	private int getIDForSeg(){
+		return IDForSeg;
 	}
 
 	public Map<String, Segment> getSegments(){
