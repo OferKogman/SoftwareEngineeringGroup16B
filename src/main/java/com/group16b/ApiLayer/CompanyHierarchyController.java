@@ -1,10 +1,12 @@
 package com.group16b.ApiLayer;
 import java.util.List;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,7 +18,6 @@ import com.group16b.ApplicationLayer.DTOs.AssignOwnerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.ChangeManagerPermissionRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.DTOs.InviteHandleRequestDTO;
-import com.group16b.ApplicationLayer.DTOs.RemoveMemberRequestDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
 
 @RestController
@@ -28,7 +29,7 @@ public class CompanyHierarchyController {
         this.companyHierarchyService = companyHierarchyService;
     }
 
-    @GetMapping("/assign-owner")
+    @PostMapping("/owners")
     public ResponseEntity<?> assignOwnerToCompany(
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId,
@@ -46,7 +47,7 @@ public class CompanyHierarchyController {
         }
     }
 
-    @GetMapping("/assign-manager")
+    @PostMapping("/managers")
     public ResponseEntity<?> assignManagerToCompany(
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId,
@@ -64,7 +65,7 @@ public class CompanyHierarchyController {
         }
     }
 
-    @GetMapping("/accept-invite")
+    @PostMapping("/invites/accept")
     public ResponseEntity<?> acceptInviteToCompany(
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId,
@@ -82,7 +83,7 @@ public class CompanyHierarchyController {
         }
     }
 
-    @GetMapping("/reject-invite")
+    @PostMapping("/invites/reject")
     public ResponseEntity<?> rejectInviteToCompany(
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId,
@@ -100,7 +101,7 @@ public class CompanyHierarchyController {
         }
     }
 
-    @GetMapping("/forfeit-ownership")
+    @DeleteMapping("/owners/me")
     public ResponseEntity<?> forfeitOwnership(
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId) 
@@ -117,14 +118,14 @@ public class CompanyHierarchyController {
         }
     }
 
-    @GetMapping("/remove-owner-manager")
+    @DeleteMapping("/members/{targetId}")
     public ResponseEntity<?> removeOwnerManager(
-                    @RequestHeader("Authorization") String authToken, 
-                    @PathVariable("companyId") int companyId,
-                    @RequestBody RemoveMemberRequestDTO requestDTO) 
+            @RequestHeader("Authorization") String authToken,
+            @PathVariable("companyId") int companyId,
+            @PathVariable("targetId") String targetId)
     {
         try {
-            Result<Boolean> result = companyHierarchyService.removeOwnerManager(requestDTO.getTargetID(),companyId, authToken);
+            Result<Boolean> result = companyHierarchyService.removeOwnerManager(targetId, companyId, authToken);
             if(result.isSuccess()) {
                 return ResponseEntity.ok().build();
             } else {
@@ -135,7 +136,7 @@ public class CompanyHierarchyController {
         }
     }
 
-    @GetMapping("/change-manager-permissions")
+    @PatchMapping("/managers/permissions")
     public ResponseEntity<?> changeManagerPermission(
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId,
