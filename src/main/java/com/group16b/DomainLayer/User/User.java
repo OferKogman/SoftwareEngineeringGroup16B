@@ -41,6 +41,11 @@ public class User {
 		if (!confirmPassword(oldPassword)) {
 			throw new IllegalArgumentException("Old password is incorrect.");
 		}
+
+		if (confirmPassword(newPassword)) {
+            throw new IllegalArgumentException("New password cannot be the same as the old password.");
+        }
+		
 		setPassword(newPassword);
 		
 	}
