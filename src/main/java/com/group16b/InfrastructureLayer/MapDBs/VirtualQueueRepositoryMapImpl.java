@@ -6,7 +6,9 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class VirtualQueueRepositoryMapImpl implements IRepository<VirtualQueue> {
 	private final ConcurrentHashMap<Integer, VirtualQueue> queues = new ConcurrentHashMap<>();
 	private final ConcurrentHashMap<Integer, ReentrantLock> locks = new ConcurrentHashMap<>();

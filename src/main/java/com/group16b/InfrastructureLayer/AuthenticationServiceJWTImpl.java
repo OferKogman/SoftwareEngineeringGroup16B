@@ -13,7 +13,9 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Service;
 
+@Service
 public class AuthenticationServiceJWTImpl implements IAuthenticationService {
 
 	private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
