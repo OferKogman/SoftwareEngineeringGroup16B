@@ -11,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.ApplicationLayer.DTOs.AssignManagerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.AssignOwnerRequestDTO;
+import com.group16b.ApplicationLayer.DTOs.ChangeManagerPermissionRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.InviteHandleRequestDTO;
+import com.group16b.ApplicationLayer.DTOs.RemoveMemberRequestDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
 
 @RestController
@@ -94,4 +96,58 @@ public class CompanyHierarchyController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
+
+    @GetMapping("/forfeit-ownership")
+    public ResponseEntity<?> forfeitOwnership(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId) 
+    {
+        try {
+            Result<Boolean> result = companyHierarchyService.forfeitOwnership(companyId, authToken);
+            if(result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/remove-owner-manager")
+    public ResponseEntity<?> removeOwnerManager(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody RemoveMemberRequestDTO requestDTO) 
+    {
+        try {
+            Result<Boolean> result = companyHierarchyService.removeOwnerManager(requestDTO.getTargetID(),companyId, authToken);
+            if(result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/change-manager-permissions")
+    public ResponseEntity<?> changeManagerPermission(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody ChangeManagerPermissionRequestDTO requestDTO) 
+    {
+        try {
+            Result<Boolean> result = companyHierarchyService.changeManagerPermission(requestDTO.getTargetID(), companyId, requestDTO.getNewPermissions(), authToken);
+            if(result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
 }
