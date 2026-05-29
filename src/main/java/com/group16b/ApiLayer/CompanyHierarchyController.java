@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.ApplicationLayer.DTOs.AssignManagerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.AssignOwnerRequestDTO;
+import com.group16b.ApplicationLayer.DTOs.InviteHandleRequestDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
 
 @RestController
@@ -48,6 +49,42 @@ public class CompanyHierarchyController {
     {
         try {
             Result<Boolean> result = companyHierarchyService.assignManagerToCompany(companyId, requestDTO.getTargetID(), requestDTO.getPermissions(), authToken);
+            if(result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/accept-invite")
+    public ResponseEntity<?> acceptInviteToCompany(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody InviteHandleRequestDTO requestDTO) 
+    {
+        try {
+            Result<Boolean> result = companyHierarchyService.acceptInviteToCompany(companyId, requestDTO.getAssignerID(), authToken);
+            if(result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/reject-invite")
+    public ResponseEntity<?> rejectInviteToCompany(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody InviteHandleRequestDTO requestDTO) 
+    {
+        try {
+            Result<Boolean> result = companyHierarchyService.rejectInviteToCompany(companyId, requestDTO.getAssignerID(), authToken);
             if(result.isSuccess()) {
                 return ResponseEntity.ok().build();
             } else {
