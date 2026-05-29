@@ -1,4 +1,6 @@
 package com.group16b.ApiLayer;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +14,7 @@ import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.ApplicationLayer.DTOs.AssignManagerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.AssignOwnerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.ChangeManagerPermissionRequestDTO;
+import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.DTOs.InviteHandleRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.RemoveMemberRequestDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -142,6 +145,23 @@ public class CompanyHierarchyController {
             Result<Boolean> result = companyHierarchyService.changeManagerPermission(requestDTO.getTargetID(), companyId, requestDTO.getNewPermissions(), authToken);
             if(result.isSuccess()) {
                 return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/hierarchy-tree")
+    public ResponseEntity<?> getCompanyHierarchyTree(
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId) 
+    {
+        try {
+            Result<List<HierarchyNodeDTO>> result = companyHierarchyService.hierarchyTree(companyId, authToken);
+            if(result.isSuccess()) {
+                return ResponseEntity.ok(result.getValue());
             } else {
                 return ResponseEntity.badRequest().body(result.getError());
             }
