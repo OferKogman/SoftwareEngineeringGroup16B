@@ -39,8 +39,8 @@ class ProductionCompanyTests {
         company.AssignManager(ownerID, managerID, Set.of(managerPerm));
         company.acceptInvite(managerID, ownerID);
 
-        company.AssignOwner(founderID, invitedOwnerID);
-        company.AssignManager(founderID, invitedManagerID, Set.of(managerPerm));
+        company.AssignOwner(ownerID, invitedOwnerID);
+        company.AssignManager(ownerID, invitedManagerID, Set.of(managerPerm));
 
 
     }
@@ -48,11 +48,11 @@ class ProductionCompanyTests {
     // ---------- Assign Owner ----------
 
     @Test
-    void GivenOwnerCaller_WhenAssignOwner_ThenInviteCanBeAccepted() {
+    void GivenOwnerCaller_WhenAssignOwner_ThenInviteIsCreated() {
         company.AssignOwner(ownerID, nonMemberID);
 
-        assertDoesNotThrow(() -> company.acceptInvite(nonMemberID, ownerID));
-        assertTrue(company.isOwner(nonMemberID));
+        assertFalse(company.isOwner(nonMemberID));
+        assertTrue(company.hasPendingOwnerInvite(nonMemberID, ownerID));
     }
 
     @Test
@@ -69,24 +69,50 @@ class ProductionCompanyTests {
     }
 
     @Test
-    void GivenOwner_WhenAssignExistingManager_thenInviteCanBeAccepted() {
+    void GivenOwner_WhenAssignExistingManager_thenInviteCreated() {
         assertTrue(company.isManager(managerID));
         assertFalse(company.isOwner(managerID));
-        
-        company.AssignOwner(ownerID, managerID);
 
-        assertDoesNotThrow(() -> company.acceptInvite(managerID, ownerID));
-        assertTrue(company.isOwner(managerID));
+        company.AssignOwner(ownerID, managerID);
+        assertTrue(company.hasPendingOwnerInvite(managerID, ownerID));
+        assertFalse(company.isOwner(managerID));
+        assertTrue(company.isManager(managerID));
+    }
+
+    @Test
+    void GivenOwner_whenAssignUsersWithExistingInviteFromSameOwner_thenOverrideInvite() {
+        company.AssignOwner(ownerID, invitedManagerID);
+        assertTrue(company.hasPendingOwnerInvite(invitedManagerID, ownerID));
+
+        company.AssignOwner(ownerID, invitedOwnerID);
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, ownerID));
+    }
+
+    @Test
+    void givenFounder_whenAssignOwnerForUsersWithExistingInvitesFromOtherOwners_thenAddInviteToTheirList() {
+        company.AssignOwner(founderID, invitedManagerID);
+        company.AssignOwner(founderID, invitedOwnerID);
+
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID, ownerID,Set.of(managerPerm)));
+        assertTrue(company.hasPendingOwnerInvite(invitedManagerID, founderID));
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, ownerID));
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, founderID));
+    }
+
+    @Test
+    void givenOwner_whenAssignOwnerToFounder_thenThrowException() {
+        assertThrows(IllegalArgumentException.class, () -> company.AssignOwner(ownerID, founderID));
     }
 
     // ---------- Assign Manager ----------
 
     @Test
-    void GivenOwnerCaller_WhenAssignManager_ThenInviteCanBeAccepted() {
+    void GivenOwnerCaller_WhenAssignManager_ThenInviteIsCreated() {
         company.AssignManager(ownerID,nonMemberID, Set.of(managerPerm));
 
-        assertDoesNotThrow(() -> company.acceptInvite(nonMemberID, ownerID));
-        assertTrue(company.isManager(nonMemberID));
+        assertFalse(company.isManager(nonMemberID));
+        assertTrue(company.hasPendingManagerInvite(nonMemberID, ownerID,Set.of(managerPerm)));
+        assertFalse(company.hasPendingOwnerInvite(nonMemberID, ownerID));
     }
 
     @Test
@@ -123,20 +149,41 @@ class ProductionCompanyTests {
         assertFalse(company.hasPendingInvite(managerID));
     }
 
+    @Test
+    void GivenNullOrEmptyPermissions_WhenAssignManager_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.AssignManager(
+                        ownerID,
+                        nonMemberID,
+                        null
+                )
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.AssignManager(
+                        ownerID,
+                        nonMemberID,
+                        Set.of()
+                )
+        );
+        assertFalse(company.hasPendingInvite(nonMemberID));
+        assertFalse(company.isManager(nonMemberID));
+    }
+
     // ---------- Accept Invite ----------
 
     @Test
     void GivenExistingInvite_WhenAcceptInvite_ThenMemberAddedToHierarchy() {
-        company.AssignOwner("1", "2");
+        company.acceptInvite(invitedOwnerID, ownerID);
+        assertTrue(company.isOwner(invitedOwnerID));
 
-        company.acceptInvite("2", "1");
+        company.acceptInvite(invitedManagerID, ownerID);
+        assertTrue(company.isManager(invitedManagerID));
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
-
-        assertTrue(
-                hierarchy.stream()
-                        .anyMatch(n -> n.getUserID().equals("2"))
-        );
+        assertFalse(company.isOwner(invitedManagerID));
+        assertFalse(company.hasPendingInvite(invitedOwnerID));
+        assertFalse(company.hasPendingInvite(invitedManagerID));
     }
 
     @Test
