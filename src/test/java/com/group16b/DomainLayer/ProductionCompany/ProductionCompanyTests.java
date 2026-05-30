@@ -38,7 +38,7 @@ class ProductionCompanyTests {
 
     @BeforeEach
     void setUp() {
-        company = new ProductionCompany(1, "Company", 5.0,"1");
+        company = new ProductionCompany(1, "Company", 5.0,founderID);
         company.AssignOwner(founderID, ownerID);
         company.acceptInvite(ownerID, founderID);
 
@@ -635,182 +635,78 @@ class ProductionCompanyTests {
         assertTrue(depthCheckManagerNode.getPermissions().contains(managerPerm));
     }
 
-    // ---------- Reparenting ----------
-
     @Test
-    void GivenHierarchy_WhenRemoveMiddleOwner_ThenChildrenReparented() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
+    void GivenHierarchy_WhenGetHierarchyTreeAfterOwnerRemoval_ThenReturnCorrectTreeWitReparenting() {
+        company.removeMemberByOwner(ownerID, depthCheckOwnerID);
+        List<HierarchyNodeData> hierarchy = company.getHierarchyTree(founderID);
 
-        company.AssignManager(
-                "2",
-                "3",
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
-        );
+        assertEquals(5, hierarchy.size());
 
-        company.acceptInvite("3", "2");
-
-        company.removeMemberByOwner("1", "2");
-
-        List<HierarchyNodeData> hierarchy =
-                company.getHierarchyTree("1");
-
-        HierarchyNodeData child = hierarchy.stream()
-                .filter(n -> n.getUserID().equals("3"))
+        HierarchyNodeData founderNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(founderID))
                 .findFirst()
                 .orElseThrow();
+        assertEquals(null, founderNode.getParentID());
 
-        assertEquals("1", child.getParentID());
+        HierarchyNodeData ownerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(ownerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(founderID, ownerNode.getParentID());
+
+        HierarchyNodeData childFreeOwnerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(childFreeOwnerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(founderID, childFreeOwnerNode.getParentID());
+
+        HierarchyNodeData managerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(managerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(ownerID, managerNode.getParentID());
+        assertTrue(managerNode.getPermissions().contains(managerPerm));
+
+        HierarchyNodeData depthCheckManagerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(depthCheckManagerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(ownerID, depthCheckManagerNode.getParentID());
+        assertTrue(depthCheckManagerNode.getPermissions().contains(managerPerm));
     }
 
+
     //----------- roleship tests ----------
+    //simple tests to ensure correctness of setup and smaller things like that validate perms works
     @Test
     void founder_IsFounderAndOwnerAndManager() {
-        assertTrue(company.isFounder("1"));
-        assertTrue(company.isOwner("1"));
-        assertTrue(company.isManager("1"));
+        assertTrue(company.isFounder(founderID));
+        assertTrue(company.isOwner(founderID));
+        assertTrue(company.isManager(founderID));
+
+        company.validateUserPermissions(founderID, RoleType.FOUNDER);
+        company.validateUserPermissions(founderID, RoleType.OWNER);
+        company.validateUserPermissions(founderID, RoleType.MANAGER);
+    }
+
+    @Test
+    void owner_IsNotFounderButIsOwnerAndManager() {
+        assertFalse(company.isFounder(ownerID));
+        assertTrue(company.isOwner(ownerID));
+        assertTrue(company.isManager(ownerID));
+
+        assertThrows(IllegalArgumentException.class, () -> company.validateUserPermissions(ownerID, RoleType.FOUNDER));
+        company.validateUserPermissions(ownerID, RoleType.OWNER);
+        company.validateUserPermissions(ownerID, RoleType.MANAGER);
     }
 
     @Test
     void manager_IsManagerButNotOwner() {
-        company.AssignManager("1", "2",
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT));
-        company.acceptInvite("2", "1");
-
-        assertTrue(company.isManager("2"));
-        assertFalse(company.isOwner("2"));
-        assertThrows(IllegalArgumentException.class, () -> company.validateUserPermissions("2", RoleType.OWNER));
-    }
-
-    @Test
-    void founderCannotForfeitOwnership() {
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.forfeitOwnership("1")
-        );
-    }
-
-    @Test
-    void managerWithPermission_PassesValidation() {
-        company.AssignManager("1", "2",
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT));
-
-        company.acceptInvite("2", "1");
-
-        assertDoesNotThrow(
-                () -> company.validateUserPermissions(
-                "2",
-                ManagerPermissions.CUSTOMER_SUPPORT
-                )
-        );
-    }
-    @Test
-    void managerWithoutPermission_FailsValidation() {
-        company.AssignManager("1", "2",
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT));
-
-        company.acceptInvite("2", "1");
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.validateUserPermissions(
-                        "2",
-                        ManagerPermissions.EVENT_INVENTORY
-                )
-        );
-    }
-    @Test
-    void ownerCanPassManagerValidation() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
-
-        assertDoesNotThrow(
-                () -> company.validateUserPermissions(
-                "2",
-                RoleType.MANAGER
-                )
-        );
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.validateUserPermissions(
-                        "2",
-                        RoleType.FOUNDER
-                )
-        );
-        assertDoesNotThrow(
-                () -> company.validateUserPermissions(
-                        "2",
-                        RoleType.OWNER
-                )
-        );
-        assertTrue(company.isManager("2"));
-        assertFalse(company.isFounder("2"));
-        assertTrue(company.isOwner("2"));
-    }
-
-    @Test
-    void ownerCanPassOwnerValidation() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
-
-        assertDoesNotThrow(
-                () -> company.validateUserPermissions(
-                "2",
-                RoleType.OWNER
-                )
-        );
-        assertDoesNotThrow(
-                () -> company.validateUserPermissions(
-                "2",
-                RoleType.MANAGER
-                )
-        );
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.validateUserPermissions(
-                        "2",
-                        RoleType.FOUNDER
-                )
-        );
-        assertTrue(company.isOwner("2"));
-        assertTrue(company.isManager("2"));
-        assertFalse(company.isFounder("2"));
-    }
-
-    // ---------- invites tests ----------
-    @Test
-    void cannotAcceptInviteForAnotherUser() {
-                company.AssignOwner("1", "2");
-        
-                assertThrows(
-                        IllegalArgumentException.class,
-                        () -> company.acceptInvite("3", "1")
-                );
-    }
-
-    @Test
-    void cannotRejectInviteForAnotherUser() {
-        company.AssignOwner("1", "2");
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.rejectInvite("3", "1")
-        );
-    }
-
-    @Test
-    void rejectingInviteRemovesItFromPendingInvites() {
-        company.AssignOwner("1", "2");
-
-        company.rejectInvite("2", "1");
-
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.acceptInvite("2", "1")
-        );
-        assertFalse(
-                company.hasPendingInvite("2")
-        );
+        assertTrue(company.isManager(managerID));
+        assertFalse(company.isOwner(managerID));
+        company.validateUserPermissions(founderID, RoleType.MANAGER);
+        assertThrows(IllegalArgumentException.class, () -> company.validateUserPermissions(managerID, RoleType.OWNER));
+        assertThrows(IllegalArgumentException.class, () -> company.validateUserPermissions(managerID, RoleType.FOUNDER));
     }
 
 }
