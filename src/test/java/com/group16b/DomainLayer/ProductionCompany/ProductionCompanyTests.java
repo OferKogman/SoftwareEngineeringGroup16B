@@ -408,36 +408,93 @@ class ProductionCompanyTests {
     
 
     // ---------- Remove Member ----------
-
     @Test
-    void GivenManagedUser_WhenRemoveMemberByOwner_ThenUserRemoved() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
+    void GivenOwnerCaller_WhenRemoveMemberWithNoChildren_ThenMemberRemoved() {
+        company.AssignOwner(ownerID, managerID);
+        company.removeMemberByOwner(ownerID, managerID);
 
-        company.removeMemberByOwner("1", "2");
+        assertFalse(company.isManager(managerID));
+        assertFalse(company.isOwner(managerID));
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
+        assertFalse(company.hasPendingInvite(managerID));
 
-        assertFalse(
-                hierarchy.stream()
-                        .anyMatch(n -> n.getUserID().equals("2"))
-        );
+        assertFalse(company.isDirectSubordinate(ownerID, managerID));
+        assertTrue(company.isDirectSubordinate(founderID, ownerID));
     }
 
     @Test
-    void GivenUnmanagedUser_WhenRemoveMemberByOwner_ThenThrowException() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
+    void GivenOwnerCaller_WhenRemoveMemberWithChildren_ThenMemberRemovedAndChildrenReparented()
+    {
+        company.AssignOwner(depthCheckOwnerID, nonMemberID);
+        company.removeMemberByOwner(ownerID, depthCheckOwnerID);
 
-        company.AssignOwner("2", "3");
-        company.acceptInvite("3", "2");
+        assertFalse(company.isOwner(depthCheckOwnerID));
+        assertFalse(company.isManager(depthCheckOwnerID));
+
+        assertFalse(company.hasPendingInvite(depthCheckOwnerID));
+        assertFalse(company.hasOutgoingInvites(depthCheckOwnerID));
+
+        assertFalse(company.isDirectSubordinate(ownerID, depthCheckOwnerID));
+        assertTrue(company.isDirectSubordinate(ownerID, depthCheckManagerID));
+
+        assertTrue(company.isDirectSubordinate(ownerID, managerID));
+    }
+
+    @Test
+    void GivenNonAssignerCaller_whenRemoveMember_thenThrowException() {
+        company.AssignOwner(ownerID, managerID);
+        company.AssignOwner(ownerID, nonMemberID);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.removeMemberByOwner(nonMemberID, managerID)
+        );
+        assertTrue(company.isManager(managerID));
+        assertTrue(company.hasPendingOwnerInvite(nonMemberID, ownerID));
+        assertTrue(company.isDirectSubordinate(ownerID, managerID));
+        assertTrue(company.hasPendingOwnerInvite(managerID, ownerID));
 
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.removeMemberByOwner("3", "2")
+                () -> company.removeMemberByOwner(depthCheckOwnerID, managerID)
         );
+        assertTrue(company.isManager(managerID));
+        assertTrue(company.hasPendingOwnerInvite(nonMemberID, ownerID));
+        assertTrue(company.isDirectSubordinate(ownerID, managerID));
+        assertTrue(company.hasPendingOwnerInvite(managerID, ownerID));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.removeMemberByOwner(childFreeOwnerID, managerID)
+        );
+        assertTrue(company.isManager(managerID));
+        assertTrue(company.hasPendingOwnerInvite(nonMemberID, ownerID));
+        assertTrue(company.isDirectSubordinate(ownerID, managerID));
+        assertTrue(company.hasPendingOwnerInvite(managerID, ownerID));
     }
 
+    @Test
+    void givenOwner_whenRemoveTransitiveChilde_thenSuccess()
+    {
+        company.AssignOwner(ownerID, depthCheckManagerID);
+        company.removeMemberByOwner(founderID, depthCheckManagerID);
+
+        assertFalse(company.isManager(depthCheckManagerID));
+        assertFalse(company.isOwner(depthCheckManagerID));
+
+        assertFalse(company.hasPendingInvite(depthCheckManagerID));
+        assertFalse(company.isDirectSubordinate(depthCheckOwnerID, depthCheckManagerID));
+    }
+
+    @Test
+    void givenOwner_whenRemoveNonMember_thenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.removeMemberByOwner(ownerID, nonMemberID)
+        );
+        assertFalse(company.isManager(nonMemberID));
+        assertFalse(company.isOwner(nonMemberID));
+    }
+    
     // ---------- Update Permissions ----------
 
     @Test
