@@ -28,6 +28,7 @@ class ProductionCompanyTests {
     private final String nonMemberID = "6";
 
     private final ManagerPermissions managerPerm = ManagerPermissions.CUSTOMER_SUPPORT;
+    private final ManagerPermissions newManagerPerm = ManagerPermissions.EVENT_INVENTORY;
     
 
     @BeforeEach
@@ -41,8 +42,6 @@ class ProductionCompanyTests {
 
         company.AssignOwner(ownerID, invitedOwnerID);
         company.AssignManager(ownerID, invitedManagerID, Set.of(managerPerm));
-
-
     }
 
     // ---------- Assign Owner ----------
@@ -52,6 +51,7 @@ class ProductionCompanyTests {
         company.AssignOwner(ownerID, nonMemberID);
 
         assertFalse(company.isOwner(nonMemberID));
+        assertFalse(company.isManager(nonMemberID));
         assertTrue(company.hasPendingOwnerInvite(nonMemberID, ownerID));
     }
 
@@ -80,16 +80,17 @@ class ProductionCompanyTests {
     }
 
     @Test
-    void GivenOwner_whenAssignUsersWithExistingInviteFromSameOwner_thenOverrideInvite() {
+    void GivenOwnerInvites_whenAssignOwnerFromSameOwner_thenOverrideInvite() {
         company.AssignOwner(ownerID, invitedManagerID);
         assertTrue(company.hasPendingOwnerInvite(invitedManagerID, ownerID));
+        assertFalse(company.hasPendingManagerInvite(invitedManagerID, ownerID, Set.of(managerPerm)));
 
         company.AssignOwner(ownerID, invitedOwnerID);
         assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, ownerID));
     }
 
     @Test
-    void givenFounder_whenAssignOwnerForUsersWithExistingInvitesFromOtherOwners_thenAddInviteToTheirList() {
+    void givenOwnerInvites_whenAssignOwnerFromOtherOwner_thenAddInviteToTheirList() {
         company.AssignOwner(founderID, invitedManagerID);
         company.AssignOwner(founderID, invitedOwnerID);
 
@@ -113,6 +114,7 @@ class ProductionCompanyTests {
         assertFalse(company.isManager(nonMemberID));
         assertTrue(company.hasPendingManagerInvite(nonMemberID, ownerID,Set.of(managerPerm)));
         assertFalse(company.hasPendingOwnerInvite(nonMemberID, ownerID));
+        assertFalse(company.isOwner(nonMemberID));
     }
 
     @Test
@@ -149,8 +151,32 @@ class ProductionCompanyTests {
         assertFalse(company.hasPendingInvite(managerID));
     }
 
+    //i know that for now when owner is a manager, its covered by the prev tests, but if we change that in the future, we should add a test for it
     @Test
-    void GivenNullOrEmptyPermissions_WhenAssignManager_ThenThrowException() {
+    void GivenOwner_WhenAssignExistingOwnerOrFounder_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.AssignManager(
+                        founderID,
+                        ownerID,
+                        Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
+                )
+        );
+        assertFalse(company.hasPendingInvite(ownerID));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.AssignManager(
+                        ownerID,
+                        founderID,
+                        Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
+                )
+        );
+        assertFalse(company.hasPendingInvite(founderID));
+    }
+
+    @Test
+    void GivenNullPermissions_WhenAssignManager_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> company.AssignManager(
@@ -159,6 +185,12 @@ class ProductionCompanyTests {
                         null
                 )
         );
+        assertFalse(company.hasPendingInvite(nonMemberID));
+        assertFalse(company.isManager(nonMemberID));
+        assertFalse(company.isOwner(nonMemberID));
+    }
+    @Test
+    void GivenEmptyPermissions_WhenAssignManager_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> company.AssignManager(
@@ -169,6 +201,31 @@ class ProductionCompanyTests {
         );
         assertFalse(company.hasPendingInvite(nonMemberID));
         assertFalse(company.isManager(nonMemberID));
+        assertFalse(company.isOwner(nonMemberID));
+    }
+
+    @Test
+    void GivenOwnerInvites_WhenAssignManagerFromAnotherOwner_ThenManagerInviteAdded() {
+        company.AssignManager(founderID,invitedOwnerID,Set.of(newManagerPerm));
+        company.AssignManager(founderID,invitedManagerID,Set.of(newManagerPerm));
+
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID,ownerID));
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID,ownerID,Set.of(managerPerm)));
+        
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID,founderID,Set.of(newManagerPerm)));
+        assertTrue(company.hasPendingManagerInvite(invitedOwnerID,founderID,Set.of(newManagerPerm)));
+    }
+
+    @Test
+    void GivenOwnerInvites_WhenAssignManagerFromSameOwner_ThenOverrideInvite() {
+        company.AssignManager(ownerID, invitedManagerID, Set.of(newManagerPerm));
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID, ownerID, Set.of(newManagerPerm)));
+
+        company.AssignManager(ownerID, invitedOwnerID,  Set.of(newManagerPerm));
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID, ownerID, Set.of(newManagerPerm)));
+        
+        assertFalse(company.hasPendingOwnerInvite(invitedManagerID, ownerID));
+        assertFalse(company.hasPendingOwnerInvite(invitedOwnerID, ownerID));
     }
 
     // ---------- Accept Invite ----------
