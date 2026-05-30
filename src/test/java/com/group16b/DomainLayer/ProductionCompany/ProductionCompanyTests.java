@@ -27,10 +27,14 @@ class ProductionCompanyTests {
     private final String invitedOwnerID = "5";
     private final String nonMemberID = "6";
     private final String childFreeOwnerID = "7";
+    private final String depthCheckOwnerID = "8";
+    private final String depthCheckManagerID = "9";
 
     private final ManagerPermissions managerPerm = ManagerPermissions.CUSTOMER_SUPPORT;
     private final ManagerPermissions newManagerPerm = ManagerPermissions.EVENT_INVENTORY;
-    
+
+    private final Set<String> defaultOwnerChildren = Set.of(managerID,depthCheckOwnerID);
+    private final Set<String> defaultFounderChildren = Set.of(ownerID, childFreeOwnerID);
 
     @BeforeEach
     void setUp() {
@@ -40,6 +44,11 @@ class ProductionCompanyTests {
 
         company.AssignOwner(founderID, childFreeOwnerID);
         company.acceptInvite(childFreeOwnerID, founderID);
+
+        company.AssignOwner(ownerID, depthCheckOwnerID);
+        company.acceptInvite(depthCheckOwnerID, ownerID);
+        company.AssignManager(depthCheckOwnerID, depthCheckManagerID, Set.of(managerPerm));
+        company.acceptInvite(depthCheckManagerID, depthCheckOwnerID);
 
         company.AssignManager(ownerID, managerID, Set.of(managerPerm));
         company.acceptInvite(managerID, ownerID);
@@ -335,27 +344,68 @@ class ProductionCompanyTests {
     // ---------- Forfeit Ownership ----------
 
     @Test
-    void GivenOwner_WhenForfeitOwnership_ThenRemovedFromHierarchy() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
+    void GivenOwnerWithChildrenAndInvites_WhenForfeitOwnership_ThenRemovedFromHierarchy() {
+        company.forfeitOwnership(ownerID);
 
-        company.forfeitOwnership("2");
+        assertFalse(company.isOwner(ownerID));
+        assertFalse(company.isManager(ownerID));
 
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
+        assertFalse(company.hasOutgoingInvites(ownerID));
 
-        assertFalse(
-                hierarchy.stream()
-                        .anyMatch(n -> n.getUserID().equals("2"))
+        assertFalse(company.isDirectSubordinate(founderID, ownerID));
+        assertTrue(company.areDirectSubordinates(founderID, defaultOwnerChildren));
+        assertTrue(company.isDirectSubordinate(founderID, childFreeOwnerID));
+
+        assertFalse(company.areDirectSubordinates(ownerID, defaultOwnerChildren));
+
+        assertTrue(company.isDirectSubordinate(depthCheckOwnerID, depthCheckManagerID));
+
+        assertFalse(company.hasPendingInvite(ownerID));
+    }
+
+    @Test
+    void GivenFounder_WhenForfeitOwnership_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.forfeitOwnership(founderID)
         );
+        assertTrue(company.isFounder(founderID));
+        assertTrue(company.areDirectSubordinates(founderID, defaultFounderChildren));
+    }
+
+    @Test
+    void GivenOwnerWithoutChildren_WhenForfeitOwnership_ThenRemovedFromHierarchy() {
+        company.forfeitOwnership(childFreeOwnerID);
+
+        assertFalse(company.isOwner(childFreeOwnerID));
+        assertFalse(company.isManager(childFreeOwnerID));
+
+        assertFalse(company.hasOutgoingInvites(childFreeOwnerID));
+
+        assertFalse(company.isDirectSubordinate(founderID, childFreeOwnerID));
+        assertTrue(company.areDirectSubordinates(founderID, Set.of(ownerID)));
+
+        assertTrue(company.areDirectSubordinates(ownerID, defaultOwnerChildren));
+
+        assertFalse(company.hasPendingInvite(childFreeOwnerID));
     }
 
     @Test
     void GivenNonOwner_WhenForfeitOwnership_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.forfeitOwnership("2")
+                () -> company.forfeitOwnership(managerID)
         );
+        assertTrue(company.isManager(managerID));
+        assertFalse(company.isOwner(managerID));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.forfeitOwnership(nonMemberID)
+        );
+        assertFalse(company.isManager(nonMemberID));
     }
+    
 
     // ---------- Remove Member ----------
 
