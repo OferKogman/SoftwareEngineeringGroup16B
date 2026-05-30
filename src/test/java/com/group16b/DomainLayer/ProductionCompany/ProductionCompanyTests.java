@@ -496,71 +496,96 @@ class ProductionCompanyTests {
     }
     
     // ---------- Update Permissions ----------
-
     @Test
-    void GivenManagedManager_WhenUpdatePermissionsOfManager_ThenPermissionsUpdated() {
-        Set<ManagerPermissions> oldPerms =
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
+    void GivenOwnerCaller_WhenUpdatePermissionsToDirectManager_ThenPermissionsUpdated() {
+        company.updatePermissionsOfManager(ownerID, managerID, Set.of(newManagerPerm));
 
-        Set<ManagerPermissions> newPerms =
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT);
-
-        company.AssignManager("1", "2", oldPerms);
-        company.acceptInvite("2", "1");
-
-        company.updatePermissionsOfManager("1", "2", newPerms);
-
-        List<HierarchyNodeData> hierarchy = company.getHierarchyTree("1");
-
-        HierarchyNodeData node = hierarchy.stream()
-                .filter(n -> n.getUserID().equals("2"))
-                .findFirst()
-                .orElseThrow();
-
-        assertEquals(newPerms, node.getPermissions());
-    }
-
-    @Test
-    void GivenUnmanagedManager_WhenUpdatePermissionsOfManager_ThenThrowException() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
-
-        company.AssignManager(
-                "2",
-                "3",
-                Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
-        );
-
-        company.acceptInvite("3", "2");
-
+        company.validateUserPermissions(managerID, newManagerPerm);
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.updatePermissionsOfManager(
-                        "3",
-                        "2",
-                        Set.of(ManagerPermissions.CUSTOMER_SUPPORT)
-                )
+                () -> company.validateUserPermissions(managerID, managerPerm)
         );
     }
 
-    // ---------- Hierarchy ----------
-
     @Test
-    void GivenOwnerRequester_WhenGetHierarchyTree_ThenReturnHierarchy() {
-        company.AssignOwner("1", "2");
-        company.acceptInvite("2", "1");
+    void GivenOwnerCaller_WhenUpdatePermissionsToTransitiveManager_ThenUpdate() {
+        company.updatePermissionsOfManager(founderID, managerID, Set.of(newManagerPerm));
 
-        List<HierarchyNodeData> hierarchy =
-                company.getHierarchyTree("1");
-
-        assertEquals(2, hierarchy.size());
+        company.validateUserPermissions(managerID, newManagerPerm);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.validateUserPermissions(managerID, managerPerm)
+        );
     }
 
     @Test
-    void GivenNonOwnerRequester_WhenGetHierarchyTree_ThenThrowException() {
+    void GivenOwnerCaller_whenUpdatePermissionsWithNull_thenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.getHierarchyTree("2")
+                () -> company.updatePermissionsOfManager(ownerID, managerID, null)
+        );
+        company.validateUserPermissions(managerID, managerPerm);
+    }
+    
+    @Test
+    void GivenOwnerCaller_whenUpdatePermissionsWithEmptyPermissionSet_thenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.updatePermissionsOfManager(ownerID, managerID, Set.of())
+        );
+        company.validateUserPermissions(managerID, managerPerm);
+    }
+
+    @Test
+    void GivenNonOwnerCaller_WhenUpdatePermissions_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.updatePermissionsOfManager(managerID, managerID, Set.of(newManagerPerm))
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.updatePermissionsOfManager(nonMemberID, managerID, Set.of(newManagerPerm))
+        );
+        company.validateUserPermissions(managerID, managerPerm);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.validateUserPermissions(managerID, newManagerPerm)
+        );
+    }
+
+    @Test
+    void GivenOwnerCaller_WhenUpdatePermissionsOfNonManager_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.updatePermissionsOfManager(ownerID, ownerID, Set.of(newManagerPerm))
+        );
+        assertTrue(company.isOwner(ownerID));
+    }
+
+    @Test
+    void GivenOwnerCaller_WhenUpdatePermissionsOfNonMember_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.updatePermissionsOfManager(ownerID, nonMemberID, Set.of(newManagerPerm))
+        );
+        assertFalse(company.isManager(nonMemberID));
+        assertFalse(company.isOwner(nonMemberID));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.validateUserPermissions(nonMemberID, newManagerPerm)
+        );
+    }
+
+    @Test
+    void GivenOwnerCaller_WhenUpdatePermissionsOfNonAssignedManager_ThenThrowException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.updatePermissionsOfManager(childFreeOwnerID, managerID, Set.of(newManagerPerm))
+        );
+        company.validateUserPermissions(depthCheckManagerID, managerPerm);
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> company.validateUserPermissions(managerID, newManagerPerm)
         );
     }
 
