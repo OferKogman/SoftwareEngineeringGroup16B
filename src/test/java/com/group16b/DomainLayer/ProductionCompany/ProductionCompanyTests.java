@@ -26,6 +26,7 @@ class ProductionCompanyTests {
     private final String invitedManagerID = "4";
     private final String invitedOwnerID = "5";
     private final String nonMemberID = "6";
+    private final String childFreeOwnerID = "7";
 
     private final ManagerPermissions managerPerm = ManagerPermissions.CUSTOMER_SUPPORT;
     private final ManagerPermissions newManagerPerm = ManagerPermissions.EVENT_INVENTORY;
@@ -36,6 +37,9 @@ class ProductionCompanyTests {
         company = new ProductionCompany(1, "Company", 5.0,"1");
         company.AssignOwner(founderID, ownerID);
         company.acceptInvite(ownerID, founderID);
+
+        company.AssignOwner(founderID, childFreeOwnerID);
+        company.acceptInvite(childFreeOwnerID, founderID);
 
         company.AssignManager(ownerID, managerID, Set.of(managerPerm));
         company.acceptInvite(managerID, ownerID);
@@ -229,26 +233,69 @@ class ProductionCompanyTests {
     }
 
     // ---------- Accept Invite ----------
-
     @Test
-    void GivenExistingInvite_WhenAcceptInvite_ThenMemberAddedToHierarchy() {
-        company.acceptInvite(invitedOwnerID, ownerID);
-        assertTrue(company.isOwner(invitedOwnerID));
+    void GivenExistingOwnerAndManagerInvites_WhenAcceptManagerInvite_ThenOwnerInviteSavedAndManagerInviteRemoved()
+    {
+        company.AssignOwner(founderID, invitedManagerID);
+        company.AssignManager(childFreeOwnerID, invitedManagerID, Set.of(newManagerPerm));
+
+        assertTrue(company.hasPendingOwnerInvite(invitedManagerID, founderID));
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID, childFreeOwnerID, Set.of(newManagerPerm)));
 
         company.acceptInvite(invitedManagerID, ownerID);
-        assertTrue(company.isManager(invitedManagerID));
 
+        assertTrue(company.isManager(invitedManagerID));
         assertFalse(company.isOwner(invitedManagerID));
+
+        assertTrue(company.hasPendingOwnerInvite(invitedManagerID, founderID));
+        assertFalse(company.hasPendingManagerInvite(invitedManagerID, ownerID, Set.of(managerPerm)));
+        assertFalse(company.hasPendingManagerInvite(invitedManagerID, childFreeOwnerID, Set.of(newManagerPerm)));
+
+        assertTrue(company.isDirectSubordinate(ownerID, invitedManagerID));
+        assertFalse(company.isDirectSubordinate(childFreeOwnerID, invitedManagerID));
+        assertFalse(company.isDirectSubordinate(founderID, invitedManagerID));
+        
+    }
+
+    @Test
+    void givenExistingInvites_WhenAcceptOwnerInvite_ThenAllInvitesAreRemoved() {
+        company.AssignOwner(founderID, invitedOwnerID);
+        company.AssignManager(childFreeOwnerID, invitedOwnerID, Set.of(managerPerm));
+        company.acceptInvite(invitedOwnerID, ownerID);
+
+        assertTrue(company.isOwner(invitedOwnerID));
         assertFalse(company.hasPendingInvite(invitedOwnerID));
-        assertFalse(company.hasPendingInvite(invitedManagerID));
+
+        assertTrue(company.isDirectSubordinate(ownerID, invitedOwnerID));
+        assertFalse(company.isDirectSubordinate(childFreeOwnerID, invitedOwnerID));
+        assertFalse(company.isDirectSubordinate(founderID, invitedOwnerID));
     }
 
     @Test
     void GivenMissingInvite_WhenAcceptInvite_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.acceptInvite("2", "1")
+                () -> company.acceptInvite(nonMemberID, nonMemberID)
         );
+    }
+
+    @Test
+    void GivenOwnerInvite_WhenAcceptInviteByManager_ThenPromote() {
+        assertTrue(company.isManager(managerID));
+        assertFalse(company.isOwner(managerID));
+        assertTrue(company.isDirectSubordinate(ownerID, managerID));
+        assertFalse(company.isDirectSubordinate(childFreeOwnerID, managerID));
+        assertFalse(company.isDirectSubordinate(founderID, managerID));
+
+        company.AssignOwner(founderID, managerID);
+        company.acceptInvite(managerID, founderID);
+        assertTrue(company.isOwner(managerID));
+        assertFalse(company.isFounder(managerID));
+        assertFalse(company.hasPendingInvite(managerID));
+
+        assertFalse(company.isDirectSubordinate(ownerID, managerID));
+        assertFalse(company.isDirectSubordinate(childFreeOwnerID, managerID));
+        assertTrue(company.isDirectSubordinate(founderID, managerID));
     }
 
     // ---------- Reject Invite ----------
