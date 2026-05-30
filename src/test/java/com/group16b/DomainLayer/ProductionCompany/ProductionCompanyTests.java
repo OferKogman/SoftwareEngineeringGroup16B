@@ -299,24 +299,36 @@ class ProductionCompanyTests {
     }
 
     // ---------- Reject Invite ----------
-
     @Test
-    void GivenExistingInvite_WhenRejectInvite_ThenInviteRemoved() {
-        company.AssignOwner("1", "2");
+    void GivenExistingInvite_WhenRejectInvite_ThenOnlyThatInviteRemoved() {
+        company.AssignOwner(founderID, invitedOwnerID);
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, founderID));
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, ownerID));
 
-        company.rejectInvite("2", "1");
+        company.rejectInvite(invitedOwnerID, ownerID);
 
-        assertThrows(
-                IllegalArgumentException.class,
-                () -> company.acceptInvite("2", "1")
-        );
+        //ensure only the invite from ownerID is removed, and the one from founderID is still there
+        //and ensure other members are not affected by the rejection
+        //and ensure no hierarchy changes were made since the invite was rejected and not accepted
+        assertFalse(company.hasPendingOwnerInvite(invitedOwnerID, ownerID));
+        assertTrue(company.hasPendingOwnerInvite(invitedOwnerID, founderID));
+
+        assertFalse(company.isOwner(invitedOwnerID));
+        assertFalse(company.isManager(invitedOwnerID));
+
+        assertFalse(company.isDirectSubordinate(ownerID, invitedOwnerID));
+        assertFalse(company.isDirectSubordinate(childFreeOwnerID, invitedOwnerID));
+        assertFalse(company.isDirectSubordinate(founderID, invitedOwnerID));
+
+        assertTrue(company.hasPendingManagerInvite(invitedManagerID, ownerID, Set.of(managerPerm)));
+
     }
 
     @Test
     void GivenMissingInvite_WhenRejectInvite_ThenThrowException() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> company.rejectInvite("2", "1")
+                () -> company.rejectInvite(nonMemberID, nonMemberID)
         );
     }
 
