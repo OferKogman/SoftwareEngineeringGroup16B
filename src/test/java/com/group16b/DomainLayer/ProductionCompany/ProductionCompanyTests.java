@@ -589,6 +589,52 @@ class ProductionCompanyTests {
         );
     }
 
+    // ---------- hierarchy tree -------
+    @Test
+    void GivenHierarchy_WhenGetHierarchyTree_ThenReturnCorrectTree() {
+        List<HierarchyNodeData> hierarchy = company.getHierarchyTree(founderID);
+
+        assertEquals(6, hierarchy.size());
+
+        HierarchyNodeData founderNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(founderID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(null, founderNode.getParentID());
+
+        HierarchyNodeData ownerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(ownerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(founderID, ownerNode.getParentID());
+
+        HierarchyNodeData childFreeOwnerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(childFreeOwnerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(founderID, childFreeOwnerNode.getParentID());
+
+        HierarchyNodeData managerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(managerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(ownerID, managerNode.getParentID());
+        assertTrue(managerNode.getPermissions().contains(managerPerm));
+
+        HierarchyNodeData depthCheckOwnerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(depthCheckOwnerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(ownerID, depthCheckOwnerNode.getParentID());
+
+        HierarchyNodeData depthCheckManagerNode = hierarchy.stream()
+                .filter(n -> n.getUserID().equals(depthCheckManagerID))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(depthCheckOwnerID, depthCheckManagerNode.getParentID());
+        assertTrue(depthCheckManagerNode.getPermissions().contains(managerPerm));
+    }
+
     // ---------- Reparenting ----------
 
     @Test
