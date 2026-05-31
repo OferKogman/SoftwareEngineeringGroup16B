@@ -1,5 +1,6 @@
 package com.group16b.ApiLayer;
 
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -50,7 +51,6 @@ public class EventController extends BaseController {
 
     @GetMapping("/{eventID}")
     public ResponseEntity<?> getEventDetails(
-        @RequestHeader("Authorization") String authToken,
         @PathVariable("eventID") int eventID
     ) {
         return executeWithReturnData(() -> eventService.viewEvent(eventID));
@@ -63,5 +63,21 @@ public class EventController extends BaseController {
         @RequestBody Map<String, Object> request
     ) {
         return executeWithNoReturnData(() -> eventService.editEvent(request, eventID, authToken));
+    }
+
+    @PatchMapping("/{eventID}/segments/stock")
+    public ResponseEntity<?> editEventStock(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID,
+        @RequestBody Map<String, Integer> request
+    ) {
+        return executeWithNoReturnData(() -> eventService.editStockInSegmentsForEvent(request, eventID, authToken));
+    }
+
+    @PostMapping("/search")
+    public ResponseEntity<?> searchEvents(
+        @RequestBody Map<String, List<Object>> request
+    ) {
+        return executeWithReturnData(() -> eventService.searchEvents(request));
     }
 }
