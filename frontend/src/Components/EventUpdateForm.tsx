@@ -61,8 +61,8 @@ export default function EventUpdateForm({
           artist: "Queen",
           category: "Rock",
           productionCompanyID: 0,
-          discountPolicy: [],
-          purchasePolicy: [],
+          discountPolicy: null,
+          purchasePolicy: null,
           price: 100000,
           rating: 5,
         };
