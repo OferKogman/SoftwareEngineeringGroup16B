@@ -32,6 +32,9 @@ import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
 import ViewUsers from "./Components/ViewUsersList";
 import { type VenueData } from "./DTOs/VenueDTO";
 import AssignMember from "./Components/AssignNewOwnerOrManager";
+import ChangeManagerPermissions,
+  {type ManagerPermissions  
+}from "./Components/ChangeManagerPermissions";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -98,6 +101,13 @@ function App() {
   async function handleAssignMember(data: Parameters<typeof AssignMember>[0]["onSubmit"] extends (d: infer D) => any ? D : never) {
     console.log("Member assigned:", data);
   }
+async function handleChangeManagerPermissions(
+  targetID: string,
+  companyID: number,
+  newPermissions: Set<ManagerPermissions>
+) {
+  console.log("Manager permissions changed:", targetID, companyID, newPermissions);
+}
 
   return (
     <BrowserRouter>
@@ -216,6 +226,10 @@ function App() {
         <Route
           path="/company/:companyID/assign-member"
           element={<AssignMember onSubmit={handleAssignMember} />}
+        />
+        <Route
+          path="/company/:companyID/change-manager-permissions"
+          element={<ChangeManagerPermissions onSubmit={handleChangeManagerPermissions} />}
         />
       </Routes>
     </BrowserRouter>
