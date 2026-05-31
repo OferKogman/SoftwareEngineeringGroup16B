@@ -129,7 +129,7 @@ public class ProductionCompanyService {
             ProductionCompany newCompany = ProductionCompany.createNewCompany(companyName, userID, idGen.getNextId());
             productionRepo.save(newCompany);
 
-            logger.info("ProductionCompanyService.createProductionCompany: Successfully created production company with name {}",companyName);
+            logger.info("ProductionCompanyService.createProductionCompany: Successfully created production company with name {} and id {}",companyName, newCompany.getProductionCompanyID());
             return Result.makeOk(new ProductionCompanyDTO(newCompany));
 
         }catch(AuthException e)
@@ -141,11 +141,6 @@ public class ProductionCompanyService {
         {
             logger.warn("ProductionCompanyService.createProductionCompany: IllegalArgumentException: "+e.getMessage());
             return Result.makeFail(e.getMessage());
-        }
-        catch(OptimisticLockingFailureException e)
-        {
-            logger.warn("ProductionCompanyService.createProductionCompany: OptimisticLockException: "+e.getMessage());
-            return Result.makeFail("The production with this name already exists, please choose a different name.");
         }
         catch (Exception e) {
             logger.error("ProductionCompanyService.createProductionCompany: Unexpected error",e);

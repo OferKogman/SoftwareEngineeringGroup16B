@@ -54,12 +54,20 @@ public class ProductionCompany {
     }
     public ProductionCompany(int id, String name, double rating, String founderID)
     {
+        if(name==null || name.isEmpty())
+        {
+            throw new IllegalArgumentException("Production company name cannot be empty.");
+        }
         this.rating=rating;
         this.name=name;
         this.productionCompanyID=id;
         this.version=1;
         this.founderID= founderID;
         this.membersNodes.put(founderID,MembershipNode.createFounder(founderID));
+    }
+    public static ProductionCompany createNewCompany(String name, String founderID, int id)
+    {
+        return new ProductionCompany(id,name,0.0,founderID);
     }
 
 
@@ -74,6 +82,10 @@ public class ProductionCompany {
     public String getName()
     {
         return name;
+    }
+    public String getFounderID()
+    {
+        return founderID;
     }
     public void setName(String name)
     {
