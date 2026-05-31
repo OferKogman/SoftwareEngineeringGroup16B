@@ -33,9 +33,13 @@ class CompletedOrder implements OrderState {
 	}
 	
 	@Override
-    public OrderState copy() {
-        return new CompletedOrder();
-    }
+	public OrderState copy() {
+        CompletedOrder copy = new CompletedOrder();
+        if (this.tickets != null) {
+                copy.setTickets(this.tickets);
+        }
+        return copy;
+}
 	
 	@Override
 	public boolean isCompleted() {
