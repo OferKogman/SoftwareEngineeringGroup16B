@@ -31,6 +31,7 @@ import ViewUserCompanyList from "./Components/ViewUserCompanyList";
 import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
 import ViewUsers from "./Components/ViewUsersList";
 import { type VenueData } from "./DTOs/VenueDTO";
+import AssignMember from "./Components/AssignNewOwnerOrManager";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -93,6 +94,9 @@ function App() {
   }
   async function handleSubmitVenue(venueData: VenueData) {
     console.log("Venue saved:", venueData);
+  }
+  async function handleAssignMember(data: Parameters<typeof AssignMember>[0]["onSubmit"] extends (d: infer D) => any ? D : never) {
+    console.log("Member assigned:", data);
   }
 
   return (
@@ -208,9 +212,10 @@ function App() {
           }
         />
         <Route path="admin/companies" element={<ViewAdminCompanyList />} />
+
         <Route
-          path="/venue/:venueID?"
-          element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
+          path="/company/:companyID/assign-member"
+          element={<AssignMember onSubmit={handleAssignMember} />}
         />
       </Routes>
     </BrowserRouter>
