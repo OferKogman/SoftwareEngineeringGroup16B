@@ -9,6 +9,9 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
+import org.springframework.stereotype.Repository;
+
+@Repository
 
 public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRepository {
 
