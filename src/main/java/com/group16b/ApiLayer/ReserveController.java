@@ -12,7 +12,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.ReserveService;
 import com.group16b.ApplicationLayer.DTOs.ReserveFieldSeatsRequestDTO;
+import com.group16b.ApplicationLayer.DTOs.ReserveFieldSeatsWithLotteryRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.ReserveSeatsRequestDTO;
+import com.group16b.ApplicationLayer.DTOs.ReserveSeatsWithLotteryRequestDTO;
 
 
 @RestController
@@ -40,6 +42,25 @@ public class ReserveController extends BaseController {
     ) {
         return executeWithReturnData(() -> reserveService.reserveFieldSeats(request.getSegmentId(), request.getAmount(), eventId, request.getVenueId(), authToken));
     }
+
+    @PostMapping("/seats/lottery")
+    public ResponseEntity<?> reserveSeatsWithLottery(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventId") int eventId,
+        @RequestBody ReserveSeatsWithLotteryRequestDTO request
+    ) {
+        return executeWithReturnData(() -> reserveService.reserveSeatsWithLottery(request.getSegmentId(), request.getSeatIds(), eventId, request.getVenueId(), request.getLotteryCode(), authToken));
+    }
+
+    @PostMapping("/field/lottery")
+    public ResponseEntity<?> reserveFieldSeatsWithLottery(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventId") int eventId,
+        @RequestBody ReserveFieldSeatsWithLotteryRequestDTO request
+    ) {
+        return executeWithReturnData(() -> reserveService.reserveFieldSeatsWithLottery(request.getSegmentId(), request.getAmount(), eventId, request.getVenueId(), request.getLotteryCode(), authToken));
+    }  
+
 
     
 }
