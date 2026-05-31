@@ -2,6 +2,7 @@ package com.group16b.ApplicationLayer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -621,6 +622,47 @@ public class ProductionCompanyServiceTests {
 
         assertEquals(companyRepo.getIDByName(newCompanyName), dto.getId());
     }
+
+    @Test
+    void createCompany_duplicateCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                COMPANY1_NAME
+            );
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("already exists"));
+        assertEquals(company1.getProductionCompanyID(), companyRepo.getIDByName(COMPANY1_NAME));
+    }
+
+    @Test
+    void createCompany_nullCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                null
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Production company name cannot be empty.", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(null));
+    }
+
+    @Test
+    void createCompany_emptyCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                ""
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Production company name cannot be empty.", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(null));
+    }
+
+
 
 
 }

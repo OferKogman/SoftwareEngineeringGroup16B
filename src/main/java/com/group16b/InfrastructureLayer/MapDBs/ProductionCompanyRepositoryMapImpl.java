@@ -34,6 +34,9 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
 
     @Override
     public int getIDByName(String name) {
+        if(name == null) {
+            throw new IllegalArgumentException("Company name cannot be null.");
+        }
         Integer id = names.get(name);
         if(id == null) {
              throw new IllegalArgumentException("Production company with name " + name + " is not found.");
