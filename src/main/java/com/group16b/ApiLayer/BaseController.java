@@ -19,8 +19,7 @@ public class BaseController {
             }
 
         } catch (Exception e) {
-            Result<T> errorResult = Result.makeFail("System error: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResult);
+            return ResponseEntity.internalServerError().body("System error: " +e.getMessage());
         }
     }
 
@@ -33,7 +32,7 @@ public class BaseController {
             }
             return ResponseEntity.badRequest().body(result.getError());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return ResponseEntity.internalServerError().body("System error: " + e.getMessage());
         }
     }
 }

@@ -2,7 +2,6 @@ package com.group16b.ApiLayer;
 
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
