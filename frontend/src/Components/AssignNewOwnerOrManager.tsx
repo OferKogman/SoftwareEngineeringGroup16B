@@ -93,17 +93,6 @@ export default function AssignMember({ onSubmit, onCancel }: AssignMemberProps) 
       </label>
 
       <label>
-        Caller ID
-        <input
-          type="text"
-          required
-          value={fields.callerID}
-          onChange={(e) => setFields((f) => ({ ...f, callerID: e.target.value }))}
-          placeholder="Caller ID"
-        />
-      </label>
-
-      <label>
         Target ID
         <input
           type="text"
