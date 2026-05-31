@@ -281,9 +281,11 @@ public class ProductionCompanyRepositoryMapImplTests {
     }
 
     @Test
-    void delete_nonExistingCompany_doesNothing() {
-        repo.delete("999");
-        assertTrue(repo.getAll().isEmpty());
+    void delete_nonExistingCompany_ThrowsIllegalArgumentException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> repo.delete("999")
+        );
     }
 
     @Test

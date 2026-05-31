@@ -54,12 +54,30 @@ public class ProductionCompany {
     }
     public ProductionCompany(int id, String name, double rating, String founderID)
     {
+        this.name=normalizeCompanyName(name);
         this.rating=rating;
-        this.name=name;
         this.productionCompanyID=id;
         this.version=1;
         this.founderID= founderID;
         this.membersNodes.put(founderID,MembershipNode.createFounder(founderID));
+    }
+
+    private String normalizeCompanyName(String name) {
+        if (name == null) {
+            throw new IllegalArgumentException("Production company name cannot be empty.");
+        }
+
+        String trimmed = name.trim();
+
+        if (trimmed.isEmpty()) {
+            throw new IllegalArgumentException("Production company name cannot be empty.");
+        }
+
+        return trimmed;
+    }
+    public static ProductionCompany createNewCompany(String name, String founderID, int id)
+    {
+        return new ProductionCompany(id,name,0.0,founderID);
     }
 
 
@@ -75,6 +93,10 @@ public class ProductionCompany {
     {
         return name;
     }
+    public String getFounderID()
+    {
+        return founderID;
+    }
     public void setName(String name)
     {
         this.name=name;
@@ -84,6 +106,7 @@ public class ProductionCompany {
     {
         return version;
     }
+
     public void setVersion(long version)
     {
         this.version=version;

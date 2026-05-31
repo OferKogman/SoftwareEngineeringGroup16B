@@ -18,6 +18,7 @@ import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 
 public class StartupService {
     private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
@@ -30,6 +31,7 @@ public class StartupService {
     private final ReserveService reserveService;
     private final UserLoginService userLoginService;
     private final UserService userService;
+    private final ProductionCompanyIdGen productionCompanyIdGen;
 
 
     public StartupService() {
@@ -45,6 +47,7 @@ public class StartupService {
         SystemAdminRepositoryMapImpl systemAdminRepositoryMapImpl = new SystemAdminRepositoryMapImpl();
         PaymentService paymentService = new PaymentService();
         TicketGateway ticketGateway = new TicketGateway();
+        productionCompanyIdGen=new ProductionCompanyIdGen();
 
         logger.info("Initializing domain services...");
         EventFilteringService eventFilteringService = new EventFilteringService(productionCompanyRepositoryMapImpl, eventRepositoryMapImpl, venueRepositoryMapImpl);
@@ -55,7 +58,7 @@ public class StartupService {
         companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl, userRepositoryMapImpl);
         eventService = new EventService(authService, locationService, eventFilteringService, productionCompanyRepositoryMapImpl, queueRepositoryMapImpl, venueRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl);
         orderService = new OrderService(authService,productionCompanyRepositoryMapImpl, paymentService, venueRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl, orderRepositoryMapImpl, ticketGateway);
-        productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl);
+        productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl,productionCompanyIdGen);
         purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl);
         reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl, venueRepositoryMapImpl, eventRepositoryMapImpl, orderRepositoryMapImpl);
         userLoginService = new UserLoginService(userRepositoryMapImpl, authService);

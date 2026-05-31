@@ -2,19 +2,28 @@ package com.group16b.ApplicationLayer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
@@ -26,6 +35,7 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
@@ -53,6 +63,8 @@ public class ProductionCompanyServiceTests {
     private User non_manager;
     private User owner;
 
+    private ProductionCompanyIdGen idGen;
+
     private final String VALID_FOUNDER_TOKEN = "valid-foudner-token";
     private final String VALID_HISTORY_MANAGER_TOKEN = "valid-history-manager-token";
     private final String VALID_REVENUE_MANAGER_TOKEN = "valid-revenue-manager-token";
@@ -75,6 +87,7 @@ public class ProductionCompanyServiceTests {
     private final String FOUNDER_EMAIL="founder@example.com";
     private final String COMPANY1_NAME="Company1";
     private final String COMPANY2_NAME="Company2";
+    private final String BAD_COMPANY_NAME="new company";
     
 
     private Event company1Event1;
@@ -130,12 +143,16 @@ public class ProductionCompanyServiceTests {
         userRepo = new UserRepositoryMapImpl();
         companyRepo = new ProductionCompanyRepositoryMapImpl();
 
+        idGen = new ProductionCompanyIdGen();
+        idGen=Mockito.spy(idGen);
+
         service = new ProductionCompanyService(
             authService,
             orderRepo,
             eventRepo,
             userRepo,
-            companyRepo
+            companyRepo,
+            idGen
         );
 
         seedBaseData();
@@ -599,6 +616,222 @@ public class ProductionCompanyServiceTests {
 
         assertRepositoriesUnchanged();
     }
+
+    @Test
+    void createCompany_ValidFounderAndName_ReturnsSuccess() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                BAD_COMPANY_NAME
+            );
+
+        assertTrue(result.isSuccess());
+        ProductionCompanyDTO dto = result.getValue();
+        assertEquals(BAD_COMPANY_NAME, dto.getName());
+        assertEquals(FOUNDER_EMAIL, dto.getFounderID());
+        assertTrue(dto.getId() > 0);
+        assertTrue(dto.getMembers().size()==1);
+        assertEquals(FOUNDER_EMAIL, dto.getMembers().get(0).getUserId());
+        assertEquals(null,dto.getMembers().get(0).getAssignerId());
+
+        assertEquals(companyRepo.getIDByName(BAD_COMPANY_NAME), dto.getId());
+        verify(idGen, times(1)).getNextId();
+    }
+
+    @Test
+    void createCompany_duplicateCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                COMPANY1_NAME
+            );
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("already exists"));
+        assertEquals(company1.getProductionCompanyID(), companyRepo.getIDByName(COMPANY1_NAME));
+        verify(idGen, times(1)).getNextId();
+    }
+
+    @Test
+    void createCompany_nullCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                null
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Production company name cannot be empty.", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(null));
+        verify(idGen, times(1)).getNextId();
+    }
+
+    @Test
+    void createCompany_emptyCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                ""
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Production company name cannot be empty.", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(null));
+        verify(idGen, times(1)).getNextId();
+    }
+
+    @Test
+    void createCompany_blankCompanyName_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                "   "
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Production company name cannot be empty.", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName("   "));
+        verify(idGen, times(1)).getNextId();
+    }
+
+    @Test
+    void createCompany_invalidFounderToken_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                INVALID_TOKEN,
+                BAD_COMPANY_NAME
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid Token", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(BAD_COMPANY_NAME));
+        verify(idGen, times(0)).getNextId();
+    }
+
+     @Test
+     void createCompany_staleFounderToken_ReturnsFailure() {
+         Result<ProductionCompanyDTO> result =
+             service.createProductionCompany(
+                 STALE_USER_TOKEN,
+                 BAD_COMPANY_NAME
+             );
+
+         assertFalse(result.isSuccess());
+         assertEquals(
+             "User with ID " + BAD_USER_ID + " not found.",
+             result.getError()
+         );
+         assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(BAD_COMPANY_NAME));
+         verify(idGen, times(0)).getNextId();
+    }
+
+    @Test
+    void concurrentCreateSameName_onlyOneSucceeds() throws Exception {
+        String companyName = BAD_COMPANY_NAME; // name that doesn't exist yet
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(2);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        Runnable task = () -> {
+            try {
+                start.await();
+
+                Result<ProductionCompanyDTO> result =
+                    service.createProductionCompany(VALID_FOUNDER_TOKEN, companyName);
+
+                if (result.isSuccess()) {
+                    successCount.incrementAndGet();
+                } else {
+                    failCount.incrementAndGet();
+                }
+
+            } catch (Exception e) {
+                failCount.incrementAndGet();
+            } finally {
+                done.countDown();
+            }
+        };
+
+        executor.submit(task);
+        executor.submit(task);
+
+        start.countDown();   // release both threads at same time
+        done.await();
+
+        executor.shutdown();
+
+        assertEquals(1, successCount.get());
+        assertEquals(1, failCount.get());
+        assertEquals(companyRepo.findByID(String.valueOf(companyRepo.getIDByName(companyName))).getName(), BAD_COMPANY_NAME);
+    }
+
+    @Test
+    void concurrentCreateDifferentNames_bothSucceed() throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        CountDownLatch start = new CountDownLatch(1);
+        CountDownLatch done = new CountDownLatch(2);
+
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        Runnable task1 = () -> {
+            try {
+                start.await();
+
+                Result<ProductionCompanyDTO> result =
+                    service.createProductionCompany(VALID_FOUNDER_TOKEN, "new1");
+
+                if (result.isSuccess()) successCount.incrementAndGet();
+                else failCount.incrementAndGet();
+
+            } catch (Exception e) {
+                failCount.incrementAndGet();
+            } finally {
+                done.countDown();
+            }
+        };
+
+        Runnable task2 = () -> {
+            try {
+                start.await();
+
+                Result<ProductionCompanyDTO> result =
+                    service.createProductionCompany(VALID_FOUNDER_TOKEN, "new2");
+
+                if (result.isSuccess()) successCount.incrementAndGet();
+                else failCount.incrementAndGet();
+
+            } catch (Exception e) {
+                failCount.incrementAndGet();
+            } finally {
+                done.countDown();
+            }
+        };
+
+        executor.submit(task1);
+        executor.submit(task2);
+
+        start.countDown();
+        done.await();
+
+        executor.shutdown();
+
+        assertEquals(2, successCount.get());
+        assertEquals(0, failCount.get());
+        assertEquals(companyRepo.findByID(String.valueOf(companyRepo.getIDByName("new1"))).getName(), "new1");
+        assertEquals(companyRepo.findByID(String.valueOf(companyRepo.getIDByName("new2"))).getName(), "new2");
+    }
+
+
+    
+
+
 
 
 }
