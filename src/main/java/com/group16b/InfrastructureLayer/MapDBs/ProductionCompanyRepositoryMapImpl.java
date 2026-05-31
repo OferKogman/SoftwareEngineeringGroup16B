@@ -12,7 +12,6 @@ import com.group16b.DomainLayer.User.User;
 import org.springframework.stereotype.Repository;
 
 @Repository
-
 public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRepository {
 
     // source of truth
@@ -57,6 +56,9 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
         ProductionCompany removed = companies.remove(id);
         if(removed != null) {
             names.remove(removed.getName());
+        }
+        else {
+            throw new IllegalArgumentException("Production company with ID " + ID + " is not found.");
         }
     }
 
