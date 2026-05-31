@@ -11,7 +11,9 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class EventRepositoryMapImpl implements IEventRepository {
 	private Map<Integer, Event> events = new TreeMap<>();
 

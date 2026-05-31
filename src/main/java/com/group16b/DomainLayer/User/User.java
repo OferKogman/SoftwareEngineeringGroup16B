@@ -16,9 +16,9 @@ public class User {
 	}
 
 	public User(User user) {
-		this.email = user.email;
+		this.email = user.getEmail();//changed for mocked testing userRepo
 		this.password = user.password;
-		this.version = user.version;
+		this.version = user.getVersion();
     }
 
     public String getEmail() {
@@ -41,6 +41,11 @@ public class User {
 		if (!confirmPassword(oldPassword)) {
 			throw new IllegalArgumentException("Old password is incorrect.");
 		}
+
+		if (confirmPassword(newPassword)) {
+            throw new IllegalArgumentException("New password cannot be the same as the old password.");
+        }
+		
 		setPassword(newPassword);
 		
 	}

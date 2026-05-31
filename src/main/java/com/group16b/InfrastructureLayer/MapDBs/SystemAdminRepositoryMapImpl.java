@@ -7,7 +7,9 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	private Map<String, SystemAdmin> systemAdminsById;
 	private Map<String, SystemAdmin> systemAdminsByUsername;
