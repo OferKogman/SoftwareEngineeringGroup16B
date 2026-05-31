@@ -662,6 +662,35 @@ public class ProductionCompanyServiceTests {
         assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName(null));
     }
 
+    @Test
+    void createCompany_invalidFounderToken_ReturnsFailure() {
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                INVALID_TOKEN,
+                "Some Company Name"
+            );
+
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid Token", result.getError());
+        assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName("Some Company Name"));
+    }
+
+     @Test
+     void createCompany_staleFounderToken_ReturnsFailure() {
+         Result<ProductionCompanyDTO> result =
+             service.createProductionCompany(
+                 STALE_USER_TOKEN,
+                 "Some Company Name"
+             );
+
+         assertFalse(result.isSuccess());
+         assertEquals(
+             "User with ID " + BAD_USER_ID + " not found.",
+             result.getError()
+         );
+         assertThrows(IllegalArgumentException.class, () -> companyRepo.getIDByName("Some Company Name"));
+     }
+
 
 
 
