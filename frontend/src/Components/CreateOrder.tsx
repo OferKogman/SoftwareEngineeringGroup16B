@@ -22,8 +22,9 @@ export default function CreateOrderPage() {
     Record<string, SeatData[]>
   >({});
 
-  const [selectedFieldSeg, setSelectedFieldSeg] =
-    useState<FieldSegData | null>(null);
+  const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegData | null>(
+    null,
+  );
 
   const [selectedSeatSeg, setSelectedSeatSeg] =
     useState<ChosenSeatingSegData | null>(null);
@@ -33,59 +34,68 @@ export default function CreateOrderPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const fakeVenue: VenueData = {
-      grid: {
-        rows: 8,
-        columns: 10,
-      },
-      fieldSeg: [
-        {
-          segmentID: "F1",
-          size: 100,
-          area: {
-            startRow: 1,
-            startColumn: 1,
-            rowCount: 3,
-            columnCount: 3,
+    async function loadVenue() {
+      try {
+        const fakeVenue: VenueData = {
+          name: "test",
+          location: "israel",
+          grid: {
+            rows: 8,
+            columns: 10,
           },
-        },
-      ],
-      seatSeg: [
-        {
-          segmentID: "S1",
-          area: {
-            startRow: 1,
-            startColumn: 5,
-            rowCount: 4,
-            columnCount: 4,
-          },
-          seats: [
-            { row: 1, column: 1 },
-            { row: 1, column: 2 },
-            { row: 1, column: 3 },
-            { row: 2, column: 1 },
-            { row: 2, column: 2 },
-            { row: 2, column: 3 },
+          fieldSeg: [
+            {
+              segmentID: "F1",
+              size: 100,
+              area: {
+                startRow: 1,
+                startColumn: 1,
+                rowCount: 3,
+                columnCount: 3,
+              },
+            },
           ],
-        },
-      ],
-      stages: [],
-      entrances: [],
-    };
+          seatSeg: [
+            {
+              segmentID: "S1",
+              area: {
+                startRow: 1,
+                startColumn: 5,
+                rowCount: 4,
+                columnCount: 4,
+              },
+              seats: [
+                { row: 1, column: 1 },
+                { row: 1, column: 2 },
+                { row: 1, column: 3 },
+                { row: 2, column: 1 },
+                { row: 2, column: 2 },
+                { row: 2, column: 3 },
+              ],
+            },
+          ],
+          stages: [],
+          entrances: [],
+        };
 
-    setVenue(fakeVenue);
+        setVenue(fakeVenue);
 
-    setAvailability([
-      { segmentID: "F1", taken: 20, total: 100 },
-      { segmentID: "S1", taken: 2, total: 6 },
-    ]);
+        setAvailability([
+          { segmentID: "F1", taken: 20, total: 100 },
+          { segmentID: "S1", taken: 2, total: 6 },
+        ]);
 
-    setTakenSeatsBySegment({
-      S1: [
-        { row: 1, column: 1 },
-        { row: 2, column: 2 },
-      ],
-    });
+        setTakenSeatsBySegment({
+          S1: [
+            { row: 1, column: 1 },
+            { row: 2, column: 2 },
+          ],
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load venue.");
+      }
+    }
+    void loadVenue();
   }, []);
 
   function getAvailability(segmentID: string) {
@@ -142,8 +152,7 @@ export default function CreateOrderPage() {
     setSelectedSeats((current) => {
       const alreadySelected = current.some(
         (selectedSeat) =>
-          selectedSeat.row === seat.row &&
-          selectedSeat.column === seat.column,
+          selectedSeat.row === seat.row && selectedSeat.column === seat.column,
       );
 
       if (alreadySelected) {
@@ -217,7 +226,11 @@ seats=${JSON.stringify(seats)}`,
       return;
     }
 
-    await handleFakeSeatOrder(eventId, selectedSeatSeg.segmentID, selectedSeats);
+    await handleFakeSeatOrder(
+      eventId,
+      selectedSeatSeg.segmentID,
+      selectedSeats,
+    );
   }
 
   function renderFieldOrderPanel() {
@@ -318,57 +331,57 @@ seats=${JSON.stringify(seats)}`,
 
       {error && <p className="form-error">{error}</p>}
 
-     {!selectedFieldSeg && !selectedSeatSeg && (
-  <VenueDisplay
-  venue={venue}
-  pendingRectangle={null}
-  handleEmptyCellClick={() => {}}
-  handleStageClick={() => {}}
-  handleEntranceClick={() => {}}
-  handleSeatClick={(seat, segment, gridRow, gridColumn) => {
-    handleSeatSegmentSelected(segment);
-  }}
-  handleFieldSegmentClick={(segment, gridRow, gridColumn) => {
-    handleFieldSegmentSelected(segment);
-  }}
-  handleSeatSegmentClick={(segment, gridRow, gridColumn) => {
-    handleSeatSegmentSelected(segment);
-  }}
-/>
-)}
+      {!selectedFieldSeg && !selectedSeatSeg && (
+        <VenueDisplay
+          venue={venue}
+          pendingRectangle={null}
+          handleEmptyCellClick={() => {}}
+          handleStageClick={() => {}}
+          handleEntranceClick={() => {}}
+          handleSeatClick={(seat, segment, gridRow, gridColumn) => {
+            handleSeatSegmentSelected(segment);
+          }}
+          handleFieldSegmentClick={(segment, gridRow, gridColumn) => {
+            handleFieldSegmentSelected(segment);
+          }}
+          handleSeatSegmentClick={(segment, gridRow, gridColumn) => {
+            handleSeatSegmentSelected(segment);
+          }}
+        />
+      )}
 
-{selectedFieldSeg && (
-  <>
-    <button
-      type="button"
-      onClick={() => {
-        setSelectedFieldSeg(null);
-        setError("");
-      }}
-    >
-      Back to Venue
-    </button>
+      {selectedFieldSeg && (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedFieldSeg(null);
+              setError("");
+            }}
+          >
+            Back to Venue
+          </button>
 
-    {renderFieldOrderPanel()}
-  </>
-)}
+          {renderFieldOrderPanel()}
+        </>
+      )}
 
-{selectedSeatSeg && (
-  <>
-    <button
-      type="button"
-      onClick={() => {
-        setSelectedSeatSeg(null);
-        setSelectedSeats([]);
-        setError("");
-      }}
-    >
-      Back to Venue
-    </button>
+      {selectedSeatSeg && (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedSeatSeg(null);
+              setSelectedSeats([]);
+              setError("");
+            }}
+          >
+            Back to Venue
+          </button>
 
-    {renderSeatOrderPanel()}
-  </>
-)}
+          {renderSeatOrderPanel()}
+        </>
+      )}
     </div>
   );
 }

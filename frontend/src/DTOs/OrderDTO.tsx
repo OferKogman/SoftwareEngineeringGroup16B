@@ -3,7 +3,7 @@ export type OrderDTO = {
   segmentId: string;
   numOfTickets: number;
   orderType: string;
-  tocalOrderPrice: number;
+  totalOrderPrice: number;
   eventId: number;
   subjectId: string;
 };

@@ -5,9 +5,7 @@ import java.util.Date;
 import javax.crypto.SecretKey;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.deser.std.StringArrayDeserializer;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.SessionToken;
 
@@ -16,7 +14,6 @@ import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 
-@Service
 public class AuthenticationServiceJWTImpl implements IAuthenticationService {
 
 	private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
@@ -66,7 +63,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
         return createToken(userID, "Signed", userExpirationTime, userKey);
     }
 
-    public String generateAdminToken(String adminID) {
+    public String generateAdminToken(int adminID) {
         return createToken(String.valueOf(adminID), "Admin", adminExpirationTime, adminKey);
     }
 
@@ -94,7 +91,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isUserToken(String token){
         try {
-            return this.extractRoleFromToken(token).equals("Signed");
+            return this.extractRoleFromToken(token).equals("User");
         } catch (Exception e) {
             return false;
         }

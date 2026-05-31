@@ -23,11 +23,11 @@ export default function ViewOrder() {
         // const order: OrderDTO = await response.json();
 
         const fakeOrderDTO: OrderDTO = {
-          orderID: "order1",
+          orderId: "order1",
           segmentId: "segmentA",
           numOfTickets: 2,
           orderType: "Seat",
-          tocalOrderPrice: 250.0,
+          totalOrderPrice: 250.0,
           eventId: 1,
           subjectId: "42",
         };
@@ -49,7 +49,7 @@ export default function ViewOrder() {
     <div>
       {error && <p className="form-error">{error}</p>}
 
-      <h1>Order {orderDTO.orderID}</h1>
+      <h1>Order {orderDTO.orderId}</h1>
 
       <p>Segment ID: {orderDTO.segmentId}</p>
 
@@ -57,7 +57,7 @@ export default function ViewOrder() {
 
       <p>Order Type: {orderDTO.orderType}</p>
 
-      <p>Total Order Price: {orderDTO.tocalOrderPrice}</p>
+      <p>Total Order Price: {orderDTO.totalOrderPrice}</p>
 
       <p>Event ID: {orderDTO.eventId}</p>
 

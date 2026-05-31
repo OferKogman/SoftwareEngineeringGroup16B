@@ -10,9 +10,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.DomainLayer.Venue.Location;
-import org.springframework.stereotype.Service;
 
-@Service
 public class LocationServicePhotonImpl implements ILocationService {
 
     @Override

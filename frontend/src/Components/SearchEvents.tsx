@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
 import type { EventDTO } from "../DTOs/EventDTO";
 import ViewEventsList from "./ViewEventsList";
@@ -37,7 +38,7 @@ export default function SearchEvents() {
 
   function updateField<K extends keyof SearchEventsFilters>(
     field: K,
-    value: SearchEventsFilters[K]
+    value: SearchEventsFilters[K],
   ) {
     setFilters((prev) => ({
       ...prev,
@@ -54,7 +55,7 @@ export default function SearchEvents() {
           if (value === undefined || value === null) return false;
           if (Array.isArray(value) && value.length === 0) return false;
           return true;
-        })
+        }),
       );
 
       console.log(filteredData);
@@ -111,11 +112,7 @@ export default function SearchEvents() {
 
       setEvents(fakeEvents);
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to search events."
-      );
+      setError(err instanceof Error ? err.message : "Failed to search events.");
     }
   }
 
@@ -134,7 +131,7 @@ export default function SearchEvents() {
             e.target.value
               .split(",")
               .map((s) => s.trim())
-              .filter(Boolean)
+              .filter(Boolean),
           )
         }
       />
@@ -150,7 +147,7 @@ export default function SearchEvents() {
             e.target.value
               .split(",")
               .map((s) => s.trim())
-              .filter(Boolean)
+              .filter(Boolean),
           )
         }
       />
@@ -166,7 +163,7 @@ export default function SearchEvents() {
             e.target.value
               .split(",")
               .map((s) => s.trim())
-              .filter(Boolean)
+              .filter(Boolean),
           )
         }
       />
@@ -182,7 +179,7 @@ export default function SearchEvents() {
             e.target.value
               .split(",")
               .map((s) => s.trim())
-              .filter(Boolean)
+              .filter(Boolean),
           )
         }
       />
@@ -195,9 +192,7 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "minPrice",
-            e.target.value === ""
-              ? undefined
-              : [Number(e.target.value)]
+            e.target.value === "" ? undefined : [Number(e.target.value)],
           )
         }
       />
@@ -210,9 +205,7 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "maxPrice",
-            e.target.value === ""
-              ? undefined
-              : [Number(e.target.value)]
+            e.target.value === "" ? undefined : [Number(e.target.value)],
           )
         }
       />
@@ -224,9 +217,7 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "startDate",
-            e.target.value === ""
-              ? undefined
-              : [e.target.value]
+            e.target.value === "" ? undefined : [e.target.value],
           )
         }
       />
@@ -238,9 +229,7 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "endDate",
-            e.target.value === ""
-              ? undefined
-              : [e.target.value]
+            e.target.value === "" ? undefined : [e.target.value],
           )
         }
       />
@@ -253,9 +242,7 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "minRating",
-            e.target.value === ""
-              ? undefined
-              : [Number(e.target.value)]
+            e.target.value === "" ? undefined : [Number(e.target.value)],
           )
         }
       />
@@ -268,9 +255,7 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "productionCompanyID",
-            e.target.value === ""
-              ? undefined
-              : [Number(e.target.value)]
+            e.target.value === "" ? undefined : [Number(e.target.value)],
           )
         }
       />
@@ -286,7 +271,7 @@ export default function SearchEvents() {
             e.target.value
               .split(",")
               .map((s) => s.trim())
-              .filter(Boolean)
+              .filter(Boolean),
           )
         }
       />
@@ -299,16 +284,12 @@ export default function SearchEvents() {
         onChange={(e) =>
           updateField(
             "productionCompaniesRating",
-            e.target.value === ""
-              ? undefined
-              : [Number(e.target.value)]
+            e.target.value === "" ? undefined : [Number(e.target.value)],
           )
         }
       />
 
-      <button onClick={searchEvents}>
-        Search
-      </button>
+      <button onClick={searchEvents}>Search</button>
 
       {error && <p className="form-error">{error}</p>}
 

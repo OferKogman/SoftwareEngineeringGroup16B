@@ -437,9 +437,4 @@ public class ProductionCompany {
             return false;
         return node.getPermissions().containsAll(perms);
     }
-
-    public boolean hasOutgoingInvites(String userID)
-    {
-        return invites.keySet().stream().anyMatch(k->k.assignerId.equals(userID));
-    }
 }
