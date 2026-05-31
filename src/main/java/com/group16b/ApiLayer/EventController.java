@@ -1,6 +1,7 @@
 package com.group16b.ApiLayer;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -36,5 +37,21 @@ public class EventController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
-    
+
+    @PostMapping("/{eventID}/activate")
+    public ResponseEntity<?> activateEvent(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID
+    ) {
+        try {
+            Result<Boolean> result = eventService.activateEvent(eventID, authToken);
+            if (result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 }
