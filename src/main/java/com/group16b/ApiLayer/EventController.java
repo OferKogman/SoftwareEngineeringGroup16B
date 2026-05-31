@@ -1,8 +1,11 @@
 package com.group16b.ApiLayer;
 
+import java.util.Map;
 import java.util.function.Supplier;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,5 +46,22 @@ public class EventController extends BaseController {
         @PathVariable("eventID") int eventID
     ) {
         return executeWithNoReturnData(() -> eventService.deactivateEvent(eventID, authToken));
+    }
+
+    @GetMapping("/{eventID}")
+    public ResponseEntity<?> getEventDetails(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID
+    ) {
+        return executeWithReturnData(() -> eventService.viewEvent(eventID));
+    }
+
+    @PatchMapping("/{eventID}")
+    public ResponseEntity<?> editEvent(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID,
+        @RequestBody Map<String, Object> request
+    ) {
+        return executeWithNoReturnData(() -> eventService.editEvent(request, eventID, authToken));
     }
 }
