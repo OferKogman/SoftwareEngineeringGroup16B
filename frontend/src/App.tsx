@@ -8,23 +8,29 @@ import EventCreationForm, {
 import EventUpdateForm, {
   type EventUpdateDetails,
 } from "./Components/EventUpdateForm";
+import LoginForm, { type LoginData } from "./Components/LoginFrom";
 import PaymentForm from "./Components/PaymentForm";
-import PurchasePolicyCreationForm, {type PurchasePolicyCreationData,} from "./Components/PurchasePolicyCreationForm";
+import CreateProductionCompany, {
+  type ProductionCompanyDTO,
+} from "./Components/ProdctionCompanyForm";
+import PurchasePolicyCreationForm, {
+  type PurchasePolicyCreationData,
+} from "./Components/PurchasePolicyCreationForm";
 import RegistrationForm from "./Components/RegistrationForm";
 import SearchEvents from "./Components/SearchEvents";
 import VenueEditor from "./Components/VenueEditor";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewEvent from "./Components/ViewEvent";
 import ViewOrder from "./Components/ViewOrder";
-import CreateProductionCompany, {type ProductionCompanyDTO,} from "./Components/ProdctionCompanyForm";
-import LoginForm, { type LoginData } from "./Components/LoginFrom";
-import AdminViewPurchaseHistory, {type PurchaseHistorySearchData,} from "./Components/ViewAdminPurcheseHistory";
 
-import { type VenueData } from "./DTOs/VenueDTO";
-import ViewSaleHistory from "./Components/ViewSaleHistory";
-import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
-import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
+import CreateOrderPage from "./Components/CreateOrder";
+import ViewAdminCompanyList from "./Components/ViewAdminCompanyList";
 import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
+import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
+import ViewUserCompanyList from "./Components/ViewUserCompanyList";
+import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
+import ViewUsers from "./Components/ViewUsersList";
+import { type VenueData } from "./DTOs/VenueDTO";
 
 function App() {
   async function handlePayment(paymentData: {
@@ -66,16 +72,12 @@ function App() {
   async function handleDeleteEvent(eventID: number) {
     console.log("Delete event:", eventID);
   }
+  async function handleManageCompany(companyID: number) {
+    console.log("Manage company:", companyID);
+  }
   async function handleUserLogin(userLoginData: LoginData) {
     console.log("User Logged in:", userLoginData);
   }
-  async function handleAdminPurchaseHistory(searchData: PurchaseHistorySearchData) {
-    console.log("Admin Search purchase history:", searchData);
-  }
-  async function handleUserPurchaseHistory(searchData: PurchaseHistorySearchData) {
-    console.log("User Search purchase history:", searchData);
-  }
-
   async function handleUserRegistration(registrationData: {
     email: string;
     password: string;
@@ -147,12 +149,17 @@ function App() {
         />
 
         <Route
+          path= "/admin/view-users"
+          element={<ViewUsers users={undefined} />}
+        />
+
+        <Route
           path="/admin/login"
           element={<LoginForm onLogin={handleAdminLogin} title="Admin Login" />}
         />
 
         <Route
-          path="/user/login"
+          path="/user/login/member"
           element={<LoginForm onLogin={handleUserLogin} title="User Login" />}
         />
         <Route
@@ -187,14 +194,25 @@ function App() {
             />
           }
         />
-        
 
+        <Route path="user/create-order" element={<CreateOrderPage />} />
+        <Route
+          path="/venue/:venueID?"
+          element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
+        />
+
+        <Route
+          path="user/:userID/companies"
+          element={
+            <ViewUserCompanyList onManageCompany={handleManageCompany} />
+          }
+        />
+        <Route path="admin/companies" element={<ViewAdminCompanyList />} />
         <Route
           path="/venue/:venueID?"
           element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
         />
       </Routes>
-      
     </BrowserRouter>
   );
 }

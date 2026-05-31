@@ -139,7 +139,7 @@ export default function AdminPurchaseHistory() {
           orderType: "Field",
           totalOrderPrice: 400,
           eventId: 202,
-          subjectId: userId || "MockUser",
+          subjectId: idInput || "MockUser",
         },
       ];
 
@@ -153,45 +153,45 @@ export default function AdminPurchaseHistory() {
     }
   }
 
-    return (
-      <div>
-        <h1>Admin Purchase History</h1>
-
-        {error && <p className="form-error">{error}</p>}
-
-        <div>
-    <label>
-      Choose history type:{" "}
-      <select
-        value={selectedMode}
-        onChange={(e) => {
-          setSelectedMode(e.target.value as AdminHistoryMode);
-          setIdInput("");
-        }}
-      >
-        <option value="all">All purchase history</option>
-        <option value="byUser">By user ID</option>
-        <option value="byCompany">By production company ID</option>
-      </select>
-    </label>
-  </div>
-
-  {selectedMode !== "all" && (
+  return (
     <div>
-      <label>
-        {selectedMode === "byUser"
-          ? "User ID: "
-          : "Production Company ID: "}
-        <input
-          type="text"
-          value={idInput}
-          onChange={(e) => setIdInput(e.target.value)}
-        />
-      </label>
-    </div>
-  )}
+      <h1>Admin Purchase History</h1>
 
-<button onClick={loadSelectedPurchaseHistory}>Load</button>
+      {error && <p className="form-error">{error}</p>}
+
+      <div>
+        <label>
+          Choose history type:{" "}
+          <select
+            value={selectedMode}
+            onChange={(e) => {
+              setSelectedMode(e.target.value as AdminHistoryMode);
+              setIdInput("");
+            }}
+          >
+            <option value="all">All purchase history</option>
+            <option value="byUser">By user ID</option>
+            <option value="byCompany">By production company ID</option>
+          </select>
+        </label>
+      </div>
+
+      {selectedMode !== "all" && (
+        <div>
+          <label>
+            {selectedMode === "byUser"
+              ? "User ID: "
+              : "Production Company ID: "}
+            <input
+              type="text"
+              value={idInput}
+              onChange={(e) => setIdInput(e.target.value)}
+            />
+          </label>
+        </div>
+      )}
+
+      <button onClick={loadSelectedPurchaseHistory}>Load</button>
 
       <ViewSaleHistory orders={orders} />
     </div>

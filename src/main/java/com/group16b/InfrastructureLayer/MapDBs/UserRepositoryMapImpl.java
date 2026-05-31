@@ -6,7 +6,9 @@ import java.util.Map;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.User;
+import org.springframework.stereotype.Repository;
 
+@Repository
 public class UserRepositoryMapImpl implements IRepository<User> {
 
 	private Map<String, User> users;
