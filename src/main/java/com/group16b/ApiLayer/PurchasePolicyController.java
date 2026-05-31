@@ -14,7 +14,7 @@ import com.group16b.ApplicationLayer.DTOs.CreateLotteryPolicyRequestDTO;
 @RestController
 @RequestMapping("/events/{eventId}/purchase-policies")
 public class PurchasePolicyController extends BaseController {
-    private PurchasePolicyService purchasePolicyService;
+    private final PurchasePolicyService purchasePolicyService;
 
     public PurchasePolicyController(PurchasePolicyService purchasePolicyService) {
         this.purchasePolicyService = purchasePolicyService;
@@ -36,7 +36,7 @@ public class PurchasePolicyController extends BaseController {
         ));
     }
 
-    @PostMapping("/lottery/enroll")
+    @PostMapping("/lottery/enrollment")
     public ResponseEntity<?> enrollInLottery(
         @RequestHeader("Authorization") String authToken,
         @PathVariable("eventId") int eventId
