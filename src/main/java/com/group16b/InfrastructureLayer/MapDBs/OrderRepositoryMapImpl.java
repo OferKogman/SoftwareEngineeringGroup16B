@@ -4,10 +4,10 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Repository;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
-import org.springframework.stereotype.Repository;
 
 @Repository
 public class OrderRepositoryMapImpl implements IOrderRepository {
@@ -55,6 +55,7 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 		return this.orders.values().stream()
 				.filter(order -> order.isCompleted())
 				.filter(order -> order.getSubjectId().equals(String.valueOf(subjectId)))
+				.map(Order::new)
 				.toList();
 	}
 
