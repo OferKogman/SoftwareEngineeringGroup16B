@@ -21,7 +21,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +36,8 @@ public class ProductionCompanyService {
     private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
+
+    private final ProductionCompanyIdGen idGen=new ProductionCompanyIdGen();
 
     public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepo, IProductionCompanyRepository productionRepo) {
         this.authenticationService = authenticationService;
@@ -116,7 +120,37 @@ public class ProductionCompanyService {
     }
 
     public Result<ProductionCompanyDTO> createProductionCompany(String sessionToken, String companyName) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        try{
+            logger.info("ProductionCompanyService.createProductionCompany: Creating production company with name {}",companyName);
+
+            String userID=validateAndGetUserID(sessionToken);
+            logger.info("ProductionCompanyService.createProductionCompany: Session token verified successfully.");
+
+            ProductionCompany newCompany = ProductionCompany.createNewCompany(companyName, userID, idGen.getNextId());
+            productionRepo.save(newCompany);
+
+            logger.info("ProductionCompanyService.createProductionCompany: Successfully created production company with name {}",companyName);
+            return Result.makeOk(new ProductionCompanyDTO(newCompany));
+
+        }catch(AuthException e)
+        {
+            logger.warn("ProductionCompanyService.createProductionCompany: Auth error: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } 
+        catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.createProductionCompany: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch(OptimisticLockingFailureException e)
+        {
+            logger.warn("ProductionCompanyService.createProductionCompany: OptimisticLockException: "+e.getMessage());
+            return Result.makeFail("The production with this name already exists, please choose a different name.");
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.createProductionCompany: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
 
     //gets all orders for the company
