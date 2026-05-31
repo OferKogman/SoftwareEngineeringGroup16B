@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
@@ -598,6 +599,27 @@ public class ProductionCompanyServiceTests {
         assertEquals(0.0, result.getValue());
 
         assertRepositoriesUnchanged();
+    }
+
+    @Test
+    void createCompany_ValidFounderAndName_ReturnsSuccess() {
+        String newCompanyName = "New Company";
+        Result<ProductionCompanyDTO> result =
+            service.createProductionCompany(
+                VALID_FOUNDER_TOKEN,
+                newCompanyName
+            );
+
+        assertTrue(result.isSuccess());
+        ProductionCompanyDTO dto = result.getValue();
+        assertEquals(newCompanyName, dto.getName());
+        assertEquals(FOUNDER_EMAIL, dto.getFounderID());
+        assertTrue(dto.getId() > 0);
+        assertTrue(dto.getMembers().size()==1);
+        assertEquals(FOUNDER_EMAIL, dto.getMembers().get(0).getUserId());
+        assertEquals(null,dto.getMembers().get(0).getAssignerId());
+
+        assertEquals(companyRepo.getIDByName(newCompanyName), dto.getId());
     }
 
 
