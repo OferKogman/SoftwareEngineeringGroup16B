@@ -54,4 +54,21 @@ public class EventController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
+
+    @PostMapping("/{eventID}/deactivate")
+    public ResponseEntity<?> deactivateEvent(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID
+    ) {
+        try {
+            Result<Boolean> result = eventService.deactivateEvent(eventID, authToken);
+            if (result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            } else {
+                return ResponseEntity.badRequest().body(result.getError());
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
 }
