@@ -36,7 +36,7 @@ public class PurchasePolicyController extends BaseController {
         ));
     }
 
-    @PostMapping("/lottery/enrollment")
+    @PostMapping("/lottery/enrollments")
     public ResponseEntity<?> enrollInLottery(
         @RequestHeader("Authorization") String authToken,
         @PathVariable("eventId") int eventId
