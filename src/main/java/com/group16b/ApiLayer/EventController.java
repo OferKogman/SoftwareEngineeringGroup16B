@@ -29,8 +29,8 @@ public class EventController extends BaseController {
      public ResponseEntity<?> createEvent(
         @RequestHeader("Authorization") String authToken, 
         @RequestBody EventRecord request)
-        {
-            return executeWithReturnData(() -> eventService.createEvent(request, authToken));
+    {
+        return executeWithReturnData(() -> eventService.createEvent(request, authToken));
     }
 
     @PostMapping("/{eventID}/activate")

@@ -2,7 +2,6 @@ package com.group16b.ApiLayer;
 
 import java.util.function.Supplier;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -15,12 +14,13 @@ public class BaseController {
             if (result.isSuccess()) {
                 return ResponseEntity.ok(result.getValue());
             }
+            else{
+                return ResponseEntity.badRequest().body(result.getError());
+            }
 
-            return ResponseEntity.badRequest().body(result.getError());
-        } catch(UnsupportedOperationException e) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            Result<T> errorResult = Result.makeFail("System error: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(errorResult);
         }
     }
 
@@ -31,10 +31,7 @@ public class BaseController {
             if (result.isSuccess()) {
                 return ResponseEntity.ok().build();
             }
-
             return ResponseEntity.badRequest().body(result.getError());
-        } catch(UnsupportedOperationException e) {
-            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).body(e.getMessage());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
