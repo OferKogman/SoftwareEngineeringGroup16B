@@ -23,7 +23,6 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -37,14 +36,15 @@ public class ProductionCompanyService {
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 
-    private final ProductionCompanyIdGen idGen=new ProductionCompanyIdGen();
+    private final ProductionCompanyIdGen idGen;
 
-    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepo, IProductionCompanyRepository productionRepo) {
+    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepo, IProductionCompanyRepository productionRepo, ProductionCompanyIdGen idGen) {
         this.authenticationService = authenticationService;
         this.productionRepo=productionRepo;
         this.orderRepo=orderRepo;
         this.eventRepo=eventRepo;
         this.userRepo=userRepo;
+        this.idGen=idGen;
     }
 
     public Result<List<OrderDTO>> viewSalesHistory(String sessionToken, int productionCompanyID){
@@ -215,5 +215,6 @@ public class ProductionCompanyService {
         userRepo.findByID(userID);
         return userID;
     }
+    
 
 }

@@ -2,6 +2,9 @@ package com.group16b.InfrastructureLayer.IdGenerators;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class ProductionCompanyIdGen {
     private final AtomicInteger currentId=new AtomicInteger(0);
     
