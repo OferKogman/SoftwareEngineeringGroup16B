@@ -1,5 +1,7 @@
 package com.group16b.ApiLayer;
 
+import java.util.function.Supplier;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,21 +23,42 @@ public class EventController {
         this.eventService = eventService;
      }
 
+     private ResponseEntity<?> executeWithReturnData(Supplier<Result<?>> action) {
+        try {
+            Result<?> result = action.get();
+
+            if (result.isSuccess()) {
+                return ResponseEntity.ok(result.getValue());
+            }
+
+            return ResponseEntity.badRequest().body(result.getError());
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    private ResponseEntity<?> executeWithNoReturnData(Supplier<Result<?>> action) {
+        try {
+            Result<?> result = action.get();
+
+            if (result.isSuccess()) {
+                return ResponseEntity.ok().build();
+            }
+
+            return ResponseEntity.badRequest().body(result.getError());
+
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
      @PostMapping
      public ResponseEntity<?> createEvent(
         @RequestHeader("Authorization") String authToken, 
         @RequestBody EventRecord request)
         {
-            try{
-            Result<EventDTO> result = eventService.createEvent(request, authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok(result.getValue());
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+            return executeWithReturnData(() -> eventService.createEvent(request, authToken));
     }
 
     @PostMapping("/{eventID}/activate")
@@ -43,16 +66,7 @@ public class EventController {
         @RequestHeader("Authorization") String authToken,
         @PathVariable("eventID") int eventID
     ) {
-        try {
-            Result<Boolean> result = eventService.activateEvent(eventID, authToken);
-            if (result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> eventService.activateEvent(eventID, authToken));
     }
 
     @PostMapping("/{eventID}/deactivate")
@@ -60,15 +74,6 @@ public class EventController {
         @RequestHeader("Authorization") String authToken,
         @PathVariable("eventID") int eventID
     ) {
-        try {
-            Result<Boolean> result = eventService.deactivateEvent(eventID, authToken);
-            if (result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> eventService.deactivateEvent(eventID, authToken));
     }
 }
