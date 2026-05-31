@@ -1,7 +1,5 @@
 package com.group16b.ApiLayer;
 
-import java.util.List;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -21,6 +19,7 @@ import com.group16b.ApplicationLayer.DTOs.ReserveSeatsWithLotteryRequestDTO;
 @RequestMapping("/events/{eventId}/reservations")
 public class ReserveController extends BaseController {
     private final ReserveService reserveService;
+    
     public ReserveController(ReserveService reserveService) {
         this.reserveService = reserveService;
      }
