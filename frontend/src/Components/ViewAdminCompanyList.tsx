@@ -1,28 +1,16 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import type { ProductionCompanyDTO } from "./ProdctionCompanyForm";
 
-type CompanyListProps = {
-  onManageCompany: (companyID: number) => void | Promise<void>;
-};
-
-export default function ViewUserCompanyList({
-  onManageCompany,
-}: CompanyListProps) {
-  const { userID } = useParams();
+export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
   const [companyDTOList, setCompanyDTOList] = useState<
     ProductionCompanyDTO[] | null
   >(null);
 
   useEffect(() => {
-    if (!userID) {
-      return;
-    }
-
     async function loadCompanies() {
       try {
-        //const response = await fetch(`/api/companies/${userID}`);
+        //const response = await fetch(`/api/companies/`);
 
         //if (!response.ok) {
         //  throw new Error("Failed to load companies.");
@@ -59,14 +47,10 @@ export default function ViewUserCompanyList({
     }
 
     void loadCompanies();
-  }, [userID]);
-
-  if (!userID) {
-    return <div>Missing user id</div>;
-  }
+  });
 
   if (!companyDTOList) {
-    return <div>No companies found for user</div>;
+    return <div>No companies found</div>;
   }
 
   return (
@@ -82,7 +66,6 @@ export default function ViewUserCompanyList({
               <th>ID</th>
               <th>Name</th>
               <th>Rating</th>
-              <th>Actions</th>
             </tr>
           </thead>
 
@@ -92,13 +75,6 @@ export default function ViewUserCompanyList({
                 <td>{company.productionCompanyID}</td>
                 <td>{company.name}</td>
                 <td>{company.rating}</td>
-                <td>
-                  <button
-                    onClick={() => onManageCompany(company.productionCompanyID)}
-                  >
-                    Manage
-                  </button>
-                </td>
               </tr>
             ))}
           </tbody>

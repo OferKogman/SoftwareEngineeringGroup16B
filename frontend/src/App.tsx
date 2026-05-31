@@ -24,6 +24,7 @@ import ViewEvent from "./Components/ViewEvent";
 import ViewOrder from "./Components/ViewOrder";
 
 import CreateOrderPage from "./Components/CreateOrder";
+import ViewAdminCompanyList from "./Components/ViewAdminCompanyList";
 import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
 import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
 import ViewUserCompanyList from "./Components/ViewUserCompanyList";
@@ -200,6 +201,7 @@ function App() {
             <ViewUserCompanyList onManageCompany={handleManageCompany} />
           }
         />
+        <Route path="admin/companies" element={<ViewAdminCompanyList />} />
         <Route
           path="/venue/:venueID?"
           element={<VenueEditor onSubmitVenue={handleSubmitVenue} />}
