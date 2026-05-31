@@ -15,7 +15,7 @@ public interface IAuthenticationService {
 
 	String generateVisitor_SignedToken(String userID);
 
-	String generateAdminToken(String adminID);
+	String generateAdminToken(int adminID);
 
 	String extractRoleFromToken(String token);
 

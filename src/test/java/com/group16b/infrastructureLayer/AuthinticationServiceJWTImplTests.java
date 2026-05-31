@@ -39,11 +39,11 @@ public class AuthinticationServiceJWTImplTests {
 
 	@Test
 	public void testAdminTokenGenerationAndAuthentication() {
-		String adminID = "1";
+		int adminID = 1;
 		String token = authService.generateAdminToken(adminID);
 		Assertions.assertNotNull(token, "generated token should not be null");
 		Assertions.assertTrue(authService.validateToken(token), "Token should be valid");
-		Assertions.assertEquals(adminID, authService.extractSubjectFromToken(token));
+		Assertions.assertEquals(adminID, Integer.valueOf(authService.extractSubjectFromToken(token)));
 	}
 
 	@Test
@@ -85,8 +85,8 @@ public class AuthinticationServiceJWTImplTests {
 
 	@Test
     public void testAdminTokenTampering() {
-        String validAdminToken = authService.generateAdminToken("1");
-        String hackerToken = authService.generateAdminToken("999"); 
+        String validAdminToken = authService.generateAdminToken(1);
+        String hackerToken = authService.generateAdminToken(999); 
 
         String[] adminParts = validAdminToken.split("\\.");
         String[] hackerParts = hackerToken.split("\\.");

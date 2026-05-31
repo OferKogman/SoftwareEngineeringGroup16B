@@ -1,5 +1,14 @@
 package com.group16b.ApplicationLayer;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,6 +16,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -58,28 +69,27 @@ public class AdminManagementServiceTest1 {
     private Event e1;
     private User user;
     private String sessionToken;
-    private String adminToken;
     private String invalidToken;
-    private String userSecret;
-    private String adminSecret;
 
     @BeforeEach
     void setUp() throws Exception {
         systemAdminRepository = new SystemAdminRepositoryMapImpl();
-        userSecret = "mySuperSecretKeyForUsers123456789"; // Must be at least 256 bits for HS256
-		adminSecret = "mySuperSecretKeyForAdmins123456789"; // Must be at least 256 bits for HS256
-        tokenService = new AuthenticationServiceJWTImpl(userSecret, adminSecret);
+        tokenService = new AuthenticationServiceJWTImpl(sessionToken, sessionToken);
         eventRepository = new EventRepositoryMapImpl();
         venueRepository = new VenueRepositoryMapImpl();
         userRepository = new UserRepositoryMapImpl();
         orderRepository = new OrderRepositoryMapImpl(); 
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
+
+        adminManagementService = new AdminManagementService(tokenService, productionCompanyRepository,
+                orderRepository, eventRepository, userRepository, systemAdminRepository);
         adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository);
+
+        sessionToken = "validToken";
+        invalidToken = "invalidToken";
             
         user = new User("testuser", "password");
-        adminToken = tokenService.generateAdminToken("admin@test.com");
-        sessionToken = tokenService.generateVisitor_SignedToken("testuser");
-        invalidToken = "invalidToken";
+        
         
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
         segment1 = new FieldSeg("segment1", 50);
@@ -110,9 +120,10 @@ public class AdminManagementServiceTest1 {
         List<Order> databaseOrders = new ArrayList<>();
         databaseOrders.add(completedOrder);
 
-        orderRepository.save(completedOrder);
+
         
-        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(adminToken, user.getEmail());
+        
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getEmail());
 
         assertTrue(result.isSuccess(), "Service failed with error: " + result.getError());
         assertEquals(1, result.getValue().size());
@@ -128,10 +139,10 @@ public class AdminManagementServiceTest1 {
         Order order2 = new Order("segment2", 2, 2.0, eventID, String.valueOf(user.getEmail()));
         order2.CompleteOrder();
 
-        orderRepository.save(order1);
-        orderRepository.save(order2);
+
         
-        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(adminToken, user.getEmail());
+        
+        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken, user.getEmail());
 
         assertTrue(history.isSuccess(), "Service failed with error: " + history.getError());
         assertEquals(2, history.getValue().size());
@@ -139,7 +150,7 @@ public class AdminManagementServiceTest1 {
 
     @Test
     public void testViewAllPurchaseHistoryBad() {
-        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(adminToken, "999");
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(sessionToken, "999");
 
         assertTrue(result.isSuccess(), "Service should succeed even if user has no orders");
         assertTrue(result.getValue().isEmpty(), "Expected an empty history for a user that doesn't exist");
@@ -150,13 +161,10 @@ public class AdminManagementServiceTest1 {
         int companyID = 1;
 
         Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
-        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
-        productionCompanyRepository.save(testCompany);
-
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, sessionToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
     }
@@ -164,7 +172,7 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
-        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(adminToken,
+        Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(sessionToken,
                 newUser.getEmail());
 
         
@@ -205,7 +213,7 @@ public class AdminManagementServiceTest1 {
 
     @Test
     public void testRegisterNewAdminSuccess() {
-        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "1", "newAdmin", "password123",
+        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, "1", "newAdmin", "password123",
                 "admin@example.com");
         assertTrue(result.isSuccess());
     }
@@ -224,39 +232,29 @@ public class AdminManagementServiceTest1 {
                 "email@example.com");
         assertFalse(result.isSuccess());
     }
-@Test
+    @Test
     public void concurrentRemove_removeUser_OnlyOneSucceeds() throws InterruptedException {
         User user = new User("email", "password");
         userRepository.save(user);
-        
         CountDownLatch startLatch = new CountDownLatch(1);
-        
         Runnable removeTask = () -> {
-            try {
-                // ADD THIS: Threads will pause here and wait for the starting gun!
-                startLatch.await(); 
-                adminManagementService.removeUser(user.getEmail(), adminToken);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+            adminManagementService.removeUser(user.getEmail(), sessionToken);
         };
-        
         Thread thread1 = new Thread(removeTask);
         Thread thread2 = new Thread(removeTask);
-        
+
+
         thread1.start();
         thread2.start();
-        
-        // This drops the latch to 0, firing both threads at the exact same millisecond
-        startLatch.countDown(); 
-        
+        startLatch.countDown();
         thread1.join();
         thread2.join();
-        
-        // THE FIX: The findByID call is now safely protected inside the assert block
-        assertThrows(IllegalArgumentException.class, () -> {
-            userRepository.findByID(user.getEmail());
-        });
+
+        // Verify that the user is removed
+        userRepository.findByID(user.getEmail());
+            assertThrows(IllegalArgumentException.class, () -> {
+                userRepository.findByID(user.getEmail());
+            });
     }
     @Test
     public void concurrentRegister_registerAdmin_OnlyOneSucceeds() throws InterruptedException {
@@ -266,7 +264,7 @@ public class AdminManagementServiceTest1 {
         String newAdminEmail = "newadmin@example.com";
         CountDownLatch startLatch = new CountDownLatch(1);
         Runnable registerTask = () -> {
-            adminManagementService.registerNewAdmin(adminToken, newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
+            adminManagementService.registerNewAdmin(sessionToken, newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
         };
         Thread thread1 = new Thread(registerTask);
         Thread thread2 = new Thread(registerTask);
@@ -285,8 +283,6 @@ public class AdminManagementServiceTest1 {
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
 
-        eventRepository.save(e1);
-
         Order order1 = new Order("segment1", 1, 1.0, e1.getEventID(), user.getEmail());
         order1.CompleteOrder();
         orderRepository.save(order1);
@@ -297,7 +293,7 @@ public class AdminManagementServiceTest1 {
         Runnable viewTask = () -> {
             try {
                 startLatch.await();
-                Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(adminToken, companyID);
+                Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(sessionToken, companyID);
                 synchronized (results) {
                     results.add(result);
                 }
@@ -333,7 +329,7 @@ public class AdminManagementServiceTest1 {
         Runnable removeTask = () -> {
             try {
                 startLatch.await();
-                Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), adminToken);
+                Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), sessionToken);
                 synchronized (results) {
                     results.add(result);
                 }
@@ -369,7 +365,7 @@ public class AdminManagementServiceTest1 {
         Runnable closeTask = () -> {
             try {
                 startLatch.await();
-                Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+                Result<String> result = adminManagementService.closeProductionCompany(companyID, sessionToken);
                 synchronized (results) {
                     results.add(result);
                 }

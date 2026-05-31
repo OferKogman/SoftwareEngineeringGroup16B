@@ -8,6 +8,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class UserLoginService {
 
@@ -22,73 +23,64 @@ public class UserLoginService {
     }
 
     public Result<String> createGuestSession() {
-        logger.info("UserLoginService.createGuestSession: Attempting to create a new guest session.");
+        logger.info("Attempt to create a new guest session...");
         try {
             SessionToken newSession = new SessionToken();
             String token = tokenService.generateVisitor_GuestToken(newSession);
             
-            logger.info("UserLoginService.createGuestSession: Successfully created guest session.");
+            logger.info("Successfully created guest session!!");
             return Result.makeOk(token);
             
-        } catch (IllegalArgumentException e) {
-            logger.warn("UserLoginService.createGuestSession: Invalid session data - {}", e.getMessage());
-            return Result.makeFail("Failed to create guest session: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("UserLoginService.createGuestSession: Unexpected error occurred - {}", e.getMessage(), e);
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+            logger.error("Failed to create guest session. Error: ", e.getMessage(), e);
+            return Result.makeFail("Failed to create guest session: " + e.getMessage());
         }
     }
 
-    public Result<String> loginMember(String userID, String password) {
-        logger.info("UserLoginService.loginMember: Attempting login for user ID {}", userID);
+    public Result<String> loginMember(String userID, String password, String email) {
+        logger.info("Attempting login for user ID: ...", userID);
         
-        try {
-            User member = userRepository.findByID(userID); 
 
-            if (!member.confirmPassword(password)) {
-                logger.warn("UserLoginService.loginMember: Login failed due to invalid password for user ID {}", userID);
-                return Result.makeFail("Invalid user ID or password"); 
+        try{
+            User member = userRepository.findByID(userID);
+            if (!member.confirmPassword(password) || !member.getEmail().equals(email)) {
+                logger.warn("Login failed: invalid password and email attempt for user ID {}", userID);
+                return Result.makeFail("Invalid user ID or password + email");
             }
 
             String token = tokenService.generateVisitor_SignedToken(userID);
-            logger.info("UserLoginService.loginMember: User ID {} successfully logged in.", userID);
+            logger.info("user ID {} successfully logged in", userID);
             
             return Result.makeOk(token);
-            
-        } catch (IllegalArgumentException e) {
-            logger.warn("UserLoginService.loginMember: User not found - {}", e.getMessage());
-            return Result.makeFail("Invalid user ID or password"); 
-        } catch (Exception e) {
-            logger.error("UserLoginService.loginMember: Unexpected error for user ID {} - {}", userID, e.getMessage(), e);
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("Login failed for user ID {}. Error: {}", userID, e.getMessage(), e);
+            return Result.makeFail("Failed to login: " + e.getMessage());
         }
     }
 
     public Result<String> logOutMember(String sessionToken) {
-        logger.info("UserLoginService.logOutMember: Attempting to log out session.");
         try {
-            if (!tokenService.isUserToken(sessionToken)) {
-                logger.warn("UserLoginService.logOutMember: Logout failed, token is not a valid user session.");
-                return Result.makeFail("Invalid token for logout");
-            }
-            
             String recievedID = tokenService.extractSubjectFromToken(sessionToken);
+            logger.info("Attempting log out user ID: {}...", recievedID);
             
-            userRepository.findByID(recievedID); 
+            if (!tokenService.isUserToken(sessionToken)) {
+                logger.warn("Logout failed: the session want of user for ID {}", recievedID);
+                return Result.makeFail("Invalid ID for logout");
+            }
+
+            userRepository.findByID(recievedID); //check if user exists, if not will throw exception and fail logout
 
             Result<String> res = this.createGuestSession();
 
-            if (res.isSuccess()) {
-                logger.info("UserLoginService.logOutMember: User ID {} successfully logged out.", recievedID);                
+            if(res.isSuccess()){
+                logger.info("user ID {} successfully logged out", recievedID);                
             }
-            return res;
             
-        } catch (IllegalArgumentException e) {
-            logger.warn("UserLoginService.logOutMember: Invalid token data or user not found - {}", e.getMessage());
-            return Result.makeFail("Failed to log out: " + e.getMessage());
+            return res;
         } catch (Exception e) {
-            logger.error("UserLoginService.logOutMember: Unexpected error - {}", e.getMessage(), e);
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+            logger.error("failed to log out in this session: {}", e.getMessage(), e);
+            return Result.makeFail("Failed to log out: " + e.getMessage());
         }   
     }
 }

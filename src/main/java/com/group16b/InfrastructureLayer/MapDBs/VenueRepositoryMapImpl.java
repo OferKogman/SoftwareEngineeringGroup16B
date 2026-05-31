@@ -6,15 +6,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Venue.Venue;
-import org.springframework.stereotype.Repository;
-
-
 
     // T findByID(String ID);
     // List<T> getAll();
     // void delete(String ID);
     // void save(T Obj);
-@Repository
 public class VenueRepositoryMapImpl implements IRepository<Venue>{
 
     private final ConcurrentHashMap<String, Venue> venues = new ConcurrentHashMap<>();

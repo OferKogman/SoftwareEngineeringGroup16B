@@ -19,7 +19,10 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
@@ -252,23 +255,9 @@ public class AdminManagementService {
                 logger.error("AdminManagementService.registerNewAdmin: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-
-            boolean checkIfAdminAlreadyExists;
-            boolean checkIfUsernameAlreadyExists;
-            try {
-                checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
-            } catch (Exception e) {
-                logger.info("AdminManagementService.registerNewAdmin: attempting to get admindID in repo");
-                checkIfAdminAlreadyExists = false;
-            }
-
-            try {
-                checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;   
-            } catch (Exception e) {
-                logger.info("AdminManagementService.registerNewAdmin: attempting to get adminEmail in repo");
-                checkIfUsernameAlreadyExists = false;    
-            }
-
+            
+            boolean checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
+            boolean checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;
             boolean success = false;
             while(!success){
                 try{

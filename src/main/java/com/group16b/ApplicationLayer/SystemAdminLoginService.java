@@ -31,7 +31,7 @@ public class SystemAdminLoginService {
                 return Result.makeFail("Invalid user ID or password + email");
             }
 
-            String token = tokenService.generateAdminToken(adminID);
+            String token = tokenService.generateAdminToken(adminID.hashCode());
             logger.info("SystemAdminLoginService.loginAdmin: admin ID {} successfully logged in", adminID);
             
             return Result.makeOk(token);
