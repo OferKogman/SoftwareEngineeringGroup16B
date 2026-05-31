@@ -28,6 +28,7 @@ import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
 import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
 import ViewUserCompanyList from "./Components/ViewUserCompanyList";
 import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
+import ViewUsers from "./Components/ViewUsersList";
 import { type VenueData } from "./DTOs/VenueDTO";
 
 function App() {
@@ -144,6 +145,11 @@ function App() {
         <Route
           path="/create-discount-policy/"
           element={<ViewDiscountPolicy onSubmit={handleDiscountPolicySubmit} />}
+        />
+
+        <Route
+          path= "/admin/view-users"
+          element={<ViewUsers users={undefined} />}
         />
 
         <Route
