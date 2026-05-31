@@ -11,47 +11,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.EventService;
-import com.group16b.ApplicationLayer.DTOs.EventDTO;
-import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 
 @RestController
 @RequestMapping("/events")
-public class EventController {
+public class EventController extends BaseController {
     private final EventService eventService;
     public EventController(EventService eventService) {
         this.eventService = eventService;
      }
-
-     private ResponseEntity<?> executeWithReturnData(Supplier<Result<?>> action) {
-        try {
-            Result<?> result = action.get();
-
-            if (result.isSuccess()) {
-                return ResponseEntity.ok(result.getValue());
-            }
-
-            return ResponseEntity.badRequest().body(result.getError());
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
-    }
-
-    private ResponseEntity<?> executeWithNoReturnData(Supplier<Result<?>> action) {
-        try {
-            Result<?> result = action.get();
-
-            if (result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            }
-
-            return ResponseEntity.badRequest().body(result.getError());
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
-    }
 
      @PostMapping
      public ResponseEntity<?> createEvent(
