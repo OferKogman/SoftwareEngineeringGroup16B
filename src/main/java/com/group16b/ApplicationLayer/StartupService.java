@@ -19,7 +19,9 @@ import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.PaymentService;
 import com.group16b.InfrastructureLayer.TicketGateway;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
+import org.springframework.stereotype.Service;
 
+@Service
 public class StartupService {
     private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
     private final AdminManagementService adminManagementService;
