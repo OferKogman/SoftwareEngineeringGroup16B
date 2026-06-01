@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import SearchEvents from "./Components/Event/SearchEvents";
+import ViewEvent from "./Components/Event/ViewEvent";
 import LoginForm, { type LoginData } from "./Components/User/LoginForm";
 import type { RegistrationData } from "./Components/User/RegistrationForm";
 import RegistrationForm from "./Components/User/RegistrationForm";
@@ -56,6 +57,7 @@ export default function AppRoutes() {
         <Route path="events/create"element={<CreateEvent />}/>
         <Route path="events/:eventId/manage" element={<ManageEvent />}/>
       </Route>
+      <Route path="/events/:eventID" element={<ViewEvent />} />
     </Routes>
   );
 }
