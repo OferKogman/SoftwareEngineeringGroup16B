@@ -47,6 +47,7 @@ public class StartupService {
             }
         } catch (Exception e) {
             logger.error("StartupService.validateAdmins: Error occurred while initializing system.", e);
+            throw e; // Rethrow the exception to ensure the application fails to start if initialization fails
         }
     }
     private void validatePaymentGateway() {
