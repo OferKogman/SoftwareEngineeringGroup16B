@@ -35,7 +35,7 @@ public class StartupService {
     }
 
     //-------------------- VALIDATORS --------------------//
-    //add more validators here as needed, such as validating the existence of a default production company, etc.
+    //add more validators here as needed, such as validating the existence of at least one admin, etc.
     //will probably grow significantly when we move to dbs, as we will need to validate the correctness of our data as well.
     private void validateAdmins()
     {
