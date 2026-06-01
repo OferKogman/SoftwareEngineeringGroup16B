@@ -24,7 +24,7 @@ public class SystemAdminManagementController extends BaseController{
         this.adminManagementService = adminManagementService1;
     }
 
-    @GetMapping("/viewAllPurchesHistory")
+    @GetMapping("/viewAllPurchasesHistory")
     public ResponseEntity<?> viewAllPurchesHistory(@RequestHeader("Authorization") String sessionToken) {
         return executeWithReturnData(() -> adminManagementService.viewAllPurchesHistory(sessionToken));
     }
