@@ -20,7 +20,7 @@ public class BaseController {
 
         } catch (Exception e) {
             Result<T> errorResult = Result.makeFail("System error: " + e.getMessage());
-            return ResponseEntity.internalServerError().body(errorResult);
+            return ResponseEntity.internalServerError().body(errorResult.getError());
         }
     }
 
