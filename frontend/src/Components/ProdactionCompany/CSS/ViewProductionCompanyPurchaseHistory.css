@@ -1,0 +1,134 @@
+.purchase-history-filter {
+  max-width: 700px;
+  margin: 0 auto 30px auto;
+
+  padding: 20px;
+  border-radius: 24px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.filter-label {
+  font-weight: bold;
+  font-size: 1.1rem;
+}
+
+.filter-input {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 12px 18px;
+  border-radius: 999px;
+
+  font-size: 1rem;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.filter-input:hover {
+  transform: translateY(-1px);
+}
+
+/* ========================= */
+/* Dark Theme */
+/* ========================= */
+
+.dark .purchase-history-filter {
+  border: 1px solid rgba(255, 150, 0, 0.4);
+
+box-shadow:
+  0 0 20px rgba(255, 0, 255, 0.4),
+  0 0 40px rgba(168, 85, 247, 0.35),
+  0 0 80px rgba(168, 85, 247, 0.2);
+}
+
+.dark .filter-input {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f5f5f5;
+
+  border: 1px solid rgba(168, 85, 247, 0.4);
+}
+
+.dark .filter-input:focus {
+  outline: none;
+
+  border-color: rgba(168, 85, 247, 0.8);
+
+  box-shadow:
+    0 0 10px rgba(168, 85, 247, 0.4),
+    0 0 20px rgba(168, 85, 247, 0.2);
+}
+
+/* ========================= */
+/* Light Theme */
+/* ========================= */
+
+.light .purchase-history-filter {
+  border: 1px solid rgba(255, 183, 0, 0.4);
+
+box-shadow:
+  0 0 20px rgba(255, 0, 255, 0.4),
+  0 0 40px rgba(168, 85, 247, 0.35),
+  0 0 80px rgba(168, 85, 247, 0.2);}
+
+.light .filter-input {
+  background: rgba(255, 255, 255, 0.9);
+  color: #111111;
+
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+.light .filter-input:focus {
+  outline: none;
+
+  border-color: rgba(168, 85, 247, 0.8);
+
+  box-shadow:
+    0 0 10px rgba(168, 85, 247, 0.25),
+    0 0 20px rgba(168, 85, 247, 0.15);
+}
+
+/* ========================= */
+/* Orders List */
+/* ========================= */
+
+.orders-list {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+@media (max-width: 600px) {
+  .purchase-history-filter {
+    max-width: 100%;
+    margin: 0 14px 24px 14px;
+    padding: 16px;
+    border-radius: 18px;
+  }
+
+  .filter-label {
+    font-size: 1rem;
+  }
+
+  .filter-input {
+    padding: 11px 14px;
+    font-size: 0.95rem;
+  }
+
+  .orders-list {
+    gap: 18px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    line-height: 1.2;
+    text-align: center;
+
+    margin-bottom: 24px;
+  }
+}

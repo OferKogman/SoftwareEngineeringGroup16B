@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import type { OrderDTO } from "../DTOs/OrderDTO";
-import ViewSaleHistory from "./ViewSaleHistory";
+import type { OrderDTO } from "../../DTOs/OrderDTO";
+import ViewOrder from "../Shared/ViewOrder";
+import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 
 export default function ProductionCompanyPurchaseHistory() {
+
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [error, setError] = useState<string>("");
   const [eventIdFilter, setEventIdFilter] = useState<string>("");
@@ -10,11 +12,15 @@ export default function ProductionCompanyPurchaseHistory() {
   useEffect(() => {
     async function loadProductionCompanyPurchaseHistory() {
       try {
-        // future backend call:
-        // const ordersFromServer = await productionCompany.getSaleHistory();
-        // setOrders(ordersFromServer);
+        const response = await fetch(`http://localhost:8080/ProductionCompanyService.viewSalesHistory/${productionCompanyID}`);
 
-        const mockOrders: OrderDTO[] = [
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        const OrderList: OrderDTO[] = await response.json();
+
+        setOrders(OrderList);
+        /*const mockOrders: OrderDTO[] = [
           {
             orderId: "ORD-2001",
             segmentId: "VIP-A",
@@ -44,7 +50,7 @@ export default function ProductionCompanyPurchaseHistory() {
           },
         ];
 
-        setOrders(mockOrders);
+        setOrders(mockOrders);*/
       } catch (err) {
         setError(
           err instanceof Error
@@ -70,18 +76,28 @@ export default function ProductionCompanyPurchaseHistory() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <div>
-        <label>
-          Filter by Event ID:{" "}
-          <input
-            type="text"
-            value={eventIdFilter}
-            onChange={(e) => setEventIdFilter(e.target.value)}
-          />
-        </label>
-      </div>
+      <div className="purchase-history-filter">
+  <label className="filter-label">
+  Filter by Event ID
+</label>
 
-      <ViewSaleHistory orders={filteredOrders} />
+<input
+  className="filter-input"
+  type="text"
+  placeholder="Search by Event ID..."
+    value={eventIdFilter}
+    onChange={(e) => setEventIdFilter(e.target.value)}
+  />
+</div>
+
+      <div className="orders-list">
+        {filteredOrders.map((order) => (
+          <ViewOrder
+            key={order.orderId}
+            order={order}
+          />
+        ))}
+      </div>
     </div>
   );
 }

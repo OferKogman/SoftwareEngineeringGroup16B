@@ -1,7 +1,6 @@
 import { BrowserRouter } from "react-router-dom";
-import AppRoutes from "./AppRoutes";
-
 import { useEffect, useState } from "react";
+import AppRoutes from "./AppRoutes";
 import Header from "./Components/Layouts/Header";
 import "./CSS/App.css";
 
