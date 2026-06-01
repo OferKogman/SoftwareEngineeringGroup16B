@@ -3,6 +3,7 @@ import SearchEvents from "./Components/SearchEvents";
 import LoginForm, { type LoginData } from "./Components/User/LoginForm";
 import type { RegistrationData } from "./Components/User/RegistrationForm";
 import RegistrationForm from "./Components/User/RegistrationForm";
+import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 
 export default function AppRoutes() {
   async function handleLogin(data: LoginData) {
@@ -27,6 +28,7 @@ export default function AppRoutes() {
           <RegistrationForm title="Register" onRegistration={handleRegister} />
         }
       />
+      <Route path="/production-company-menegment/:companyId" element={<ProductionCompanyMenegment />}/>
 
       <Route path="/events/search" element={<SearchEvents />} />
     </Routes>
