@@ -943,7 +943,7 @@ public class OrderServiceTests {
 
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
 
-                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID, SESSION_TOKEN);
 
                 if (!result.isSuccess()) {
                         String errorMessage = result.getError();
@@ -991,7 +991,7 @@ public class OrderServiceTests {
         void cancelOrder_orderNotFound_returnsFail() {
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(null);
 
-                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID, SESSION_TOKEN);
 
                 assertFalse(result.isSuccess());
                 assertEquals("Order not found", result.getError());
@@ -1012,7 +1012,7 @@ public class OrderServiceTests {
 
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(completedOrder);
 
-                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID, SESSION_TOKEN);
 
                 assertFalse(result.isSuccess());
                 assertEquals("Order " + completedOrder.getOrderId() + " is not active", result.getError());
@@ -1032,7 +1032,7 @@ public class OrderServiceTests {
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
                 when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(null);
 
-                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID, SESSION_TOKEN);
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
@@ -1052,7 +1052,7 @@ public class OrderServiceTests {
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
                 when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(null);
 
-                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID, SESSION_TOKEN);
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
@@ -1078,7 +1078,7 @@ public class OrderServiceTests {
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(seatOrder);
                 when(mockVenueRepository.findByID(VENUE_ID)).thenReturn(venueWithoutSegment);
 
-                Result<Boolean> result = orderService.cancelOrder(ORDER_ID);
+                Result<Boolean> result = orderService.cancelOrder(ORDER_ID, SESSION_TOKEN);
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
