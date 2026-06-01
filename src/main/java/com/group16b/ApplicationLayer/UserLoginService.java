@@ -8,7 +8,9 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(UserLoginService.class);

@@ -9,7 +9,9 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
+import org.springframework.stereotype.Service;
 
+@Service
 public class EventFilteringService {
 
     private final IEventRepository eventRepository;

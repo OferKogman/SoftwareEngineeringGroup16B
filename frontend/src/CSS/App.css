@@ -149,3 +149,10 @@ button:hover {
 .auth-link {
   color: #c284ee;
 }
+
+input {
+  flex: 1;
+  padding: 0.25rem;
+  border: 1px solid rgba(255, 183, 0, 0.15);
+  border-radius: 8px;
+}

@@ -14,7 +14,9 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
 
 import io.jsonwebtoken.JwtException;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserService {
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
