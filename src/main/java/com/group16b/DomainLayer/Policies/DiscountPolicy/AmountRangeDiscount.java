@@ -1,11 +1,13 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 public class AmountRangeDiscount implements DiscountPolicy {
-    private Integer minTickets; // null = no minimum
-    private Integer maxTickets; // null = no maximum
+    private Integer minTickets;
+    private Integer maxTickets;
     private double discountPercentage;
 
     public AmountRangeDiscount(Integer minTickets, Integer maxTickets, double discountPercentage) {
+        if (minTickets == null && maxTickets == null)
+            throw new IllegalArgumentException("At least one of minTickets or maxTickets must be defined.");
         if (minTickets != null && minTickets < 1)
             throw new IllegalArgumentException("Minimum tickets must be at least 1.");
         if (maxTickets != null && maxTickets < 1)
@@ -23,8 +25,14 @@ public class AmountRangeDiscount implements DiscountPolicy {
     public Integer getMaxTickets() { return maxTickets; }
     public double getDiscountPercentage() { return discountPercentage; }
 
+    public double calculateDiscount(double originalPrice, int ticketCount) {
+        if (minTickets != null && ticketCount < minTickets) return originalPrice;
+        if (maxTickets != null && ticketCount > maxTickets) return originalPrice;
+        return originalPrice * (1 - discountPercentage / 100);
+    }
+
     @Override
     public double calculateDiscount(double originalPrice) {
-        return originalPrice * (1 - discountPercentage / 100);
+        return originalPrice; // use calculateDiscount(price, ticketCount) instead
     }
 }
