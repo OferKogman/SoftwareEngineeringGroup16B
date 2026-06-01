@@ -1,33 +1,35 @@
 import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import "./CSS/LoginForm.css";
 
-export type RegistrationData = {
+export type LoginData = {
   email: string;
   password: string;
 };
 
-type RegistrationFormProps = {
+type LoginFormProps = {
   title: string;
-  onRegistration: (event: RegistrationData) => void | Promise<void>;
+  onLogin: (event: LoginData) => void | Promise<void>;
   onCancel?: () => void;
 };
 
-const initialFormData: RegistrationData = {
+const initialFormData: LoginData = {
   email: "",
   password: "",
 };
 
-export default function RegistrationForm({
+export default function LoginForm({
   title,
-  onRegistration,
+  onLogin,
   onCancel,
-}: RegistrationFormProps) {
-  const [formData, setFormData] = useState<RegistrationData>(initialFormData);
+}: LoginFormProps) {
+  const [formData, setFormData] = useState<LoginData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function updateField<K extends keyof RegistrationData>(
+  function updateField<K extends keyof LoginData>(
     field: K,
-    value: RegistrationData[K],
+    value: LoginData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -41,27 +43,26 @@ export default function RegistrationForm({
     setError("");
 
     try {
-      await onRegistration({
+      await onLogin({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
       setFormData(initialFormData);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to register.");
+      setError(err instanceof Error ? err.message : "Failed to login.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="registration-form" onSubmit={handleSubmit}>
+    <form className="login-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
-
       {error && <p className="form-error">{error}</p>}
 
-      <label>
-        Email
+      <div className="form-row">
+        <label>Email</label>
         <input
           type="email"
           required
@@ -72,19 +73,18 @@ export default function RegistrationForm({
           }}
           placeholder="email"
         />
-      </label>
+      </div>
 
-      <label>
-        Password
+      <div className="form-row">
+        <label>Password</label>
         <input
           type="password"
           required
           value={formData.password}
-          onChange={(event) =>
-            updateField("password", event.target.value)}
+          onChange={(event) => updateField("password", event.target.value)}
           placeholder="Password"
         />
-      </label>
+      </div>
 
       <div className="form-actions">
         {onCancel && (
@@ -93,9 +93,15 @@ export default function RegistrationForm({
           </button>
         )}
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Registering..." : "Register"}
+          {isSubmitting ? "Logging in..." : "Login"}
         </button>
       </div>
+
+      <p>
+        <NavLink to="/register" className="auth-link">
+          Don't have an account? Register here
+        </NavLink>
+      </p>
     </form>
   );
 }
