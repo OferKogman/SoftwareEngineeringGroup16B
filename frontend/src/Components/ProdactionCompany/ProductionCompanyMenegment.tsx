@@ -1,81 +1,38 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import ProductionCompanyPurchaseHistory from "./ViewProductionCompanyPurchaseHistory";
+import { NavLink, Outlet, useParams } from "react-router-dom";
+import "./CSS/ProductionCompanyManagement.css";
 
-const API_BASE = "http://10.100.102.14:8080";
+export default function ProductionCompanyManagement() {
+  const { companyId } = useParams();
 
-export default function ProductionCompanyMenegment() {
-    const { companyId } = useParams<{ companyId: string }>();
-    console.log("ProductionCompanyMenegment rendered, companyId =", companyId);
-
-
-    const [loadingRevenue, setLoadingRevenue] = useState<boolean>(true);
-    const [totalRevenue, setTotalRevenue] = useState<number | null>(null);
-    const [error, setError] = useState("");
-
-  const authToken = localStorage.getItem("authToken") || "";
-
-  useEffect(() => {
-  async function loadTotalRevenue() {
-    if (!companyId) {
-      setError("Missing production company ID.");
-      setLoadingRevenue(false);
-      return;
-    }
-
-    try {
-      setLoadingRevenue(true);
-
-        const authToken = localStorage.getItem("authToken") || "";
-
-        const response = await fetch(`${API_BASE}/production-companies/${companyId}/total-revenue`,{method: "GET",headers: {Authorization: authToken, },});
-
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      const data = await response.json();
-
-      setTotalRevenue(data.data ?? data);
-      setError("");
-    } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to load total revenue."
-      );
-
-      // TEMPORARY fallback so the page does not stay stuck while backend is broken
-      console.warn("USING TEMPORARY MOCK REVENUE. REMOVE LATER.");
-      setTotalRevenue(1650);
-    } finally {
-      setLoadingRevenue(false);
-    }
-  }
-
-  void loadTotalRevenue();
-}, [companyId]);
-  if (!companyId) {
-    return <p className="form-error">Missing production company ID.</p>;
-  }
+  // later we'll fetch this from backend
+  const companyName = "Company Name";
 
   return (
-    <div>
-      <h1>Production Company Management</h1>
+    <div className="company-management-page">
+      <div className="company-management-header">
+        <h1>{companyName}</h1>
+        <p>Company ID: {companyId}</p>
+      </div>
 
-      {error && <p className="form-error">{error}</p>}
+      <div className="company-management-body">
+        <aside className="company-management-sidebar">
+          <NavLink to="total-revenue">Total Revenue</NavLink>
 
-      <section>
-  <h2>Total Revenue</h2>
+          <NavLink to="sales-history">Sales History</NavLink>
 
-  {loadingRevenue ? (
-    <p>Loading revenue...</p>
-  ) : (
-    <p>{totalRevenue}</p>
-  )}
-</section>
+          <NavLink to="venue-config">Event Venue Configuration</NavLink>
 
-      <ProductionCompanyPurchaseHistory productionCompanyID={companyId} />
+          <NavLink to="members">Members & Permissions</NavLink>
+
+          <NavLink to="hierarchy">Hierarchy Tree</NavLink>
+
+          <NavLink to="settings">Company Settings</NavLink>
+        </aside>
+
+        <main className="company-management-content">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

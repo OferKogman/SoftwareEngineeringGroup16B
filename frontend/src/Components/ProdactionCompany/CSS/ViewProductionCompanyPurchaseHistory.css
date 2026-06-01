@@ -1,134 +1,68 @@
+.production-company-history {
+  margin-top: 2rem;
+}
+
+.production-company-history h1 {
+  margin: 0 0 2rem;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f5ecff;
+  text-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
+}
+
 .purchase-history-filter {
-  max-width: 700px;
-  margin: 0 auto 30px auto;
-
-  padding: 20px;
-  border-radius: 24px;
-
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  width: min(26rem, 100%);
+  margin: 0 auto 2rem auto;
+  padding: 1.2rem;
+  border-radius: 1rem;
+  background: rgba(12, 12, 12, 0.9);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.35);
 }
 
 .filter-label {
-  font-weight: bold;
-  font-size: 1.1rem;
+  display: block;
+  margin-bottom: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
 }
 
 .filter-input {
   width: 100%;
-  box-sizing: border-box;
-
-  padding: 12px 18px;
-  border-radius: 999px;
-
+  padding: 0.8rem 1rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(168, 85, 247, 0.7);
+  background: #181818;
+  color: white;
   font-size: 1rem;
-
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease,
-    transform 0.2s ease;
 }
-
-.filter-input:hover {
-  transform: translateY(-1px);
-}
-
-/* ========================= */
-/* Dark Theme */
-/* ========================= */
-
-.dark .purchase-history-filter {
-  border: 1px solid rgba(255, 150, 0, 0.4);
-
-box-shadow:
-  0 0 20px rgba(255, 0, 255, 0.4),
-  0 0 40px rgba(168, 85, 247, 0.35),
-  0 0 80px rgba(168, 85, 247, 0.2);
-}
-
-.dark .filter-input {
-  background: rgba(255, 255, 255, 0.06);
-  color: #f5f5f5;
-
-  border: 1px solid rgba(168, 85, 247, 0.4);
-}
-
-.dark .filter-input:focus {
-  outline: none;
-
-  border-color: rgba(168, 85, 247, 0.8);
-
-  box-shadow:
-    0 0 10px rgba(168, 85, 247, 0.4),
-    0 0 20px rgba(168, 85, 247, 0.2);
-}
-
-/* ========================= */
-/* Light Theme */
-/* ========================= */
-
-.light .purchase-history-filter {
-  border: 1px solid rgba(255, 183, 0, 0.4);
-
-box-shadow:
-  0 0 20px rgba(255, 0, 255, 0.4),
-  0 0 40px rgba(168, 85, 247, 0.35),
-  0 0 80px rgba(168, 85, 247, 0.2);}
-
-.light .filter-input {
-  background: rgba(255, 255, 255, 0.9);
-  color: #111111;
-
-  border: 1px solid rgba(168, 85, 247, 0.3);
-}
-
-.light .filter-input:focus {
-  outline: none;
-
-  border-color: rgba(168, 85, 247, 0.8);
-
-  box-shadow:
-    0 0 10px rgba(168, 85, 247, 0.25),
-    0 0 20px rgba(168, 85, 247, 0.15);
-}
-
-/* ========================= */
-/* Orders List */
-/* ========================= */
 
 .orders-list {
-  display: flex;
-  flex-direction: column;
-  gap: 25px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(18rem, 1fr));
+  gap: 1.0rem;
+  align-items: stretch;
 }
 
-@media (max-width: 600px) {
-  .purchase-history-filter {
-    max-width: 100%;
-    margin: 0 14px 24px 14px;
-    padding: 16px;
-    border-radius: 18px;
-  }
-
-  .filter-label {
-    font-size: 1rem;
-  }
-
-  .filter-input {
-    padding: 11px 14px;
-    font-size: 0.95rem;
-  }
-
+@media (max-width: 1100px) {
   .orders-list {
-    gap: 18px;
+    grid-template-columns: repeat(2, minmax(18rem, 1fr));
   }
 
-  h1 {
-    font-size: 2rem;
-    line-height: 1.2;
-    text-align: center;
+  .production-top-section {
+    grid-template-columns: 1fr;
+  }
+}
 
-    margin-bottom: 24px;
+@media (max-width: 700px) {
+  .orders-list {
+    grid-template-columns: 1fr;
+  }
+
+  .production-company-page {
+    padding: 1.5rem;
   }
 }
