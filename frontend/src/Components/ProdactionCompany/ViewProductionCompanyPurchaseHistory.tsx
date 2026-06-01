@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
-import ViewOrder from "../Shered/ViewOrder";
+import ViewOrder from "../Shared/ViewOrder";
 import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 
 export default function ProductionCompanyPurchaseHistory() {
