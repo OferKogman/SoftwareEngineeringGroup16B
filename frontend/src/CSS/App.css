@@ -1,6 +1,18 @@
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  width: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
 .app {
   min-height: 100vh;
-  padding: 40px;
   transition:
     background-color 0.2s,
     color 0.2s;
@@ -44,15 +56,29 @@
   color: #f5f5f5;
 }
 
-.light form,
+.light form {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111111;
+  border: 1px solid rgba(255, 183, 0, 0.15);
+  box-shadow: 0 4px 16px rgba(255, 0, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
 .light .form-container,
 .light .card,
 .light table {
-  background-color: #ffffff;
+  background-color: #f5f5f5;
   color: #111111;
 }
 
-.dark form,
+.dark form {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 150, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+}
 .dark .form-container,
 .dark .card,
 .dark table {
@@ -87,19 +113,39 @@
 }
 
 .light button {
-  background-color: #111111;
-  color: #ffffff;
-  border: 1px solid #111111;
+  background: linear-gradient(90deg, #ffd43b 0%, #ff9f43 40%, #ff6b9d 100%);
+  color: #111111;
 }
 
 .dark button {
-  background-color: #f5f5f5;
-  color: #111111;
-  border: 1px solid #f5f5f5;
+  background: linear-gradient(90deg, #0f172a 0%, #312e81 50%, #7c3aed 100%);
+  color: #f5f5f5;
 }
 
 button {
-  padding: 8px 14px;
+  border: none;
+  border-radius: 999rem;
+
+  padding: 0.6rem 1.2rem;
+
   cursor: pointer;
-  border-radius: 6px;
+
+  font-weight: 600;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.3s ease,
+    color 0.3s ease;
+
+  box-shadow:
+    0 0.2rem 0.8rem rgba(0, 0, 0, 0.25),
+    inset 0 0.05rem 0.15rem rgba(255, 255, 255, 0.8);
+}
+
+button:hover {
+  transform: scale(1.03);
+}
+
+.auth-link {
+  color: #c284ee;
 }

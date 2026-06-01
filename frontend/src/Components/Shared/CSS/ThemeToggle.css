@@ -1,0 +1,142 @@
+.theme-slider {
+  position: relative;
+
+  width: 6.5rem;
+  height: 2.4rem;
+
+  border: none;
+  border-radius: 999rem;
+
+  cursor: pointer;
+  overflow: hidden;
+
+  font-weight: 700;
+  color: white;
+
+  padding: 0;
+
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.35s ease;
+}
+
+/* Day gradient layer */
+.theme-slider::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(90deg, #ffd43b 0%, #ff9f43 40%, #ff6b9d 100%);
+
+  opacity: 1;
+  transition: opacity 0.4s ease;
+}
+
+/* Night gradient layer */
+.theme-slider::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(90deg, #0f172a 0%, #312e81 50%, #7c3aed 100%);
+
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.theme-slider.day::before {
+  opacity: 1;
+}
+
+.theme-slider.day::after {
+  opacity: 0;
+}
+
+.theme-slider.night::before {
+  opacity: 0;
+}
+
+.theme-slider.night::after {
+  opacity: 1;
+}
+
+.theme-slider:hover {
+  transform: scale(1.03);
+}
+
+/* Text */
+
+.theme-slider-text {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+
+  z-index: 2;
+  pointer-events: none;
+
+  transition: all 0.35s ease;
+}
+
+.theme-slider.day .theme-slider-text {
+  justify-content: flex-start;
+  padding-left: 1rem;
+  padding-right: 4rem;
+}
+
+.theme-slider.night .theme-slider-text {
+  justify-content: flex-end;
+  padding-left: 4rem;
+  padding-right: 1rem;
+}
+
+/* Sliding circle */
+
+.theme-slider-circle {
+  position: absolute;
+
+  top: 0.15rem;
+  left: 0.15rem;
+
+  width: 2rem;
+  height: 2rem;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(255, 255, 255, 0.95);
+
+  font-size: 1rem;
+
+  z-index: 3;
+
+  box-shadow:
+    0 0.2rem 0.8rem rgba(0, 0, 0, 0.25),
+    inset 0 0.05rem 0.15rem rgba(255, 255, 255, 0.8);
+
+  transition:
+    transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+    background 0.35s ease;
+}
+
+.theme-slider.day .theme-slider-circle {
+  transform: translateX(4.125rem);
+}
+
+.theme-slider.night .theme-slider-circle {
+  transform: translateX(0);
+}
+
+/* Optional glow */
+
+.theme-slider.day {
+  box-shadow: 0 0.4rem 1.2rem rgba(255, 174, 66, 0.35);
+}
+
+.theme-slider.night {
+  box-shadow: 0 0.4rem 1.2rem rgba(124, 58, 237, 0.35);
+}
