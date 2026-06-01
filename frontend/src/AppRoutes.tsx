@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import SearchEvents from "./Components/SearchEvents";
+import SearchEvents from "./Components/Event/SearchEvents";
 import LoginForm, { type LoginData } from "./Components/User/LoginForm";
 import type { RegistrationData } from "./Components/User/RegistrationForm";
 import RegistrationForm from "./Components/User/RegistrationForm";
