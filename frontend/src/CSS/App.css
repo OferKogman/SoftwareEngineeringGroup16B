@@ -33,11 +33,23 @@ body,
 .light {
   background-color: #f6f7fb;
   color: #111111;
+  --theme-gradient: linear-gradient(
+    -45deg,
+    #ffd43b 0%,
+    #ff9f43 40%,
+    #ff6b9d 100%
+  );
 }
 
 .dark {
   background-color: #111111;
   color: #f5f5f5;
+  --theme-gradient: linear-gradient(
+    -45deg,
+    #0f172a 0%,
+    #312e81 50%,
+    #7c3aed 100%
+  );
 }
 
 .light h1,
