@@ -279,9 +279,9 @@ export default function SearchEvents() {
         </label>
       </div>
 
-      <br />
-
       <button onClick={searchEvents}>Search</button>
+
+      <br />
 
       {error && <p className="form-error">{error}</p>}
 

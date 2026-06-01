@@ -68,10 +68,17 @@ export default function ViewEvents({ events }: EventsListProps) {
   }
 
   return (
-    <div>
+    <div
+      style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
+    >
       {error && <p className="form-error">{error}</p>}
 
-      <table>
+      <table
+        style={{
+          alignItems: "center",
+          width: "80%",
+        }}
+      >
         <thead>
           <tr>
             <th>ID</th>
