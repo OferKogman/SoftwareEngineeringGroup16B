@@ -187,6 +187,24 @@ public class ProductionCompanyService {
             .collect(Collectors.toSet());
     }
 
+    public Result<ProductionCompanyDTO> getProductionCompany(int companyID)
+    {
+        try{
+            logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",companyID);
+            ProductionCompany company=productionRepo.findByID(String.valueOf(companyID));
+            logger.info("ProductionCompanyService.getProductionCompany: Successfully retrieved production company with id {}",companyID);
+            return Result.makeOk(new ProductionCompanyDTO(company));
+        }catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.getProductionCompany: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.getProductionCompany: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs)
     {
         return orderRepo.getAll().stream()

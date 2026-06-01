@@ -44,5 +44,12 @@ public class ProductionCompanyController extends BaseController {
     {
         return executeWithReturnData(() -> productionCompanyService.createProductionCompany(authToken,requestDTO.getCompanyName()));
     }
+
+    @GetMapping("/{companyId}")
+    public ResponseEntity<?> getProductionCompanyDetails(
+        @PathVariable("companyId") int companyId)
+    {
+        return executeWithReturnData(() -> productionCompanyService.getProductionCompany(companyId));
+    }
     
 }
