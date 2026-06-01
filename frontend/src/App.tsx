@@ -21,7 +21,7 @@ import SearchEvents from "./Components/SearchEvents";
 import VenueEditor from "./Components/VenueEditor";
 import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewEvent from "./Components/ViewEvent";
-import ViewOrder from "./Components/ViewOrder";
+import ViewOrder from "./Components/Shered/ViewOrder";
 
 import { useEffect, useState } from "react";
 import AssignMember from "./Components/AssignNewOwnerOrManager";
@@ -31,7 +31,7 @@ import ChangeManagerPermissions, {
 import CreateOrderPage from "./Components/CreateOrder";
 import ViewAdminCompanyList from "./Components/ViewAdminCompanyList";
 import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
-import ProductionCompanyPurchaseHistory from "./Components/ViewProductionCompanyPurchaseHistory";
+import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
 import ViewUserCompanyList from "./Components/ViewUserCompanyList";
 import UserPurchaseHistory from "./Components/ViewUserPurchaseHistory";
 import ViewUsers from "./Components/ViewUsersList";
