@@ -8,6 +8,7 @@ import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class StartupService {
