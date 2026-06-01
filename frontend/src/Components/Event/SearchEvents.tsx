@@ -61,8 +61,7 @@ export default function SearchEvents() {
 
       console.log(filteredData);
 
-      /*
-      const response = await fetch("/api/events/search", {
+      const response = await fetch("http://localhost:8080/events/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,42 +75,6 @@ export default function SearchEvents() {
 
       const data: EventDTO[] = await response.json();
       setEvents(data);
-      */
-
-      const fakeEvents: EventDTO[] = [
-        {
-          eventID: 1,
-          active: true,
-          venueID: "Live Park",
-          name: "Queen Concert",
-          startTime: "2027-06-22T14:30",
-          endTime: "2027-06-22T18:30",
-          artist: "Queen",
-          category: "Rock",
-          productionCompanyID: 0,
-          discountPolicy: null,
-          purchasePolicy: null,
-          price: 500,
-          rating: 5,
-        },
-        {
-          eventID: 2,
-          active: true,
-          venueID: "Madison Square Garden",
-          name: "ABBA Reunion",
-          startTime: "2028-08-10T19:00",
-          endTime: "2028-08-10T22:00",
-          artist: "ABBA",
-          category: "Pop",
-          productionCompanyID: 1,
-          discountPolicy: null,
-          purchasePolicy: null,
-          price: 300,
-          rating: 4.5,
-        },
-      ];
-
-      setEvents(fakeEvents);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to search events.");
     }
