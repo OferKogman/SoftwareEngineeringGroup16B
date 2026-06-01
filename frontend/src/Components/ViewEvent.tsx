@@ -16,15 +16,15 @@ export default function ViewEvent() {
 
     async function loadEvent() {
       try {
-        //const response = await fetch(`/api/events/${id}`);
+        const response = await fetch(`http://localhost:8080/events/${eventID}`);
 
-        //if (!response.ok) {
-        //  throw new Error("Failed to load event.");
-        //}
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        const event: EventDTO = await response.json();
 
-        //const event: EventDTO = await response.json();
-
-        const fakeEventDTO: EventDTO = {
+        setEventDTO(event);
+        /*const fakeEventDTO: EventDTO = {
           eventID: 1,
           active: false,
           venueID: "pizdez",
@@ -99,7 +99,8 @@ export default function ViewEvent() {
           price: 1000.0,
           rating: -5.0,
         };
-        setEventDTO(fakeEventDTO);
+        setEventDTO(fakeEventDTO);*/
+        console.log("Loaded event from API:", event);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }
