@@ -3,24 +3,72 @@ import type { OrderDTO } from "../../DTOs/OrderDTO";
 import ViewOrder from "../Shared/ViewOrder";
 import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 
-export default function ProductionCompanyPurchaseHistory() {
+type ProductionCompanyPurchaseHistoryProps = {
+  productionCompanyID: string;
+};
 
+export default function ProductionCompanyPurchaseHistory({
+  productionCompanyID,
+}: ProductionCompanyPurchaseHistoryProps) {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [error, setError] = useState<string>("");
   const [eventIdFilter, setEventIdFilter] = useState<string>("");
 
   useEffect(() => {
     async function loadProductionCompanyPurchaseHistory() {
+      const authToken = localStorage.getItem("authToken") || "";
+
       try {
-        const response = await fetch(`http://localhost:8080/ProductionCompanyService.viewSalesHistory/${productionCompanyID}`);
+        // ====================================================
+        // BACKEND VERSION
+        //
+        // CURRENTLY ACTIVE
+        //
+        // Uses:
+        // GET /production-companies/{companyId}/sales-history
+        //
+        // If backend breaks during development,
+        // comment this section and uncomment the MOCK section
+        // below.
+        // ====================================================
+        /*
+        const response = await fetch(
+          `http://localhost:8080/production-companies/${productionCompanyID}/sales-history`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+            },
+          },
+        );
 
         if (!response.ok) {
           throw new Error(await response.text());
         }
-        const OrderList: OrderDTO[] = await response.json();
 
-        setOrders(OrderList);
-        /*const mockOrders: OrderDTO[] = [
+        const orderList: OrderDTO[] = await response.json();
+
+        setOrders(orderList);
+        setError("");
+        */
+
+        // ====================================================
+        // MOCK VERSION
+        //
+        // TO USE MOCK DATA:
+        //
+        // 1. Comment out the fetch code above
+        // 2. Uncomment this block
+        // ====================================================
+
+        console.warn("====================================================");
+        console.warn(
+          "USING TEMPORARY MOCK DATA FOR ProductionCompanyPurchaseHistory",
+        );
+        console.warn("REMOVE THIS MOCK DATA BLOCK WHEN BACKEND IS READY");
+        console.warn("====================================================");
+
+        const mockOrders: OrderDTO[] = [
           {
             orderId: "ORD-2001",
             segmentId: "VIP-A",
@@ -50,54 +98,51 @@ export default function ProductionCompanyPurchaseHistory() {
           },
         ];
 
-        setOrders(mockOrders);*/
+        setOrders(mockOrders);
+        setError("");
       } catch (err) {
         setError(
           err instanceof Error
             ? err.message
             : "Failed to load production company purchase history.",
         );
+
+        setOrders([]);
       }
     }
 
     void loadProductionCompanyPurchaseHistory();
-  }, []);
+  }, [productionCompanyID]);
 
   const filteredOrders = orders.filter((order) => {
     return (
-      eventIdFilter === "" ||
-      order.eventId.toString().includes(eventIdFilter)
+      eventIdFilter === "" || order.eventId.toString().includes(eventIdFilter)
     );
   });
 
   return (
-    <div>
-      <h1>Production Company Purchase History</h1>
+    <section className="production-company-history">
+      <h1>Purchase History</h1>
 
       {error && <p className="form-error">{error}</p>}
 
       <div className="purchase-history-filter">
-  <label className="filter-label">
-  Filter by Event ID
-</label>
+        <label className="filter-label">Filter by Event ID</label>
 
-<input
-  className="filter-input"
-  type="text"
-  placeholder="Search by Event ID..."
-    value={eventIdFilter}
-    onChange={(e) => setEventIdFilter(e.target.value)}
-  />
-</div>
+        <input
+          className="filter-input"
+          type="text"
+          placeholder="Search by Event ID..."
+          value={eventIdFilter}
+          onChange={(e) => setEventIdFilter(e.target.value)}
+        />
+      </div>
 
       <div className="orders-list">
         {filteredOrders.map((order) => (
-          <ViewOrder
-            key={order.orderId}
-            order={order}
-          />
+          <ViewOrder key={order.orderId} order={order} />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

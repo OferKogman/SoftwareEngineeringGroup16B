@@ -78,7 +78,7 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
       {error && <p className="form-error">{error}</p>}
 
       <div className="card order-card">
-        <h1 className="order-title">Order {orderDTO.orderId}</h1>
+        <h3 className="order-title">Order {orderDTO.orderId}</h3>
 
         <div className="order-row">
           <span className="order-label">Segment ID</span>
