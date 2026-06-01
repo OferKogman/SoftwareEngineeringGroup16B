@@ -23,7 +23,7 @@ export default function DisplayTotalRevenue() {
       setError(
         err instanceof Error
           ? err.message
-          : `Failed to get company revenue for company ${companyID}.`
+          : `Failed to get company revenue for company ${companyID}.`,
       );
     }
   }
@@ -39,9 +39,7 @@ export default function DisplayTotalRevenue() {
         onChange={(e) => setCompanyID(e.target.value)}
       />
 
-      <button onClick={handleDisplayRevenue}>
-        Display Revenue
-      </button>
+      <button onClick={handleDisplayRevenue}>Display Revenue</button>
 
       {error && <p>{error}</p>}
 
@@ -52,10 +50,7 @@ export default function DisplayTotalRevenue() {
   );
 }
 
-
-async function getTotalRevenue(
-  companyID: number
-): Promise<number> {
+async function getTotalRevenue(companyID: number): Promise<number> {
   console.log("Getting revenue for company:", companyID);
 
   return Promise.resolve(1234567.89);

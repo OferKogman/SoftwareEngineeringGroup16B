@@ -23,6 +23,7 @@ import ViewCompanyEvents from "./Components/ViewCompanyEventList";
 import ViewEvent from "./Components/ViewEvent";
 import ViewOrder from "./Components/ViewOrder";
 
+import { useEffect, useState } from "react";
 import CreateOrderPage from "./Components/CreateOrder";
 import ViewAdminCompanyList from "./Components/ViewAdminCompanyList";
 import AdminPurchaseHistory from "./Components/ViewAdminPurcheseHistory";
@@ -37,6 +38,11 @@ import ChangeManagerPermissions,
 }from "./Components/ChangeManagerPermissions";
 
 function App() {
+  const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  useEffect(() => {
+    localStorage.setItem("theme", theme);
+  }, [theme]);
+
   async function handlePayment(paymentData: {
     firstName: string;
     lastName: string;
@@ -111,6 +117,16 @@ async function handleChangeManagerPermissions(
 
   return (
     <BrowserRouter>
+      <div className={`app ${theme}`}>
+        <button
+          onClick={() =>
+            setTheme((current) => (current === "light" ? "dark" : "light"))
+          }
+        >
+          switch to {theme === "light" ? "dark" : "light"} mode
+        </button>
+      </div>
+
       <Routes>
         <Route path="/events/:eventID" element={<ViewEvent />} />
         <Route path="/orders/:orderID" element={<ViewOrder />} />
@@ -163,7 +179,7 @@ async function handleChangeManagerPermissions(
         />
 
         <Route
-          path= "/admin/view-users"
+          path="/admin/view-users"
           element={<ViewUsers users={undefined} />}
         />
 
