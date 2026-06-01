@@ -3,6 +3,7 @@ package com.group16b.ApplicationLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
@@ -47,7 +48,7 @@ public class StartupService {
             }
         } catch (Exception e) {
             logger.error("StartupService.validateAdmins: Error occurred while initializing system.", e);
-            throw e; // Rethrow the exception to ensure the application fails to start if initialization fails
+            throw new SystemStartupException("Failed to initialize system admins.", e); // Rethrow the exception to ensure the application fails to start if initialization fails
         }
     }
     private void validatePaymentGateway() {
