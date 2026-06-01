@@ -7,6 +7,18 @@ body,
   width: 100%;
 }
 
+.light input[type="date"],
+.light input[type="datetime-local"],
+.light input[type="time"] {
+  color-scheme: light;
+}
+
+.dark input[type="date"],
+.dark input[type="datetime-local"],
+.dark input[type="time"] {
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -1,14 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { EventDTO } from "../DTOs/EventDTO";
+import type { EventDTO } from "../../DTOs/EventDTO";
 
 type EventsListProps = {
   events?: EventDTO[] | null;
 };
 
-export default function ViewEvents({
-  events,
-}: EventsListProps) {
+export default function ViewEvents({ events }: EventsListProps) {
   const [error, setError] = useState<string>("");
   const [eventDTOList, setEventDTOList] = useState<EventDTO[]>([]);
 
@@ -18,8 +16,8 @@ export default function ViewEvents({
     async function loadEvents() {
       try {
         if (events !== undefined && events !== null) {
-            setEventDTOList(events);
-            return;
+          setEventDTOList(events);
+          return;
         }
 
         // Fake backend data for testing
@@ -58,11 +56,7 @@ export default function ViewEvents({
 
         setEventDTOList(eventList);
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load events."
-        );
+        setError(err instanceof Error ? err.message : "Failed to load events.");
       }
     }
 
@@ -93,11 +87,7 @@ export default function ViewEvents({
               <td>{event.name}</td>
 
               <td>
-                <button
-                  onClick={() =>
-                    navigate(`/events/${event.eventID}`)
-                  }
-                >
+                <button onClick={() => navigate(`/events/${event.eventID}`)}>
                   View
                 </button>
               </td>
