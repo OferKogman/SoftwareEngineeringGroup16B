@@ -15,9 +15,10 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 
+import org.springframework.stereotype.Service;
+
+@Service
 public class PurchasePolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
     
