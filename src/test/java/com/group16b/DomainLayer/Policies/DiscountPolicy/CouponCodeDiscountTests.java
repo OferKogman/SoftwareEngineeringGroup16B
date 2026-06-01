@@ -18,7 +18,7 @@ public class CouponCodeDiscountTests {
         CouponCodeDiscount discount = new CouponCodeDiscount(20, "SAVE20", null, null);
         assertEquals(80.0, discount.calculateDiscount(100.0), 0.001);
     }
-X
+
     @Test
     public void testMaxUsagesNotReachedAppliesDiscount() {
         CouponCodeDiscount discount = new CouponCodeDiscount(10, "SAVE10", null, 3);
