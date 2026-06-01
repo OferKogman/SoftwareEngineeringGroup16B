@@ -35,7 +35,7 @@ public class OrderController extends BaseController{
         return executeWithReturnData(() -> orderService.getUserOrders(sessionToken));
     }
 
-    @PutMapping("changeSeatsToOrder/{orderId}")
+    @PutMapping("/changeSeatsToOrder/{orderId}")
     public ResponseEntity<?> changeSeatsToOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId, @RequestBody List<String> newSeatIds){
         return executeWithReturnData(() -> orderService.changeSeatsToOrder(orderId, sessionToken, newSeatIds));
     }
@@ -46,7 +46,7 @@ public class OrderController extends BaseController{
     }
 
     @PutMapping("/cancelOrder/{orderId}")
-    public ResponseEntity<?> cancelOrder(@PathVariable("orderId") String orderId){
-        return executeWithReturnData(() -> orderService.cancelOrder(orderId));
+    public ResponseEntity<?> cancelOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId){
+        return executeWithReturnData(() -> orderService.cancelOrder(orderId, sessionToken));
     }
 }
