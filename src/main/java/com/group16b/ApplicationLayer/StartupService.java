@@ -25,6 +25,7 @@ public class StartupService {
     }
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
+    @Transactional
     public void initializeSystem() {
         logger.info("StartupService.initializeSystem: Starting system initialization...");
         validateAdmins();
