@@ -3,73 +3,54 @@ package com.group16b.ApplicationLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.group16b.DomainLayer.DomainServices.EventFilteringService;
-import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
-import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
-import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.PaymentService;
-import com.group16b.InfrastructureLayer.TicketGateway;
-import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 import org.springframework.stereotype.Service;
 
 @Service
 public class StartupService {
     private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
-    private final AdminManagementService adminManagementService;
-    private final CompanyHierarchyService companyHierarchyService;
-    private final EventService eventService;
-    private final OrderService orderService;
-    private final ProductionCompanyService productionCompanyService;
-    private final PurchasePolicyService purchasePolicyService;
-    private final ReserveService reserveService;
-    private final UserLoginService userLoginService;
-    private final UserService userService;
-    private final ProductionCompanyIdGen productionCompanyIdGen;
+    private final ISystemAdminRepository adminRepo;
+    private final IPaymentGateway paymentGateway;
+    private final ITicketGateway ticketGateway;
 
 
-    public StartupService() {
-        logger.info("Initializing infrastructures...");
-        AuthenticationServiceJWTImpl authService = new AuthenticationServiceJWTImpl("mySuperSecretKeyForUsers123456789", "mySuperSecretKeyForAdmins123456789");
-        LocationServicePhotonImpl locationService = new LocationServicePhotonImpl();
-        UserRepositoryMapImpl userRepositoryMapImpl = new UserRepositoryMapImpl();
-        VenueRepositoryMapImpl venueRepositoryMapImpl = new VenueRepositoryMapImpl();
-        OrderRepositoryMapImpl orderRepositoryMapImpl = new OrderRepositoryMapImpl();
-        EventRepositoryMapImpl eventRepositoryMapImpl = new EventRepositoryMapImpl();
-        VirtualQueueRepositoryMapImpl queueRepositoryMapImpl = new VirtualQueueRepositoryMapImpl();
-        ProductionCompanyRepositoryMapImpl productionCompanyRepositoryMapImpl = new ProductionCompanyRepositoryMapImpl();
-        SystemAdminRepositoryMapImpl systemAdminRepositoryMapImpl = new SystemAdminRepositoryMapImpl();
-        PaymentService paymentService = new PaymentService();
-        TicketGateway ticketGateway = new TicketGateway();
-        productionCompanyIdGen=new ProductionCompanyIdGen();
+    //will grow as more invariants would be needed to validate
+    public StartupService(ISystemAdminRepository adminRepo,IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
+        this.adminRepo = adminRepo;
+        this.paymentGateway = paymentGateway;
+        this.ticketGateway = ticketGateway;
+    }
 
-        logger.info("Initializing domain services...");
-        EventFilteringService eventFilteringService = new EventFilteringService(productionCompanyRepositoryMapImpl, eventRepositoryMapImpl, venueRepositoryMapImpl);
-        
+    //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
+    public void initializeSystem() {
+        logger.info("StartupService.initializeSystem: Starting system initialization...");
+        validateAdmins();
+        validatePaymentGateway();
+        validateTicketGateway();
+    }
 
-        logger.info("Initializing application services...");
-        adminManagementService = new AdminManagementService(authService,productionCompanyRepositoryMapImpl, orderRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl, systemAdminRepositoryMapImpl);
-        companyHierarchyService = new CompanyHierarchyService(authService,productionCompanyRepositoryMapImpl, userRepositoryMapImpl);
-        eventService = new EventService(authService, locationService, eventFilteringService, productionCompanyRepositoryMapImpl, queueRepositoryMapImpl, venueRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl);
-        orderService = new OrderService(authService,productionCompanyRepositoryMapImpl, paymentService, venueRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl, orderRepositoryMapImpl, ticketGateway);
-        productionCompanyService = new ProductionCompanyService(authService,orderRepositoryMapImpl,eventRepositoryMapImpl,userRepositoryMapImpl,productionCompanyRepositoryMapImpl,productionCompanyIdGen);
-        purchasePolicyService = new PurchasePolicyService(authService,productionCompanyRepositoryMapImpl, eventRepositoryMapImpl, userRepositoryMapImpl);
-        reserveService = new ReserveService(authService,productionCompanyRepositoryMapImpl, queueRepositoryMapImpl, venueRepositoryMapImpl, eventRepositoryMapImpl, orderRepositoryMapImpl);
-        userLoginService = new UserLoginService(userRepositoryMapImpl, authService);
-        userService = new UserService(authService, ticketGateway, venueRepositoryMapImpl, userRepositoryMapImpl, orderRepositoryMapImpl, eventRepositoryMapImpl);
-
-        logger.info("Adding default system admin...");
-        ISystemAdminRepository systemAdminRepository = new SystemAdminRepositoryMapImpl();
-        SystemAdmin systemAdmin = new SystemAdmin("1", "admin", "password", "admin@example.com");
-        systemAdminRepository.save(systemAdmin);
-        logger.info("StartupService initialization complete.");
+    //-------------------- VALIDATORS --------------------//
+    //add more validators here as needed, such as validating the existence of a default production company, etc.
+    //will probably grow significantly when we move to dbs, as we will need to validate the correctness of our data as well.
+    private void validateAdmins()
+    {
+        try{
+            if(adminRepo.getAll().isEmpty()) {
+                logger.info("StartupService.validateAdmins: No system admins found. Creating default system admin...");
+                SystemAdmin defaultAdmin = new SystemAdmin("0", "admin123","password","mail@example.com");
+                adminRepo.save(defaultAdmin);
+            }
+        } catch (Exception e) {
+            logger.error("StartupService.validateAdmins: Error occurred while initializing system.", e);
+        }
+    }
+    private void validatePaymentGateway() {
+        // Implement payment gateway validation logic here
+    }
+    private void validateTicketGateway() {
+        // Implement ticket gateway validation logic here
     }
 }
