@@ -4,33 +4,27 @@ import ViewEvent from "./Components/Event/ViewEvent";
 import CreateEvent from "./Components/EventCreationForm";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
-import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import ManageEvent from "./Components/ProdactionCompany/ManageEvent";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
-import LoginForm, { type LoginData } from "./Components/User/LoginForm";
+import CreateProductionCompany from "./Components/ProdctionCompanyForm";
+import LoginForm from "./Components/User/LoginForm";
 import RegistrationForm from "./Components/User/RegistrationForm";
+import UserManagement from "./Components/User/UserManagement";
 
 export default function AppRoutes() {
-  async function handleLogin(data: LoginData) {
-    console.log("Logging in with data:", data);
-    return Promise.resolve();
-  }
-
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={<LoginForm title="Login" onLogin={handleLogin} />}
-      />
+      <Route path="/login" element={<LoginForm title="Login" />} />
       <Route path="/register" element={<RegistrationForm title="Register" />} />
+      <Route path="/users" element={<UserManagement />} />
+
       <Route path="/events/search" element={<SearchEvents />} />
 
-      <Route path="/companies/create" element={<CreateProdactionCompany />} />
-
+      <Route path="/companies/create" element={<CreateProductionCompany />} />
       <Route
         path="/production-company-menegment/:companyId"
         element={<ProductionCompanyMenegment />}
