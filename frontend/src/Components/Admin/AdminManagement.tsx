@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ViewUsersList from "../ViewUsersList";
 import ViewAdminCompanyList from "./ViewAdminCompanyList";
 import ViewAdminPurchaseHistory from "./ViewAdminPurchaseHistory";
+import ViewUsersList from "./ViewUsersList";
 
 export default function AdminManagement() {
   const navigate = useNavigate();
@@ -15,7 +15,13 @@ export default function AdminManagement() {
     <div>
       <h1>Admin Management</h1>
 
-      <div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <button onClick={() => setShowUsersList(!showUsersList)}>
           {showUsersList ? "▼" : "▶"} Users
         </button>
