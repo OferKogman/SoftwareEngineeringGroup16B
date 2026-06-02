@@ -5,6 +5,7 @@ import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
+import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
@@ -22,6 +23,8 @@ export default function AppRoutes() {
       <Route path="/users" element={<UserManagement />} />
 
       <Route path="/events/search" element={<SearchEvents />} />
+
+      <Route path="/companies/create" element={<CreateProdactionCompany />} />
 
       <Route
         path="/companies/:companyId"

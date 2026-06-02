@@ -1,40 +1,29 @@
 import { useEffect, useState } from "react";
+import { useSession } from "../App";
 import type { OrderDTO } from "../DTOs/OrderDTO";
 import ViewSaleHistory from "./ViewSaleHistory";
 
 export default function UserPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [error, setError] = useState<string>("");
+  const { sessionToken } = useSession();
 
   useEffect(() => {
     async function loadUserPurchaseHistory() {
       try {
-        // future backend call:
-        // const ordersFromServer = await user.getSaleHistory();
-        // setOrders(ordersFromServer);
-
-        const mockOrders: OrderDTO[] = [
+        const response = await fetch(
+          "http://localhost:8080/api/user/me/order-history",
           {
-            orderId: "ORD-1001",
-            segmentId: "VIP-A",
-            numOfTickets: 2,
-            orderType: "Seat",
-            totalOrderPrice: 500,
-            eventId: 101,
-            subjectId: "Ran123",
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: sessionToken,
+            },
           },
-          {
-            orderId: "ORD-1003",
-            segmentId: "Front",
-            numOfTickets: 1,
-            orderType: "Seat",
-            totalOrderPrice: 350,
-            eventId: 101,
-            subjectId: "Ran123",
-          },
-        ];
+        );
 
-        setOrders(mockOrders);
+        const data: OrderDTO[] = await response.json();
+        setOrders(data);
       } catch (err) {
         setError(
           err instanceof Error
