@@ -75,6 +75,7 @@ public class Seat {
 		stock.putIfAbsent(eventID, false);
 	}
 
+
 	public Map<Integer, Boolean> getStock() {
 		return stock;
 	}

@@ -3,12 +3,12 @@ package com.group16b.ApplicationLayer.DTOs;
 
 public class TicketDTO {
     private final String ticketId;
-    private final int eventId;
-    private final int userId;
+    private final String eventId;
+    private final String userId;
     private final String segmentName; // Optional, can be null for field ticket
     private final String seatNumber; // Optional, can be null for field tickets
     private final double price;
-    public TicketDTO(int eventId, int userId, String segmentId, String seatId, double price) {
+    public TicketDTO(String eventId, String userId, String segmentId, String seatId, double price) {
         this.ticketId = "ticket_" + eventId + "_" + segmentId + "_" + seatId; // Generate a unique ticket ID based on event, segment, and seat
         this.eventId = eventId;
         this.userId = userId;
@@ -20,10 +20,10 @@ public class TicketDTO {
     public String getTicketId() {
         return ticketId;
     }
-    public int getEventId() {
+    public String getEventId() {
         return eventId;
     }
-    public int getUserId() {
+    public String getUserId() {
         return userId;
     }
     public String getSegmentName() {

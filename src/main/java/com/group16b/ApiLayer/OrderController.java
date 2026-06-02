@@ -3,7 +3,6 @@ package com.group16b.ApiLayer;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,10 +27,10 @@ public class OrderController extends BaseController{
         return executeWithReturnData(() -> orderService.CompleteActiveOrder(requestDTO.getOrderID(), sessionToken, requestDTO.getPaymentInfo()));
     }
 
-    @GetMapping("/getUserOrders")
+   /* *@GetMapping("/getUserOrders")
     public ResponseEntity<?> getUserOrders(@RequestHeader("Authorization") String sessionToken){
         return executeWithReturnData(() -> orderService.getUserOrders(sessionToken));
-    }
+    }*/ // its in user service now
 
     @PutMapping("/changeSeatsToOrder/{orderId}")
     public ResponseEntity<?> changeSeatsToOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId, @RequestBody List<String> newSeatIds){
