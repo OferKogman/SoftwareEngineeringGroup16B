@@ -41,11 +41,12 @@ export default function CreateProdactionCompany() {
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create production company.");
+        throw new Error(
+          (await response.text()) || "Failed to create production company.",
+        );
       }
+      const data = await response.json();
 
       setMessage("Production company created successfully.");
       setCompanyName("");
@@ -54,7 +55,7 @@ export default function CreateProdactionCompany() {
 
       if (createdCompany.companyId || createdCompany.id) {
         const newCompanyId = createdCompany.companyId ?? createdCompany.id;
-        navigate(`/production-company/${newCompanyId}`);
+        navigate(`/companies/${newCompanyId}`);
       }
     } catch (err: unknown) {
       if (err instanceof Error) {

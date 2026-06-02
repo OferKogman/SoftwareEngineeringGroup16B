@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-
+import { useSession } from "../../App";
 
 export type EventCreationData = {
   venueID: string;
   name: string;
-  startDate: string;
-  endDate: string;
+  startTime: string;
+  endTime: string;
   artist: string;
   category: string;
+  companyId: number;
   price: number;
+  rating: number;
 };
 
 type EventCreationFormProps = {
@@ -19,20 +21,25 @@ type EventCreationFormProps = {
 const initialFormData: EventCreationData = {
   venueID: "",
   name: "",
-  startDate: "",
-  endDate: "",
+  startTime: "",
+  endTime: "",
   artist: "",
   category: "",
+  companyId: 0,
   price: 0.0,
+  rating: 0.0,
 };
 
-export default function EventCreationForm({ onCancel }: EventCreationFormProps) {
+export default function EventCreationForm({
+  onCancel,
+}: EventCreationFormProps) {
   const { companyId } = useParams();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<EventCreationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { sessionToken } = useSession();
 
   function updateField<K extends keyof EventCreationData>(
     field: K,
@@ -44,15 +51,27 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
     }));
   }
 
+  function formatLocalDateTimeForApi(value: string): string {
+    return value.length === 16 ? `${value}:00` : value;
+  }
+
+  function isValidLocalDateTimeInput(value: string): boolean {
+    return /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value);
+  }
+
   async function createEvent(eventData: EventCreationData) {
     if (!companyId) {
       throw new Error("Missing company ID.");
     }
+    if (!sessionToken) {
+      throw new Error("Missing session token.");
+    }
 
-    const response = await fetch(`/api/companies/${companyId}/events`, {
+    const response = await fetch(`http://localhost:8080/events`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        Authorization: sessionToken,
       },
       body: JSON.stringify(eventData),
     });
@@ -61,9 +80,7 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
       const message = await response.text();
       throw new Error(message || "Failed to create event.");
     }
-    navigate(
-      `/companies/${companyId}/venue-config`
-    );
+    navigate(`/companies/${companyId}/venue-config`);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -71,13 +88,40 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
     setIsSubmitting(true);
     setError("");
 
+    if (!companyId) {
+      setError("Missing company ID.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!isValidLocalDateTimeInput(formData.startTime)) {
+      setError("Start date must use a valid 4-digit year.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!isValidLocalDateTimeInput(formData.endTime)) {
+      setError("End date must use a valid 4-digit year.");
+      setIsSubmitting(false);
+      return;
+    }
+
     const eventData: EventCreationData = {
       ...formData,
       venueID: formData.venueID.trim(),
       name: formData.name.trim(),
       artist: formData.artist.trim(),
       category: formData.category.trim(),
+      startTime: formatLocalDateTimeForApi(formData.startTime),
+      endTime: formatLocalDateTimeForApi(formData.endTime),
+      companyId: Number(companyId),
+      rating: 0.0,
     };
+    if (!Number.isInteger(eventData.companyId) || eventData.companyId <= 0) {
+      setError("Invalid company ID.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
       await createEvent(eventData);
@@ -141,7 +185,9 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
         <input
           type="datetime-local"
           required
-          value={formData.startDate}
+          min="1000-01-01T00:00"
+          max="9999-12-31T23:59"
+          value={formData.startTime}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
               "Please enter a valid start date and time.",
@@ -149,7 +195,7 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
           }
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
-            updateField("startDate", event.target.value);
+            updateField("startTime", event.target.value);
           }}
           placeholder="Start date"
         />
@@ -160,8 +206,9 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
         <input
           type="datetime-local"
           required
-          min={getMinimumEndDateTime(formData.startDate)}
-          value={formData.endDate}
+          max="9999-12-31T23:59"
+          min={getMinimumEndDateTime(formData.startTime)}
+          value={formData.endTime}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
               "Please enter a valid end date and time.\nMust be after now and start time.",
@@ -169,7 +216,7 @@ export default function EventCreationForm({ onCancel }: EventCreationFormProps) 
           }
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
-            updateField("endDate", event.target.value);
+            updateField("endTime", event.target.value);
           }}
           placeholder="End date"
         />
