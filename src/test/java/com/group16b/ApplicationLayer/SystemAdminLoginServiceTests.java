@@ -26,6 +26,16 @@ public class SystemAdminLoginServiceTests {
     private IAuthenticationService mockTokenService;
     private IRepository<SystemAdmin> mockSystemAdminRepository;
 
+    private final String VALID_ADMIN_TOKEN = "valid-admin-token";
+    private final String INVALID_ADMIN_TOKEN = "invalid-admin-token";
+    private final String GUEST_TOKEN = "guest-token";
+
+    private SystemAdmin admin1;
+
+    private final String ADMIN_USERNAME = "admin1";
+    private final String ADMIN_PASSWORD = "password123";
+    private final String ADMIN_EMAIL = "mail.ru";
+
 
 
     @BeforeEach
@@ -33,10 +43,27 @@ public class SystemAdminLoginServiceTests {
         mockTokenService = mock(IAuthenticationService.class);
         mockSystemAdminRepository = mock(IRepository.class);
 
+        admin1= new SystemAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL);
+        when(mockSystemAdminRepository.findByID(ADMIN_USERNAME)).thenReturn(admin1);
+
         // Assuming your service takes these in the constructor.
         // If it uses reflection/singletons like the previous classes, apply the same
         // reflection setup here!
         adminService = new SystemAdminLoginService(mockSystemAdminRepository, mockTokenService);
+        when(mockTokenService.validateToken(VALID_ADMIN_TOKEN)).thenReturn(true);
+        when(mockTokenService.validateToken(INVALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.validateToken(GUEST_TOKEN)).thenReturn(true);
+
+        when(mockTokenService.isAdminToken(VALID_ADMIN_TOKEN)).thenReturn(true);
+        when(mockTokenService.isAdminToken(INVALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.isAdminToken(GUEST_TOKEN)).thenReturn(false);
+
+        when(mockTokenService.isGuestToken(GUEST_TOKEN)).thenReturn(true);
+        when(mockTokenService.isGuestToken(VALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.isGuestToken(INVALID_ADMIN_TOKEN)).thenReturn(false);
+
+        when(mockTokenService.generateAdminToken(ADMIN_USERNAME)).thenReturn(VALID_ADMIN_TOKEN);
+
     }
 
     // -----------------------------------------------------------------
@@ -123,5 +150,13 @@ public class SystemAdminLoginServiceTests {
 
         assertFalse(result.isSuccess(), "Logout should catch exceptions and return a failure Result");
         assertEquals("Failed to log out: Not a number", result.getError());
+    }
+
+    @Test
+    void testLogIn_success() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
+        assertTrue(result.isSuccess(), "Login should succeed with correct credentials and valid guest token");
+        assertEquals(VALID_ADMIN_TOKEN, result.getValue(), "Should return the valid admin token");
+
     }
 }
