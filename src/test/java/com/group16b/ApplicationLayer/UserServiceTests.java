@@ -1,5 +1,7 @@
 package com.group16b.ApplicationLayer;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -7,8 +9,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
@@ -22,6 +27,11 @@ public class UserServiceTests {
     private UserRepositoryMapImpl userRepo;
     private AuthenticationServiceJWTImpl authService;
     private UserService userService;
+    private String sessionToken;
+    private String noOrdersToken;
+    private String guestToken;
+    private String adminToken;
+
 
 @BeforeEach
     void setUp() {
@@ -39,6 +49,40 @@ public class UserServiceTests {
         TicketGateway ticketGateway = new TicketGateway();
 
         userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo);
+
+        // for get user order history tests, we need to have a user with orders in the repo and a valid token for that user
+        sessionToken = authService.generateVisitor_SignedToken("test2@test.com");
+        noOrdersToken = authService.generateVisitor_SignedToken("noorders@test.com");
+        guestToken = authService.generateVisitor_GuestToken(new SessionToken("guest-session"));
+        adminToken = authService.generateAdminToken("admin@test.com");
+        User tUser = new User("test2@test.com", "Password123!");
+        userRepo.save(tUser);
+        Order orderSeat1 = new Order( "seg1", List.of("A1", "A2"), 100.0, 1, "test2@test.com");
+        orderSeat1.CompleteOrder();
+        Order orderSeat2 = new Order( "seg2", List.of("A3", "A4"), 150.0, 1, "test2@test.com");
+        orderSeat2.CompleteOrder();
+        Order orderSeat3 = new Order( "seg3", List.of("B1"), 50.0, 2, "test2@test.com");
+        orderSeat3.CompleteOrder();
+        Order orderAmount1 = new Order( "seg4", 3, 75.0, 3, "test2@test.com");
+        orderAmount1.CompleteOrder();
+        Order orderAmount2 = new Order( "seg5", 2, 50.0, 3, "test2@test.com");
+        orderAmount2.CompleteOrder();
+        Order orderAmount3 = new Order( "seg6", 1, 25.0, 4, "test2@test.com");
+        orderRepo.save(orderSeat1);
+        orderRepo.save(orderSeat2);
+        orderRepo.save(orderSeat3);
+        orderRepo.save(orderAmount1);
+        orderRepo.save(orderAmount2);
+        orderRepo.save(orderAmount3);
+
+        Order otherOrder1 = new Order("seg7", List.of("C1"), 30.0, 5, "other@test.com");
+        orderRepo.save(otherOrder1);
+        otherOrder1.CompleteOrder();
+        
+        Order otherOrder2 = new Order("seg8", 4, 100.0, 6, "other@test.com");
+        otherOrder2.CompleteOrder();
+        orderRepo.save(otherOrder2);
+
     }
 
     @Test
@@ -114,5 +158,66 @@ public class UserServiceTests {
 
         assertFalse(result.isSuccess());
         assertTrue(result.getError().contains("Invalid token for user"));
-    }    
+    }   
+    
+    @Test
+    void getUserOrderHistory_validToken_returnsUserOrders() {
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(sessionToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+        assertEquals(5, result.getValue().size());
+    }
+    @Test
+    void getUserOrderHistory_validTokenWithNoOrders_returnsEmptyList() {
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(noOrdersToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+        assertEquals(0, result.getValue().size());
+    }
+
+    @Test
+    void getUserOrderHistory_guestToken_returnsFail() {
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(guestToken);
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserOrderHistory_adminToken_returnsFail() {
+
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(adminToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserOrderHistory_invalidToken_returnsFail() {
+        String invalidToken = "this-is-not-a-real-token-because-chaos";
+
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(invalidToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserOrderHistory_nullToken_returnsFail() {
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(null);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserOrderHistory_blankToken_returnsFail() {
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory("");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserOrderHistory_returnsOnlyOrdersOfTokenUser() {
+        
+        Result<List<OrderDTO>> result = userService.getUserOrderHistory(sessionToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+        assertEquals(5, result.getValue().size());
+    }
 }
