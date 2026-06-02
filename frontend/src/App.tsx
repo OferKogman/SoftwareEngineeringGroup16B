@@ -38,9 +38,29 @@ export function useLoggedIn() {
 
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
+  const apiBaseUrl = "http://localhost:8080";
+
+  const getInitialSessionToken = () => {
+    const storedToken = localStorage.getItem("sessionToken")?.trim();
+
+    if (
+      !storedToken ||
+      storedToken === "null" ||
+      storedToken === "undefined" ||
+      storedToken.startsWith("<!doctype html>") ||
+      storedToken.startsWith("<html")
+    ) {
+      localStorage.removeItem("sessionToken");
+      return null;
+    }
+
+    return storedToken;
+  };
+
   const [sessionToken, setSessionToken] = useState<string | null>(
-    localStorage.getItem("sessionToken"),
+    getInitialSessionToken,
   );
+
   const [loggedIn, setLoggedIn] = useState<boolean>(
     localStorage.getItem("isLoggedIn") === "true",
   );
@@ -49,20 +69,38 @@ function App() {
   }, [theme]);
 
   useEffect(() => {
-    if (sessionToken) return;
-
     async function fetchSessionToken() {
       try {
-        const response = await fetch("/api/user/login/guest");
+        const storedToken = localStorage.getItem("sessionToken")?.trim();
+
+        if (
+          storedToken &&
+          storedToken !== "null" &&
+          storedToken !== "undefined" &&
+          !storedToken.startsWith("<!doctype html>") &&
+          !storedToken.startsWith("<html")
+        ) {
+          setSessionToken(storedToken);
+          return;
+        }
+
+        const response = await fetch(`${apiBaseUrl}/api/user/login/guest`, {
+          method: "POST",
+        });
 
         if (!response.ok) {
           throw new Error("Failed to create guest session");
         }
 
-        const token = await response.text();
-        if (!token) {
-          throw new Error("Guest session returned an empty token");
+        const token = (await response.text()).trim();
+        if (
+          !token ||
+          token.startsWith("<!doctype html>") ||
+          token.startsWith("<html")
+        ) {
+          throw new Error("Guest session did not return a valid token");
         }
+
         setSessionToken(token);
         localStorage.setItem("sessionToken", token);
       } catch (err) {
@@ -71,8 +109,9 @@ function App() {
         setSessionToken(null);
       }
     }
+
     fetchSessionToken();
-  }, [sessionToken]);
+  }, []);
 
   if (!sessionToken) {
     return <div>Loading...</div>;

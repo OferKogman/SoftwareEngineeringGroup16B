@@ -29,12 +29,14 @@ export default function LoginForm({ title }: LoginFormProps) {
 
   async function onLogin({ email, password }: RegistrationData) {
     try {
+      console.log("token:", sessionToken);
       const response = await fetch(
         `http://localhost:8080/api/user/login/member`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: sessionToken,
           },
           body: JSON.stringify({ email, password }),
         },
@@ -47,7 +49,7 @@ export default function LoginForm({ title }: LoginFormProps) {
 
       setSessionToken(token);
       setLoggedIn(true);
-
+      navigate("/");
       console.log("User successfully logged in");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to register user.");
@@ -75,7 +77,6 @@ export default function LoginForm({ title }: LoginFormProps) {
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
-      navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login.");
     } finally {
@@ -121,7 +122,7 @@ export default function LoginForm({ title }: LoginFormProps) {
 
       <p>
         <NavLink to="/register" className="auth-link">
-          Don't have an account? Register here
+          Don&apos;t have an account? Register here
         </NavLink>
       </p>
     </form>

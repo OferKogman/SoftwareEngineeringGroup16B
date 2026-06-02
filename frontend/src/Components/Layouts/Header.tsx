@@ -17,7 +17,16 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
 
   async function handleLogout() {
     try {
-      const response = await fetch("/api/user/login/guest");
+      const response = await fetch(
+        "http://localhost:8080/api/user/login/logout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
+        },
+      );
 
       if (!response.ok) {
         throw new Error("Failed to create guest session");
