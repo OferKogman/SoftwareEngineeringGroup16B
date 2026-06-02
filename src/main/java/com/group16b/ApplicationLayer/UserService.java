@@ -95,12 +95,14 @@ public class UserService {
             userRepo.save(user);
             logger.info("UserService.updateUserPassword: Password changed successfully.");
             return Result.makeOk(true);
-            
+        } catch (IllegalArgumentException e) {
+            logger.warn("UserService.updateUserPassword: IllegalArgumentException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
         } catch (JwtException e) {
-			logger.error("JWT authentication error during user password update: " + e.getMessage());
+			logger.error("UserService.updateUserPassword: JWT authentication error during user password update: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
-			logger.error("Unexpected error during user password update: " + e.getMessage());
+			logger.error("UserService.updateUserPassword: Unexpected error during user password update: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
@@ -131,16 +133,17 @@ public class UserService {
 
             logger.info("UserService.getUserOrderHistory: Successfully retrieved order history.");
             return Result.makeOk(orderDTOs);        
-            
+        } catch (IllegalArgumentException e) {
+            logger.warn("UserService.getUserOrderHistory: IllegalArgumentException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());    
         } catch (AuthException e) {
             logger.warn("UserService.getUserOrderHistory: Authentication failed during order history fetch: " + e.getMessage());
             return Result.makeFail("Authentication failed: " + e.getMessage());
-        }
-        catch (JwtException e) {
-            logger.error("JWT authentication error during user order history fetch: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error("UserService.getUserOrderHistory: JWT authentication error during user order history fetch: " + e.getMessage());
             return Result.makeFail("Authentication failed: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("Unexpected error during user order history fetch: " + e.getMessage());
+            logger.error("UserService.getUserOrderHistory: Unexpected error during user order history fetch: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
