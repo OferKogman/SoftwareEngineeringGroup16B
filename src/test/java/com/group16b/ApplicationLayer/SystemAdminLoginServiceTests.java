@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -14,19 +15,20 @@ import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 
 public class SystemAdminLoginServiceTests {
 
     // Replace AdminManagementService with the actual name of your service class
     private SystemAdminLoginService adminService;
     private IAuthenticationService mockTokenService;
-    private ISystemAdminRepository mockSystemAdminRepository;
+    private IRepository<SystemAdmin> mockSystemAdminRepository;
 
     @BeforeEach
     void setUp() throws Exception {
         mockTokenService = mock(IAuthenticationService.class);
-        mockSystemAdminRepository = mock(ISystemAdminRepository.class);
+        mockSystemAdminRepository = mock(IRepository.class);
 
         // Assuming your service takes these in the constructor.
         // If it uses reflection/singletons like the previous classes, apply the same
@@ -50,7 +52,7 @@ public class SystemAdminLoginServiceTests {
         // 3. Generating the guest token works
         when(mockTokenService.generateVisitor_GuestToken(any())).thenReturn(expectedGuestToken);
         // 4. The admin ID exists in the repository
-        when(mockSystemAdminRepository.doesSystemAdminExist(String.valueOf(adminID))).thenReturn(true);
+        doNothing().when(mockSystemAdminRepository).findByID(String.valueOf(adminID));
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
@@ -76,7 +78,7 @@ public class SystemAdminLoginServiceTests {
         assertEquals("Invalid ID for logout", result.getError());
 
         // Verify we never checked the database since it failed early
-        verify(mockSystemAdminRepository, never()).doesSystemAdminExist(any(String.class));
+        verify(mockSystemAdminRepository, never()).findByID(any(String.class));
     }
 
     // -----------------------------------------------------------------
