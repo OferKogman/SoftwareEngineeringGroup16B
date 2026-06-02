@@ -22,8 +22,19 @@ public class SystemAdminLoginService {
         this.tokenService = tokenService;
     }
 
-    public Result<String> loginAdmin(String adminUsername, String password, String email) {
+    public Result<String> loginAdmin(String adminUsername, String password, String email, String guestSessionToken) {
         logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin username: {}}", adminUsername);
+
+        if(!tokenService.validateToken(guestSessionToken))
+        {
+            logger.warn("SystemAdminLoginService.loginAdmin: Login attempt failed, invalid or expired guest session token.");
+            return Result.makeFail("Authentication failed. Please refresh your session and try again.");
+        }
+        if(!tokenService.isGuestToken(guestSessionToken))
+        {
+            logger.warn("SystemAdminLoginService.loginAdmin: Login attempt failed, provided token is not a guest session token.");
+            return Result.makeFail("Authentication failed. Only guests are allowed to login.");
+        }
 
         SystemAdmin admin = systemAdminRespotiry.findByID(adminUsername);
 

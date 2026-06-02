@@ -20,10 +20,12 @@ public class SystemAdminLoginController extends BaseController{
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> loginAdmin(@RequestBody AdminLoginRequestDTO requestDTO) {
+    public ResponseEntity<?> loginAdmin(@RequestBody AdminLoginRequestDTO requestDTO,
+                                        @RequestHeader("Authorization") String guestSessionToken
+    ) {
 
 
-        return executeWithReturnData(() -> systemAdminLoginService.loginAdmin(requestDTO.getID(), requestDTO.getPassword(), requestDTO.getEmail()));
+        return executeWithReturnData(() -> systemAdminLoginService.loginAdmin(requestDTO.getUsername(), requestDTO.getPassword(), requestDTO.getEmail(), guestSessionToken));
     }
 
     @PostMapping("/logout")
