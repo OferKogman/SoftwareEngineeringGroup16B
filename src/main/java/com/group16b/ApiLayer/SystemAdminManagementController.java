@@ -52,4 +52,9 @@ public class SystemAdminManagementController extends BaseController{
     public ResponseEntity<?> registerNewAdmin(@RequestHeader("Authorization") String sessionToken, @RequestBody AdminRegisterRequestDTO requestDTO){
         return executeWithReturnData(() -> adminManagementService.registerNewAdmin(sessionToken, requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(), requestDTO.getNewAdminEmail()));
     }
+
+    @GetMapping("/companies")
+    public ResponseEntity<?> getAllProductionCompanies(@RequestHeader("Authorization") String sessionToken){
+        return executeWithReturnData(() -> adminManagementService.getAllProductionCompanies(sessionToken));
+    }
 }

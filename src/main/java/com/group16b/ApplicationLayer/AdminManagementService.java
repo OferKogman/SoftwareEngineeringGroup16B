@@ -9,6 +9,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
@@ -282,10 +283,13 @@ public class AdminManagementService {
                     .collect(Collectors.toList());
             logger.info("AdminManagementService.getAllProductionCompanies: Successfully retrieved {} production companies", companyDTOs.size());
             return Result.makeOk(companyDTOs);
-        }catch(IllegalArgumentException e){
-            logger.warn("AdminManagementService.getAllProductionCompanies: Invalid token");
-            return Result.makeFail("Invalid token");
-        }catch(Exception e){
+        } catch(IllegalArgumentException e){
+            logger.warn("AdminManagementService.getAllProductionCompanies: "+ e.getLocalizedMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(AuthException e){
+            logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error - {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(Exception e){
             logger.error("AdminManagementService.getAllProductionCompanies: System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while retrieving production companies.");
         }
@@ -294,11 +298,11 @@ public class AdminManagementService {
     private void verifyAdminToken(String sToken) throws IllegalArgumentException {
         if (!authenticationService.validateToken(sToken)  ) {
             logger.warn("AdminManagementService.verifyAdminToken: Invalid token");
-            throw new IllegalArgumentException("Invalid token");
+            throw new AuthException("Invalid token");
         }
         if (!authenticationService.isAdminToken(sToken)) {
             logger.warn("AdminManagementService.verifyAdminToken: Unauthorized access attempt by non-admin user");
-            throw new IllegalArgumentException("Unauthorized access");
+            throw new AuthException("Unauthorized access");
         }
         systemAdminRepo.findByID(authenticationService.extractSubjectFromToken(sToken)); // validate admin exists, throws error if not
     }
