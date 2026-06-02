@@ -8,13 +8,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 
 
 class OrderTests {
+    private Order order1;
 
-	
+	@BeforeEach
+    void setup() {
+        order1 = new Order("segment1", List.of("A1"), 50.0, 7, "10");
+    }
 
     @Test
     void seatOrderCreation_shouldInitializeBasicFields() {
@@ -110,45 +115,35 @@ class OrderTests {
 
     @Test
     void isBelongsToSubject_sameSubject_shouldReturnTrue() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
-        assertTrue(order.isBelongsToSubject("10"));
+        assertTrue(order1.isBelongsToSubject("10"));
     }
 
     @Test
     void isBelongsToSubject_differentSubject_shouldReturnFalse() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
-        assertFalse(order.isBelongsToSubject("wrongSubject"));
+        assertFalse(order1.isBelongsToSubject("wrongSubject"));
     }
 
     @Test
     void verifyBelongsToSubject_sameSubject_shouldNotThrow() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
-        assertDoesNotThrow(() -> order.verifyBelongsToSubject("10"));
+        assertDoesNotThrow(() -> order1.verifyBelongsToSubject("10"));
     }
 
     @Test
     void verifyBelongsToSubject_differentSubject_shouldThrowIllegalArgumentException() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> order.verifyBelongsToSubject("wrongSubject")
+                () -> order1.verifyBelongsToSubject("wrongSubject")
         );
 
         assertEquals(
-                "Order " + order.getOrderId() + " does not belong to subject wrongSubject",
+                "Order " + order1.getOrderId() + " does not belong to subject wrongSubject",
                 exception.getMessage()
         );
     }
 
     @Test
     void verifyTypeSeats_whenSeatOrder_shouldNotThrow() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
-        assertDoesNotThrow(order::verifyTypeSeats);
+        assertDoesNotThrow(order1::verifyTypeSeats);
     }
 
     @Test
@@ -175,11 +170,9 @@ class OrderTests {
 
     @Test
     void verifyTypeField_whenSeatOrder_shouldThrowIllegalStateException() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                order::verifyTypeField
+                order1::verifyTypeField
         );
 
         assertEquals(
@@ -190,33 +183,28 @@ class OrderTests {
 
     @Test
     void validateOrderIsActive_whenActive_shouldNotThrow() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
-        assertDoesNotThrow(order::validiteOrderIsActive);
+        assertDoesNotThrow(order1::validiteOrderIsActive);
     }
 
     @Test
     void validateOrderIsActive_whenCompleted_shouldThrowIllegalStateException() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-        order.CompleteOrder();
+        order1.CompleteOrder();
 
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                order::validiteOrderIsActive
+                order1::validiteOrderIsActive
         );
 
-        assertEquals("Order " + order.getOrderId() + " is not active", exception.getMessage());
+        assertEquals("Order " + order1.getOrderId() + " is not active", exception.getMessage());
     }
 
     @Test
     void updateSeats_whenSeatOrderAndValidSeats_shouldUpdateSeatsTicketCountAndPrice() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
+        order1.updateSeats(List.of("B1", "B2"), 100.0);
 
-        order.updateSeats(List.of("B1", "B2"), 100.0);
-
-        assertEquals(List.of("B1", "B2"), order.getSeats());
-        assertEquals(2, order.getNumOfTickets());
-        assertEquals(100.0, order.getTotalOrderprice());
+        assertEquals(List.of("B1", "B2"), order1.getSeats());
+        assertEquals(2, order1.getNumOfTickets());
+        assertEquals(100.0, order1.getTotalOrderprice());
     }
 
     @Test
@@ -236,11 +224,9 @@ class OrderTests {
 
     @Test
     void updateSeats_whenSeatsNull_shouldThrowIllegalArgumentException() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> order.updateSeats(null, 50.0)
+                () -> order1.updateSeats(null, 50.0)
         );
 
         assertEquals("New seat IDs list cannot be null or empty", exception.getMessage());
@@ -248,11 +234,9 @@ class OrderTests {
 
     @Test
     void updateSeats_whenSeatsEmpty_shouldThrowIllegalArgumentException() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> order.updateSeats(List.of(), 50.0)
+                () -> order1.updateSeats(List.of(), 50.0)
         );
 
         assertEquals("New seat IDs list cannot be null or empty", exception.getMessage());
@@ -270,11 +254,9 @@ class OrderTests {
 
     @Test
     void updateNumOfTickets_whenSeatOrder_shouldThrowIllegalStateException() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
         IllegalStateException exception = assertThrows(
                 IllegalStateException.class,
-                () -> order.updateNumOfTickets(3, 90.0)
+                () -> order1.updateNumOfTickets(3, 90.0)
         );
 
         assertEquals(
@@ -339,10 +321,7 @@ class OrderTests {
 
     @Test
     void setVersion_shouldUpdateVersion() {
-        Order order = new Order("segment1", List.of("A1"), 50.0, 7, "10");
-
-        order.setVersion(5);
-
-        assertEquals(5, order.getVersion());
+        order1.setVersion(5);
+        assertEquals(5, order1.getVersion());
     }
 }
