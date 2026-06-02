@@ -284,7 +284,7 @@ public class AdminManagementService {
             logger.info("AdminManagementService.getAllProductionCompanies: Successfully retrieved {} production companies", companyDTOs.size());
             return Result.makeOk(companyDTOs);
         } catch(IllegalArgumentException e){
-            logger.warn("AdminManagementService.getAllProductionCompanies: "+ e.getLocalizedMessage());
+            logger.warn("AdminManagementService.getAllProductionCompanies: {}", e.getLocalizedMessage());
             return Result.makeFail(e.getMessage());
         } catch(AuthException e){
             logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error: {}", e.getMessage());
