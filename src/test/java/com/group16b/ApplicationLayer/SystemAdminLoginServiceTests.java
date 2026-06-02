@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -48,6 +49,8 @@ public class SystemAdminLoginServiceTests {
         String expectedGuestToken = "new-guest-token-123";
 
         // 1. Extract subject returns a valid ID string
+        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
+
         when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(adminID));
         // 2. Token is confirmed as an admin token
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
@@ -73,11 +76,12 @@ public class SystemAdminLoginServiceTests {
         // Extracts successfully, but isAdminToken returns false
         when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(userID));
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
+        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
         assertFalse(result.isSuccess(), "Logout should fail if token is not an admin token");
-        assertEquals("invalid username for logout", result.getError());
+        assertEquals("invalid Session for logout", result.getError());
 
         // Verify we never checked the database since it failed early
         verify(mockSystemAdminRepository, never()).findByID(any(String.class));
@@ -93,11 +97,13 @@ public class SystemAdminLoginServiceTests {
 
         when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(ghostAdminID));
         when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
+        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
+        doThrow(new IllegalArgumentException("Invalid adminID ID")).when(mockSystemAdminRepository).findByID(String.valueOf(ghostAdminID));
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
         assertFalse(result.isSuccess(), "Logout should fail if admin ID does not exist in DB");
-        assertEquals("Invalid adminID ID", result.getError());
+        assertEquals("Failed to log out: Invalid adminID ID", result.getError());
     }
 
     // -----------------------------------------------------------------
@@ -106,6 +112,8 @@ public class SystemAdminLoginServiceTests {
     @Test
     void testLogOutAdmin_ExceptionThrown_Fail() {
         String badToken = "malformed-token";
+        when(mockTokenService.isAdminToken(badToken)).thenReturn(true);
+        when(mockTokenService.validateToken(badToken)).thenReturn(true);
 
         // Force the parsing to throw an exception (e.g. if the subject isn't an
         // integer)
@@ -114,6 +122,6 @@ public class SystemAdminLoginServiceTests {
         Result<String> result = adminService.logOutAdmin(badToken);
 
         assertFalse(result.isSuccess(), "Logout should catch exceptions and return a failure Result");
-        assertTrue(result.getError().contains("Failed to log out"), "Error message should contain exception prefix");
+        assertEquals("Failed to log out: Not a number", result.getError());
     }
 }

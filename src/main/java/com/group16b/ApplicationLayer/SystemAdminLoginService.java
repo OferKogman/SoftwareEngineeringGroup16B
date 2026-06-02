@@ -23,7 +23,7 @@ public class SystemAdminLoginService {
     }
 
     public Result<String> loginAdmin(String adminUsername, String password, String email) {
-        logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin username: ...", adminUsername);
+        logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin username: {}}", adminUsername);
 
         SystemAdmin admin = systemAdminRespotiry.findByID(adminUsername);
 
