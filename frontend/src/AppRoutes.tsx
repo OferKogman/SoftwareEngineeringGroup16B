@@ -1,16 +1,14 @@
 import { Route, Routes } from "react-router-dom";
+import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
-import CreateEvent from "./Components/EventCreationForm";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
-import ManageEvent from "./Components/ProdactionCompany/ManageEvent";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
-import CreateProductionCompany from "./Components/ProdctionCompanyForm";
 import LoginForm from "./Components/User/LoginForm";
 import RegistrationForm from "./Components/User/RegistrationForm";
 import UserManagement from "./Components/User/UserManagement";
@@ -24,9 +22,8 @@ export default function AppRoutes() {
 
       <Route path="/events/search" element={<SearchEvents />} />
 
-      <Route path="/companies/create" element={<CreateProductionCompany />} />
       <Route
-        path="/production-company-menegment/:companyId"
+        path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}
       >
         <Route index element={<TotalRevenue />} />
@@ -40,7 +37,7 @@ export default function AppRoutes() {
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<CompanySettings />} />
         <Route path="events/create" element={<CreateEvent />} />
-        <Route path="events/:eventId/manage" element={<ManageEvent />} />
+        <Route path="events/:eventID/manage" element={<EventUpdateForm />} />
       </Route>
       <Route path="/events/:eventID" element={<ViewEvent />} />
     </Routes>

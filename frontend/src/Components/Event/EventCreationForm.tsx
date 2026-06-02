@@ -1,91 +1,42 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import type { EventDTO } from "../DTOs/EventDTO";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-export type EventUpdateDetails = {
+
+export type EventCreationData = {
   venueID: string;
   name: string;
   startDate: string;
   endDate: string;
   artist: string;
   category: string;
+  price: number;
 };
 
-type EventUpdateFormProps = {
-  onUpdateEvent: (event: EventUpdateDetails) => void | Promise<void>;
+type EventCreationFormProps = {
   onCancel?: () => void;
 };
 
-const initialFormData: EventUpdateDetails = {
+const initialFormData: EventCreationData = {
   venueID: "",
   name: "",
   startDate: "",
   endDate: "",
   artist: "",
   category: "",
+  price: 0.0,
 };
 
-export default function EventUpdateForm({
-  onUpdateEvent,
-  onCancel,
-}: EventUpdateFormProps) {
-  const { eventID } = useParams();
-  const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
+export default function EventCreationForm({ onCancel }: EventCreationFormProps) {
+  const { companyId } = useParams();
+  const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<EventUpdateDetails>(initialFormData);
+  const [formData, setFormData] = useState<EventCreationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!eventID) {
-      return;
-    }
-
-    async function loadEvent() {
-      try {
-        //const response = await fetch(`/api/events/${id}`);
-
-        //if (!response.ok) {
-        //  throw new Error("Failed to load event.");
-        //}
-
-        //const event: EventDTO = await response.json();
-
-        const event: EventDTO = {
-          eventID: 0,
-          active: true,
-          venueID: "Live Park",
-          name: "Last Tour Ever",
-          startTime: "2026-06-22T14:30",
-          endTime: "2026-06-22T18:30",
-          artist: "Queen",
-          category: "Rock",
-          productionCompanyID: 0,
-          discountPolicy: null,
-          purchasePolicy: null,
-          price: 100000,
-          rating: 5,
-        };
-        setEventDTO(event);
-        setFormData({
-          venueID: "",
-          name: "",
-          startDate: "",
-          endDate: "",
-          artist: "",
-          category: "",
-        });
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load event.");
-      }
-    }
-
-    void loadEvent();
-  }, [eventID]);
-
-  function updateField<K extends keyof EventUpdateDetails>(
+  function updateField<K extends keyof EventCreationData>(
     field: K,
-    value: EventUpdateDetails[K],
+    value: EventCreationData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -93,40 +44,55 @@ export default function EventUpdateForm({
     }));
   }
 
+  async function createEvent(eventData: EventCreationData) {
+    if (!companyId) {
+      throw new Error("Missing company ID.");
+    }
+
+    const response = await fetch(`/api/companies/${companyId}/events`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(eventData),
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || "Failed to create event.");
+    }
+    navigate(
+      `/companies/${companyId}/venue-config`
+    );
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
     setError("");
 
+    const eventData: EventCreationData = {
+      ...formData,
+      venueID: formData.venueID.trim(),
+      name: formData.name.trim(),
+      artist: formData.artist.trim(),
+      category: formData.category.trim(),
+    };
+
     try {
-      await onUpdateEvent({
-        ...formData,
-        venueID: formData.venueID.trim(),
-        name: formData.name.trim(),
-        startDate: formData.startDate.trim(),
-        endDate: formData.endDate.trim(),
-        artist: formData.artist.trim(),
-        category: formData.category.trim(),
-      });
+      await createEvent(eventData);
       setFormData(initialFormData);
+      alert(`Event "${eventData.name}" created successfully.`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update event.");
+      setError(err instanceof Error ? err.message : "Failed to create event.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  if (!eventID) {
-    return <p>Missing event ID.</p>;
-  }
-
-  if (!eventDTO) {
-    return <p>Loading event...</p>;
-  }
-
   return (
-    <form className="event-update-form" onSubmit={handleSubmit}>
-      <h2>Manage Event</h2>
+    <form className="event-creation-form" onSubmit={handleSubmit}>
+      <h2>Create Event</h2>
 
       {error && <p className="form-error">{error}</p>}
 
@@ -134,10 +100,11 @@ export default function EventUpdateForm({
         Venue ID
         <input
           type="text"
+          required
           pattern=".*\S.*"
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
-              "Venue Name name cannot be empty or whitespace.",
+              "venue ID name cannot be empty or whitespace.",
             )
           }
           value={formData.venueID}
@@ -145,7 +112,7 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("venueID", event.target.value);
           }}
-          placeholder={eventDTO.venueID}
+          placeholder="Venue ID"
         />
       </label>
 
@@ -153,6 +120,7 @@ export default function EventUpdateForm({
         Event name
         <input
           type="text"
+          required
           pattern=".*\S.*"
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
@@ -164,7 +132,7 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("name", event.target.value);
           }}
-          placeholder={eventDTO.name}
+          placeholder="Event name"
         />
       </label>
 
@@ -172,7 +140,7 @@ export default function EventUpdateForm({
         Start date
         <input
           type="datetime-local"
-          required={formData.endDate.trim() !== ""}
+          required
           value={formData.startDate}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
@@ -183,7 +151,7 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("startDate", event.target.value);
           }}
-          placeholder={eventDTO.startTime}
+          placeholder="Start date"
         />
       </label>
 
@@ -191,7 +159,7 @@ export default function EventUpdateForm({
         End date
         <input
           type="datetime-local"
-          required={formData.startDate.trim() !== ""}
+          required
           min={getMinimumEndDateTime(formData.startDate)}
           value={formData.endDate}
           onInvalid={(event) =>
@@ -203,7 +171,7 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("endDate", event.target.value);
           }}
-          placeholder={eventDTO.endTime}
+          placeholder="End date"
         />
       </label>
 
@@ -211,6 +179,7 @@ export default function EventUpdateForm({
         Artist
         <input
           type="text"
+          required
           pattern=".*\S.*"
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
@@ -222,7 +191,7 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("artist", event.target.value);
           }}
-          placeholder={eventDTO.artist}
+          placeholder="Artist"
         />
       </label>
 
@@ -230,6 +199,7 @@ export default function EventUpdateForm({
         Category
         <input
           type="text"
+          required
           pattern=".*\S.*"
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
@@ -241,7 +211,20 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("category", event.target.value);
           }}
-          placeholder={eventDTO.category}
+          placeholder="Category"
+        />
+      </label>
+
+      <label>
+        Price
+        <input
+          type="number"
+          min="0"
+          value={formData.price}
+          onChange={(event) => {
+            event.currentTarget.setCustomValidity("");
+            updateField("price", Number(event.target.value));
+          }}
         />
       </label>
 
@@ -252,7 +235,7 @@ export default function EventUpdateForm({
           </button>
         )}
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Updating..." : "Update event"}
+          {isSubmitting ? "Creating..." : "Create event"}
         </button>
       </div>
     </form>

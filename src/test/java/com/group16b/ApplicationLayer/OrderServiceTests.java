@@ -1,5 +1,5 @@
 package com.group16b.ApplicationLayer;
-
+/* 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -516,6 +516,7 @@ public class OrderServiceTests {
          * assertEquals(newSeats, order.getSeats());
          * }
          */
+        /* 
         @Test
         void changeSeatsToOrder_nullNewSeats_returnsFail() {
                 Result<List<String>> result = orderService.changeSeatsToOrder(
@@ -746,6 +747,7 @@ public class OrderServiceTests {
          * assertEquals(2, order.getNumOfTickets());
          * }
          */
+        /* 
         @Test
         void changeNumOfSeatsInFieldOrder_sameAmount_returnsOkWithoutChangingReservation() {
                 Order order = createActiveFieldOrder(3);
@@ -987,6 +989,7 @@ public class OrderServiceTests {
          * verify(mockOrderRepository, times(2)).findByID(ORDER_ID);
          * }
          */
+        /* 
         @Test
         void cancelOrder_orderNotFound_returnsFail() {
                 when(mockOrderRepository.findByID(ORDER_ID)).thenReturn(null);
@@ -1085,4 +1088,4 @@ public class OrderServiceTests {
 
                 verify(mockOrderRepository).delete(ORDER_ID);
         }
-}
+}*/

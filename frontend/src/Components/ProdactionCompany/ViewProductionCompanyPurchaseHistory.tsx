@@ -1,24 +1,25 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
 import ViewOrder from "../Shared/ViewOrder";
 import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 
-type ProductionCompanyPurchaseHistoryProps = {
-  productionCompanyID: string;
-};
-
-export default function ProductionCompanyPurchaseHistory({
-  productionCompanyID,
-}: ProductionCompanyPurchaseHistoryProps) {
+export default function ProductionCompanyPurchaseHistory() {
+  const { companyId } = useParams();
   const [orders, setOrders] = useState<OrderDTO[]>([]);
   const [error, setError] = useState<string>("");
   const [eventIdFilter, setEventIdFilter] = useState<string>("");
 
   useEffect(() => {
     async function loadProductionCompanyPurchaseHistory() {
-      const authToken = localStorage.getItem("authToken") || "";
+      
 
       try {
+        if (!companyId) {
+          setError("Missing company ID.");
+          setOrders([]);
+          return;
+        }
         // ====================================================
         // BACKEND VERSION
         //
@@ -32,8 +33,10 @@ export default function ProductionCompanyPurchaseHistory({
         // below.
         // ====================================================
         /*
+        const authToken = localStorage.getItem("authToken") || "";
+        
         const response = await fetch(
-          `http://localhost:8080/production-companies/${productionCompanyID}/sales-history`,
+          `http://localhost:8080/production-companies/${companyId}/sales-history`,
           {
             method: "GET",
             headers: {
@@ -112,7 +115,7 @@ export default function ProductionCompanyPurchaseHistory({
     }
 
     void loadProductionCompanyPurchaseHistory();
-  }, [productionCompanyID]);
+  }, [companyId]);
 
   const filteredOrders = orders.filter((order) => {
     return (

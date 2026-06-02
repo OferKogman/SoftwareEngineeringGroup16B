@@ -6,11 +6,14 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
@@ -55,76 +58,141 @@ public class OrderService {
 		this.ticketGateway = ticketGateway;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(String userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
+    public Result<List<TicketDTO>> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+		boolean paymentSucceeded = false;
 		try {
-			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
+			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
 
-			// 1. System - check active order status.
-			Order order = orderRepo.findByID(orderID);
-
-			logger.info("OrderService.CompleteActiveOrder: validate Order {} is activeOrder for user {}", orderID, userId);
-			order.validiteOrderIsActive();
-			
-
+			// 1. user verification
             logger.info("Verifying session token for completion.");
 			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
-            logger.info("Session token verified successfully.");
 
+			// 2. order verification 
+			Order order = orderRepo.findByID(orderID);
 
-			// 1.5 System - verify order belungs to the user.
-			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, userId);
+			logger.info("OrderService.CompleteActiveOrder: validate Order {} is activeOrder", orderID);
+			order.validiteOrderIsActive();
+			
+			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, subjectID);
 			order.verifyBelongsToSubject(subjectID);
 
-			// 2. System - calculates price of tickets according to company and event policies.
-			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, userId);
+
+			//3. price calculation
+			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, subjectID);
 			double price = order.getTotalOrderprice();
 
 
-			// 3. System - charges the user for the designed price.
-			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, userId, price);
+			// 4.Payment processing
+			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
 			paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
-			logger.info("OrderService.CompleteActiveOrder: user {} paid {} successfully for order {}", userId, price, orderID);
-
-
-			// 4. System - creates Tickets for each of the tickets.
-			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, userId);
-			List<TicketDTO> tikketDTOs = new ArrayList<>();
-			for (int i = 0; i < order.getNumOfTickets(); i++) {
-				TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), String.valueOf(userId), order.getSegmentId(), order.getSeats().get(i), price); // TODO: implement actual ticket generation logic
-				tikketDTOs.add(ticketDTO);
-            }
-
-			logger.info("OrderService.CompleteActiveOrder: generated {} tickets successfully for order {} for user {}", tikketDTOs.size(), orderID, userId);
-			order.CompleteOrder();
-			logger.info("OrderService.CompleteActiveOrder: Order {} completed successfully for user {}", orderID, userId);
+			paymentSucceeded = true;
 
 			
-			// 5. System - sends the user his acquired tickets.
-			return Result.makeOk(tikketDTOs);
+			// 5. ticket generation
+			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, subjectID);
+			List<TicketDTO> ticketDTOs = generateTicketsForOrder(order, subjectID, price);
+			
+			// 6. complete order with optimistic locking retry
+			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
+			completeOrderWithOptimisticRetry(orderID, subjectID);
+			
+			// 7. return tickets
+			return Result.makeOk(ticketDTOs);
 
+		} catch (OrderExpiredException e) {
+			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}", orderID, e.getMessage());
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+			_cancelOrder(orderID);
+			return Result.makeFail("Order expired: " + e.getMessage());
+
+		} catch (PaymentFailedException e) {
+			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Payment failed: " + e.getMessage());
+
+		} catch (TicketGenerationException e) {
+			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+
+			return Result.makeFail("Ticket generation failed: " + e.getMessage());
 
 		} catch (AuthException e) {
-			logger.error("Authentication error during retrieving orders: " + e.getMessage());
+			logger.error("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (IllegalStateException e) { 
-			logger.error("OrderService.CompleteActiveOrder: Cannot complete Already completed order {} for user {}: {}", orderID, userId, e.getMessage());
-			paymentService.cancelPayment(); 
-			_cancelOrder(orderID);
-			return Result.makeFail(e.getMessage());
-		} catch (IllegalArgumentException e) { 
-			logger.error("OrderService.CompleteActiveOrder: {}", e.getMessage());
-			paymentService.cancelPayment(); 
-			_cancelOrder(orderID);
-			return Result.makeFail(e.getMessage());
-		}catch (PaymentFailedException e) {
-			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {} for user {}: {}", orderID, userId, e.getMessage());
-			return Result.makeFail("Payment failed: " + e.getMessage());
-		}
-		catch (Exception e) {
-			paymentService.cancelPayment();
-			_cancelOrder(orderID); 
+
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Invalid argument: " + e.getMessage());
+
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Illegal state: " + e.getMessage());
+
+		} catch (OptimisticLockingFailureException e) {
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+			return Result.makeFail("Could not complete order due to concurrent update. Please try again.");
+
+		}catch (Exception e) {
+			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+
 		}
+	}
+	private List<TicketDTO> generateTicketsForOrder(Order order, String subjectID, double price) {
+        List<TicketDTO> ticketDTOs = new ArrayList<>();
+        List<String> seats = order.getSeats();
+
+        for (int i = 0; i < order.getNumOfTickets(); i++) {
+                String seatId = null;
+                if (seats != null && i < seats.size()) {
+                        seatId = seats.get(i);
+                }
+                TicketDTO ticketDTO = ticketGateway.generateTicket(
+                        order.getEventId(),
+                        subjectID,
+                        order.getSegmentId(),
+                        seatId,
+                        price
+                );
+
+                ticketDTOs.add(ticketDTO);
+        }
+        return ticketDTOs;
+	}
+
+	private void completeOrderWithOptimisticRetry(String orderID, String subjectID) {
+		final int maxRetries = 3;
+
+		for (int attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				Order freshOrder = orderRepo.findByID(orderID);
+
+				freshOrder.validiteOrderIsActive();
+				freshOrder.verifyBelongsToSubject(subjectID);
+
+				freshOrder.CompleteOrder();
+				return;
+
+			} catch (OptimisticLockingFailureException e) {
+				logger.warn(
+					"OrderService.completeOrderWithOptimisticRetry: Optimistic lock failed for order {} on attempt {}/{}",
+					orderID,
+					attempt,
+					maxRetries
+				);
+
+				if (attempt == maxRetries) {
+					throw e;
+				}
+			}
+		}
+
+		throw new OptimisticLockingFailureException("Failed to complete order after retries");
 	}
     
 	private void _cancelOrder(String orderID) {

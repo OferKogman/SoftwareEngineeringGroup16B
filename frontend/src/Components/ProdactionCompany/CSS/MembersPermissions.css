@@ -1,0 +1,75 @@
+.members-page {
+  width: 100%;
+}
+
+.members-page h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.members-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.2rem;
+}
+
+.members-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+
+  padding: 1.2rem;
+  border-radius: 1rem;
+
+  background: rgba(12, 12, 12, 0.9);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.25);
+}
+
+.members-card h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.members-card input {
+  padding: 0.7rem;
+  border-radius: 0.6rem;
+  border: 1px solid rgba(168, 85, 247, 0.5);
+  background: #0c0c0c;
+  color: white;
+}
+
+.members-card button {
+  padding: 0.8rem;
+  border-radius: 0.7rem;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.danger-button {
+  background: #b91c1c;
+  color: white;
+}
+
+.permissions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.permissions-list label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.members-success {
+  color: #3fb950;
+  margin-bottom: 1rem;
+}
+
+.members-error {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}

@@ -5,16 +5,14 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.group16b.ApplicationLayer.OrderService;
 import com.group16b.ApplicationLayer.DTOs.CompleteActiveOrderRequestDTO;
+import com.group16b.ApplicationLayer.OrderService;
 
 @RestController
 @RequestMapping("/api/order")
@@ -27,7 +25,7 @@ public class OrderController extends BaseController{
 
     @PutMapping("/completeActiveOrder")
     public ResponseEntity<?> CompleteActiveOrder(@RequestHeader("Authorization") String sessionToken, @RequestBody CompleteActiveOrderRequestDTO requestDTO){
-        return executeWithReturnData(() -> orderService.CompleteActiveOrder(requestDTO.getUserId(), requestDTO.getOrderID(), sessionToken, requestDTO.getPaymentInfo()));
+        return executeWithReturnData(() -> orderService.CompleteActiveOrder(requestDTO.getOrderID(), sessionToken, requestDTO.getPaymentInfo()));
     }
 
     @GetMapping("/getUserOrders")

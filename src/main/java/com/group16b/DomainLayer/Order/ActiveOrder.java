@@ -2,6 +2,8 @@ package com.group16b.DomainLayer.Order;
 
 import java.util.List;
 
+import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
+
 public class ActiveOrder implements OrderState {
 	private final long creationTime;
     private static final long ORDER_TIMEOUT = 10 * 60 * 1000; // 10 minutes in milliseconds
@@ -46,7 +48,7 @@ public class ActiveOrder implements OrderState {
 	private void validateTime() {
         long currentTime = System.currentTimeMillis();
 		if ((currentTime - creationTime) > ORDER_TIMEOUT){
-			throw new IllegalStateException("This Order is Expired.");
+			throw new OrderExpiredException("This Order is Expired.");
 		}
 	}
 
