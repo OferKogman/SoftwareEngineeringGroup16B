@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
+import { useSession } from "../../App";
 import "./CSS/LoginForm.css";
+import type { RegistrationData } from "./RegistrationForm";
 
 export type LoginData = {
   email: string;
@@ -9,8 +11,6 @@ export type LoginData = {
 
 type LoginFormProps = {
   title: string;
-  onLogin: (event: LoginData) => void | Promise<void>;
-  onCancel?: () => void;
 };
 
 const initialFormData: LoginData = {
@@ -18,14 +18,37 @@ const initialFormData: LoginData = {
   password: "",
 };
 
-export default function LoginForm({
-  title,
-  onLogin,
-  onCancel,
-}: LoginFormProps) {
+export default function LoginForm({ title }: LoginFormProps) {
   const [formData, setFormData] = useState<LoginData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { sessionToken, setSessionToken } = useSession();
+
+  async function onLogin({ email, password }: RegistrationData) {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/user/login/member`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const token: string = await response.text();
+
+      setSessionToken(token);
+
+      console.log("User successfully logged in");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to register user.");
+    }
+  }
 
   function updateField<K extends keyof LoginData>(
     field: K,
@@ -87,11 +110,6 @@ export default function LoginForm({
       </div>
 
       <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
