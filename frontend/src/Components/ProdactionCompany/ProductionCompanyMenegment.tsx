@@ -1,49 +1,51 @@
-import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { NavLink, Outlet, useParams } from "react-router-dom";
+import { useSession } from "../../App";
+import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import "./CSS/ProductionCompanyManagement.css";
 
 export default function ProductionCompanyManagement() {
   const { companyId } = useParams();
 
-const [companyName, setCompanyName] = useState("Loading...");
+  const [companyName, setCompanyName] = useState("Loading...");
+
+  const { sessionToken } = useSession();
 
   useEffect(() => {
-  if (!companyId) {
-    return;
-  }
-
-  console.warn("=================================");
-  console.warn("USING TEMPORARY MOCK DATA");
-  console.warn("REMOVE WHEN API IS READY");
-  console.warn("=================================");
-
-  setCompanyName("Rock Productions Ltd.");
-
-  /*
-  const API_BASE = "http://localhost:8080";
-
-  async function loadCompany() {
-    try {
-      const response = await fetch(
-        `${API_BASE}/production-companies/${companyId}`
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message);
-      }
-
-      setCompanyName(data.data.companyName);
-    } catch (error) {
-      console.error(error);
-      setCompanyName("Unknown Company");
+    if (!companyId) {
+      return;
     }
-  }
 
-  loadCompany();
-  */
-}, [companyId]);
+    const API_BASE = "http://localhost:8080";
+
+    async function loadCompany() {
+      try {
+        const response = await fetch(
+          `${API_BASE}/production-companies/${companyId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: sessionToken,
+            },
+          },
+        );
+
+        const data: ProductionCompanyDTO = await response.json();
+
+        if (!response.ok) {
+          throw new Error();
+        }
+
+        setCompanyName(data.name);
+      } catch (error) {
+        console.error(error);
+        setCompanyName("Unknown Company");
+      }
+    }
+
+    loadCompany();
+  }, [companyId]);
 
   return (
     <div className="company-management-page">
