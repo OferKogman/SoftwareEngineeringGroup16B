@@ -24,10 +24,10 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 
 
 	@Override
-	public SystemAdmin findByID(String ID) {
-		SystemAdmin admin = systemAdminsByUsername.get(ID);
+	public SystemAdmin findByID(String username) {
+		SystemAdmin admin = systemAdminsByUsername.get(username);
 		if(admin == null) {
-			throw new IllegalArgumentException("System admin with ID " + ID + " does not exist.");
+			throw new IllegalArgumentException("System admin with username " + username + " does not exist.");
 		}
 		return (new SystemAdmin(admin));
 	}
@@ -41,8 +41,8 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 		return admins;
 	}
 	@Override
-	public synchronized void delete(String ID) {
-		SystemAdmin admin = systemAdminsByUsername.remove(ID);
+	public synchronized void delete(String username) {
+		SystemAdmin admin = systemAdminsByUsername.remove(username);
 		if (admin != null) {
 			systemAdminsByUsername.remove(admin.getUsername());
 		}
