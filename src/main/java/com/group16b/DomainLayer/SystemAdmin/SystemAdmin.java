@@ -1,34 +1,19 @@
 package com.group16b.DomainLayer.SystemAdmin;
 
 import java.security.MessageDigest;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 
-import com.group16b.ApplicationLayer.EventService;
-import com.group16b.ApplicationLayer.DTOs.EventDTO;
-import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.ILocationService;
-import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.DomainServices.EventFilteringService;
+import java.util.List;
+
 import com.group16b.DomainLayer.Event.Event;
-import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
-import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
-import com.group16b.InfrastructureLayer.LocationServicePhotonImpl;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 
 
 public class SystemAdmin {
-	private String id;
 	private String username;
 	private String password;
 	private String email;
 	private long version;
 
-	public SystemAdmin(String id, String username, String password, String email) {
-		this.id = id;
+	public SystemAdmin(String username, String password, String email) {
 		this.username = username;
 		this.email = email;
 		version = 0;
@@ -36,15 +21,10 @@ public class SystemAdmin {
 
 	}
 	public SystemAdmin(SystemAdmin other) {
-		this.id = other.id;
 		this.username = other.username;
 		this.password = other.password;
 		this.email = other.email;
 		this.version = other.version;
-	}
-
-	public String getId() {
-		return id;
 	}
 
 	public String getUsername() {
@@ -87,8 +67,7 @@ public class SystemAdmin {
 		}
 		
 		SystemAdmin other = (SystemAdmin) obj;
-		return (this.id.equals(other.id) &&
-				this.username.equals(other.username) &&
+		return (this.username.equals(other.username) &&
 				this.password.equals(other.password) &&
 				this.email.equals(other.email));
 	}
@@ -124,14 +103,6 @@ public class SystemAdmin {
 
 	}
 		*/
-
-
-
-	private void deactivateEvents(List<Event> events) {
-		for (Event e : events) {
-			e.deactivateEvent();
-		}
-	}
 
 	public long getVersion()
 	{
