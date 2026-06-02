@@ -26,6 +26,10 @@ public class SystemAdminLoginServiceTests {
     private IAuthenticationService mockTokenService;
     private IRepository<SystemAdmin> mockSystemAdminRepository;
 
+    private final String VALID_ADMIN_TOKEN = "valid-admin-token";
+    private final String INVALID_ADMIN_TOKEN = "invalid-admin-token";
+    private final String GUEST_TOKEN = "guest-token";
+
 
 
     @BeforeEach
@@ -37,6 +41,18 @@ public class SystemAdminLoginServiceTests {
         // If it uses reflection/singletons like the previous classes, apply the same
         // reflection setup here!
         adminService = new SystemAdminLoginService(mockSystemAdminRepository, mockTokenService);
+        when(mockTokenService.validateToken(VALID_ADMIN_TOKEN)).thenReturn(true);
+        when(mockTokenService.validateToken(INVALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.validateToken(GUEST_TOKEN)).thenReturn(true);
+
+        when(mockTokenService.isAdminToken(VALID_ADMIN_TOKEN)).thenReturn(true);
+        when(mockTokenService.isAdminToken(INVALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.isAdminToken(GUEST_TOKEN)).thenReturn(false);
+
+        when(mockTokenService.isGuestToken(GUEST_TOKEN)).thenReturn(true);
+        when(mockTokenService.isGuestToken(VALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.isGuestToken(INVALID_ADMIN_TOKEN)).thenReturn(false);
+
     }
 
     // -----------------------------------------------------------------
