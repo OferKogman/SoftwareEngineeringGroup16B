@@ -1,67 +1,165 @@
 .company-settings-page {
   width: 100%;
+  color: var(--settings-text);
 }
 
-.company-settings-page h2 {
-  margin-top: 0;
+.settings-header {
   margin-bottom: 1.5rem;
 }
 
-.danger-zone {
-  max-width: 500px;
+.settings-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.75rem;
+}
 
+.settings-header p {
+  margin: 0;
+  color: var(--settings-muted);
+}
+
+.settings-card {
+  max-width: 620px;
   padding: 1.5rem;
-
   border-radius: 1rem;
-
-  border: 1px solid rgba(239, 68, 68, 0.7);
-
-  background: rgba(40, 0, 0, 0.35);
+  background: var(--settings-card-bg);
+  border: 1px solid var(--settings-border);
+  box-shadow: var(--settings-shadow);
 }
 
-.danger-zone h3 {
-  margin-top: 0;
-  color: #ef4444;
+.danger-zone {
+  border-color: var(--settings-danger-border);
 }
 
-.danger-zone p {
+.danger-zone-header h3 {
+  margin: 0 0 0.5rem;
+  color: var(--settings-danger-text);
+  font-size: 1.25rem;
+}
+
+.danger-zone-header p {
+  margin: 0 0 1.25rem;
+  color: var(--settings-muted);
+  line-height: 1.5;
+}
+
+.confirmation-field {
+  display: block;
   margin-bottom: 1rem;
 }
 
-.danger-zone input {
+.confirmation-field span {
+  display: block;
+  margin-bottom: 0.45rem;
+  color: var(--settings-text);
+}
+
+.confirmation-field input {
   width: 100%;
-
-  padding: 0.8rem;
-
+  box-sizing: border-box;
+  padding: 0.8rem 0.9rem;
   border-radius: 0.7rem;
+  border: 1px solid var(--settings-input-border);
+  background: var(--settings-input-bg);
+  color: var(--settings-text);
+  outline: none;
+}
 
-  border: 1px solid #555;
-
-  margin-bottom: 1rem;
+.confirmation-field input:focus {
+  border-color: var(--settings-danger-text);
+  box-shadow: 0 0 0 3px var(--settings-danger-focus);
 }
 
 .danger-button {
-  background: #b91c1c;
-
-  color: white;
-
-  border: none;
-
-  border-radius: 0.7rem;
-
   padding: 0.8rem 1rem;
-
+  border: none;
+  border-radius: 0.7rem;
+  background: var(--settings-danger-bg);
+  color: white;
   cursor: pointer;
-
-  font-weight: bold;
+  font-weight: 700;
 }
 
-.settings-success {
-  color: #3fb950;
-  margin-bottom: 1rem;
+.danger-button:hover:not(:disabled) {
+  background: var(--settings-danger-bg-hover);
 }
 
-.settings-error {
-  color: #ff6b6b;
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.settings-alert {
+  max-width: 620px;
+  padding: 0.85rem 1rem;
+  border-radius: 0.7rem;
   margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.settings-alert-success {
+  color: var(--settings-success-text);
+  background: var(--settings-success-bg);
+  border: 1px solid var(--settings-success-border);
+}
+
+.settings-alert-error {
+  color: var(--settings-error-text);
+  background: var(--settings-error-bg);
+  border: 1px solid var(--settings-error-border);
+}
+
+/* Light theme default */
+:root {
+  --settings-text: #111827;
+  --settings-muted: #6b7280;
+
+  --settings-card-bg: #ffffff;
+  --settings-border: #e5e7eb;
+  --settings-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  --settings-input-bg: #ffffff;
+  --settings-input-border: #d1d5db;
+
+  --settings-danger-text: #b91c1c;
+  --settings-danger-bg: #dc2626;
+  --settings-danger-bg-hover: #b91c1c;
+  --settings-danger-border: rgba(220, 38, 38, 0.35);
+  --settings-danger-focus: rgba(220, 38, 38, 0.18);
+
+  --settings-success-text: #166534;
+  --settings-success-bg: #dcfce7;
+  --settings-success-border: #86efac;
+
+  --settings-error-text: #991b1b;
+  --settings-error-bg: #fee2e2;
+  --settings-error-border: #fca5a5;
+}
+
+/* Dark theme */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --settings-text: #f9fafb;
+    --settings-muted: #9ca3af;
+
+    --settings-card-bg: rgba(17, 24, 39, 0.85);
+    --settings-border: rgba(255, 255, 255, 0.12);
+    --settings-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+
+    --settings-input-bg: rgba(2, 6, 23, 0.75);
+    --settings-input-border: rgba(255, 255, 255, 0.18);
+
+    --settings-danger-text: #f87171;
+    --settings-danger-bg: #b91c1c;
+    --settings-danger-bg-hover: #991b1b;
+    --settings-danger-border: rgba(248, 113, 113, 0.45);
+    --settings-danger-focus: rgba(248, 113, 113, 0.22);
+
+    --settings-success-text: #86efac;
+    --settings-success-bg: rgba(22, 101, 52, 0.22);
+    --settings-success-border: rgba(134, 239, 172, 0.35);
+
+    --settings-error-text: #fca5a5;
+    --settings-error-bg: rgba(127, 29, 29, 0.25);
+    --settings-error-border: rgba(252, 165, 165, 0.35);
+  }
 }

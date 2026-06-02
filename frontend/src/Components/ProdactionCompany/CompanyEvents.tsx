@@ -18,12 +18,12 @@ export default function CompanyEvents() {
   ];
 
   function handleCreateEvent() {
-  navigate(`/production-company-menegment/${companyId}/events/create`);
+  navigate(`/companies/${companyId}/events/create`);
 }
 
   function handleManageEvent(eventId: number) {
     navigate(
-      `/production-company-menegment/${companyId}/events/${eventId}/manage`
+      `/companies/${companyId}/events/${eventId}/manage`
     );
   }
 

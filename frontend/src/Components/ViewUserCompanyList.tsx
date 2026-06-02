@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { ProductionCompanyDTO } from "./ProdctionCompanyForm";
+import type { ProductionCompanyDTO } from "./ProdactionCompany/ProdctionCompanyForm";
 
 type CompanyListProps = {
   onManageCompany: (companyID: number) => void | Promise<void>;
