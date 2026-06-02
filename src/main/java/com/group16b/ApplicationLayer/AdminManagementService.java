@@ -9,6 +9,7 @@ import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
+import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -284,14 +285,38 @@ public class AdminManagementService {
             logger.info("AdminManagementService.getAllProductionCompanies: Successfully retrieved {} production companies", companyDTOs.size());
             return Result.makeOk(companyDTOs);
         } catch(IllegalArgumentException e){
-            logger.warn("AdminManagementService.getAllProductionCompanies: {}", e.getLocalizedMessage());
+            logger.warn("AdminManagementService.getAllProductionCompanies: IllegalArgumentException: {}", e.getLocalizedMessage());
             return Result.makeFail(e.getMessage());
         } catch(AuthException e){
             logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error: {}", e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch(Exception e){
-            logger.error("AdminManagementService.getAllProductionCompanies: System error: {}", e.getMessage(), e);
+            logger.error("AdminManagementService.getAllProductionCompanies: unexpected error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while retrieving production companies.");
+        }
+    }
+
+    public Result<List<UserDTO>> getAllUsers(String sToken){
+        try{
+            logger.info("AdminManagementService.getAllUsers: Attempting to retrieve all users");
+            verifyAdminToken(sToken);
+
+            List<User> users = userRepository.getAll();
+            List<UserDTO> userDTOs = users.stream()
+                    .map(user -> new UserDTO(user))
+                    .collect(Collectors.toList());
+            
+            logger.info("AdminManagementService.getAllUsers: Successfully retrieved {} users", userDTOs.size());
+            return Result.makeOk(userDTOs);
+        } catch(IllegalArgumentException e){
+            logger.warn("AdminManagementService.getAllUsers: IllegalArgumentException: {}", e.getLocalizedMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(AuthException e){
+            logger.warn("AdminManagementService.getAllUsers: Authentication error: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(Exception e){
+            logger.error("AdminManagementService.getAllUsers: unexpected error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred while retrieving users.");
         }
     }
 
