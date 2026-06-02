@@ -43,9 +43,6 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 	@Override
 	public synchronized void delete(String username) {
 		SystemAdmin admin = systemAdminsByUsername.remove(username);
-		if (admin != null) {
-			systemAdminsByUsername.remove(admin.getUsername());
-		}
 	}
 
 	public synchronized void save(SystemAdmin systemAdmin) {
