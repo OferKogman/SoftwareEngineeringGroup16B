@@ -1,19 +1,18 @@
 import { Route, Routes } from "react-router-dom";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
-import CreateEvent from "./Components/EventCreationForm";
-import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
-import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
-import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
-import ManageEvent from "./Components/ProdactionCompany/ManageEvent";
-import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
-import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
-import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
-import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
-import CreateProductionCompany from "./Components/ProdctionCompanyForm";
 import LoginForm, { type LoginData } from "./Components/User/LoginForm";
 import type { RegistrationData } from "./Components/User/RegistrationForm";
 import RegistrationForm from "./Components/User/RegistrationForm";
+import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
+import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
+import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
+import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
+import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
+import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
+import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
+import CreateEvent from     "./Components/Event/EventCreationForm";
+import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import UserManagement from "./Components/User/UserManagement";
 
 export default function AppRoutes() {
@@ -43,9 +42,8 @@ export default function AppRoutes() {
 
       <Route path="/events/search" element={<SearchEvents />} />
 
-      <Route path="/companies/create" element={<CreateProductionCompany />} />
       <Route
-        path="/production-company-menegment/:companyId"
+        path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}
       >
         <Route index element={<TotalRevenue />} />
@@ -58,8 +56,10 @@ export default function AppRoutes() {
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<CompanySettings />} />
-        <Route path="events/create" element={<CreateEvent />} />
-        <Route path="events/:eventId/manage" element={<ManageEvent />} />
+        <Route path="events/create"element={<CreateEvent />}/>
+        <Route path="events/:eventID/manage" element={<EventUpdateForm />}/>
+
+  
       </Route>
       <Route path="/events/:eventID" element={<ViewEvent />} />
     </Routes>

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ProductionCompanyDTO } from "./ProdctionCompanyForm";
+import type { ProductionCompanyDTO } from "./ProdactionCompany/ProdctionCompanyForm";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
