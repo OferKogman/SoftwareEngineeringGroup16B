@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ViewUserCompanyList from "../ViewUserCompanyList";
-import ViewUserPurchaseHistory from "../ViewUserPurchaseHistory";
 import ChangePasswordForm from "./ChangePasswordForm";
+import ViewUserPurchaseHistory from "./ViewUserPurchaseHistory";
 
 export default function UserManagement() {
   const navigate = useNavigate();

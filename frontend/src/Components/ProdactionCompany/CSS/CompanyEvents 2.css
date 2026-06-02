@@ -1,0 +1,60 @@
+.company-events-page {
+  width: 100%;
+}
+
+.company-events-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.company-events-header h2 {
+  margin: 0;
+}
+
+.create-event-button {
+  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.company-events-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.company-event-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 1.2rem;
+
+  border-radius: 1rem;
+
+  background: rgba(12, 12, 12, 0.9);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.25);
+}
+
+.company-event-card h3 {
+  margin: 0 0 0.5rem 0;
+}
+
+.company-event-card p {
+  margin: 0;
+  color: #9ca3af;
+}
+
+.manage-event-button {
+  padding: 0.8rem 1rem;
+  border-radius: 0.7rem;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}

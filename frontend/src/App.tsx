@@ -40,26 +40,9 @@ function App() {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const apiBaseUrl = "http://localhost:8080";
 
-  const getInitialSessionToken = () => {
-    const storedToken = localStorage.getItem("sessionToken")?.trim();
-
-    if (
-      !storedToken ||
-      storedToken === "null" ||
-      storedToken === "undefined" ||
-      storedToken.startsWith("<!doctype html>") ||
-      storedToken.startsWith("<html")
-    ) {
-      localStorage.removeItem("sessionToken");
-      return null;
-    }
-
-    return storedToken;
-  };
-
-  const [sessionToken, setSessionToken] = useState<string | null>(
-    getInitialSessionToken,
-  );
+  const [sessionToken, setSessionToken] = useState<string | null>(null);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
+  const [sessionError, setSessionError] = useState<string | null>(null);
 
   const [loggedIn, setLoggedIn] = useState<boolean>(
     localStorage.getItem("isLoggedIn") === "true",
@@ -71,19 +54,6 @@ function App() {
   useEffect(() => {
     async function fetchSessionToken() {
       try {
-        const storedToken = localStorage.getItem("sessionToken")?.trim();
-
-        if (
-          storedToken &&
-          storedToken !== "null" &&
-          storedToken !== "undefined" &&
-          !storedToken.startsWith("<!doctype html>") &&
-          !storedToken.startsWith("<html")
-        ) {
-          setSessionToken(storedToken);
-          return;
-        }
-
         const response = await fetch(`${apiBaseUrl}/api/user/login/guest`, {
           method: "POST",
         });
@@ -102,19 +72,31 @@ function App() {
         }
 
         setSessionToken(token);
+        setSessionError(null);
         localStorage.setItem("sessionToken", token);
       } catch (err) {
         console.error("Failed to fetch session token:", err);
         localStorage.removeItem("sessionToken");
+        localStorage.setItem("isLoggedIn", "false");
+        setLoggedIn(false);
         setSessionToken(null);
+        setSessionError(
+          "Server is unavailable. Could not create a guest session.",
+        );
+      } finally {
+        setIsSessionLoading(false);
       }
     }
 
     fetchSessionToken();
-  }, []);
+  }, [apiBaseUrl]);
 
-  if (!sessionToken) {
+  if (isSessionLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (sessionError || !sessionToken) {
+    return <div>{sessionError ?? "No session token available."}</div>;
   }
 
   return (

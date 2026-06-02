@@ -9,8 +9,6 @@ export default function ProductionCompanyManagement() {
 
   const [companyName, setCompanyName] = useState("Loading...");
 
-  const [error, setError] = useState<string>("");
-
   const { sessionToken } = useSession();
 
   useEffect(() => {
@@ -42,16 +40,15 @@ export default function ProductionCompanyManagement() {
         setCompanyName(data.name);
       } catch (error) {
         console.error(error);
-        setError(error instanceof Error ? error.message : "Company not found");
+        setCompanyName("Unknown Company");
       }
     }
 
     loadCompany();
-  });
+  }, [companyId]);
 
   return (
     <div className="company-management-page">
-      {error && <p className="form-error">{error}</p>}
       <div className="company-management-header">
         <h1>{companyName}</h1>
         <p>Company ID: {companyId}</p>

@@ -12,15 +12,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.AdminManagementService;
-import com.group16b.ApplicationLayer.DTOs.AdminLoginRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.AdminRegisterRequestDTO;
 
 @RestController
 @RequestMapping("/api/admin-management")
-public class SystemAdminManagementController extends BaseController{
+public class SystemAdminManagementController extends BaseController {
     private final AdminManagementService adminManagementService;
-    
-    public SystemAdminManagementController(AdminManagementService adminManagementService1){
+
+    public SystemAdminManagementController(AdminManagementService adminManagementService1) {
         this.adminManagementService = adminManagementService1;
     }
 
@@ -30,27 +29,34 @@ public class SystemAdminManagementController extends BaseController{
     }
 
     @GetMapping("/viewPurchesHistoryByCompany/{companyID}")
-    public ResponseEntity<?> viewPurchesHistoryByCompany(@RequestHeader("Authorization") String sessionToken, @PathVariable("companyID") int  companyID){
+    public ResponseEntity<?> viewPurchesHistoryByCompany(@RequestHeader("Authorization") String sessionToken,
+            @PathVariable("companyID") int companyID) {
         return executeWithReturnData(() -> adminManagementService.viewPurchesHistoryByCompany(sessionToken, companyID));
     }
 
     @GetMapping("/viewPurchesHistoryByUser/{userID}")
-    public ResponseEntity<?> viewPurchesHistoryByUser(@RequestHeader("Authorization") String sessionToken, @PathVariable("userID") String  userID){
+    public ResponseEntity<?> viewPurchesHistoryByUser(@RequestHeader("Authorization") String sessionToken,
+            @PathVariable("userID") String userID) {
         return executeWithReturnData(() -> adminManagementService.viewPurchesHistoryByUser(sessionToken, userID));
     }
 
     @PutMapping("/closeProductionCompany/{companyID}")
-    public ResponseEntity<?> closeProductionCompany(@RequestHeader("Authorization") String sessionToken, @PathVariable("companyID") int  companyID){
+    public ResponseEntity<?> closeProductionCompany(@RequestHeader("Authorization") String sessionToken,
+            @PathVariable("companyID") int companyID) {
         return executeWithReturnData(() -> adminManagementService.closeProductionCompany(companyID, sessionToken));
     }
 
     @DeleteMapping("/removeUser/{userID}")
-    public ResponseEntity<?> removeUser(@RequestHeader("Authorization") String sessionToken, @PathVariable("userID") String  userID){
+    public ResponseEntity<?> removeUser(@RequestHeader("Authorization") String sessionToken,
+            @PathVariable("userID") String userID) {
         return executeWithReturnData(() -> adminManagementService.removeUser(userID, sessionToken));
     }
 
     @PostMapping("/registerNewAdmin")
-    public ResponseEntity<?> registerNewAdmin(@RequestHeader("Authorization") String sessionToken, @RequestBody AdminRegisterRequestDTO requestDTO){
-        return executeWithReturnData(() -> adminManagementService.registerNewAdmin(sessionToken, requestDTO.getNewAdminID(), requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(), requestDTO.getNewAdminEmail()));
+    public ResponseEntity<?> registerNewAdmin(@RequestHeader("Authorization") String sessionToken,
+            @RequestBody AdminRegisterRequestDTO requestDTO) {
+        return executeWithReturnData(() -> adminManagementService.registerNewAdmin(sessionToken,
+                requestDTO.getNewAdminID(), requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(),
+                requestDTO.getNewAdminEmail()));
     }
 }

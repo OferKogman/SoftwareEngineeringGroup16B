@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { useSession } from "../App";
-import type { OrderDTO } from "../DTOs/OrderDTO";
-import ViewSaleHistory from "./ViewSaleHistory";
+import { useSession } from "../../App";
+import type { OrderDTO } from "../../DTOs/OrderDTO";
+import ViewSaleHistory from "../ViewSaleHistory";
 
 export default function UserPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
