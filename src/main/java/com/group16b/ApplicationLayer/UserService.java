@@ -1,9 +1,15 @@
 package com.group16b.ApplicationLayer;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
+import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -14,7 +20,6 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
 
 import io.jsonwebtoken.JwtException;
-import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
@@ -99,5 +104,45 @@ public class UserService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+
+
+    public Result<List<OrderDTO>> getUserOrderHistory(String sessionToken) {
+        try {
+            logger.info("UserService.getUserOrderHistory: Extracting token subject and fetching User aggregate.");
+            if (sessionToken == null || sessionToken.isEmpty()) {
+                logger.warn("UserService.getUserOrderHistory: Failed to fetch order history due to missing session token.");
+                return Result.makeFail("Session token is required for fetching user order history");
+            }
+            if (!authenticationService.isUserToken(sessionToken)) {
+                logger.warn("UserService.getUserOrderHistory: Failed to fetch order history due to invalid user token.");
+                return Result.makeFail("Invalid token for fetching user order history");
+            }
+            String userId = authenticationService.extractSubjectFromToken(sessionToken);            
+            logger.info("UserService.getUserOrderHistory: Successfully fetched user. Retrieving order history.");
+            
+            List<Order> orders = orderRepo.getAll();
+            orders = orders.stream()
+                    .filter(order -> order.isBelongsToSubject(userId))
+                    .filter(Order::isCompleted)
+                    .collect(Collectors.toList());
+            List<OrderDTO> orderDTOs = orders.stream()
+                    .map(order -> new OrderDTO(order))
+                    .collect(Collectors.toList());
+
+            logger.info("UserService.getUserOrderHistory: Successfully retrieved order history.");
+            return Result.makeOk(orderDTOs);        
+            
+        } catch (AuthException e) {
+            logger.warn("UserService.getUserOrderHistory: Authentication failed during order history fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        }
+        catch (JwtException e) {
+            logger.error("JWT authentication error during user order history fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error during user order history fetch: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
 
 }
