@@ -1,25 +1,24 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useLoggedIn, useSession } from "../../App";
-import "./CSS/LoginForm.css";
-import type { RegistrationData } from "./RegistrationForm";
+import "./CSS/UserLoginForm.css";
 
-export type LoginData = {
+export type UserLoginData = {
   email: string;
   password: string;
 };
 
-type LoginFormProps = {
+type UserLoginFormProps = {
   title: string;
 };
 
-const initialFormData: LoginData = {
+const initialFormData: UserLoginData = {
   email: "",
   password: "",
 };
 
-export default function LoginForm({ title }: LoginFormProps) {
-  const [formData, setFormData] = useState<LoginData>(initialFormData);
+export default function UserLoginForm({ title }: UserLoginFormProps) {
+  const [formData, setFormData] = useState<UserLoginData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
@@ -27,7 +26,7 @@ export default function LoginForm({ title }: LoginFormProps) {
 
   const navigate = useNavigate();
 
-  async function onLogin({ email, password }: RegistrationData) {
+  async function onUserLogin({ email, password }: UserLoginData) {
     try {
       console.log("token:", sessionToken);
       const response = await fetch(
@@ -52,13 +51,13 @@ export default function LoginForm({ title }: LoginFormProps) {
       navigate("/");
       console.log("User successfully logged in");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to register user.");
+      setError(err instanceof Error ? err.message : "Failed to login.");
     }
   }
 
-  function updateField<K extends keyof LoginData>(
+  function updateField<K extends keyof UserLoginData>(
     field: K,
-    value: LoginData[K],
+    value: UserLoginData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -72,7 +71,7 @@ export default function LoginForm({ title }: LoginFormProps) {
     setError("");
 
     try {
-      await onLogin({
+      await onUserLogin({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),

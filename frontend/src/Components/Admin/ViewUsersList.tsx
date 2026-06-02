@@ -52,9 +52,8 @@ export default function ViewUsers({ users }: UsersListProps) {
 
         <tbody>
           {userDTOList.map((user) => (
-            <tr key={user.userId}>
-              <td>{user.userId}</td>
-              <td>{user.name}</td>
+            <tr key={user.userEmail}>
+              <td>{user.userEmail}</td>
 
               <td>
                 {/* Remove user from platform */}

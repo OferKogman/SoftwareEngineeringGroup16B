@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import AdminLoginForm from "./Components/Admin/AdminLoginForm";
 import AdminManagement from "./Components/Admin/AdminManagement";
 import EventCreationForm from "./Components/Event/EventCreationForm";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
@@ -11,9 +12,9 @@ import MembersPermissions from "./Components/ProdactionCompany/MembersPermission
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
-import LoginForm from "./Components/User/LoginForm";
-import RegistrationForm from "./Components/User/RegistrationForm";
+import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
+import RegistrationForm from "./Components/User/UserRegistrationForm";
 
 export default function AppRoutes() {
   return (
@@ -22,7 +23,9 @@ export default function AppRoutes() {
       <Route path="/register" element={<RegistrationForm title="Register" />} />
       <Route path="/users" element={<UserManagement />} />
 
-      <Route path="/admins" element={<AdminManagement />} />
+      <Route path="/admins" element={<AdminManagement />}>
+        <Route path="/login" element={<AdminLoginForm title="Admin Login" />} />
+      </Route>
 
       <Route path="/events/search" element={<SearchEvents />} />
 
