@@ -5,6 +5,7 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -21,7 +22,6 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 import io.jsonwebtoken.JwtException;
-import org.springframework.stereotype.Service;
 
 @Service
 public class ReserveService {
@@ -120,7 +120,6 @@ public class ReserveService {
 		}
     }
     
-
     public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId, String sessionToken) {
         String subjectID = null;
         VirtualQueue q = null;
@@ -269,10 +268,7 @@ public class ReserveService {
             logger.error("ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
             queueRemovePassed(q, subjectID);
             Event event = eventRepository.findByID(String.valueOf(eventID));
-
-            if(event.hasLotteryPolicy()) {
-                event.renewLotteryCode(lotteryCode);
-            }
+            event.renewLotteryCode(lotteryCode);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -344,9 +340,7 @@ public class ReserveService {
 		}catch (Exception e) {
             logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
             Event event = eventRepository.findByID(String.valueOf(eventID));
-            if(event.hasLotteryPolicy()) {
-                event.renewLotteryCode(lotteryCode);
-            }
+            event.renewLotteryCode(lotteryCode);
             queueRemovePassed(q, subjectID);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }

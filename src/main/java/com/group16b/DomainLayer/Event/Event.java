@@ -192,49 +192,44 @@ public class Event {
 		validateRating(rating);
 		this.rating = rating;
 	}
-
-	public LotteryPolicy getLotteryPolicy() {
+	// lottery
+	private LotteryPolicy getLotteryPolicy() throws IllegalStateException {
 		LotteryPolicy lp = purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
-		//if (lp == null) {
-		//	throw new IllegalStateException("Event does not have a lottery policy.");
-		//}
+		if (lp == null) {
+			throw new IllegalStateException("Event does not have a lottery policy.");
+		}
 		return lp;
 	}
-	public void validateLotteryCode(String lotteryCode) {
+	public void validateLotteryCode(String lotteryCode) throws IllegalStateException {
 		LotteryPolicy lp = getLotteryPolicy();
-		if (lp == null) {
-			throw new IllegalStateException("Event does not have a lottery purchase policy.");
-		}
 		lp.validateLotteryCode(lotteryCode);
 	}
-	public void verifiyHasLotteryPolicy() {
-		if (getLotteryPolicy() == null) {
-			throw new IllegalStateException("Event does not have a lottery purchase policy.");
-		}
-	}
+	
 	public void renewLotteryCode(String lotteryCode) {
-		LotteryPolicy lp = getLotteryPolicy();
-		if (lp == null) {
-			throw new IllegalStateException("Event does not have a lottery purchase policy.");
+		try{
+			LotteryPolicy lp = getLotteryPolicy();
+			lp.renewLotteryCode(lotteryCode);
 		}
-		lp.renewLotteryCode(lotteryCode);
+		catch (Exception e) {}
 	}
 	
-	public boolean hasLotteryPolicy() {
-		return getLotteryPolicy() != null;
-	}
-	public void lotteryUseCode(String lotteryCode) {
+	public void lotteryUseCode(String lotteryCode) throws IllegalStateException {
 		LotteryPolicy lp = getLotteryPolicy();
-		if (lp == null) {
-			throw new IllegalStateException("Event does not have a lottery purchase policy.");
-		}
 		lp.useCode(lotteryCode);
 	}
-	public void verifyDoesNotHaveLotteryPolicy() {
-		if (getLotteryPolicy() != null) {
-			throw new IllegalStateException("Event has a lottery purchase policy.");
+
+	public void verifyDoesNotHaveLotteryPolicy() throws IllegalStateException {
+		LotteryPolicy lp;
+		try{
+			lp = getLotteryPolicy();
+			
 		}
+		catch (Exception e) {return;}
+		throw new IllegalStateException("Event has a lottery purchase policy.");
+
 	}
+
+	// lottery
 	public String getOwnerId() {
 		return ownerId;
 	}
@@ -341,7 +336,6 @@ public class Event {
 
 
 	public void enrollInLottery(String userID) {
-		this.verifiyHasLotteryPolicy();
 		if (!this.getEventStatus()) {
 			throw new IllegalStateException("Can't enroll in lottery for an inactive event");
 		}
