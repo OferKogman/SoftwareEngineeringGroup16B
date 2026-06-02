@@ -171,7 +171,7 @@ public class VenueEventConfigService {
 
         } catch (OptimisticLockingFailureException e) {
             logger.warn("VenueEventConfigService.configureLayoutAndInventory: Failed to save changes to repository");
-            return Result.makeOk("Failed to save changes to repository.");
+            return Result.makeFail("Failed to save changes to repository.");
         } catch (IllegalArgumentException e) {
             logger.warn(
                     "VenueEventConfigService.configureLayoutAndInventory: Domain logic error during configuration: {}",
