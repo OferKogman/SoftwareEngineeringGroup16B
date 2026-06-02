@@ -22,21 +22,33 @@ public class SystemAdminLoginService {
         this.tokenService = tokenService;
     }
 
-    public Result<String> loginAdmin(String adminUsername, String password, String email) {
+    public Result<String> loginAdmin(String adminUsername, String password, String email, String guestSessionToken) {
+        try{
         logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin username: {}}", adminUsername);
+
+        if(!tokenService.validateToken(guestSessionToken))
+        {
+            logger.warn("SystemAdminLoginService.loginAdmin: Login attempt failed, invalid or expired guest session token.");
+            return Result.makeFail("Authentication failed. Please refresh your session and try again.");
+        }
+        if(!tokenService.isGuestToken(guestSessionToken))
+        {
+            logger.warn("SystemAdminLoginService.loginAdmin: Login attempt failed, provided token is not a guest session token.");
+            return Result.makeFail("Authentication failed. Only guests are allowed to login.");
+        }
+
 
         SystemAdmin admin = systemAdminRespotiry.findByID(adminUsername);
 
-        try{
-            if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalid password and email attempt for username {}", adminUsername);
-                return Result.makeFail("invalid password or email");
-            }
+        if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
+            logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalid password and email attempt for username {}", adminUsername);
+            return Result.makeFail("invalid password or email");
+        }
 
-            String token = tokenService.generateAdminToken(adminUsername);
-            logger.info("SystemAdminLoginService.loginAdmin: admin {} successfully logged in", adminUsername);
-            
-            return Result.makeOk(token);
+        String token = tokenService.generateAdminToken(adminUsername);
+        logger.info("SystemAdminLoginService.loginAdmin: admin {} successfully logged in", adminUsername);
+        
+        return Result.makeOk(token);
         }
         catch(IllegalArgumentException e) {
             logger.warn("SystemAdminLoginService.loginAdmin: IllegalArgumentException: " + e.getMessage());
@@ -44,7 +56,7 @@ public class SystemAdminLoginService {
         }
         catch(Exception e) {
             logger.error("SystemAdminLoginService.loginAdmin: undexpected exception: " + e.getMessage());
-            return Result.makeFail("undexpected exception " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 

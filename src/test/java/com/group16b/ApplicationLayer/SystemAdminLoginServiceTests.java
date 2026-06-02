@@ -26,6 +26,20 @@ public class SystemAdminLoginServiceTests {
     private IAuthenticationService mockTokenService;
     private IRepository<SystemAdmin> mockSystemAdminRepository;
 
+    private final String VALID_ADMIN_TOKEN = "valid-admin-token";
+    private final String INVALID_ADMIN = "invalid-admin-token";
+    private final String GUEST_TOKEN = "guest-token";
+
+    private SystemAdmin admin1;
+
+    private final String ADMIN_USERNAME = "admin1";
+    private final String ADMIN_PASSWORD = "password123";
+    private final String ADMIN_EMAIL = "mail.ru";
+
+    private final String NONEXISTENT_ADMIN_USERNAME = "ghostAdmin";
+    private final String NONEXISTENT_ADMIN_PASSWORD = "ghostPassword";
+    private final String NONEXISTENT_ADMIN_EMAIL = "ghost@mail.ru";
+
 
 
     @BeforeEach
@@ -33,10 +47,28 @@ public class SystemAdminLoginServiceTests {
         mockTokenService = mock(IAuthenticationService.class);
         mockSystemAdminRepository = mock(IRepository.class);
 
+        admin1= new SystemAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL);
+        when(mockSystemAdminRepository.findByID(ADMIN_USERNAME)).thenReturn(admin1);
+
         // Assuming your service takes these in the constructor.
         // If it uses reflection/singletons like the previous classes, apply the same
         // reflection setup here!
         adminService = new SystemAdminLoginService(mockSystemAdminRepository, mockTokenService);
+        when(mockTokenService.validateToken(VALID_ADMIN_TOKEN)).thenReturn(true);
+        when(mockTokenService.validateToken(INVALID_ADMIN)).thenReturn(false);
+        when(mockTokenService.validateToken(GUEST_TOKEN)).thenReturn(true);
+
+        when(mockTokenService.isAdminToken(VALID_ADMIN_TOKEN)).thenReturn(true);
+        when(mockTokenService.isAdminToken(INVALID_ADMIN)).thenReturn(false);
+        when(mockTokenService.isAdminToken(GUEST_TOKEN)).thenReturn(false);
+
+        when(mockTokenService.isGuestToken(GUEST_TOKEN)).thenReturn(true);
+        when(mockTokenService.isGuestToken(VALID_ADMIN_TOKEN)).thenReturn(false);
+        when(mockTokenService.isGuestToken(INVALID_ADMIN)).thenReturn(false);
+
+        when(mockTokenService.generateAdminToken(ADMIN_USERNAME)).thenReturn(VALID_ADMIN_TOKEN);
+        doThrow(new IllegalArgumentException("Invalid admin username")).when(mockSystemAdminRepository).findByID(String.valueOf(NONEXISTENT_ADMIN_USERNAME));
+
     }
 
     // -----------------------------------------------------------------
@@ -123,5 +155,56 @@ public class SystemAdminLoginServiceTests {
 
         assertFalse(result.isSuccess(), "Logout should catch exceptions and return a failure Result");
         assertEquals("Failed to log out: Not a number", result.getError());
+    }
+
+    @Test
+    void testLogIn_success() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
+        assertTrue(result.isSuccess(), "Login should succeed with correct credentials and valid guest token");
+        assertEquals(VALID_ADMIN_TOKEN, result.getValue(), "Should return the valid admin token");
+
+    }
+
+    @Test
+    void testLogIn_Fail_WrongPassword() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, NONEXISTENT_ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
+        assertFalse(result.isSuccess(), "Login should fail with wrong password");
+        assertEquals("invalid password or email", result.getError());
+    }
+
+    @Test
+    void testLogIn_Fail_WrongEmail() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, NONEXISTENT_ADMIN_EMAIL, GUEST_TOKEN);
+        assertFalse(result.isSuccess(), "Login should fail with wrong email");
+        assertEquals("invalid password or email", result.getError());
+    }
+
+    @Test
+    void testLogIn_Fail_InvalidGuestToken() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, INVALID_ADMIN);
+        assertFalse(result.isSuccess(), "Login should fail with invalid guest token");
+        assertEquals("Authentication failed. Please refresh your session and try again.", result.getError());
+    }
+
+    @Test
+    void testLogIn_Fail_NonGuestToken() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, VALID_ADMIN_TOKEN);
+        assertFalse(result.isSuccess(), "Login should fail if the provided token is not a guest token");
+        assertEquals("Authentication failed. Only guests are allowed to login.", result.getError());
+    }
+
+    @Test
+    void testLogIn_Fail_AdminNotFound() {
+        Result<String> result = adminService.loginAdmin(NONEXISTENT_ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
+        assertFalse(result.isSuccess(), "Login should fail if admin username does not exist");
+        assertEquals("Invalid admin username", result.getError());
+    }
+
+    @Test
+    void testLogIn_Fail_ExceptionThrown() {
+        doThrow(new RuntimeException("DATABASE EXPLODED!!! HELP!!")).when(mockSystemAdminRepository).findByID(ADMIN_USERNAME);
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
+        assertFalse(result.isSuccess(), "Login should fail if an unexpected exception is thrown");
+        assertEquals("An unexpected error occurred: DATABASE EXPLODED!!! HELP!!", result.getError());
     }
 }
