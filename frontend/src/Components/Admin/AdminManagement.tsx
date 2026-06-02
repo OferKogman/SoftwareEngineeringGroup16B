@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AdminRegisterForm from "./AdminRegisterForm";
 import ViewAdminCompanyList from "./ViewAdminCompanyList";
 import ViewAdminPurchaseHistory from "./ViewAdminPurchaseHistory";
 import ViewUsersList from "./ViewUsersList";
@@ -7,6 +8,7 @@ import ViewUsersList from "./ViewUsersList";
 export default function AdminManagement() {
   const navigate = useNavigate();
 
+  const [showAdminRegisterForm, setShowAdminRegisterForm] = useState(false);
   const [showUsersList, setShowUsersList] = useState(false);
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
   const [showCompanies, setShowCompanies] = useState(false);
@@ -14,6 +16,18 @@ export default function AdminManagement() {
   return (
     <div>
       <h1>Admin Management</h1>
+
+      <div>
+        <button
+          onClick={() => setShowAdminRegisterForm(!showAdminRegisterForm)}
+        >
+          Register New Admin
+        </button>
+      </div>
+
+      {showAdminRegisterForm && (
+        <AdminRegisterForm title="Register New Admin" />
+      )}
 
       <div
         style={{
@@ -25,9 +39,8 @@ export default function AdminManagement() {
         <button onClick={() => setShowUsersList(!showUsersList)}>
           {showUsersList ? "▼" : "▶"} Users
         </button>
+        {showUsersList && <ViewUsersList />}
       </div>
-
-      {showUsersList && <ViewUsersList />}
 
       <div>
         <button onClick={() => setShowPurchaseHistory(!showPurchaseHistory)}>
