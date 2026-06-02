@@ -1,6 +1,8 @@
 package com.group16b.ApiLayer;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,7 +15,7 @@ import com.group16b.ApplicationLayer.DTOs.ConfigureLayoutAndInventoryDTO;
 import com.group16b.ApplicationLayer.DTOs.ConfigureNewLayoutAndInventoryDTO;
 
 @RestController
-@RequestMapping("/venue/eventConfig")
+@RequestMapping("/venues")
 public class VenueEventConfigController extends BaseController{
     private final VenueEventConfigService venueEventConfigService;
     
@@ -29,5 +31,10 @@ public class VenueEventConfigController extends BaseController{
     @PutMapping("/configureLayoutAndInventory")
     public ResponseEntity<?> configureLayoutAndInventory(@RequestHeader("Authorization") String sessionToken, @RequestBody ConfigureLayoutAndInventoryDTO requestDTO){
         return executeWithReturnData(() -> venueEventConfigService.configureLayoutAndInventory(sessionToken, requestDTO.getCompanyID(), requestDTO.getEventID(), requestDTO.getVenueID()));
+    }
+
+    @GetMapping("/{venueID}/location")
+    public ResponseEntity<?> getVenue (@RequestHeader("Authorization") String sessionToken, @PathVariable("venueID") String venueID){
+        return executeWithReturnData(() -> venueEventConfigService.getVenue(sessionToken, venueID));
     }
 }
