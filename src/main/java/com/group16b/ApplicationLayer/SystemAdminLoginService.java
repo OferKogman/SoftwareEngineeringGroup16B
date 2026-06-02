@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.SessionToken;
 import org.springframework.stereotype.Service;
@@ -14,60 +14,64 @@ import org.springframework.stereotype.Service;
 public class SystemAdminLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(SystemAdminLoginService.class);
-    private final ISystemAdminRepository systemAdminRespotiry;
+    private final IRepository<SystemAdmin> systemAdminRespotiry;
     private final IAuthenticationService tokenService;
 
-    public SystemAdminLoginService(ISystemAdminRepository systemAdminRespotiry, IAuthenticationService tokenService) {
+    public SystemAdminLoginService(IRepository<SystemAdmin> systemAdminRespotiry, IAuthenticationService tokenService) {
         this.systemAdminRespotiry = systemAdminRespotiry;
         this.tokenService = tokenService;
     }
 
-    public Result<String> loginAdmin(String adminID, String password, String email) {
-        logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin ID: ...", adminID);
+    public Result<String> loginAdmin(String adminUsername, String password, String email) {
+        logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin username: {}}", adminUsername);
 
-        SystemAdmin admin = systemAdminRespotiry.findByID(adminID);
+        SystemAdmin admin = systemAdminRespotiry.findByID(adminUsername);
 
         try{
             if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalid password and email attempt for user ID {}", adminID);
-                return Result.makeFail("Invalid user ID or password + email");
+                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalid password and email attempt for username {}", adminUsername);
+                return Result.makeFail("invalid password or email");
             }
 
-            String token = tokenService.generateAdminToken(adminID);
-            logger.info("SystemAdminLoginService.loginAdmin: admin ID {} successfully logged in", adminID);
+            String token = tokenService.generateAdminToken(adminUsername);
+            logger.info("SystemAdminLoginService.loginAdmin: admin {} successfully logged in", adminUsername);
             
             return Result.makeOk(token);
         }
         catch(IllegalArgumentException e) {
-            logger.warn("SystemAdminLoginService.loginAdmin: Login failed: user ID {} does not exist!", adminID);
-            return Result.makeFail("Invalid user ID");
+            logger.warn("SystemAdminLoginService.loginAdmin: IllegalArgumentException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
         }
         catch(Exception e) {
-            logger.error("SystemAdminLoginService.loginAdmin: failed to log in admin ID {}: {}", adminID, e.getMessage(), e);
-            return Result.makeFail("Failed to log in: " + e.getMessage());
+            logger.error("SystemAdminLoginService.loginAdmin: undexpected exception: " + e.getMessage());
+            return Result.makeFail("undexpected exception " + e.getMessage());
         }
     }
 
     public Result<String> logOutAdmin(String sessionToken) {
         try {
-            String recievedID = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
-            logger.info("SystemAdminLoginService.loginAdmin: Attempting log out admin ID: {}...", recievedID);
-            
+            logger.info("SystemAdminLoginService.logOutAdmin: Attempting log out admin");
+            if(!tokenService.validateToken(sessionToken))
+            {
+                logger.warn("SystemAdminLoginService.logOutAdmin: Logout attempt failed, invalid or expired session token.");
+                return Result.makeFail("Authentication failed. Please refresh your session and try again.");
+            }
             if (!tokenService.isAdminToken(sessionToken)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: the session want of admin for ID {}", recievedID);
-                return Result.makeFail("Invalid ID for logout");
+                logger.warn("SystemAdminLoginService.logOutAdmin: not admin token");
+                return Result.makeFail("invalid Session for logout");
             }
+            String recievedusername = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
 
-            if (!systemAdminRespotiry.doesSystemAdminExist(recievedID)){
-                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: user ID {} of the token does not exist!", recievedID);
-                return Result.makeFail("Invalid adminID ID");
-            }
+            systemAdminRespotiry.findByID(recievedusername); //check if the admin exists in the system, if not, fail the logout attempt
             
             return Result.makeOk(tokenService.generateVisitor_GuestToken(new SessionToken()));
+        } catch (IllegalArgumentException e) {
+            logger.warn("SystemAdminLoginService.logOutAdmin: IllegalArgumentException: ", e.getMessage());
+            return Result.makeFail("Failed to log out: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("SystemAdminLoginService.loginAdmin: failed to log out in this session: {}", e.getMessage(), e);
+            logger.error("SystemAdminLoginService.logOutAdmin: unexpected exception: ", e.getMessage());
             return Result.makeFail("Failed to log out: " + e.getMessage());
         }   
     }
-
+//addition just to commit
 }

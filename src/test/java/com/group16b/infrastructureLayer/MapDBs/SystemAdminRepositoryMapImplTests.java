@@ -18,19 +18,12 @@ public class SystemAdminRepositoryMapImplTests {
 		repository = new SystemAdminRepositoryMapImpl();
 	}
 
-	@Test
-	void testAddAndGetSystemAdminById() {
-		SystemAdmin admin = new SystemAdmin("1", "admin1", "password", "email");
-		repository.save(admin);
-		SystemAdmin retrievedAdmin = repository.findByID("1");
-		assertEquals(admin, retrievedAdmin);
-	}
 
 	@Test
 	void testAddAndGetSystemAdminByUsername() {
-		SystemAdmin admin = new SystemAdmin("2", "admin2", "password2", "email2");
+		SystemAdmin admin = new SystemAdmin("admin2", "password2", "email2");
 		repository.save(admin);
-		SystemAdmin retrievedAdmin = repository.getSystemAdminByUsername("admin2");
+		SystemAdmin retrievedAdmin = repository.findByID("admin2");
 		assertEquals(admin, retrievedAdmin);
 	}
 
@@ -41,55 +34,30 @@ public class SystemAdminRepositoryMapImplTests {
 
 	@Test
 	void testGetSystemAdminByUsernameNotFound() {
-		SystemAdmin retrievedAdmin = repository.getSystemAdminByUsername("nonexistent");
-		assertEquals(null, retrievedAdmin);
+		assertThrows(IllegalArgumentException.class, () -> repository.findByID("nonexistent"));
 	}
 
 
 	@Test
 	void testAddMultipleSystemAdmins() {
-		SystemAdmin admin3 = new SystemAdmin("3", "admin3", "pass1", "email3");
-		SystemAdmin admin4 = new SystemAdmin("4", "admin4", "pass2", "email4");
+		SystemAdmin admin3 = new SystemAdmin("admin3", "pass1", "email3");
+		SystemAdmin admin4 = new SystemAdmin( "admin4", "pass2", "email4");
 		repository.save(admin3);
 		repository.save(admin4);
 
-		assertEquals(admin3, repository.findByID("3"));
-		assertEquals(admin4, repository.findByID("4"));
-		assertEquals(admin3, repository.getSystemAdminByUsername("admin3"));
-		assertEquals(admin4, repository.getSystemAdminByUsername("admin4"));
-	}
-
-	@Test
-	void testAddSystemAdminWithDuplicateId() {
-		SystemAdmin admin5 = new SystemAdmin("5", "admin5", "pass1", "email5");
-		SystemAdmin admin5duplicateId = new SystemAdmin("5", "admin6", "pass2", "email6"); // same id
-		repository.save(admin5);
-		assertThrows(OptimisticLockingFailureException.class, () -> repository.save(admin5duplicateId));
-
-		SystemAdmin retrievedById = repository.findByID("5");
-		assertEquals(admin5, retrievedById); // should still be the first one added
+		assertEquals(admin3, repository.findByID("admin3"));
+		assertEquals(admin4, repository.findByID("admin4"));
 	}
 
 	@Test
 	void testAddSystemAdminWithDuplicateUsername() {
-		SystemAdmin admin7 = new SystemAdmin("7", "admin7", "pass1", "email7");
-		SystemAdmin admin7duplicateUsername = new SystemAdmin("8", "admin7", "pass2", "email8"); // same username
+		SystemAdmin admin7 = new SystemAdmin("admin7", "pass1", "email7");
+		SystemAdmin admin7duplicateUsername = new SystemAdmin("admin7", "pass2", "email8"); // same username
 		repository.save(admin7);
-		repository.save(admin7duplicateUsername); // should update the existing admin with the new details
+		assertThrows(OptimisticLockingFailureException.class, () -> repository.save(admin7duplicateUsername)); // should throw an exception because the version is the same and we're trying to update an existing admin without incrementing the version
 
-		SystemAdmin retrievedByUsername = repository.getSystemAdminByUsername("admin7");
-		assertEquals(admin7duplicateUsername, retrievedByUsername); // should be the second one added that was updated
+		SystemAdmin retrievedByUsername = repository.findByID("admin7");
+		assertEquals(retrievedByUsername.getEmail(), admin7.getEmail()); // should be the first one added
 	}
 
-	@Test
-	void testGetByIdAndUsernameReturnSameObject() {
-		SystemAdmin admin = new SystemAdmin("10", "admin10", "pass", "email10");
-		repository.save(admin);
-
-		SystemAdmin byId = repository.findByID("10");
-		SystemAdmin byUsername = repository.getSystemAdminByUsername("admin10");
-
-		assertEquals(byId, byUsername);
-		assertEquals(admin, byId);
-	}
 }
