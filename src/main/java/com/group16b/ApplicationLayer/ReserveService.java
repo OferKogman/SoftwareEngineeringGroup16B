@@ -3,6 +3,8 @@ package com.group16b.ApplicationLayer;
 import java.util.List;
 import java.util.Set;
 
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -389,7 +391,9 @@ public class ReserveService {
 
             purchasePolicy.addAll(companyPurchasePolicy);
             for (PurchasePolicy pp : purchasePolicy) {
-                if (!pp.validatePurchase()) {
+                try {
+                    pp.validatePurchase(new PurchaseContext(0, 0));
+                } catch (PurchasePolicyException e) {
                     logger.error("User did not meet purchase policy requirements");
                     throw new IllegalArgumentException("User did not meet purchase policy requirements");
                 }

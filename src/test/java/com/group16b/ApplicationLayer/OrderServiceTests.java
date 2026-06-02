@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -88,9 +90,7 @@ public class OrderServiceTests {
         static void beforeAll() {
                 PurchasePolicy alwaysValidPurchasePolicy = new PurchasePolicy() {
                         @Override
-                        public boolean validatePurchase() {
-                                return true;
-                        }
+                        public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
                 };
 
                 DiscountPolicy noDiscountPolicy = new DiscountPolicy() {

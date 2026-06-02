@@ -28,6 +28,9 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
+
 
 import io.jsonwebtoken.JwtException;
 import org.springframework.stereotype.Service;
@@ -410,12 +413,14 @@ public class OrderService {
             }
 
             purchasePolicy.addAll(companyPurchasePolicy);
-            for (PurchasePolicy pp : purchasePolicy) {
-                if (!pp.validatePurchase()) {
-                    logger.error("User did not meet purchase policy requirements");
-                    throw new IllegalArgumentException("User did not meet purchase policy requirements");
-                }
-            }
+			for (PurchasePolicy pp : purchasePolicy) {
+				try {
+					pp.validatePurchase(new PurchaseContext(0, 0));
+				} catch (PurchasePolicyException e) {
+					logger.error("User did not meet purchase policy requirements");
+					throw new IllegalArgumentException("User did not meet purchase policy requirements");
+				}
+			}
     }
 
 	private String validateAssureNotAdminGetSubjectID(String sessionToken)
