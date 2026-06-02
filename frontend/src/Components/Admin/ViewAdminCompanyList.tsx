@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { ProductionCompanyDTO } from "./ProdactionCompany/ProdctionCompanyForm";
+import type { ProductionCompanyDTO } from "../ProdactionCompany/ProdctionCompanyForm";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
@@ -10,35 +10,15 @@ export default function ViewAdminCompanyList() {
   useEffect(() => {
     async function loadCompanies() {
       try {
-        //const response = await fetch(`/api/companies/`);
+        const response = await fetch(`http://localhost:8080/companies`);
 
-        //if (!response.ok) {
-        //  throw new Error("Failed to load companies.");
-        //}
+        if (!response.ok) {
+          throw new Error("Failed to load companies.");
+        }
 
-        //const event: ProductionCompanyDTO = await response.json();
+        const event: ProductionCompanyDTO = await response.json();
 
-        const companyList: ProductionCompanyDTO[] = [
-          {
-            productionCompanyID: 0,
-            name: "Disney",
-            rating: 5,
-            founderID: "a@c",
-            members: [],
-            invites: [],
-            childrenByUser: [],
-          },
-          {
-            productionCompanyID: 1,
-            name: "Pixar",
-            rating: 5,
-            founderID: "b@c",
-            members: [],
-            invites: [],
-            childrenByUser: [],
-          },
-        ];
-        setCompanyDTOList(companyList);
+        setCompanyDTOList([event]);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load companies.",
