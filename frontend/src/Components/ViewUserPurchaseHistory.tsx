@@ -49,8 +49,6 @@ export default function UserPurchaseHistory() {
 
   return (
     <div>
-      <h1>My Purchase History</h1>
-
       {error && <p className="form-error">{error}</p>}
 
       <ViewSaleHistory orders={orders} />
