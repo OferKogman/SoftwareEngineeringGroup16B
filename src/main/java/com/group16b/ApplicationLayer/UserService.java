@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -16,6 +17,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
 
@@ -28,6 +30,7 @@ public class UserService {
 	private final IRepository<Order> orderRepo;
 	private final IRepository<Venue> venueRepo;
 	private final IEventRepository eventRepo;
+    private final IProductionCompanyRepository productionCompanyRepository;
 	private final IRepository<User> userRepo;
 	private final ITicketGateway ticketGateway;
 
@@ -35,13 +38,14 @@ public class UserService {
 
 	public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway,
 			IRepository<Venue> venueRepo, IRepository<User> userRepo, IRepository<Order> orderRepo,
-			IEventRepository eventRepo) {
+			IEventRepository eventRepo, IProductionCompanyRepository productionCompanyRepository) {
 		this.authenticationService = authenticationService;
 		this.ticketGateway = ticketGateway;
 		this.venueRepo = venueRepo;
 		this.userRepo = userRepo;
 		this.orderRepo = orderRepo;
 		this.eventRepo = eventRepo;
+		this.productionCompanyRepository = productionCompanyRepository;
 
 	}
 
@@ -147,5 +151,48 @@ public class UserService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+
+    public Result<List<ProductionCompanyDTO>> getAllUserCompanies(String sessionToken) {
+        try {
+            logger.info("UserService.getAllUserCompanies: Extracting token subject and fetching User aggregate.");
+            String userId = validateAndGetUserID(sessionToken);       
+            logger.info("UserService.getAllUserCompanies: Successfully fetched user. Retrieving companies.");
+            
+            List<ProductionCompanyDTO> companies = productionCompanyRepository.getAll().stream()
+                    .filter(company -> company.isManager(userId))
+                    .map(company -> new ProductionCompanyDTO(company))
+                    .collect(Collectors.toList());
+            
+            logger.info("UserService.getAllUserCompanies: Successfully retrieved companies.");
+            return Result.makeOk(companies);        
+        } catch (IllegalArgumentException e) {
+            logger.warn("UserService.getAllUserCompanies: IllegalArgumentException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());    
+        } catch (AuthException e) {
+            logger.warn("UserService.getAllUserCompanies: Authentication failed during companies fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error("UserService.getAllUserCompanies: JWT authentication error during user companies fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("UserService.getAllUserCompanies: Unexpected error during user companies fetch: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+    private String validateAndGetUserID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid Token");
+        }
+        if (!authenticationService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        String userID=authenticationService.extractSubjectFromToken(sessionToken);
+        //verify user exists in the database, i.e not a stale user
+        userRepo.findByID(userID);
+        return userID;
+    }
+
+    
 
 }

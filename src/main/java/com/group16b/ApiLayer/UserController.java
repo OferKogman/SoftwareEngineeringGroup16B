@@ -38,4 +38,9 @@ public class UserController extends BaseController {
     public ResponseEntity<?> getOrderShistory(@RequestHeader("Authorization") String sessionToken){
         return executeWithReturnData(() -> userService.getUserOrderHistory(sessionToken));
     }
+
+    @GetMapping("/me/companies")
+    public ResponseEntity<?> getUserCompanies(@RequestHeader("Authorization") String sessionToken) {
+        return executeWithReturnData(() -> userService.getAllUserCompanies(sessionToken));
+    }
 }
