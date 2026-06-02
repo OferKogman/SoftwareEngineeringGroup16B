@@ -1,16 +1,15 @@
 package com.group16b.DomainLayer.Event;
 
+import java.time.LocalDateTime;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
-
-import java.time.LocalDateTime;
-
-import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
