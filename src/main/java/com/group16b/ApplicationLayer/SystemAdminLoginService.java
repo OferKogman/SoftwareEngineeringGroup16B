@@ -29,43 +29,47 @@ public class SystemAdminLoginService {
 
         try{
             if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalusername password and email attempt for user username {}", adminUsername);
-                return Result.makeFail("Invalusername user username or password + email");
+                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalid password and email attempt for username {}", adminUsername);
+                return Result.makeFail("invalid password or email");
             }
 
             String token = tokenService.generateAdminToken(adminUsername);
-            logger.info("SystemAdminLoginService.loginAdmin: admin username {} successfully logged in", adminUsername);
+            logger.info("SystemAdminLoginService.loginAdmin: admin {} successfully logged in", adminUsername);
             
             return Result.makeOk(token);
         }
         catch(IllegalArgumentException e) {
-            logger.warn("SystemAdminLoginService.loginAdmin: Login failed: user username {} does not exist!", adminUsername);
-            return Result.makeFail("Invalusername user username");
+            logger.warn("SystemAdminLoginService.loginAdmin: IllegalArgumentException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
         }
         catch(Exception e) {
-            logger.error("SystemAdminLoginService.loginAdmin: failed to log in admin username {}: {}", adminUsername, e.getMessage(), e);
-            return Result.makeFail("Failed to log in: " + e.getMessage());
+            logger.error("SystemAdminLoginService.loginAdmin: undexpected exception: " + e.getMessage());
+            return Result.makeFail("undexpected exception " + e.getMessage());
         }
     }
 
     public Result<String> logOutAdmin(String sessionToken) {
         try {
-            String recievedusername = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
-            logger.info("SystemAdminLoginService.loginAdmin: Attempting log out admin username: {}...", recievedusername);
-            
-            if (!tokenService.isAdminToken(sessionToken)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: the session want of admin for username {}", recievedusername);
-                return Result.makeFail("Invalusername username for logout");
+            logger.info("SystemAdminLoginService.logOutAdmin: Attempting log out admin");
+            if(!tokenService.validateToken(sessionToken))
+            {
+                logger.warn("SystemAdminLoginService.logOutAdmin: Logout attempt failed, invalid or expired session token.");
+                return Result.makeFail("Authentication failed. Please refresh your session and try again.");
             }
+            if (!tokenService.isAdminToken(sessionToken)) {
+                logger.warn("SystemAdminLoginService.logOutAdmin: not admin token");
+                return Result.makeFail("invalid Session for logout");
+            }
+            String recievedusername = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
 
             systemAdminRespotiry.findByID(recievedusername); //check if the admin exists in the system, if not, fail the logout attempt
             
             return Result.makeOk(tokenService.generateVisitor_GuestToken(new SessionToken()));
         } catch (IllegalArgumentException e) {
-            logger.warn("SystemAdminLoginService.logOutAdmin: Logout failed: invalid session token - {}", e.getMessage());
+            logger.warn("SystemAdminLoginService.logOutAdmin: IllegalArgumentException: ", e.getMessage());
             return Result.makeFail("Failed to log out: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("SystemAdminLoginService.logOutAdmin: failed to log out in this session: {}", e.getMessage(), e);
+            logger.error("SystemAdminLoginService.logOutAdmin: unexpected exception: ", e.getMessage());
             return Result.makeFail("Failed to log out: " + e.getMessage());
         }   
     }

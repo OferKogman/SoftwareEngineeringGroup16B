@@ -25,6 +25,8 @@ public class SystemAdminLoginServiceTests {
     private IAuthenticationService mockTokenService;
     private IRepository<SystemAdmin> mockSystemAdminRepository;
 
+
+
     @BeforeEach
     void setUp() throws Exception {
         mockTokenService = mock(IAuthenticationService.class);
@@ -52,7 +54,7 @@ public class SystemAdminLoginServiceTests {
         // 3. Generating the guest token works
         when(mockTokenService.generateVisitor_GuestToken(any())).thenReturn(expectedGuestToken);
         // 4. The admin ID exists in the repository
-        doNothing().when(mockSystemAdminRepository).findByID(String.valueOf(adminID));
+        when(mockSystemAdminRepository.findByID(String.valueOf(adminID))).thenReturn(null);
 
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
@@ -75,7 +77,7 @@ public class SystemAdminLoginServiceTests {
         Result<String> result = adminService.logOutAdmin(sessionToken);
 
         assertFalse(result.isSuccess(), "Logout should fail if token is not an admin token");
-        assertEquals("Invalid ID for logout", result.getError());
+        assertEquals("invalid username for logout", result.getError());
 
         // Verify we never checked the database since it failed early
         verify(mockSystemAdminRepository, never()).findByID(any(String.class));
