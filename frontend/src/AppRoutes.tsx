@@ -49,8 +49,8 @@ export default function AppRoutes() {
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<CompanySettings />} />
-        <Route path="events/create" element={<EventCreationForm />} />
         <Route path="events/:eventID/manage" element={<EventUpdateForm />} />
+        <Route path="events/create" element={<EventCreationForm />} />
       </Route>
       <Route path="/events/:eventID" element={<ViewEvent />} />
     </Routes>

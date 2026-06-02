@@ -9,7 +9,7 @@ export type EventCreationData = {
   endTime: string;
   artist: string;
   category: string;
-  companyId: number;
+  pcID: number;
   price: number;
   rating: number;
 };
@@ -18,24 +18,23 @@ type EventCreationFormProps = {
   onCancel?: () => void;
 };
 
-const initialFormData: EventCreationData = {
-  venueID: "",
-  name: "",
-  startTime: "",
-  endTime: "",
-  artist: "",
-  category: "",
-  companyId: 0,
-  price: 0.0,
-  rating: 0.0,
-};
-
 export default function EventCreationForm({
   onCancel,
 }: EventCreationFormProps) {
   const { companyId } = useParams();
   const navigate = useNavigate();
 
+  const initialFormData: EventCreationData = {
+    venueID: "",
+    name: "",
+    startTime: "",
+    endTime: "",
+    artist: "",
+    category: "",
+    pcID: Number(companyId),
+    price: 0.0,
+    rating: 0.0,
+  };
   const [formData, setFormData] = useState<EventCreationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +65,9 @@ export default function EventCreationForm({
     if (!sessionToken) {
       throw new Error("Missing session token.");
     }
+
+    console.log("companyId from route:", companyId);
+    console.log("eventData:", eventData);
 
     const response = await fetch(`http://localhost:8080/events`, {
       method: "POST",
@@ -114,10 +116,10 @@ export default function EventCreationForm({
       category: formData.category.trim(),
       startTime: formatLocalDateTimeForApi(formData.startTime),
       endTime: formatLocalDateTimeForApi(formData.endTime),
-      companyId: Number(companyId),
+      pcID: Number(companyId),
       rating: 0.0,
     };
-    if (!Number.isInteger(eventData.companyId) || eventData.companyId <= 0) {
+    if (!Number.isInteger(eventData.pcID) || eventData.pcID <= 0) {
       setError("Invalid company ID.");
       setIsSubmitting(false);
       return;
