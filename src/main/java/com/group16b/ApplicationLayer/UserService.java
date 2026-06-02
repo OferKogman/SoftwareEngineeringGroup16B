@@ -92,10 +92,10 @@ public class UserService {
             return Result.makeOk(true);
             
         } catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			logger.error("JWT authentication error during user password update: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			logger.error("Unexpected error during user password update: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
