@@ -1,11 +1,49 @@
 import { NavLink, Outlet, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
 import "./CSS/ProductionCompanyManagement.css";
 
 export default function ProductionCompanyManagement() {
   const { companyId } = useParams();
 
-  // later we'll fetch this from backend
-  const companyName = "Company Name";
+const [companyName, setCompanyName] = useState("Loading...");
+
+  useEffect(() => {
+  if (!companyId) {
+    return;
+  }
+
+  console.warn("=================================");
+  console.warn("USING TEMPORARY MOCK DATA");
+  console.warn("REMOVE WHEN API IS READY");
+  console.warn("=================================");
+
+  setCompanyName("Rock Productions Ltd.");
+
+  /*
+  const API_BASE = "http://localhost:8080";
+
+  async function loadCompany() {
+    try {
+      const response = await fetch(
+        `${API_BASE}/production-companies/${companyId}`
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message);
+      }
+
+      setCompanyName(data.data.companyName);
+    } catch (error) {
+      console.error(error);
+      setCompanyName("Unknown Company");
+    }
+  }
+
+  loadCompany();
+  */
+}, [companyId]);
 
   return (
     <div className="company-management-page">

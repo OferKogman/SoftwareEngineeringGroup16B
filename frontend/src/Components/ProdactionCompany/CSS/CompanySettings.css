@@ -1,0 +1,67 @@
+.company-settings-page {
+  width: 100%;
+}
+
+.company-settings-page h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.danger-zone {
+  max-width: 500px;
+
+  padding: 1.5rem;
+
+  border-radius: 1rem;
+
+  border: 1px solid rgba(239, 68, 68, 0.7);
+
+  background: rgba(40, 0, 0, 0.35);
+}
+
+.danger-zone h3 {
+  margin-top: 0;
+  color: #ef4444;
+}
+
+.danger-zone p {
+  margin-bottom: 1rem;
+}
+
+.danger-zone input {
+  width: 100%;
+
+  padding: 0.8rem;
+
+  border-radius: 0.7rem;
+
+  border: 1px solid #555;
+
+  margin-bottom: 1rem;
+}
+
+.danger-button {
+  background: #b91c1c;
+
+  color: white;
+
+  border: none;
+
+  border-radius: 0.7rem;
+
+  padding: 0.8rem 1rem;
+
+  cursor: pointer;
+
+  font-weight: bold;
+}
+
+.settings-success {
+  color: #3fb950;
+  margin-bottom: 1rem;
+}
+
+.settings-error {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
