@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useLoggedIn, useSession } from "../../App";
 import "./CSS/LoginForm.css";
+import type { RegistrationData } from "./RegistrationForm";
 
 export type LoginData = {
   email: string;
@@ -9,8 +11,6 @@ export type LoginData = {
 
 type LoginFormProps = {
   title: string;
-  onLogin: (event: LoginData) => void | Promise<void>;
-  onCancel?: () => void;
 };
 
 const initialFormData: LoginData = {
@@ -18,14 +18,43 @@ const initialFormData: LoginData = {
   password: "",
 };
 
-export default function LoginForm({
-  title,
-  onLogin,
-  onCancel,
-}: LoginFormProps) {
+export default function LoginForm({ title }: LoginFormProps) {
   const [formData, setFormData] = useState<LoginData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { sessionToken, setSessionToken } = useSession();
+  const { loggedIn, setLoggedIn } = useLoggedIn();
+
+  const navigate = useNavigate();
+
+  async function onLogin({ email, password }: RegistrationData) {
+    try {
+      console.log("token:", sessionToken);
+      const response = await fetch(
+        `http://localhost:8080/api/user/login/member`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
+          body: JSON.stringify({ email, password }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const token: string = await response.text();
+
+      setSessionToken(token);
+      setLoggedIn(true);
+      navigate("/");
+      console.log("User successfully logged in");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to register user.");
+    }
+  }
 
   function updateField<K extends keyof LoginData>(
     field: K,
@@ -48,7 +77,6 @@ export default function LoginForm({
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
-      setFormData(initialFormData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login.");
     } finally {
@@ -87,11 +115,6 @@ export default function LoginForm({
       </div>
 
       <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
@@ -99,7 +122,7 @@ export default function LoginForm({
 
       <p>
         <NavLink to="/register" className="auth-link">
-          Don't have an account? Register here
+          Don&apos;t have an account? Register here
         </NavLink>
       </p>
     </form>

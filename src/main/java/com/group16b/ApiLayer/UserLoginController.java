@@ -21,9 +21,11 @@ public class UserLoginController extends BaseController{
     }
 
     @PostMapping("/member")
-    public ResponseEntity<?> loginMember(@RequestBody LoginRequestDTO requestDTO) {
+    public ResponseEntity<?> loginMember(@RequestBody LoginRequestDTO requestDTO,
+                                         @RequestHeader("Authorization") String guestSessionToken
+    ) {
         
-        return executeWithReturnData(() -> userLoginService.loginMember(requestDTO.getEmail(), requestDTO.getPassword()));
+        return executeWithReturnData(() -> userLoginService.loginMember(requestDTO.getEmail(), requestDTO.getPassword(), guestSessionToken));
     }
 
     @PostMapping("/logout")

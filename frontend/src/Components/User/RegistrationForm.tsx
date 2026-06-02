@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
+import type { UserDTO } from "../../DTOs/UserDTO";
 import "./CSS/RegistrationForm.css";
 
 export type RegistrationData = {
@@ -7,10 +8,8 @@ export type RegistrationData = {
   password: string;
 };
 
-type RegistrationFormProps = {
+export type RegistrationFormProps = {
   title: string;
-  onRegistration: (event: RegistrationData) => void | Promise<void>;
-  onCancel?: () => void;
 };
 
 const initialFormData: RegistrationData = {
@@ -18,14 +17,37 @@ const initialFormData: RegistrationData = {
   password: "",
 };
 
-export default function RegistrationForm({
-  title,
-  onRegistration,
-  onCancel,
-}: RegistrationFormProps) {
+export default function RegistrationForm({ title }: RegistrationFormProps) {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState<RegistrationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+
+  async function onRegistration({ email, password }: RegistrationData) {
+    try {
+      const response = await fetch(
+        `http://localhost:8080/api/user/registerUser`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email, password }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const user: UserDTO = await response.json();
+
+      console.log("User successfully registered:", user);
+      setShowSuccessPopup(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to register user.");
+    }
+  }
 
   function updateField<K extends keyof RegistrationData>(
     field: K,
@@ -48,7 +70,6 @@ export default function RegistrationForm({
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
-      setFormData(initialFormData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to register.");
     } finally {
@@ -58,50 +79,63 @@ export default function RegistrationForm({
 
   return (
     <form className="registration-form" onSubmit={handleSubmit}>
-      <h2>{title}</h2>
       {error && <p className="form-error">{error}</p>}
+      {showSuccessPopup && (
+        <div className="success-popup-backdrop">
+          <div className="success-popup">
+            <h3>Registered successfully</h3>
+            <p>Your account was created. You can now log in.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setFormData(initialFormData);
+                navigate("/login");
+              }}
+            >
+              Go to login
+            </button>
+          </div>
+        </div>
+      )}
+      {!showSuccessPopup && (
+        <>
+          <h2>{title}</h2>
+          <div className="form-row">
+            <label>Email</label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(event) => {
+                event.currentTarget.setCustomValidity("");
+                updateField("email", event.target.value);
+              }}
+              placeholder="email"
+            />
+          </div>
 
-      <div className="form-row">
-        <label>Email</label>
-        <input
-          type="email"
-          required
-          value={formData.email}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("email", event.target.value);
-          }}
-          placeholder="email"
-        />
-      </div>
+          <div className="form-row">
+            <label>Password</label>
+            <input
+              type="password"
+              required
+              value={formData.password}
+              onChange={(event) => updateField("password", event.target.value)}
+              placeholder="Password"
+            />
+          </div>
 
-      <div className="form-row">
-        <label>Password</label>
-        <input
-          type="password"
-          required
-          value={formData.password}
-          onChange={(event) => updateField("password", event.target.value)}
-          placeholder="Password"
-        />
-      </div>
+          <div className="form-actions">
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "Registering..." : "Register"}
+            </button>
+          </div>
 
-      <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Registering..." : "Register"}
-        </button>
-      </div>
-
-      <a>
-        <NavLink to="/login" className="auth-link">
-          Already have an account? Login here
-        </NavLink>
-      </a>
+          <NavLink to="/login" className="auth-link">
+            Already have an account? Login here
+          </NavLink>
+        </>
+      )}
     </form>
   );
 }
