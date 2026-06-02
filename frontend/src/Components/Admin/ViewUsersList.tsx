@@ -1,48 +1,32 @@
 import { useEffect, useState } from "react";
-import type { UserDTO } from "../DTOs/UserDTO";
+import type { UserDTO } from "../../DTOs/UserDTO";
 
 type UsersListProps = {
   users?: UserDTO[] | null;
 };
 
-export default function ViewUsers({
-  users,
-}: UsersListProps) {
+export default function ViewUsers({ users }: UsersListProps) {
   const [error, setError] = useState<string>("");
   const [userDTOList, setUserDTOList] = useState<UserDTO[]>([]);
-
 
   useEffect(() => {
     async function loadUsers() {
       try {
         if (users !== undefined && users !== null) {
-            setUserDTOList(users);
-            return;
+          setUserDTOList(users);
+          return;
         }
 
-        // Fake backend data for testing
-        const userList: UserDTO[] = [
-          {
-            userId: "1",
-            name: "Alice",
-          },
-          {
-            userId: "2",
-            name: "Mad Hatter",
-          },
-          {
-            userId: "3",
-            name: "Cheshire Cat",
-          },
-        ];
+        const response = await fetch(`http://localhost:8080/users`);
+        if (!response.ok) {
+          throw new Error("Failed to load users.");
+        }
 
-        setUserDTOList(userList);
+        const usersFromServer: UserDTO[] = await response.json();
+
+        setUserDTOList(usersFromServer);
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load users."
-        );
+        setError(err instanceof Error ? err.message : "Failed to load users.");
       }
     }
 
@@ -74,9 +58,7 @@ export default function ViewUsers({
 
               <td>
                 {/* Remove user from platform */}
-                <button onClick={() =>{}}>
-                  Cancel Subscription
-                </button>
+                <button onClick={() => {}}>Cancel Subscription</button>
               </td>
             </tr>
           ))}

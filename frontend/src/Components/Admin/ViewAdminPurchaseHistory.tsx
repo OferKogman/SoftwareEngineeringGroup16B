@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { OrderDTO } from "../DTOs/OrderDTO";
-import ViewSaleHistory from "./ViewSaleHistory";
+import type { OrderDTO } from "../../DTOs/OrderDTO";
+import ViewSaleHistory from "../ViewSaleHistory";
 
 export default function AdminPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
@@ -17,43 +17,17 @@ export default function AdminPurchaseHistory() {
 
   async function loadAllPurchaseHistory() {
     try {
-      setError("");
+      const response = await fetch(
+        `http://localhost:8080/viewAllPurchasesHistory`,
+      );
 
-      // future backend call:
-      // const ordersFromServer = await admin.getAll();
-      // setOrders(ordersFromServer);
+      if (!response.ok) {
+        throw new Error("Failed to load purchase history.");
+      }
 
-      const mockOrders: OrderDTO[] = [
-        {
-          orderId: "ORD-3001",
-          segmentId: "VIP-A",
-          numOfTickets: 2,
-          orderType: "Seat",
-          totalOrderPrice: 500,
-          eventId: 101,
-          subjectId: "Ran123",
-        },
-        {
-          orderId: "ORD-3002",
-          segmentId: "Grass",
-          numOfTickets: 4,
-          orderType: "Field",
-          totalOrderPrice: 800,
-          eventId: 202,
-          subjectId: "Ofer456",
-        },
-        {
-          orderId: "ORD-3003",
-          segmentId: "Front",
-          numOfTickets: 1,
-          orderType: "Seat",
-          totalOrderPrice: 350,
-          eventId: 303,
-          subjectId: "Noa789",
-        },
-      ];
+      const ordersFromServer: OrderDTO[] = await response.json();
 
-      setOrders(mockOrders);
+      setOrders(ordersFromServer);
     } catch (err) {
       setError(
         err instanceof Error
