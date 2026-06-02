@@ -287,7 +287,7 @@ public class AdminManagementService {
             logger.warn("AdminManagementService.getAllProductionCompanies: "+ e.getLocalizedMessage());
             return Result.makeFail(e.getMessage());
         } catch(AuthException e){
-            logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error - {}", e.getMessage());
+            logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error: {}", e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch(Exception e){
             logger.error("AdminManagementService.getAllProductionCompanies: System error: {}", e.getMessage(), e);
