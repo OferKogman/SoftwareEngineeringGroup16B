@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.AdminManagementService;
-import com.group16b.ApplicationLayer.DTOs.AdminLoginRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.AdminRegisterRequestDTO;
 
 @RestController
@@ -51,6 +50,6 @@ public class SystemAdminManagementController extends BaseController{
 
     @PostMapping("/registerNewAdmin")
     public ResponseEntity<?> registerNewAdmin(@RequestHeader("Authorization") String sessionToken, @RequestBody AdminRegisterRequestDTO requestDTO){
-        return executeWithReturnData(() -> adminManagementService.registerNewAdmin(sessionToken, requestDTO.getNewAdminID(), requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(), requestDTO.getNewAdminEmail()));
+        return executeWithReturnData(() -> adminManagementService.registerNewAdmin(sessionToken, requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(), requestDTO.getNewAdminEmail()));
     }
 }
