@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,13 +14,13 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class StartupService {
     private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
-    private final ISystemAdminRepository adminRepo;
+    private final IRepository<SystemAdmin> adminRepo;
     private final IPaymentGateway paymentGateway;
     private final ITicketGateway ticketGateway;
 
 
     //will grow as more invariants would be needed to validate
-    public StartupService(ISystemAdminRepository adminRepo,IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
+    public StartupService(IRepository<SystemAdmin> adminRepo,IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
         this.adminRepo = adminRepo;
         this.paymentGateway = paymentGateway;
         this.ticketGateway = ticketGateway;
