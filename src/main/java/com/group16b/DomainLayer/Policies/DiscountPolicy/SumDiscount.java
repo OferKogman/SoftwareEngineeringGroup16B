@@ -15,5 +15,12 @@ public class SumDiscount implements DiscountPolicy {
     public List<DiscountPolicy> getPolicies() { return policies; }
 
     @Override
-    public double calculateDiscount(double originalPrice) { return originalPrice; }
+    public double calculateDiscount(double originalPrice) {
+        double totalDiscount = 0;
+        for (DiscountPolicy policy : policies) {
+            totalDiscount += originalPrice - policy.calculateDiscount(originalPrice);
+        }
+        double finalPrice = originalPrice - totalDiscount;
+        return Math.max(0, finalPrice);
+    }
 }
