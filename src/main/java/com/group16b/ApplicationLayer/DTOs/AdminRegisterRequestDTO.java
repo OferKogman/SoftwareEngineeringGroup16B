@@ -1,17 +1,9 @@
 package com.group16b.ApplicationLayer.DTOs;
 
 public class AdminRegisterRequestDTO {
-    private String newAdminID;
     private String newAdminUsername;
     private String newAdminPassword;
     private String newAdminEmail;
-    
-    public String getNewAdminID(){
-        return newAdminID;
-    }
-    public void setNewAdminID(String newAdminID){
-        this.newAdminID = newAdminID;
-    }
 
     public String getNewAdminUsername(){
         return newAdminUsername;

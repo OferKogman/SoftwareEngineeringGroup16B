@@ -56,7 +56,6 @@ public class SystemAdminManagementController extends BaseController {
     public ResponseEntity<?> registerNewAdmin(@RequestHeader("Authorization") String sessionToken,
             @RequestBody AdminRegisterRequestDTO requestDTO) {
         return executeWithReturnData(() -> adminManagementService.registerNewAdmin(sessionToken,
-                requestDTO.getNewAdminID(), requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(),
-                requestDTO.getNewAdminEmail()));
+                requestDTO.getNewAdminUsername(), requestDTO.getNewAdminPassword(), requestDTO.getNewAdminEmail()));
     }
 }

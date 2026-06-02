@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
@@ -147,9 +148,53 @@ public class ProductionCompanyService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+    public Result<ProductionCompanyDTO> getProductionCompany(int companyID)
+    {
+        try{
+            logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",companyID);
+            ProductionCompany company=productionRepo.findByID(String.valueOf(companyID));
+            logger.info("ProductionCompanyService.getProductionCompany: Successfully retrieved production company with id {}",companyID);
+            return Result.makeOk(new ProductionCompanyDTO(company));
+        }catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.getProductionCompany: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.getProductionCompany: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public Result<List<EventDTO>> getCompanyAllEvents(int companyID)
+    {
+        try{
+            logger.info("ProductionCompanyService.getCompanyEvents: Retrieving events for company with id {}",companyID);
+            productionRepo.findByID(String.valueOf(companyID));//verify company exists, will throw exception if not exist, no need to retrieve the company again as getCompanyEvents will also retrieve the company for filtering
+            
+            List<EventDTO> events=getCompanyEvents(companyID).stream().toList();
+            logger.info("ProductionCompanyService.getCompanyEvents: Successfully retrieved events for company with id {}",companyID);
+            return Result.makeOk(events);
+        }catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.getCompanyEvents: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.getCompanyEvents: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
 
     //gets all orders for the company
     private Set<Integer> getCompanyEventIDs(int companyID)
+    {
+        return getCompanyEvents(companyID).stream()
+            .map(EventDTO::getEventID)
+            .collect(Collectors.toSet());
+    }
+
+    private Set<EventDTO> getCompanyEvents(int companyID)
     {
         return eventRepo.searchEvents(
                 null, null, null, null,
@@ -158,7 +203,7 @@ public class ProductionCompanyService {
                 null,
                 List.of(companyID)
             ).stream()
-            .map(Event::getEventID)
+            .map(EventDTO::new)
             .collect(Collectors.toSet());
     }
 
@@ -187,23 +232,6 @@ public class ProductionCompanyService {
             .collect(Collectors.toSet());
     }
 
-    public Result<ProductionCompanyDTO> getProductionCompany(int companyID)
-    {
-        try{
-            logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",companyID);
-            ProductionCompany company=productionRepo.findByID(String.valueOf(companyID));
-            logger.info("ProductionCompanyService.getProductionCompany: Successfully retrieved production company with id {}",companyID);
-            return Result.makeOk(new ProductionCompanyDTO(company));
-        }catch(IllegalArgumentException e)
-        {
-            logger.warn("ProductionCompanyService.getProductionCompany: IllegalArgumentException: "+e.getMessage());
-            return Result.makeFail(e.getMessage());
-        }
-        catch (Exception e) {
-            logger.error("ProductionCompanyService.getProductionCompany: Unexpected error",e);
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-        }
-    }
 
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs)
     {
