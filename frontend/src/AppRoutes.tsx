@@ -29,6 +29,7 @@ export default function AppRoutes() {
         path="/admins/login"
         element={<AdminLoginForm title="Admin Login" />}
       />
+      <Route path="/admins/management" element={<AdminManagement />} />
 
       <Route path="/events/search" element={<SearchEvents />} />
 

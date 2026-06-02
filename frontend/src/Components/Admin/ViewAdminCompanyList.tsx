@@ -1,24 +1,35 @@
 import { useEffect, useState } from "react";
-import type { ProductionCompanyDTO } from "../ProdactionCompany/ProdctionCompanyForm";
+import { useSession } from "../../App";
+import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
   const [companyDTOList, setCompanyDTOList] = useState<
     ProductionCompanyDTO[] | null
   >(null);
+  const { sessionToken } = useSession();
 
   useEffect(() => {
     async function loadCompanies() {
       try {
-        const response = await fetch(`http://localhost:8080/companies`);
+        const response = await fetch(
+          `http://localhost:8080/api/admin-management/companies`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: sessionToken,
+            },
+          },
+        );
 
         if (!response.ok) {
           throw new Error("Failed to load companies.");
         }
 
-        const event: ProductionCompanyDTO = await response.json();
+        const companies: ProductionCompanyDTO[] = await response.json();
 
-        setCompanyDTOList([event]);
+        setCompanyDTOList(companies);
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load companies.",
@@ -27,7 +38,7 @@ export default function ViewAdminCompanyList() {
     }
 
     void loadCompanies();
-  });
+  }, [sessionToken]);
 
   if (!companyDTOList) {
     return <div>No companies found</div>;
@@ -51,8 +62,8 @@ export default function ViewAdminCompanyList() {
 
           <tbody>
             {companyDTOList.map((company) => (
-              <tr key={company.productionCompanyID}>
-                <td>{company.productionCompanyID}</td>
+              <tr key={company.id}>
+                <td>{company.id}</td>
                 <td>{company.name}</td>
                 <td>{company.rating}</td>
               </tr>

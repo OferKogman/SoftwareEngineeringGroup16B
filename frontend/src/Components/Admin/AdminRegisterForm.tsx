@@ -3,41 +3,48 @@ import { useNavigate } from "react-router-dom";
 import { useSession } from "../../App";
 import "../User/CSS/UserLoginForm.css";
 
-export type AdminLoginData = {
+export type AdminRegisterData = {
   username: string;
   email: string;
   password: string;
 };
 
-type AdminLoginFormProps = {
+type AdminRegisterFormProps = {
   title: string;
 };
 
-const initialFormData: AdminLoginData = {
+const initialFormData: AdminRegisterData = {
   username: "",
   email: "",
   password: "",
 };
 
-export default function AdminLoginForm({ title }: AdminLoginFormProps) {
-  const [formData, setFormData] = useState<AdminLoginData>(initialFormData);
+export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
+  const [formData, setFormData] = useState<AdminRegisterData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
 
   const navigate = useNavigate();
 
-  async function onAdminLogin({ username, email, password }: AdminLoginData) {
+  async function onAdminRegister({
+    username,
+    email,
+    password,
+  }: AdminRegisterData) {
     try {
       console.log("token:", sessionToken);
-      const response = await fetch(`http://localhost:8080/api/admin/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: sessionToken,
+      const response = await fetch(
+        `http://localhost:8080/api/admin/registerNewAdmin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
+          body: JSON.stringify({ username, password, email }),
         },
-        body: JSON.stringify({ username, password, email }),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(await response.text());
@@ -46,15 +53,15 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
 
       setSessionToken(token);
       navigate("/admins/management");
-      console.log("Admin successfully logged in");
+      console.log("Admin successfully registered");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login.");
+      setError(err instanceof Error ? err.message : "Failed to register.");
     }
   }
 
-  function updateField<K extends keyof AdminLoginData>(
+  function updateField<K extends keyof AdminRegisterData>(
     field: K,
-    value: AdminLoginData[K],
+    value: AdminRegisterData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -68,20 +75,20 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
     setError("");
 
     try {
-      await onAdminLogin({
+      await onAdminRegister({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login.");
+      setError(err instanceof Error ? err.message : "Failed to register.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
   return (
-    <form className="login-form" onSubmit={handleSubmit}>
+    <form className="register-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
       {error && <p className="form-error">{error}</p>}
 
@@ -126,7 +133,7 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
 
       <div className="form-actions">
         <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Logging in..." : "Login"}
+          {isSubmitting ? "Registering..." : "Register"}
         </button>
       </div>
     </form>

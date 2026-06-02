@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSession } from "../../App";
 import type { UserDTO } from "../../DTOs/UserDTO";
 
 type UsersListProps = {
@@ -6,6 +7,7 @@ type UsersListProps = {
 };
 
 export default function ViewUsers({ users }: UsersListProps) {
+  const { sessionToken } = useSession();
   const [error, setError] = useState<string>("");
   const [userDTOList, setUserDTOList] = useState<UserDTO[]>([]);
 
@@ -17,7 +19,16 @@ export default function ViewUsers({ users }: UsersListProps) {
           return;
         }
 
-        const response = await fetch(`http://localhost:8080/users`);
+        const response = await fetch(
+          `http://localhost:8080/api/admin-management/users`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: sessionToken,
+            },
+          },
+        );
         if (!response.ok) {
           throw new Error("Failed to load users.");
         }
@@ -45,7 +56,6 @@ export default function ViewUsers({ users }: UsersListProps) {
         <thead>
           <tr>
             <th>ID</th>
-            <th>Name</th>
             <th>Actions</th>
           </tr>
         </thead>
