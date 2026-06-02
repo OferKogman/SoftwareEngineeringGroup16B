@@ -8,6 +8,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
@@ -240,8 +242,6 @@ public class AdminManagementService {
         }
     }
 
-
-
     public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try{
             logger.info("AdminManagementService.registerNewAdmin: Attempting to register new system admin with username {}", newAdminUsername);
@@ -271,5 +271,39 @@ public class AdminManagementService {
             return Result.makeFail("An unexpected system error occurred while registering the new admin.");
         }
     
+    }
+
+    public Result<List<ProductionCompanyDTO>> getAllProductionCompanies(String sToken){
+        try{
+            logger.info("AdminManagementService.getAllProductionCompanies: Attempting to retrieve all production companies");
+            verifyAdminToken(sToken);
+            List<ProductionCompany> companies = productionCompanyRepo.getAll();
+            List<ProductionCompanyDTO> companyDTOs = companies.stream()
+                    .map(company -> new ProductionCompanyDTO(company))
+                    .collect(Collectors.toList());
+            logger.info("AdminManagementService.getAllProductionCompanies: Successfully retrieved {} production companies", companyDTOs.size());
+            return Result.makeOk(companyDTOs);
+        } catch(IllegalArgumentException e){
+            logger.warn("AdminManagementService.getAllProductionCompanies: {}", e.getLocalizedMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(AuthException e){
+            logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(Exception e){
+            logger.error("AdminManagementService.getAllProductionCompanies: System error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred while retrieving production companies.");
+        }
+    }
+
+    private void verifyAdminToken(String sToken) throws IllegalArgumentException {
+        if (!authenticationService.validateToken(sToken)  ) {
+            logger.warn("AdminManagementService.verifyAdminToken: Invalid token");
+            throw new AuthException("Invalid token");
+        }
+        if (!authenticationService.isAdminToken(sToken)) {
+            logger.warn("AdminManagementService.verifyAdminToken: Unauthorized access attempt by non-admin user");
+            throw new AuthException("Unauthorized access");
+        }
+        systemAdminRepo.findByID(authenticationService.extractSubjectFromToken(sToken)); // validate admin exists, throws error if not
     }
 }
