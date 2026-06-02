@@ -343,4 +343,81 @@ public class VenueEventConfigServiceTests {
 
         assertEquals("An unexpected system error occurred while saving the layout.", result.getError());
     }
+
+@Test
+    void getVenue_ValidTokenAndVenueExists_ReturnsOkResultWithDTO() {
+        String targetVenueID = "venue-123";
+        
+        Location dummyLocation = new Location(
+                "Madison Square Garden", "4", "Pennsylvania Plaza",
+                "New York", "NY", "USA", 40.75, -73.99);
+
+        Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ArrayList<>(), new ArrayList<>(), targetVenueID);
+
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockVenueRepository.findByID(targetVenueID)).thenReturn(realVenue);
+
+        Result<?> result = configService.getVenue(validToken, targetVenueID);
+
+        assertTrue(result.isSuccess(), "Expected success when fetching a valid venue.");
+        assertTrue(result.getValue() != null, "Expected a VenueDTO to be returned in the Result payload."); 
+        verify(mockVenueRepository, times(1)).findByID(targetVenueID);
+    }
+
+    @Test
+    void getVenue_InvalidToken_ReturnsFailResult() {
+        String targetVenueID = "venue-123";
+        when(mockAuthService.validateToken("bad.token")).thenReturn(false);
+
+        Result<?> result = configService.getVenue("bad.token", targetVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed. Please log in again.", result.getError());
+        verify(mockVenueRepository, never()).findByID(anyString());
+    }
+
+    @Test
+    void getVenue_TokenIsNotUserToken_ReturnsFailResult() {
+        String targetVenueID = "venue-123";
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(false);
+
+        Result<?> result = configService.getVenue(validToken, targetVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed. Please log in again.", result.getError());
+        verify(mockVenueRepository, never()).findByID(anyString());
+    }
+
+    @Test
+    void getVenue_VenueDoesNotExist_ReturnsFailResult() {
+        String missingVenueID = "ghost-venue";
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockVenueRepository.findByID(missingVenueID))
+                .thenThrow(new IllegalArgumentException("Venue not found"));
+
+        Result<?> result = configService.getVenue(validToken, missingVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Configuration failed: Venue not found", result.getError());
+    }
+
+    @Test
+    void getVenue_SystemException_ReturnsFailResult() {
+        String targetVenueID = "venue-123";
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockVenueRepository.findByID(targetVenueID))
+                .thenThrow(new RuntimeException("Database connection lost"));
+
+        Result<?> result = configService.getVenue(validToken, targetVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("An unexpected system error occurred", result.getError());
+    }
 }
