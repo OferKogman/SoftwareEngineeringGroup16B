@@ -352,8 +352,14 @@ public class OrderService {
         return result;
     }
 
-	public Result<Boolean> cancelOrder(String orderId) { // to call when order is expired
+	public Result<Boolean> cancelOrder(String orderId, String sTocken) { // to call when order is expired
 		try {
+
+			logger.info("Verifying session token for completion.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+            logger.info("Session token verified successfully.");
+
+			
 			logger.info("Attempting to cancel order {}.", orderId);
 			Order order = orderRepo.findByID(orderId);
 			

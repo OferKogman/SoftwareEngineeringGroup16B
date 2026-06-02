@@ -7,13 +7,13 @@ import RegistrationForm from "./Components/User/RegistrationForm";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
-import VenueConfiguration from "./Components/ProdactionCompany/CompanyEvents";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CreateEvent from     "./Components/Event/EventCreationForm";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
+import UserManagement from "./Components/User/UserManagement";
 
 export default function AppRoutes() {
   async function handleLogin(data: LoginData) {
@@ -38,6 +38,8 @@ export default function AppRoutes() {
           <RegistrationForm title="Register" onRegistration={handleRegister} />
         }
       />
+      <Route path="/users" element={<UserManagement />} />
+
       <Route path="/events/search" element={<SearchEvents />} />
 
       <Route
@@ -56,6 +58,8 @@ export default function AppRoutes() {
         <Route path="settings" element={<CompanySettings />} />
         <Route path="events/create"element={<CreateEvent />}/>
         <Route path="events/:eventID/manage" element={<EventUpdateForm />}/>
+
+  
       </Route>
       <Route path="/events/:eventID" element={<ViewEvent />} />
     </Routes>

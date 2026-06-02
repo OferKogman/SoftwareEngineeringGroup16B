@@ -1,19 +1,15 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
 import type { ProductionCompanyDTO } from "./ProdactionCompany/ProdctionCompanyForm";
+import { useNavigate, useParams } from "react-router-dom";
 
-type CompanyListProps = {
-  onManageCompany: (companyID: number) => void | Promise<void>;
-};
 
-export default function ViewUserCompanyList({
-  onManageCompany,
-}: CompanyListProps) {
+export default function ViewUserCompanyList() {
   const { userID } = useParams();
   const [error, setError] = useState<string>("");
   const [companyDTOList, setCompanyDTOList] = useState<
     ProductionCompanyDTO[] | null
   >(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!userID) {
@@ -62,7 +58,7 @@ export default function ViewUserCompanyList({
   }, [userID]);
 
   if (!userID) {
-    return <div>Missing user id</div>;
+    return <div>User is not logged in</div>;
   }
 
   if (!companyDTOList) {
@@ -94,7 +90,11 @@ export default function ViewUserCompanyList({
                 <td>{company.rating}</td>
                 <td>
                   <button
-                    onClick={() => onManageCompany(company.productionCompanyID)}
+                    onClick={() =>
+                      navigate(
+                        `/production-company-menegment/${company.productionCompanyID}`,
+                      )
+                    }
                   >
                     Manage
                   </button>
