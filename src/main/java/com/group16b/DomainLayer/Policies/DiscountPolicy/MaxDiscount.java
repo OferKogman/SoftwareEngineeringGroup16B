@@ -15,5 +15,14 @@ public class MaxDiscount implements DiscountPolicy {
     public List<DiscountPolicy> getPolicies() { return policies; }
 
     @Override
-    public double calculateDiscount(double originalPrice) { return originalPrice; }
+    public double calculateDiscount(double originalPrice) {
+        double bestPrice = originalPrice;
+        for (DiscountPolicy policy : policies) {
+            double discountedPrice = policy.calculateDiscount(originalPrice);
+            if (discountedPrice < bestPrice) {
+                bestPrice = discountedPrice;
+            }
+        }
+        return bestPrice;
+    }
 }
