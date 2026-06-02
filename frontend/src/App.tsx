@@ -8,8 +8,13 @@ type SessionContextType = {
   sessionToken: string;
   setSessionToken: React.Dispatch<React.SetStateAction<string | null>>;
 };
+type LoggedInContextType = {
+  loggedIn: boolean;
+  setLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+};
 
 const SessionContext = createContext<SessionContextType | null>(null);
+const LoggedInContext = createContext<LoggedInContextType | null>(null);
 
 export function useSession() {
   const context = useContext(SessionContext);
@@ -21,10 +26,23 @@ export function useSession() {
   return context;
 }
 
+export function useLoggedIn() {
+  const context = useContext(LoggedInContext);
+
+  if (!context) {
+    throw new Error("Is Logged in must be valid");
+  }
+
+  return context;
+}
+
 function App() {
   const [theme, setTheme] = useState(localStorage.getItem("theme") || "light");
   const [sessionToken, setSessionToken] = useState<string | null>(
     localStorage.getItem("sessionToken"),
+  );
+  const [loggedIn, setLoggedIn] = useState<boolean>(
+    localStorage.getItem("isLoggedIn") === "true",
   );
   useEffect(() => {
     localStorage.setItem("theme", theme);
@@ -54,14 +72,6 @@ function App() {
       }
     }
     fetchSessionToken();
-  });
-
-  useEffect(() => {
-    if (sessionToken) {
-      localStorage.setItem("sessionToken", sessionToken);
-    } else {
-      localStorage.removeItem("sessionToken");
-    }
   }, [sessionToken]);
 
   if (!sessionToken) {
@@ -71,10 +81,12 @@ function App() {
   return (
     <BrowserRouter>
       <SessionContext.Provider value={{ sessionToken, setSessionToken }}>
-        <div className={`app ${theme}`}>
-          <Header theme={theme} setTheme={setTheme} />
-          <AppRoutes />
-        </div>
+        <LoggedInContext.Provider value={{ loggedIn, setLoggedIn }}>
+          <div className={`app ${theme}`}>
+            <Header theme={theme} setTheme={setTheme} />
+            <AppRoutes />
+          </div>
+        </LoggedInContext.Provider>
       </SessionContext.Provider>
     </BrowserRouter>
   );

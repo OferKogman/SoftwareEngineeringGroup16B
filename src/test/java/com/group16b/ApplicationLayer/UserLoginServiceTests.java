@@ -21,6 +21,12 @@ public class UserLoginServiceTests {
 
     private User testUser;
     private String validToken;
+    private String guestToken;
+
+    private final String USER_EMAL = "myEmail";
+    private final String USER_PASSWORD = "myPassword";
+    private final String WRONG_PASSWORD = "wrongPassword";
+    private final String WRONG_EMAIL = "wrongEmail";
 
     @BeforeEach
     void setUp() {
@@ -32,10 +38,11 @@ public class UserLoginServiceTests {
         
         userLoginService = new UserLoginService(realUserRepository, realTokenService);
 
-        testUser = new User("myEmail", "myPassword");
+        testUser = new User(USER_EMAL, USER_PASSWORD);
         realUserRepository.save(testUser);
 
-        validToken = realTokenService.generateVisitor_SignedToken("myEmail");
+        validToken = realTokenService.generateVisitor_SignedToken(USER_EMAL);
+        guestToken = realTokenService.generateVisitor_GuestToken(new SessionToken());
     }
 
     @Test
@@ -59,7 +66,8 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_ValidCredentials_ReturnsOkResult() {
-        Result<String> result = userLoginService.loginMember("myEmail", "myPassword");
+        
+        Result<String> result = userLoginService.loginMember(USER_EMAL, USER_PASSWORD,guestToken);
 
         assertTrue(result.isSuccess());
         assertNotNull(result.getValue());
@@ -68,7 +76,7 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_WrongPassword_ReturnsFailResult() {
-        Result<String> result = userLoginService.loginMember("myEmail", "wrongPassword");
+        Result<String> result = userLoginService.loginMember(USER_EMAL, WRONG_PASSWORD,guestToken);
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID or password", result.getError());
@@ -76,7 +84,7 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_WrongEmail_ReturnsFailResult() {
-        Result<String> result = userLoginService.loginMember("my$Email", "myPassword");
+        Result<String> result = userLoginService.loginMember(WRONG_EMAIL, USER_PASSWORD,guestToken);
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID or password", result.getError());
@@ -84,10 +92,28 @@ public class UserLoginServiceTests {
 
     @Test
     void loginMember_UserDoesNotExist_ReturnsFailResult() {
-        Result<String> result = userLoginService.loginMember("999", "anyPassword");
+        Result<String> result = userLoginService.loginMember(WRONG_EMAIL, USER_PASSWORD,guestToken);
 
         assertFalse(result.isSuccess());
         assertEquals("Invalid user ID or password", result.getError()); 
+    }
+
+    @Test
+    void loginMember_InvalidGuestToken_ReturnsFailResult() {
+        String invalidGuestToken = "this-is-not-a-valid-guest-token";
+        Result<String> result = userLoginService.loginMember(USER_EMAL, USER_PASSWORD, invalidGuestToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed. Please refresh your session and try again.", result.getError());
+    }
+
+    @Test
+    void loginMember_TokenIsNotGuestToken_ReturnsFailResult() {
+        String userToken = realTokenService.generateVisitor_SignedToken(USER_EMAL);
+        Result<String> result = userLoginService.loginMember(USER_EMAL, USER_PASSWORD, userToken);
+
+         assertFalse(result.isSuccess());
+         assertEquals("Authentication failed. Only guests are allowed to login.", result.getError());
     }
 
     @Test
@@ -112,7 +138,7 @@ public class UserLoginServiceTests {
 
     @Test
     void logOutMember_UserDoesNotExistInDB_ReturnsFailResult() {
-        realUserRepository.delete("myEmail");
+        realUserRepository.delete(USER_EMAL);
 
         Result<String> result = userLoginService.logOutMember(validToken);
 

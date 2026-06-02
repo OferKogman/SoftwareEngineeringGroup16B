@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
-import { useSession } from "../../App";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useLoggedIn, useSession } from "../../App";
 import "./CSS/LoginForm.css";
 import type { RegistrationData } from "./RegistrationForm";
 
@@ -23,6 +23,9 @@ export default function LoginForm({ title }: LoginFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
+  const { loggedIn, setLoggedIn } = useLoggedIn();
+
+  const navigate = useNavigate();
 
   async function onLogin({ email, password }: RegistrationData) {
     try {
@@ -43,6 +46,7 @@ export default function LoginForm({ title }: LoginFormProps) {
       const token: string = await response.text();
 
       setSessionToken(token);
+      setLoggedIn(true);
 
       console.log("User successfully logged in");
     } catch (err) {
@@ -71,7 +75,7 @@ export default function LoginForm({ title }: LoginFormProps) {
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
-      setFormData(initialFormData);
+      navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login.");
     } finally {

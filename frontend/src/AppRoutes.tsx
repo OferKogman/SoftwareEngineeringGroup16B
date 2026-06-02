@@ -1,4 +1,5 @@
 import { Route, Routes } from "react-router-dom";
+import EventCreationForm from "./Components/Event/EventCreationForm";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
@@ -36,7 +37,7 @@ export default function AppRoutes() {
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<CompanySettings />} />
-        <Route path="events/create" element={<CreateEvent />} />
+        <Route path="events/create" element={<EventCreationForm />} />
         <Route path="events/:eventID/manage" element={<EventUpdateForm />} />
       </Route>
       <Route path="/events/:eventID" element={<ViewEvent />} />
