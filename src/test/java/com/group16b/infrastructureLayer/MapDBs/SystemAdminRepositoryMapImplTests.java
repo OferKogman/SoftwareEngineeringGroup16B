@@ -18,13 +18,6 @@ public class SystemAdminRepositoryMapImplTests {
 		repository = new SystemAdminRepositoryMapImpl();
 	}
 
-	@Test
-	void testAddAndGetSystemAdminById() {
-		SystemAdmin admin = new SystemAdmin( "admin1", "password", "email");
-		repository.save(admin);
-		SystemAdmin retrievedAdmin = repository.findByID("1");
-		assertEquals(admin, retrievedAdmin);
-	}
 
 	@Test
 	void testAddAndGetSystemAdminByUsername() {
@@ -41,8 +34,7 @@ public class SystemAdminRepositoryMapImplTests {
 
 	@Test
 	void testGetSystemAdminByUsernameNotFound() {
-		SystemAdmin retrievedAdmin = repository.findByID("nonexistent");
-		assertEquals(null, retrievedAdmin);
+		assertThrows(IllegalArgumentException.class, () -> repository.findByID("nonexistent"));
 	}
 
 
@@ -62,21 +54,10 @@ public class SystemAdminRepositoryMapImplTests {
 		SystemAdmin admin7 = new SystemAdmin("admin7", "pass1", "email7");
 		SystemAdmin admin7duplicateUsername = new SystemAdmin("admin7", "pass2", "email8"); // same username
 		repository.save(admin7);
-		repository.save(admin7duplicateUsername); // should update the existing admin with the new details
+		assertThrows(OptimisticLockingFailureException.class, () -> repository.save(admin7duplicateUsername)); // should throw an exception because the version is the same and we're trying to update an existing admin without incrementing the version
 
 		SystemAdmin retrievedByUsername = repository.findByID("admin7");
-		assertEquals(admin7duplicateUsername, retrievedByUsername); // should be the second one added that was updated
+		assertEquals(retrievedByUsername.getEmail(), admin7.getEmail()); // should be the first one added
 	}
 
-	@Test
-	void testGetByIdAndUsernameReturnSameObject() {
-		SystemAdmin admin = new SystemAdmin( "admin10", "pass", "email10");
-		repository.save(admin);
-
-		SystemAdmin byId = repository.findByID("10");
-		SystemAdmin byUsername = repository.findByID("admin10");
-
-		assertEquals(byId, byUsername);
-		assertEquals(admin, byId);
-	}
 }
