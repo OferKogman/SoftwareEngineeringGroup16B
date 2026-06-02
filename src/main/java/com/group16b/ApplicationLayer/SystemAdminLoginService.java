@@ -22,45 +22,45 @@ public class SystemAdminLoginService {
         this.tokenService = tokenService;
     }
 
-    public Result<String> loginAdmin(String adminID, String password, String email) {
-        logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin ID: ...", adminID);
+    public Result<String> loginAdmin(String adminUsername, String password, String email) {
+        logger.info("SystemAdminLoginService.loginAdmin: Attempting login for admin username: ...", adminUsername);
 
-        SystemAdmin admin = systemAdminRespotiry.findByID(adminID);
+        SystemAdmin admin = systemAdminRespotiry.findByID(adminUsername);
 
         try{
             if (!admin.confirmPassword(password) || !admin.getEmail().equals(email)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalid password and email attempt for user ID {}", adminID);
-                return Result.makeFail("Invalid user ID or password + email");
+                logger.warn("SystemAdminLoginService.loginAdmin: Login failed: invalusername password and email attempt for user username {}", adminUsername);
+                return Result.makeFail("Invalusername user username or password + email");
             }
 
-            String token = tokenService.generateAdminToken(adminID);
-            logger.info("SystemAdminLoginService.loginAdmin: admin ID {} successfully logged in", adminID);
+            String token = tokenService.generateAdminToken(adminUsername);
+            logger.info("SystemAdminLoginService.loginAdmin: admin username {} successfully logged in", adminUsername);
             
             return Result.makeOk(token);
         }
         catch(IllegalArgumentException e) {
-            logger.warn("SystemAdminLoginService.loginAdmin: Login failed: user ID {} does not exist!", adminID);
-            return Result.makeFail("Invalid user ID");
+            logger.warn("SystemAdminLoginService.loginAdmin: Login failed: user username {} does not exist!", adminUsername);
+            return Result.makeFail("Invalusername user username");
         }
         catch(Exception e) {
-            logger.error("SystemAdminLoginService.loginAdmin: failed to log in admin ID {}: {}", adminID, e.getMessage(), e);
+            logger.error("SystemAdminLoginService.loginAdmin: failed to log in admin username {}: {}", adminUsername, e.getMessage(), e);
             return Result.makeFail("Failed to log in: " + e.getMessage());
         }
     }
 
     public Result<String> logOutAdmin(String sessionToken) {
         try {
-            String recievedID = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
-            logger.info("SystemAdminLoginService.loginAdmin: Attempting log out admin ID: {}...", recievedID);
+            String recievedusername = String.valueOf(tokenService.extractSubjectFromToken(sessionToken));
+            logger.info("SystemAdminLoginService.loginAdmin: Attempting log out admin username: {}...", recievedusername);
             
             if (!tokenService.isAdminToken(sessionToken)) {
-                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: the session want of admin for ID {}", recievedID);
-                return Result.makeFail("Invalid ID for logout");
+                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: the session want of admin for username {}", recievedusername);
+                return Result.makeFail("Invalusername username for logout");
             }
 
-            if (!systemAdminRespotiry.doesSystemAdminExist(recievedID)){
-                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: user ID {} of the token does not exist!", recievedID);
-                return Result.makeFail("Invalid adminID ID");
+            if (!systemAdminRespotiry.doesSystemAdminExist(recievedusername)){
+                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: user username {} of the token does not exist!", recievedusername);
+                return Result.makeFail("Invalusername adminusername username");
             }
             
             return Result.makeOk(tokenService.generateVisitor_GuestToken(new SessionToken()));
