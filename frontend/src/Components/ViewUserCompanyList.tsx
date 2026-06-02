@@ -18,35 +18,15 @@ export default function ViewUserCompanyList() {
 
     async function loadCompanies() {
       try {
-        //const response = await fetch(`/api/companies/${userID}`);
+        const response = await fetch(`/api/user/me/companies`);
 
-        //if (!response.ok) {
-        //  throw new Error("Failed to load companies.");
-        //}
+        if (!response.ok) {
+         throw new Error("Failed to load companies.");
+        }
 
-        //const event: ProductionCompanyDTO = await response.json();
+        const event: ProductionCompanyDTO = await response.json();
 
-        const companyList: ProductionCompanyDTO[] = [
-          {
-            productionCompanyID: 0,
-            name: "Disney",
-            rating: 5,
-            founderID: "a@c",
-            members: [],
-            invites: [],
-            childrenByUser: [],
-          },
-          {
-            productionCompanyID: 1,
-            name: "Pixar",
-            rating: 5,
-            founderID: "b@c",
-            members: [],
-            invites: [],
-            childrenByUser: [],
-          },
-        ];
-        setCompanyDTOList(companyList);
+  
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load companies.",
