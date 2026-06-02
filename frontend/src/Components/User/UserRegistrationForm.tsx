@@ -1,30 +1,33 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import type { UserDTO } from "../../DTOs/UserDTO";
-import "./CSS/RegistrationForm.css";
+import "./CSS/UserRegistrationForm.css";
 
-export type RegistrationData = {
+export type UserRegistrationData = {
   email: string;
   password: string;
 };
 
-export type RegistrationFormProps = {
+export type UserRegistrationFormProps = {
   title: string;
 };
 
-const initialFormData: RegistrationData = {
+const initialFormData: UserRegistrationData = {
   email: "",
   password: "",
 };
 
-export default function RegistrationForm({ title }: RegistrationFormProps) {
+export default function UserRegistrationForm({
+  title,
+}: UserRegistrationFormProps) {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<RegistrationData>(initialFormData);
+  const [formData, setFormData] =
+    useState<UserRegistrationData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
-  async function onRegistration({ email, password }: RegistrationData) {
+  async function onUserRegistration({ email, password }: UserRegistrationData) {
     try {
       const response = await fetch(
         `http://localhost:8080/api/user/registerUser`,
@@ -49,9 +52,9 @@ export default function RegistrationForm({ title }: RegistrationFormProps) {
     }
   }
 
-  function updateField<K extends keyof RegistrationData>(
+  function updateField<K extends keyof UserRegistrationData>(
     field: K,
-    value: RegistrationData[K],
+    value: UserRegistrationData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -65,7 +68,7 @@ export default function RegistrationForm({ title }: RegistrationFormProps) {
     setError("");
 
     try {
-      await onRegistration({
+      await onUserRegistration({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
