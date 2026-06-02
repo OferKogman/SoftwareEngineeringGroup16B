@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
+import com.group16b.ApplicationLayer.DTOs.UserDTO;
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
@@ -16,7 +19,6 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -30,9 +32,9 @@ public class AdminManagementService {
     private final OrderRepositoryMapImpl orderRepo;
     private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
-    private ISystemAdminRepository systemAdminRepo;
+    private IRepository<SystemAdmin> systemAdminRepo;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, ISystemAdminRepository systemAdminRepo) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
         this.orderRepo = orderRepo;
@@ -48,11 +50,11 @@ public class AdminManagementService {
 
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
-                logger.error("AdminManagementService.viewAllPurchesHistory: Invalid token");
+                logger.warn("AdminManagementService.viewAllPurchesHistory: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sTocken)) {
-                logger.error("AdminManagementService.viewAllPurchesHistory: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.viewAllPurchesHistory: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
 
@@ -73,11 +75,11 @@ public class AdminManagementService {
 
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
-                logger.error("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
+                logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sTocken)) {
-                logger.error("AdminManagementService.viewPurchesHistoryByCompany: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
 
@@ -104,11 +106,11 @@ public class AdminManagementService {
 
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
-                logger.error("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
+                logger.warn("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sTocken)) {
-                logger.error("AdminManagementService.viewPurchesHistoryByUser: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.viewPurchesHistoryByUser: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
 
@@ -135,11 +137,11 @@ public class AdminManagementService {
             logger.info("AdminManagementService.closeProductionCompany: Attempting to close production company with ID {}", productionCompanyId);
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sToken)  ) {
-                logger.error("AdminManagementService.closeProductionCompany: Invalid token");
+                logger.warn("AdminManagementService.closeProductionCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sToken)) {
-                logger.error("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
             productionCompanyRepo.findByID(String.valueOf(productionCompanyId)); // validate company exists, throws error if not
@@ -241,75 +243,92 @@ public class AdminManagementService {
         }
     }
 
-
-
-    public Result<String> registerNewAdmin(String sToken, String newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
-        try {
-            logger.info("AdminManagementService.registerNewAdmin: Attempting to register new admin with ID {}", newAdminID);
+    public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
+        try{
+            logger.info("AdminManagementService.registerNewAdmin: Attempting to register new system admin with username {}", newAdminUsername);
             if (!authenticationService.validateToken(sToken)  ) {
-                logger.error("AdminManagementService.registerNewAdmin: Invalid token");
+                logger.warn("AdminManagementService.registerNewAdmin: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sToken)) {
-                logger.error("AdminManagementService.registerNewAdmin: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.registerNewAdmin: Must be in an active admin session to register new admin");
                 return Result.makeFail("Unauthorized access");
             }
 
-            boolean checkIfAdminAlreadyExists;
-            boolean checkIfUsernameAlreadyExists;
-            try {
-                checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
-            } catch (Exception e) {
-                logger.info("AdminManagementService.registerNewAdmin: attempting to get admindID in repo");
-                checkIfAdminAlreadyExists = false;
-            }
-
-            try {
-                checkIfUsernameAlreadyExists = systemAdminRepo.getSystemAdminByUsername(newAdminUsername) != null;   
-            } catch (Exception e) {
-                logger.info("AdminManagementService.registerNewAdmin: attempting to get adminEmail in repo");
-                checkIfUsernameAlreadyExists = false;    
-            }
-
-            boolean success = false;
-            while(!success){
-                try{
-                if(checkIfAdminAlreadyExists ) {
-                    logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing ID {}", newAdminID);
-                    return Result.makeFail("Admin with ID " + newAdminID + " already exists");
-                }
-                if(checkIfUsernameAlreadyExists){
-                    logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing username {}", newAdminUsername);
-                    return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
-                }
-                SystemAdmin newAdmin = new SystemAdmin(newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
-                systemAdminRepo.save(newAdmin);
-                success = true;
-                logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
-                return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
-                }
-                catch(IllegalArgumentException e) {
-                    logger.warn("AdminManagementService.registerNewAdmin: Illegal argument while registering new admin with ID {}. Retrying...", newAdminID, e);
-                    success = true; // stop retrying, this is not a transient error
-                }
-                catch(OptimisticLockingFailureException e) {
-                    logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with ID {}. Retrying...", newAdminID, e);
-                }
-            }
-        }
-        catch(OptimisticLockingFailureException e) {
-            logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with ID {}. Retrying...", newAdminID, e);
-            //go back to while loop
-
+            SystemAdmin newAdmin = new SystemAdmin(newAdminUsername, newAdminPassword, newAdminEmail);
+            systemAdminRepo.save(newAdmin);
+            logger.info("AdminManagementService.registerNewAdmin: Successfully registered new system admin with username {}", newAdminUsername);
+            return Result.makeOk("System admin with username: " + newAdminUsername + ", has been registered successfully");
         }
         catch(IllegalArgumentException e) {
-            logger.error("AdminManagementService.registerNewAdmin: Invalid input provided for new admin registration with ID {}", newAdminID, e);
-            return Result.makeFail("Invalid input: " + e.getMessage());
+            logger.warn("AdminManagementService.registerNewAdmin: Invalid input - {}", e.getMessage());
+            return Result.makeFail("Failed to register new admin: " + e.getMessage());
+        } catch (OptimisticLockingFailureException e) {//if happens, then admin already created
+            logger.warn("AdminManagementService.registerNewAdmin: Optimistic lock conflict while registering new admin with username {}.", newAdminUsername);
+            return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
         }
-        catch(Exception e) {
-            logger.error("AdminManagementService.registerNewAdmin: Error occurred while registering new admin with ID {}", newAdminID, e);
-            return Result.makeFail("Error occurred while registering new admin with ID " + newAdminID);
+        catch (Exception e) {
+            logger.error("AdminManagementService.registerNewAdmin: System error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred while registering the new admin.");
         }
-        return Result.makeFail("Failed to register new admin with ID " + newAdminID);
+    
+    }
+
+    public Result<List<ProductionCompanyDTO>> getAllProductionCompanies(String sToken){
+        try{
+            logger.info("AdminManagementService.getAllProductionCompanies: Attempting to retrieve all production companies");
+            verifyAdminToken(sToken);
+            List<ProductionCompany> companies = productionCompanyRepo.getAll();
+            List<ProductionCompanyDTO> companyDTOs = companies.stream()
+                    .map(company -> new ProductionCompanyDTO(company))
+                    .collect(Collectors.toList());
+            logger.info("AdminManagementService.getAllProductionCompanies: Successfully retrieved {} production companies", companyDTOs.size());
+            return Result.makeOk(companyDTOs);
+        } catch(IllegalArgumentException e){
+            logger.warn("AdminManagementService.getAllProductionCompanies: IllegalArgumentException: {}", e.getLocalizedMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(AuthException e){
+            logger.warn("AdminManagementService.getAllProductionCompanies: Authentication error: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(Exception e){
+            logger.error("AdminManagementService.getAllProductionCompanies: unexpected error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred while retrieving production companies.");
+        }
+    }
+
+    public Result<List<UserDTO>> getAllUsers(String sToken){
+        try{
+            logger.info("AdminManagementService.getAllUsers: Attempting to retrieve all users");
+            verifyAdminToken(sToken);
+
+            List<User> users = userRepository.getAll();
+            List<UserDTO> userDTOs = users.stream()
+                    .map(user -> new UserDTO(user))
+                    .collect(Collectors.toList());
+            
+            logger.info("AdminManagementService.getAllUsers: Successfully retrieved {} users", userDTOs.size());
+            return Result.makeOk(userDTOs);
+        } catch(IllegalArgumentException e){
+            logger.warn("AdminManagementService.getAllUsers: IllegalArgumentException: {}", e.getLocalizedMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(AuthException e){
+            logger.warn("AdminManagementService.getAllUsers: Authentication error: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch(Exception e){
+            logger.error("AdminManagementService.getAllUsers: unexpected error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred while retrieving users.");
+        }
+    }
+
+    private void verifyAdminToken(String sToken) throws IllegalArgumentException {
+        if (!authenticationService.validateToken(sToken)  ) {
+            logger.warn("AdminManagementService.verifyAdminToken: Invalid token");
+            throw new AuthException("Invalid token");
+        }
+        if (!authenticationService.isAdminToken(sToken)) {
+            logger.warn("AdminManagementService.verifyAdminToken: Unauthorized access attempt by non-admin user");
+            throw new AuthException("Unauthorized access");
+        }
+        systemAdminRepo.findByID(authenticationService.extractSubjectFromToken(sToken)); // validate admin exists, throws error if not
     }
 }

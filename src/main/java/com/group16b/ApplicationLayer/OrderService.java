@@ -6,11 +6,14 @@ import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
 
-import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
@@ -21,6 +24,7 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
@@ -31,9 +35,6 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 
-
-import io.jsonwebtoken.JwtException;
-import org.springframework.stereotype.Service;
 
 @Service
 public class OrderService {
@@ -58,76 +59,145 @@ public class OrderService {
 		this.ticketGateway = ticketGateway;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(String userId, String orderID, String sTocken, PaymentInfo paymentInfo) {
+    public Result<List<TicketDTO>> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+		boolean paymentSucceeded = false;
 		try {
-			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} for user {}", orderID, userId);
+			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
 
-			// 1. System - check active order status.
-			Order order = orderRepo.findByID(orderID);
-
-			logger.info("OrderService.CompleteActiveOrder: validate Order {} is activeOrder for user {}", orderID, userId);
-			order.validiteOrderIsActive();
-			
-
+			// 1. user verification
             logger.info("Verifying session token for completion.");
 			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
-            logger.info("Session token verified successfully.");
 
+			// 2. order verification 
+			Order order = orderRepo.findByID(orderID);
 
-			// 1.5 System - verify order belungs to the user.
-			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, userId);
+			logger.info("OrderService.CompleteActiveOrder: validate Order {} is activeOrder", orderID);
+			order.validiteOrderIsActive();
+			
+			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, subjectID);
 			order.verifyBelongsToSubject(subjectID);
 
-			// 2. System - calculates price of tickets according to company and event policies.
-			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, userId);
+
+			//3. price calculation
+			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, subjectID);
 			double price = order.getTotalOrderprice();
 
 
-			// 3. System - charges the user for the designed price.
-			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, userId, price);
+			// 4.Payment processing
+			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
 			paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
-			logger.info("OrderService.CompleteActiveOrder: user {} paid {} successfully for order {}", userId, price, orderID);
-
-
-			// 4. System - creates Tickets for each of the tickets.
-			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, userId);
-			List<TicketDTO> tikketDTOs = new ArrayList<>();
-			for (int i = 0; i < order.getNumOfTickets(); i++) {
-				TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), String.valueOf(userId), order.getSegmentId(), order.getSeats().get(i), price); // TODO: implement actual ticket generation logic
-				tikketDTOs.add(ticketDTO);
-            }
-
-			logger.info("OrderService.CompleteActiveOrder: generated {} tickets successfully for order {} for user {}", tikketDTOs.size(), orderID, userId);
-			order.CompleteOrder();
-			logger.info("OrderService.CompleteActiveOrder: Order {} completed successfully for user {}", orderID, userId);
+			paymentSucceeded = true;
 
 			
-			// 5. System - sends the user his acquired tickets.
-			return Result.makeOk(tikketDTOs);
+			// 5. ticket generation
+			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, subjectID);
+			List<TicketDTO> ticketDTOs = generateTicketsForOrder(order, subjectID, price);
+			
+			// 6. complete order with optimistic locking retry
+			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
+			completeOrderWithOptimisticRetry(orderID, subjectID);
+			
+			// 7. return tickets
+			return Result.makeOk(ticketDTOs);
 
+		} catch (OrderExpiredException e) {
+			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}", orderID, e.getMessage());
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+			_cancelOrder(orderID);
+			return Result.makeFail("Order expired: " + e.getMessage());
+
+		} catch (PaymentFailedException e) {
+			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Payment failed: " + e.getMessage());
+
+		} catch (TicketGenerationException e) {
+			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+
+			return Result.makeFail("Ticket generation failed: " + e.getMessage());
 
 		} catch (AuthException e) {
-			logger.error("Authentication error during retrieving orders: " + e.getMessage());
+			logger.error("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (IllegalStateException e) { 
-			logger.error("OrderService.CompleteActiveOrder: Cannot complete Already completed order {} for user {}: {}", orderID, userId, e.getMessage());
-			paymentService.cancelPayment(); 
-			_cancelOrder(orderID);
-			return Result.makeFail(e.getMessage());
-		} catch (IllegalArgumentException e) { 
-			logger.error("OrderService.CompleteActiveOrder: {}", e.getMessage());
-			paymentService.cancelPayment(); 
-			_cancelOrder(orderID);
-			return Result.makeFail(e.getMessage());
-		}catch (PaymentFailedException e) {
-			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {} for user {}: {}", orderID, userId, e.getMessage());
-			return Result.makeFail("Payment failed: " + e.getMessage());
-		}
-		catch (Exception e) {
-			paymentService.cancelPayment();
-			_cancelOrder(orderID); 
+
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Invalid argument: " + e.getMessage());
+
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Illegal state: " + e.getMessage());
+
+		} catch (OptimisticLockingFailureException e) {
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+			return Result.makeFail("Could not complete order due to concurrent update. Please try again.");
+
+		}catch (Exception e) {
+			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
+			if (paymentSucceeded) {
+				paymentService.cancelPayment();}
+
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+
 		}
+	}
+	private List<TicketDTO> generateTicketsForOrder(Order order, String subjectID, double price) {
+        List<TicketDTO> ticketDTOs = new ArrayList<>();
+		if (order.getOrderType() == OrderType.SEAT) {
+			List<String> seats = order.getSeats();
+
+			for (int i = 0; i < order.getNumOfTickets(); i++) {
+					String seatId = null;
+					if (seats != null && i < seats.size()) {
+							seatId = seats.get(i);
+					}
+					TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), subjectID, order.getSegmentId(), seatId, price);
+
+					ticketDTOs.add(ticketDTO);
+			}
+			return ticketDTOs;
+		}else{
+			for (int i = 0; i < order.getNumOfTickets(); i++) {
+					TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), subjectID, order.getSegmentId(), null, price);
+
+					ticketDTOs.add(ticketDTO);
+			}
+			return ticketDTOs;
+		}
+	}
+
+	private void completeOrderWithOptimisticRetry(String orderID, String subjectID) {
+		final int maxRetries = 3;
+
+		for (int attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				Order freshOrder = orderRepo.findByID(orderID);
+
+				freshOrder.validiteOrderIsActive();
+				freshOrder.verifyBelongsToSubject(subjectID);
+
+				freshOrder.CompleteOrder();
+				orderRepo.save(freshOrder);
+				return;
+
+			} catch (OptimisticLockingFailureException e) {
+				logger.warn(
+					"OrderService.completeOrderWithOptimisticRetry: Optimistic lock failed for order {} on attempt {}/{}",
+					orderID,
+					attempt,
+					maxRetries
+				);
+
+				if (attempt == maxRetries) {
+					throw e;
+				}
+			}
+		}
+
+		throw new OptimisticLockingFailureException("Failed to complete order after retries");
 	}
     
 	private void _cancelOrder(String orderID) {
@@ -136,59 +206,17 @@ public class OrderService {
 		orderRepo.delete(orderID);
 		int eventID = order.getEventId();
 		Event event = eventRepo.findByID(String.valueOf(eventID));
-
 		Venue venue = venueRepo.findByID(event.getEventVenueID());
-		Segment segment = venue.getSegmentByID(order.getSegmentId());
-		
-			switch (segment.getSegmentType()) {
-            case "S" -> segment.cancelReservation(ReservationRequest.forSeats(order.getEventId(), order.getSeats(), order.getSegmentId()));
-            case "F" -> segment.cancelReservation(ReservationRequest.forField(order.getEventId(), order.getNumOfTickets(), order.getSegmentId()));
-            default -> logger.error("OrderService._cancelOrder: Unknown segment type {} for segment {} while attempting to cancel order {}", segment.getSegmentType(), segment.getSegmentID(), orderID);
-        }
+		if (venue.segmentType(order.getSegmentId()) == OrderType.SEAT) {
+			venue.cancelSeatReservation(order.getSegmentId(), order.getSeats(), eventID);
+		} else {
+			venue.cancelFieldReservation(order.getSegmentId(), order.getNumOfTickets(), eventID);
+		}
+
+		venueRepo.save(venue);
 		} catch (Exception e) {
 			logger.error("OrderService._cancelOrder: Failed to cancel reservation for order {}: {}", orderID, e.getMessage());
 			 // we log the error but do not throw it further as the main goal of this method is to cancel the order and we don't want a failure in cancelling the reservation to prevent the order cancellation.
-		}
-        
-
-	}
-
-    public Result<List<OrderDTO>> getUserOrders(String sessionToken) {
-		try {
-			//auth
-			logger.info("OrderService.getUserOrders: Verifying session token for retrieving orders of user with session token {0}.", sessionToken);
-			String userID = validateAndGetUserID(sessionToken);
-			logger.info("OrderService.getUserOrders: Session token verified successfully.");
-
-			//get orders
-			logger.info("OrderService.getUserOrders: Retrieving orders for user {0}.", userID);
-			List<Order> orders = orderRepo.getBySubjectId(String.valueOf(userID));
-			
-			logger.info("OrderService.getUserOrders: Mapping orders to OrderDTOs for user {0}.", userID);
-			List<OrderDTO> orderDTOs = new ArrayList<>();
-			for (Order order : orders) {
-				OrderDTO orderDTO = new OrderDTO(order); 
-				orderDTOs.add(orderDTO);
-			}
-			logger.info("OrderService.getUserOrders: Orders retrieved successfully for user {0}.", userID);
-			return Result.makeOk(orderDTOs);
-
-		}catch (AuthException e) {
-			logger.error("OrderService.getUserOrders: Authentication error during retrieving orders: " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		}
-		catch (IllegalArgumentException e) {
-			logger.error("OrderService.getUserOrders: Invalid argument provided: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (IllegalStateException e){
-			logger.error("OrderService.getUserOrders: Illegal state encountered: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		}catch (JwtException e) {
-			logger.error("OrderService.getUserOrders: JWT authentication error during retrieving orders: " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("OrderService.getUserOrders: Unexpected error during retrieving orders: " + e.getMessage());
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
 	
@@ -246,6 +274,7 @@ public class OrderService {
 
             logger.info("OrderService.changeSeatsToOrder: Updating order {} with new seats {}.", orderId, newSeatIds);
             order.updateSeats(newSeatIds, priceAfterDiscountPolicy);
+			orderRepo.save(order);
 
             return Result.makeOk(newSeatIds);
         } catch (AuthException e) {
@@ -321,7 +350,7 @@ public class OrderService {
 
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatsNum);
 			order.updateNumOfTickets(newSeatsNum, priceAfterDiscountPolicy);
-
+			orderRepo.save(order);
             return Result.makeOk(newSeatsNum);
 
         } catch (IllegalArgumentException e) {
@@ -355,17 +384,24 @@ public class OrderService {
         return result;
     }
 
-	public Result<Boolean> cancelOrder(String orderId) { // to call when order is expired
+	public Result<Boolean> cancelOrder(String orderId, String sTocken) { // to call when order is expired
 		try {
+
+			logger.info("Verifying session token for completion.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+            logger.info("Session token verified successfully.");
+			
+			
 			logger.info("Attempting to cancel order {}.", orderId);
 			Order order = orderRepo.findByID(orderId);
+			order.verifyBelongsToSubject(subjectID);
 			
-			if (order == null) {
-    			return Result.makeFail("Order not found");
-}
 			order.validiteOrderIsActive();
 			_cancelOrder(orderId);
-        return Result.makeOk(true);
+			return Result.makeOk(true);
+		}catch (AuthException e) {
+			logger.error("OrderService.cancelOrder: Authentication error during cancelling order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (IllegalArgumentException e) {
 			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
 			return Result.makeFail(e.getMessage());
@@ -385,11 +421,12 @@ public class OrderService {
 
             if (discountPolicy == null) {
                 logger.error("No discount policy found for event {}", eventID);
-                throw new IllegalArgumentException("No discount policy found for this event");
+                discountPolicy = Set.of(); // if no discount policy for the event, we will just use the company discount policy (if exists)
             }
             if (companyDiscountPolicy == null) {
                 logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
-                throw new IllegalArgumentException("No discount policy found for this event's production company");}
+				companyDiscountPolicy = Set.of(); // if no discount policy for the production company, we will just use the event discount policy (if exists)
+			}
             discountPolicy.addAll(companyDiscountPolicy);
 
             double priceAfterDiscountPolicy = pricePerSeat * amount;
@@ -405,11 +442,11 @@ public class OrderService {
 
             if (purchasePolicy == null) {
                 logger.error("No purchase policy found for event {}", eventID);
-                throw new IllegalArgumentException("No purchase policy found for this event");
+                purchasePolicy = Set.of(); // if no purchase policy for the event, we will just use the company purchase policy (if exists)
             }
             if (companyPurchasePolicy == null) {
                 logger.error("No purchase policy found for production company {}", event.getEventProductionCompanyID());
-                throw new IllegalArgumentException("No purchase policy found for this event's production company");
+                companyPurchasePolicy = Set.of(); // if no purchase policy for the production company, we will just use the event purchase policy (if exists)
             }
 
             purchasePolicy.addAll(companyPurchasePolicy);
@@ -434,17 +471,5 @@ public class OrderService {
         String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
         return subjectID;
     }
-	private String validateAndGetUserID(String sessionToken)
-    {
-        if (!authenticationService.validateToken(sessionToken)  ) {
-            throw new AuthException("Invalid Token");
-        }
-        if (!authenticationService.isUserToken(sessionToken)) {
-            throw new AuthException("Only users are allowed to perform operation");
-        }
-        String userID=authenticationService.extractSubjectFromToken(sessionToken);
-        //verify user exists in the database, i.e not a stale user
-        userRepo.findByID(userID);
-        return userID;
-    }
+	
 }

@@ -1,118 +1,125 @@
 import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { useSession } from "../../App";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
 import ViewOrder from "../Shared/ViewOrder";
 import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 
-type ProductionCompanyPurchaseHistoryProps = {
-  productionCompanyID: string;
-};
+const API_BASE = "http://localhost:8080";
 
-export default function ProductionCompanyPurchaseHistory({
-  productionCompanyID,
-}: ProductionCompanyPurchaseHistoryProps) {
+function getApiError(data: unknown): string {
+  if (typeof data === "string" && data.trim()) {
+    return data;
+  }
+
+  if (data && typeof data === "object") {
+    if ("message" in data && typeof data.message === "string") {
+      return data.message;
+    }
+
+    if ("error" in data && typeof data.error === "string") {
+      return data.error;
+    }
+  }
+
+  return "Failed to load production company purchase history.";
+}
+
+async function readResponseBody(response: Response): Promise<unknown> {
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+function isOrderList(data: unknown): data is OrderDTO[] {
+  return Array.isArray(data);
+}
+
+export default function ProductionCompanyPurchaseHistory() {
+  const { companyId } = useParams();
+  const { sessionToken } = useSession();
+
   const [orders, setOrders] = useState<OrderDTO[]>([]);
-  const [error, setError] = useState<string>("");
-  const [eventIdFilter, setEventIdFilter] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [eventIdFilter, setEventIdFilter] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     async function loadProductionCompanyPurchaseHistory() {
-      const authToken = localStorage.getItem("authToken") || "";
+      setLoading(true);
+      setError("");
+      setOrders([]);
+
+      if (!companyId) {
+        setError("Missing company ID.");
+        setLoading(false);
+        return;
+      }
+
+      if (!sessionToken) {
+        return;
+      }
 
       try {
-        // ====================================================
-        // BACKEND VERSION
-        //
-        // CURRENTLY ACTIVE
-        //
-        // Uses:
-        // GET /production-companies/{companyId}/sales-history
-        //
-        // If backend breaks during development,
-        // comment this section and uncomment the MOCK section
-        // below.
-        // ====================================================
-        /*
         const response = await fetch(
-          `http://localhost:8080/production-companies/${productionCompanyID}/sales-history`,
+          `${API_BASE}/production-companies/${companyId}/sales-history`,
           {
             method: "GET",
             headers: {
-              Authorization: `Bearer ${authToken}`,
+              "Content-Type": "application/json",
+              Authorization: sessionToken,
+              Accept: "application/json",
             },
           },
         );
 
-        if (!response.ok) {
-          throw new Error(await response.text());
+        const data = await readResponseBody(response);
+
+        if (cancelled) {
+          return;
         }
 
-        const orderList: OrderDTO[] = await response.json();
+        if (!response.ok) {
+          throw new Error(getApiError(data));
+        }
 
-        setOrders(orderList);
-        setError("");
-        */
+        if (!isOrderList(data)) {
+          throw new Error("Invalid purchase history response from server.");
+        }
 
-        // ====================================================
-        // MOCK VERSION
-        //
-        // TO USE MOCK DATA:
-        //
-        // 1. Comment out the fetch code above
-        // 2. Uncomment this block
-        // ====================================================
-
-        console.warn("====================================================");
-        console.warn(
-          "USING TEMPORARY MOCK DATA FOR ProductionCompanyPurchaseHistory",
-        );
-        console.warn("REMOVE THIS MOCK DATA BLOCK WHEN BACKEND IS READY");
-        console.warn("====================================================");
-
-        const mockOrders: OrderDTO[] = [
-          {
-            orderId: "ORD-2001",
-            segmentId: "VIP-A",
-            numOfTickets: 2,
-            orderType: "Seat",
-            totalOrderPrice: 500,
-            eventId: 101,
-            subjectId: "Ran123",
-          },
-          {
-            orderId: "ORD-2002",
-            segmentId: "Grass",
-            numOfTickets: 4,
-            orderType: "Field",
-            totalOrderPrice: 800,
-            eventId: 202,
-            subjectId: "Ofer456",
-          },
-          {
-            orderId: "ORD-2003",
-            segmentId: "Front",
-            numOfTickets: 1,
-            orderType: "Seat",
-            totalOrderPrice: 350,
-            eventId: 101,
-            subjectId: "Noa789",
-          },
-        ];
-
-        setOrders(mockOrders);
-        setError("");
+        setOrders(data);
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load production company purchase history.",
-        );
-
-        setOrders([]);
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load production company purchase history.",
+          );
+          setOrders([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     }
 
     void loadProductionCompanyPurchaseHistory();
-  }, [productionCompanyID]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, sessionToken]);
 
   const filteredOrders = orders.filter((order) => {
     return (
@@ -124,25 +131,34 @@ export default function ProductionCompanyPurchaseHistory({
     <section className="production-company-history">
       <h1>Purchase History</h1>
 
+      {loading && <p>Loading purchase history...</p>}
       {error && <p className="form-error">{error}</p>}
 
-      <div className="purchase-history-filter">
-        <label className="filter-label">Filter by Event ID</label>
+      {!loading && !error && (
+        <>
+          <div className="purchase-history-filter">
+            <label className="filter-label">Filter by Event ID</label>
 
-        <input
-          className="filter-input"
-          type="text"
-          placeholder="Search by Event ID..."
-          value={eventIdFilter}
-          onChange={(e) => setEventIdFilter(e.target.value)}
-        />
-      </div>
+            <input
+              className="filter-input"
+              type="text"
+              placeholder="Search by Event ID..."
+              value={eventIdFilter}
+              onChange={(e) => setEventIdFilter(e.target.value)}
+            />
+          </div>
 
-      <div className="orders-list">
-        {filteredOrders.map((order) => (
-          <ViewOrder key={order.orderId} order={order} />
-        ))}
-      </div>
+          <div className="orders-list">
+            {filteredOrders.length > 0 ? (
+              filteredOrders.map((order) => (
+                <ViewOrder key={order.orderId} order={order} />
+              ))
+            ) : (
+              <p>No purchases found.</p>
+            )}
+          </div>
+        </>
+      )}
     </section>
   );
 }

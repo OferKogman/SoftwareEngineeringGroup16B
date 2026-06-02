@@ -1,111 +1,25 @@
 package com.group16b.DomainLayer.Order;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 
+
 class OrderTests {
+    private Order order1;
 
-	
-
-	@Test
-	void activeOrderCompleteOrderReturnsCompletedOrder() {
-		// Arrange
-		ActiveOrder activeOrder = new ActiveOrder();
-
-		// Act
-		CompletedOrder completedOrder = activeOrder.completeOrder();
-
-		// Assert
-		assertNotNull(completedOrder);
-		assertInstanceOf(CompletedOrder.class, completedOrder);
-	}
-
-	@Test
-	void completedOrderCompleteOrderThrowsException() {
-		// Arrange
-		CompletedOrder completedOrder = new CompletedOrder();
-
-		// Act + Assert
-		IllegalStateException exception = assertThrows(
-				IllegalStateException.class,
-				completedOrder::completeOrder);
-
-		assertEquals("Order is already completed.", exception.getMessage());
-	}
-
-	@Test
-	void seatOrderGetSeatsReturnsSeats() {
-		// Arrange
-		List<String> seats = List.of("A1", "A2", "A3");
-		Order order = new Order("segment1", seats, 100.0, 1, "1");
-
-		// Act
-		List<String> actualSeats = order.getSeats();
-
-		// Assert
-		assertEquals(seats, actualSeats);
-	}
-
-	@Test
-	void fieldOrderGetSeatsThrowsException() {
-		// Arrange
-		Order order = new Order("segment1", 3, 100.0, 1, "1");
-
-		// Act + Assert
-		IllegalStateException exception = assertThrows(
-				IllegalStateException.class,
-				order::getSeats);
-
-		assertEquals(
-				"This order is for field tickets, it does not have specific seats.",
-				exception.getMessage());
-	}
-
-	@Test
-	void completeOrderChangesStateToCompletedOrder() {
-		// Arrange
-		Order order = new Order("segment1", List.of("A1", "A2"), 100.0, 1, "1");
-
-		assertInstanceOf(ActiveOrder.class, order.getState());
-
-		// Act
-		order.CompleteOrder();
-
-		// Assert
-		assertInstanceOf(CompletedOrder.class, order.getState());
-	}
-
-	@Test
-	void seatOrderNumOfTicketsEqualsNumberOfSeats() {
-		// Arrange
-		Order order = new Order("segment1", List.of("A1", "A2", "A3"), 100.0, 1, "1");
-
-		// Act
-		int numOfTickets = order.getNumOfTickets();
-
-		// Assert
-		assertEquals(3, numOfTickets);
-	}
-
-	@Test
-	void fieldOrderNumOfTicketsEqualsRequestedAmount() {
-		// Arrange
-		Order order = new Order("segment1", 5, 100.0, 1, "1");
-
-		// Act
-		int numOfTickets = order.getNumOfTickets();
-
-		// Assert
-		assertEquals(5, numOfTickets);
-	}
+	@BeforeEach
+    void setup() {
+        order1 = new Order("segment1", List.of("A1"), 50.0, 7, "10");
+    }
 
     @Test
     void seatOrderCreation_shouldInitializeBasicFields() {
@@ -118,8 +32,11 @@ class OrderTests {
         assertEquals(2, order.getNumOfTickets());
         assertEquals(50.0, order.getTotalOrderprice());
         assertEquals(7, order.getEventId());
+        assertEquals("10", order.getSubjectId());
         assertEquals(seats, order.getSeats());
         assertTrue(order.isActive());
+        assertFalse(order.isCompleted());
+        assertEquals(0, order.getVersion());
     }
 
     @Test
@@ -131,54 +48,280 @@ class OrderTests {
         assertEquals(3, order.getNumOfTickets());
         assertEquals(120.0, order.getTotalOrderprice());
         assertEquals(7, order.getEventId());
+        assertEquals("10", order.getSubjectId());
         assertTrue(order.isActive());
+        assertFalse(order.isCompleted());
+        assertEquals(0, order.getVersion());
     }
 
     @Test
-    void fieldOrderGetSeats_shouldThrowException() {
-        Order order = new Order("field1", 3, 40.0, 7, "10");
+    void fieldOrderGetSeats_shouldThrowIllegalStateException() {
+        Order order = new Order("field1", 3, 100.0, 1, "1");
 
-        assertThrows(IllegalStateException.class, order::getSeats);
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                order::getSeats
+        );
+
+        assertEquals(
+                "This order is for field tickets, it does not have specific seats.",
+                exception.getMessage()
+        );
     }
 
     @Test
-    void fieldOrderGetPricesPerSeat_shouldReturnEqualPrices() {
-        Order order = new Order("field1", 3, 40.0, 7, "10");
-
-        assertEquals(40.0, order.getTotalOrderprice());
-    }
-
-    @Test
-    void seatOrderGetPricesPerSeat_shouldNotBeNull() {
-        Order order = new Order("segment1", List.of("A-1", "A-2"), 50.0, 7, "10");
-
-        assertNotNull(order.getTotalOrderprice());
-        assertEquals(50.0, order.getTotalOrderprice());
-    }
-
-    @Test
-    void completeOrder_shouldChangeStateToCompleted() {
-        Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
-
-        assertTrue(order.isActive());
+    void completeOrder_whenActive_shouldChangeStateToCompleted() {
+        Order order = new Order("segment1", List.of("A1"), 100.0, 1, "1");
 
         boolean result = order.CompleteOrder();
 
         assertTrue(result);
         assertFalse(order.isActive());
+        assertTrue(order.isCompleted());
     }
 
     @Test
-    void isBelongsToUser_sameToken_shouldReturnTrue() {
-        Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
+    void completeOrder_whenAlreadyCompleted_shouldThrowIllegalStateException() {
+        Order order = new Order("segment1", List.of("A1"), 100.0, 1, "1");
+        order.CompleteOrder();
 
-        assertTrue(order.isBelongsToSubject("10"));
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                order::CompleteOrder
+        );
+
+        assertEquals("Order is already completed.", exception.getMessage());
     }
 
     @Test
-    void isBelongsToUser_differentToken_shouldReturnFalse() {
-        Order order = new Order("segment1", List.of("A-1"), 50.0, 7, "10");
+    void completeOrder_whenOrderExpired_shouldThrowIllegalStateException() throws Exception {
+        Order order = new Order("segment1", List.of("A1"), 100.0, 1, "1");
 
-        assertFalse(order.isBelongsToSubject("wrongSubject"));
+        Field stateField = Order.class.getDeclaredField("state");
+        stateField.setAccessible(true);
+        Object activeState = stateField.get(order);
+
+        Field creationTimeField = activeState.getClass().getDeclaredField("creationTime");
+        creationTimeField.setAccessible(true);
+        creationTimeField.setLong(activeState, System.currentTimeMillis() - (11 * 60 * 1000));
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                order::CompleteOrder
+        );
+
+        assertEquals("This Order is Expired.", exception.getMessage());
+    }
+
+    @Test
+    void isBelongsToSubject_sameSubject_shouldReturnTrue() {
+        assertTrue(order1.isBelongsToSubject("10"));
+    }
+
+    @Test
+    void isBelongsToSubject_differentSubject_shouldReturnFalse() {
+        assertFalse(order1.isBelongsToSubject("wrongSubject"));
+    }
+
+    @Test
+    void verifyBelongsToSubject_sameSubject_shouldNotThrow() {
+        assertDoesNotThrow(() -> order1.verifyBelongsToSubject("10"));
+    }
+
+    @Test
+    void verifyBelongsToSubject_differentSubject_shouldThrowIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> order1.verifyBelongsToSubject("wrongSubject")
+        );
+
+        assertEquals(
+                "Order " + order1.getOrderId() + " does not belong to subject wrongSubject",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void verifyTypeSeats_whenSeatOrder_shouldNotThrow() {
+        assertDoesNotThrow(order1::verifyTypeSeats);
+    }
+
+    @Test
+    void verifyTypeSeats_whenFieldOrder_shouldThrowIllegalStateException() {
+        Order order = new Order("field1", 3, 50.0, 7, "10");
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                order::verifyTypeSeats
+        );
+
+        assertEquals(
+                "This order is for field tickets, it does not have specific seats.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void verifyTypeField_whenFieldOrder_shouldNotThrow() {
+        Order order = new Order("field1", 3, 50.0, 7, "10");
+
+        assertDoesNotThrow(order::verifyTypeField);
+    }
+
+    @Test
+    void verifyTypeField_whenSeatOrder_shouldThrowIllegalStateException() {
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                order1::verifyTypeField
+        );
+
+        assertEquals(
+                "This order is for seat tickets, it must have specific seats.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void validateOrderIsActive_whenActive_shouldNotThrow() {
+        assertDoesNotThrow(order1::validiteOrderIsActive);
+    }
+
+    @Test
+    void validateOrderIsActive_whenCompleted_shouldThrowIllegalStateException() {
+        order1.CompleteOrder();
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                order1::validiteOrderIsActive
+        );
+
+        assertEquals("Order " + order1.getOrderId() + " is not active", exception.getMessage());
+    }
+
+    @Test
+    void updateSeats_whenSeatOrderAndValidSeats_shouldUpdateSeatsTicketCountAndPrice() {
+        order1.updateSeats(List.of("B1", "B2"), 100.0);
+
+        assertEquals(List.of("B1", "B2"), order1.getSeats());
+        assertEquals(2, order1.getNumOfTickets());
+        assertEquals(100.0, order1.getTotalOrderprice());
+    }
+
+    @Test
+    void updateSeats_whenFieldOrder_shouldThrowIllegalStateException() {
+        Order order = new Order("field1", 3, 50.0, 7, "10");
+
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> order.updateSeats(List.of("A1"), 50.0)
+        );
+
+        assertEquals(
+                "This order is for field tickets, it does not have specific seats.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void updateSeats_whenSeatsNull_shouldThrowIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> order1.updateSeats(null, 50.0)
+        );
+
+        assertEquals("New seat IDs list cannot be null or empty", exception.getMessage());
+    }
+
+    @Test
+    void updateSeats_whenSeatsEmpty_shouldThrowIllegalArgumentException() {
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> order1.updateSeats(List.of(), 50.0)
+        );
+
+        assertEquals("New seat IDs list cannot be null or empty", exception.getMessage());
+    }
+
+    @Test
+    void updateNumOfTickets_whenFieldOrderAndValidAmount_shouldUpdateAmountAndPrice() {
+        Order order = new Order("field1", 3, 50.0, 7, "10");
+
+        order.updateNumOfTickets(5, 150.0);
+
+        assertEquals(5, order.getNumOfTickets());
+        assertEquals(150.0, order.getTotalOrderprice());
+    }
+
+    @Test
+    void updateNumOfTickets_whenSeatOrder_shouldThrowIllegalStateException() {
+        IllegalStateException exception = assertThrows(
+                IllegalStateException.class,
+                () -> order1.updateNumOfTickets(3, 90.0)
+        );
+
+        assertEquals(
+                "This order is for seat tickets, it must have specific seats.",
+                exception.getMessage()
+        );
+    }
+
+    @Test
+    void updateNumOfTickets_whenZero_shouldThrowIllegalArgumentException() {
+        Order order = new Order("field1", 3, 50.0, 7, "10");
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> order.updateNumOfTickets(0, 90.0)
+        );
+
+        assertEquals("New number of tickets must be greater than zero", exception.getMessage());
+    }
+
+    @Test
+    void updateNumOfTickets_whenNegative_shouldThrowIllegalArgumentException() {
+        Order order = new Order("field1", 3, 50.0, 7, "10");
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> order.updateNumOfTickets(-1, 90.0)
+        );
+
+        assertEquals("New number of tickets must be greater than zero", exception.getMessage());
+    }
+
+    @Test
+    void copyConstructor_shouldCopyBasicFields() {
+        Order original = new Order("segment1", List.of("A1", "A2"), 100.0, 7, "10");
+        original.setVersion(4);
+
+        Order copy = new Order(original);
+
+        assertEquals(original.getOrderId(), copy.getOrderId());
+        assertEquals(original.getOrderType(), copy.getOrderType());
+        assertEquals(original.getSegmentId(), copy.getSegmentId());
+        assertEquals(original.getSeats(), copy.getSeats());
+        assertEquals(original.getNumOfTickets(), copy.getNumOfTickets());
+        assertEquals(original.getTotalOrderprice(), copy.getTotalOrderprice());
+        assertEquals(original.getEventId(), copy.getEventId());
+        assertEquals(original.getSubjectId(), copy.getSubjectId());
+        assertEquals(original.getVersion(), copy.getVersion());
+    }
+
+    @Test
+    void copyConstructor_whenOriginalChangesAfterCopy_shouldNotChangeCopy() {
+        Order original = new Order("segment1", List.of("A1"), 50.0, 7, "10");
+        Order copy = new Order(original);
+
+        original.updateSeats(List.of("B1", "B2"), 100.0);
+
+        assertEquals(List.of("A1"), copy.getSeats());
+        assertEquals(1, copy.getNumOfTickets());
+        assertEquals(50.0, copy.getTotalOrderprice());
+    }
+
+    @Test
+    void setVersion_shouldUpdateVersion() {
+        order1.setVersion(5);
+        assertEquals(5, order1.getVersion());
     }
 }

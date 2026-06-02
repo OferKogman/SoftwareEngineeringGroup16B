@@ -448,10 +448,9 @@ public class ReservationServiceTests {
     }
     @Test
     void reserveFieldSeats_eventHasLotteryPolicy_returnsFail() {
-        LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 
         Event eventWithLottery = spy(event);
-        when(eventWithLottery.getLotteryPolicy()).thenReturn(lotteryPolicy);
+        doThrow(new IllegalStateException("Event has a lottery purchase policy.")).when(eventWithLottery).verifyDoesNotHaveLotteryPolicy();
 
         when(mockEventRepository.findByID(String.valueOf(EVENT_ID))).thenReturn(eventWithLottery);
 

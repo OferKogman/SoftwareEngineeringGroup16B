@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import type { OrderDTO } from "../DTOs/OrderDTO";
-import ViewSaleHistory from "./ViewSaleHistory";
+import { useSession } from "../../App";
+import type { OrderDTO } from "../../DTOs/OrderDTO";
+import ViewSaleHistory from "../ViewSaleHistory";
 
 export default function AdminPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
@@ -8,6 +9,7 @@ export default function AdminPurchaseHistory() {
 
   type AdminHistoryMode = "all" | "byUser" | "byCompany";
 
+  const { sessionToken } = useSession();
   const [selectedMode, setSelectedMode] = useState<AdminHistoryMode>("all");
   const [idInput, setIdInput] = useState<string>("");
 
@@ -17,43 +19,24 @@ export default function AdminPurchaseHistory() {
 
   async function loadAllPurchaseHistory() {
     try {
-      setError("");
-
-      // future backend call:
-      // const ordersFromServer = await admin.getAll();
-      // setOrders(ordersFromServer);
-
-      const mockOrders: OrderDTO[] = [
+      const response = await fetch(
+        `http://localhost:8080/api/admin-management/viewAllPurchasesHistory`,
         {
-          orderId: "ORD-3001",
-          segmentId: "VIP-A",
-          numOfTickets: 2,
-          orderType: "Seat",
-          totalOrderPrice: 500,
-          eventId: 101,
-          subjectId: "Ran123",
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
         },
-        {
-          orderId: "ORD-3002",
-          segmentId: "Grass",
-          numOfTickets: 4,
-          orderType: "Field",
-          totalOrderPrice: 800,
-          eventId: 202,
-          subjectId: "Ofer456",
-        },
-        {
-          orderId: "ORD-3003",
-          segmentId: "Front",
-          numOfTickets: 1,
-          orderType: "Seat",
-          totalOrderPrice: 350,
-          eventId: 303,
-          subjectId: "Noa789",
-        },
-      ];
+      );
 
-      setOrders(mockOrders);
+      if (!response.ok) {
+        throw new Error("Failed to load purchase history.");
+      }
+
+      const ordersFromServer: OrderDTO[] = await response.json();
+
+      setOrders(ordersFromServer);
     } catch (err) {
       setError(
         err instanceof Error
@@ -77,34 +60,23 @@ export default function AdminPurchaseHistory() {
   }
   async function loadByProductionCompany() {
     try {
-      setError("");
-
-      // future backend call:
-      // const ordersFromServer = await admin.getByProductionCompany(idInput);
-      //       // setOrders(ordersFromServer);
-
-      const mockOrders: OrderDTO[] = [
+      const response = await fetch(
+        `http://localhost:8080/api/admin-management/viewPurchasesHistoryByCompany/${idInput}`,
         {
-          orderId: "ORD-PC-1",
-          segmentId: "VIP-A",
-          numOfTickets: 3,
-          orderType: "Seat",
-          totalOrderPrice: 750,
-          eventId: 404,
-          subjectId: "CompanyUser1",
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
         },
-        {
-          orderId: "ORD-PC-2",
-          segmentId: "Grass",
-          numOfTickets: 5,
-          orderType: "Field",
-          totalOrderPrice: 1000,
-          eventId: 505,
-          subjectId: "CompanyUser2",
-        },
-      ];
-
-      setOrders(mockOrders);
+      );
+      if (!response.ok) {
+        throw new Error(
+          "Failed to load purchase history by production company.",
+        );
+      }
+      const ordersFromServer: OrderDTO[] = await response.json();
+      setOrders(ordersFromServer);
     } catch (err) {
       setError(
         err instanceof Error
@@ -116,34 +88,21 @@ export default function AdminPurchaseHistory() {
 
   async function loadByUserId() {
     try {
-      setError("");
-
-      // future backend call:
-      // const ordersFromServer = await admin.getByUserId(idInput);
-      // setOrders(ordersFromServer);
-
-      const mockOrders: OrderDTO[] = [
+      const response = await fetch(
+        `http://localhost:8080/api/admin-management/viewPurchasesHistoryByUser/${idInput}`,
         {
-          orderId: "ORD-USER-1",
-          segmentId: "Front",
-          numOfTickets: 1,
-          orderType: "Seat",
-          totalOrderPrice: 350,
-          eventId: 101,
-          subjectId: idInput || "MockUser",
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
         },
-        {
-          orderId: "ORD-USER-2",
-          segmentId: "Grass",
-          numOfTickets: 2,
-          orderType: "Field",
-          totalOrderPrice: 400,
-          eventId: 202,
-          subjectId: idInput || "MockUser",
-        },
-      ];
-
-      setOrders(mockOrders);
+      );
+      if (!response.ok) {
+        throw new Error("Failed to load purchase history by user.");
+      }
+      const ordersFromServer: OrderDTO[] = await response.json();
+      setOrders(ordersFromServer);
     } catch (err) {
       setError(
         err instanceof Error

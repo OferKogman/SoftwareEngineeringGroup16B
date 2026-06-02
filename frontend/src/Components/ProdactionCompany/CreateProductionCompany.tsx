@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSession } from "../../App";
 
 const API_BASE = "http://localhost:8080";
 
@@ -13,7 +14,7 @@ export default function CreateProdactionCompany() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const authToken = localStorage.getItem("authToken") || "";
+  const { sessionToken } = useSession();
 
   async function handleCreateCompany(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -33,18 +34,19 @@ export default function CreateProdactionCompany() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: authToken,
+          Authorization: sessionToken,
         },
         body: JSON.stringify({
           companyName: companyName.trim(),
         }),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Failed to create production company.");
+        throw new Error(
+          (await response.text()) || "Failed to create production company.",
+        );
       }
+      const data = await response.json();
 
       setMessage("Production company created successfully.");
       setCompanyName("");
@@ -53,10 +55,14 @@ export default function CreateProdactionCompany() {
 
       if (createdCompany.companyId || createdCompany.id) {
         const newCompanyId = createdCompany.companyId ?? createdCompany.id;
-        navigate(`/production-company/${newCompanyId}`);
+        navigate(`/companies/${newCompanyId}`);
       }
-    } catch (err: any) {
-      setError(err.message || "Something went wrong.");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Something went wrong.");
+      }
     } finally {
       setIsSubmitting(false);
     }

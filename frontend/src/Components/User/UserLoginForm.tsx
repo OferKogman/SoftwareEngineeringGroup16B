@@ -1,35 +1,63 @@
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
-import "./CSS/LoginForm.css";
+import { NavLink, useNavigate } from "react-router-dom";
+import { useLoggedIn, useSession } from "../../App";
+import "./CSS/UserLoginForm.css";
 
-export type LoginData = {
+export type UserLoginData = {
   email: string;
   password: string;
 };
 
-type LoginFormProps = {
+type UserLoginFormProps = {
   title: string;
-  onLogin: (event: LoginData) => void | Promise<void>;
-  onCancel?: () => void;
 };
 
-const initialFormData: LoginData = {
+const initialFormData: UserLoginData = {
   email: "",
   password: "",
 };
 
-export default function LoginForm({
-  title,
-  onLogin,
-  onCancel,
-}: LoginFormProps) {
-  const [formData, setFormData] = useState<LoginData>(initialFormData);
+export default function UserLoginForm({ title }: UserLoginFormProps) {
+  const [formData, setFormData] = useState<UserLoginData>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { sessionToken, setSessionToken } = useSession();
+  const { loggedIn, setLoggedIn } = useLoggedIn();
 
-  function updateField<K extends keyof LoginData>(
+  const navigate = useNavigate();
+
+  async function onUserLogin({ email, password }: UserLoginData) {
+    try {
+      console.log("token:", sessionToken);
+      const response = await fetch(
+        `http://localhost:8080/api/user/login/member`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
+          body: JSON.stringify({ email, password }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      const token: string = await response.text();
+
+      setSessionToken(token);
+      setLoggedIn(true);
+      navigate("/");
+      console.log("User successfully logged in");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to login.");
+    }
+  }
+
+  function updateField<K extends keyof UserLoginData>(
     field: K,
-    value: LoginData[K],
+    value: UserLoginData[K],
   ) {
     setFormData((current) => ({
       ...current,
@@ -43,12 +71,11 @@ export default function LoginForm({
     setError("");
 
     try {
-      await onLogin({
+      await onUserLogin({
         ...formData,
         email: formData.email.trim(),
         password: formData.password.trim(),
       });
-      setFormData(initialFormData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login.");
     } finally {
@@ -87,11 +114,6 @@ export default function LoginForm({
       </div>
 
       <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Logging in..." : "Login"}
         </button>
@@ -99,7 +121,7 @@ export default function LoginForm({
 
       <p>
         <NavLink to="/register" className="auth-link">
-          Don't have an account? Register here
+          Don&apos;t have an account? Register here
         </NavLink>
       </p>
     </form>

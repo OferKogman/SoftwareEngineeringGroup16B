@@ -41,7 +41,19 @@ public class UserLoginService {
         }
     }
 
-    public Result<String> loginMember(String userID, String password) {
+    public Result<String> loginMember(String userID, String password, String guestSessionToken) {
+        logger.info("userLoginService.loginMember: verifying login attempt is made by a guest");
+        if(!tokenService.validateToken(guestSessionToken))
+        {
+            logger.warn("UserLoginService.loginMember: Login attempt failed, invalid or expired guest session token.");
+            return Result.makeFail("Authentication failed. Please refresh your session and try again.");
+        }
+        if(!tokenService.isGuestToken(guestSessionToken))
+        {
+            logger.warn("UserLoginService.loginMember: Login attempt failed, provided token is not a guest session token.");
+            return Result.makeFail("Authentication failed. Only guests are allowed to login.");
+        }
+
         logger.info("UserLoginService.loginMember: Attempting login for user ID {}", userID);
         
         try {

@@ -1,30 +1,84 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSession } from "../../App";
 import "./CSS/CompanyEvents.css";
 
-type CompanyEvent = {
+const API_BASE = "http://localhost:8080";
+
+interface CompanyEvent {
   id: number;
   name: string;
-};
+}
 
 export default function CompanyEvents() {
   const navigate = useNavigate();
   const { companyId } = useParams();
+  const { sessionToken } = useSession();
 
-  // TEMP MOCK DATA
-  const events: CompanyEvent[] = [
-    { id: 101, name: "Rock Night" },
-    { id: 102, name: "Jazz Festival" },
-    { id: 103, name: "Standup Show" },
-  ];
+  const [events, setEvents] = useState<CompanyEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadEvents() {
+      if (!companyId || !sessionToken) {
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch(
+          `${API_BASE}/production-companies/${companyId}/events`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: sessionToken,
+              Accept: "application/json",
+            },
+          },
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data?.message || data?.error || "Failed to load events",
+          );
+        }
+
+        if (!cancelled) {
+          setEvents(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load events",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [companyId, sessionToken]);
 
   function handleCreateEvent() {
-  navigate(`/production-company-menegment/${companyId}/events/create`);
-}
+    navigate(`/companies/${companyId}/events/create`);
+  }
 
   function handleManageEvent(eventId: number) {
-    navigate(
-      `/production-company-menegment/${companyId}/events/${eventId}/manage`
-    );
+    navigate(`/companies/${companyId}/events/${eventId}/manage`);
   }
 
   return (
@@ -32,20 +86,17 @@ export default function CompanyEvents() {
       <div className="company-events-header">
         <h2>Company Events</h2>
 
-        <button
-          className="create-event-button"
-          onClick={handleCreateEvent}
-        >
+        <button className="create-event-button" onClick={handleCreateEvent}>
           Create New Event
         </button>
       </div>
 
+      {loading && <p>Loading events...</p>}
+      {error && <p className="form-error">{error}</p>}
+
       <div className="company-events-list">
         {events.map((event) => (
-          <div
-            key={event.id}
-            className="company-event-card"
-          >
+          <div key={event.id} className="company-event-card">
             <div>
               <h3>{event.name}</h3>
               <p>Event ID: {event.id}</p>

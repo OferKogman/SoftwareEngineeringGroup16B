@@ -1,7 +1,6 @@
 package com.group16b.DomainLayer.SystemAdmin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,13 +14,9 @@ class SystemAdminTests {
 
 	@BeforeEach
 	void setUp() {
-		admin = new SystemAdmin("1", "admin", "password", "email");
+		admin = new SystemAdmin("admin", "password", "email");
 	}
 
-	@Test
-	void testGetId() {
-		assertEquals("1", admin.getId());
-	}
 
 	@Test
 	void testGetUsername() {
