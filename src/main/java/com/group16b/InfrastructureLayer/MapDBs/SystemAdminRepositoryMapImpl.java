@@ -5,41 +5,27 @@ import java.util.Map;
 
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
-	private Map<String, SystemAdmin> systemAdminsById;
+public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 	private Map<String, SystemAdmin> systemAdminsByUsername;
 
 
 
 	public SystemAdminRepositoryMapImpl() {
-		this.systemAdminsById = new java.util.HashMap<>();
 		this.systemAdminsByUsername = new java.util.HashMap<>();
 	}
-	public SystemAdminRepositoryMapImpl(Map<String, SystemAdmin> systemAdminsById,  Map<String, SystemAdmin> systemAdminsByUsername) {
-		this.systemAdminsById = systemAdminsById;
+	public SystemAdminRepositoryMapImpl(Map<String, SystemAdmin> systemAdminsByUsername) {
 		this.systemAdminsByUsername = systemAdminsByUsername;
 	}
 
 
-
-
-	// Retrieves a system admin by their username.
-	public SystemAdmin getSystemAdminByUsername(String username) {
-		return systemAdminsByUsername.get(username);
-	}
-
-	public boolean doesSystemAdminExist(String adminID){
-		return systemAdminsById.containsKey(adminID);
-	}
-
 	@Override
 	public SystemAdmin findByID(String ID) {
-		SystemAdmin admin = systemAdminsById.get(ID);
+		SystemAdmin admin = systemAdminsByUsername.get(ID);
 		if(admin == null) {
 			throw new IllegalArgumentException("System admin with ID " + ID + " does not exist.");
 		}
@@ -49,21 +35,21 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 	@Override
 	public List<SystemAdmin> getAll() {
 		List<SystemAdmin> admins = new java.util.ArrayList<>();
-		for(SystemAdmin admin : systemAdminsById.values()) {
+		for(SystemAdmin admin : systemAdminsByUsername.values()) {
 			admins.add(new SystemAdmin(admin));
 		}
 		return admins;
 	}
 	@Override
 	public synchronized void delete(String ID) {
-		SystemAdmin admin = systemAdminsById.remove(ID);
+		SystemAdmin admin = systemAdminsByUsername.remove(ID);
 		if (admin != null) {
 			systemAdminsByUsername.remove(admin.getUsername());
 		}
 	}
 
 	public synchronized void save(SystemAdmin systemAdmin) {
-		SystemAdmin existingAdmin = systemAdminsById.get(systemAdmin.getId());
+		SystemAdmin existingAdmin = systemAdminsByUsername.get(systemAdmin.getUsername());
 		if (existingAdmin != null) { //if admin exists in the system, update it
 			long newVersion = systemAdmin.getVersion();
 			long currentVersion = existingAdmin.getVersion();
@@ -72,12 +58,10 @@ public class SystemAdminRepositoryMapImpl implements ISystemAdminRepository {
 			}
 			existingAdmin.updateAdmin(systemAdmin);
 			systemAdminsByUsername.put(systemAdmin.getUsername(), existingAdmin);
-			systemAdminsById.put(systemAdmin.getId(), existingAdmin);
 			
 		}
 		else{ //if admin does not exist, add it to the system, no need to check versions because it's a new admin
 			systemAdmin.setVersion(systemAdmin.getVersion() + 1);
-			systemAdminsById.put(systemAdmin.getId(), new SystemAdmin(systemAdmin));
 			systemAdminsByUsername.put(systemAdmin.getUsername(), systemAdmin);
 		}
 		
