@@ -23,9 +23,11 @@ export default function AppRoutes() {
       <Route path="/register" element={<RegistrationForm title="Register" />} />
       <Route path="/users" element={<UserManagement />} />
 
-      <Route path="/admins" element={<AdminManagement />}>
-        <Route path="/login" element={<AdminLoginForm title="Admin Login" />} />
-      </Route>
+      <Route path="/admins" element={<AdminManagement />} />
+      <Route
+        path="/admins/login"
+        element={<AdminLoginForm title="Admin Login" />}
+      />
 
       <Route path="/events/search" element={<SearchEvents />} />
 
