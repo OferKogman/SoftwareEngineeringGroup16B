@@ -1,6 +1,7 @@
 package com.group16b.ApiLayer;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,5 +29,10 @@ public class UserController extends BaseController{
     @PutMapping("/updateUserPassword")
     public ResponseEntity<?> updateUserPassword(@RequestHeader("Authorization") String sessionToken, @RequestBody PasswordChangeDTO requestDTO){
         return executeWithReturnData(() -> userService.updateUserPassword(sessionToken, requestDTO.getOldPassword(), requestDTO.getNewPassword()));
+    }
+
+    @GetMapping("/me/order-history")
+    public ResponseEntity<?> getOrderShistory(@RequestHeader("Authorization") String sessionToken){
+        return executeWithReturnData(() -> userService.getUserOrderHistory(sessionToken));
     }
 }
