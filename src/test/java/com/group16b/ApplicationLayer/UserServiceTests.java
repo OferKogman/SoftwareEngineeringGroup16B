@@ -126,7 +126,7 @@ public class UserServiceTests {
         Result<Boolean> result = userService.updateUserPassword(token, "WrongPassword!", "NewPassword456!");
 
         assertFalse(result.isSuccess());
-        assertEquals("An unexpected error occurred: Old password is incorrect.", result.getError());
+        assertEquals("Old password is incorrect.", result.getError());
 
         User untouchedUser = userRepo.findByID("member@test.com");
         assertTrue(untouchedUser.confirmPassword("OldPassword123!"));
