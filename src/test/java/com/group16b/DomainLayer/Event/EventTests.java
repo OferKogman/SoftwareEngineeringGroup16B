@@ -11,11 +11,8 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-<<<<<<< HEAD
-=======
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
->>>>>>> f51193753d110aa8a825fad5b1dc03f9f49103f7
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
