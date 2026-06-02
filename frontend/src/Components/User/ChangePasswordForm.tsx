@@ -66,10 +66,18 @@ export default function ChangePasswordForm({
         },
       );
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let message = responseText;
+
+      try {
+        const data = responseText ? JSON.parse(responseText) : null;
+        message = data?.message || responseText;
+      } catch {
+        message = responseText;
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to change password.");
+        throw new Error(message || "Failed to change password.");
       }
 
       setFormData(initialFormData);
