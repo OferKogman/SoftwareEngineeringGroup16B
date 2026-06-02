@@ -5,7 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.SessionToken;
 import org.springframework.stereotype.Service;
@@ -14,10 +14,10 @@ import org.springframework.stereotype.Service;
 public class SystemAdminLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(SystemAdminLoginService.class);
-    private final ISystemAdminRepository systemAdminRespotiry;
+    private final IRepository<SystemAdmin> systemAdminRespotiry;
     private final IAuthenticationService tokenService;
 
-    public SystemAdminLoginService(ISystemAdminRepository systemAdminRespotiry, IAuthenticationService tokenService) {
+    public SystemAdminLoginService(IRepository<SystemAdmin> systemAdminRespotiry, IAuthenticationService tokenService) {
         this.systemAdminRespotiry = systemAdminRespotiry;
         this.tokenService = tokenService;
     }
@@ -58,14 +58,14 @@ public class SystemAdminLoginService {
                 return Result.makeFail("Invalusername username for logout");
             }
 
-            if (!systemAdminRespotiry.doesSystemAdminExist(recievedusername)){
-                logger.warn("SystemAdminLoginService.loginAdmin: Logout failed: user username {} of the token does not exist!", recievedusername);
-                return Result.makeFail("Invalusername adminusername username");
-            }
+            systemAdminRespotiry.findByID(recievedusername); //check if the admin exists in the system, if not, fail the logout attempt
             
             return Result.makeOk(tokenService.generateVisitor_GuestToken(new SessionToken()));
+        } catch (IllegalArgumentException e) {
+            logger.warn("SystemAdminLoginService.logOutAdmin: Logout failed: invalid session token - {}", e.getMessage());
+            return Result.makeFail("Failed to log out: " + e.getMessage());
         } catch (Exception e) {
-            logger.error("SystemAdminLoginService.loginAdmin: failed to log out in this session: {}", e.getMessage(), e);
+            logger.error("SystemAdminLoginService.logOutAdmin: failed to log out in this session: {}", e.getMessage(), e);
             return Result.makeFail("Failed to log out: " + e.getMessage());
         }   
     }
