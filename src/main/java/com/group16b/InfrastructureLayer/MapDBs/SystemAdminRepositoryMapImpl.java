@@ -2,6 +2,7 @@ package com.group16b.InfrastructureLayer.MapDBs;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.dao.OptimisticLockingFailureException;
 
@@ -16,7 +17,7 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 
 
 	public SystemAdminRepositoryMapImpl() {
-		this.systemAdminsByUsername = new java.util.HashMap<>();
+		this.systemAdminsByUsername = new ConcurrentHashMap<>();
 	}
 	public SystemAdminRepositoryMapImpl(Map<String, SystemAdmin> systemAdminsByUsername) {
 		this.systemAdminsByUsername = systemAdminsByUsername;
@@ -42,7 +43,7 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 	}
 	@Override
 	public synchronized void delete(String username) {
-		SystemAdmin admin = systemAdminsByUsername.remove(username);
+		systemAdminsByUsername.remove(username);
 	}
 
 	public synchronized void save(SystemAdmin systemAdmin) {
@@ -50,16 +51,18 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 		if (existingAdmin != null) { //if admin exists in the system, update it
 			long newVersion = systemAdmin.getVersion();
 			long currentVersion = existingAdmin.getVersion();
+			SystemAdmin adminToUpdate = new SystemAdmin(systemAdmin);
 			if (newVersion != currentVersion) {
 				throw new OptimisticLockingFailureException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
 			}
-			existingAdmin.updateAdmin(systemAdmin);
-			systemAdminsByUsername.put(systemAdmin.getUsername(), existingAdmin);
+			adminToUpdate.setVersion(currentVersion+1);
+			systemAdminsByUsername.put(systemAdmin.getUsername(), adminToUpdate);
 			
 		}
 		else{ //if admin does not exist, add it to the system, no need to check versions because it's a new admin
-			systemAdmin.setVersion(systemAdmin.getVersion() + 1);
-			systemAdminsByUsername.put(systemAdmin.getUsername(), systemAdmin);
+			SystemAdmin adminToStore = new SystemAdmin(systemAdmin);
+			adminToStore.setVersion(systemAdmin.getVersion() + 1);
+			systemAdminsByUsername.put(systemAdmin.getUsername(), adminToStore);
 		}
 		
 	}

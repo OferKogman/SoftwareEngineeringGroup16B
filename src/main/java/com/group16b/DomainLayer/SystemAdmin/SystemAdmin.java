@@ -110,7 +110,7 @@ public class SystemAdmin {
 
 	public void updateAdmin(SystemAdmin other)
 	{
-
+		//wtf is that? is that instead of setVersion?
 	}
 
 
