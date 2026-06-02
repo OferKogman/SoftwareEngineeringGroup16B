@@ -30,22 +30,22 @@ public class SystemAdminManagementController extends BaseController{
     }
 
     @GetMapping("/viewPurchesHistoryByCompany/{companyID}")
-    public ResponseEntity<?> viewPurchesHistoryByCompany(@RequestHeader("Authorization") String sessionToken, @PathVariable int  companyID){
+    public ResponseEntity<?> viewPurchesHistoryByCompany(@RequestHeader("Authorization") String sessionToken, @PathVariable("companyID") int  companyID){
         return executeWithReturnData(() -> adminManagementService.viewPurchesHistoryByCompany(sessionToken, companyID));
     }
 
     @GetMapping("/viewPurchesHistoryByUser/{userID}")
-    public ResponseEntity<?> viewPurchesHistoryByUser(@RequestHeader("Authorization") String sessionToken, @PathVariable String  userID){
+    public ResponseEntity<?> viewPurchesHistoryByUser(@RequestHeader("Authorization") String sessionToken, @PathVariable("userID") String  userID){
         return executeWithReturnData(() -> adminManagementService.viewPurchesHistoryByUser(sessionToken, userID));
     }
 
     @PutMapping("/closeProductionCompany/{companyID}")
-    public ResponseEntity<?> closeProductionCompany(@RequestHeader("Authorization") String sessionToken, @PathVariable int  companyID){
+    public ResponseEntity<?> closeProductionCompany(@RequestHeader("Authorization") String sessionToken, @PathVariable("companyID") int  companyID){
         return executeWithReturnData(() -> adminManagementService.closeProductionCompany(companyID, sessionToken));
     }
 
     @DeleteMapping("/removeUser/{userID}")
-    public ResponseEntity<?> removeUser(@RequestHeader("Authorization") String sessionToken, @PathVariable String  userID){
+    public ResponseEntity<?> removeUser(@RequestHeader("Authorization") String sessionToken, @PathVariable("userID") String  userID){
         return executeWithReturnData(() -> adminManagementService.removeUser(userID, sessionToken));
     }
 
