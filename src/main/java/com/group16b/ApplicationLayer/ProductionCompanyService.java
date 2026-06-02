@@ -21,6 +21,7 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 
 import org.springframework.stereotype.Service;
 
@@ -35,12 +36,15 @@ public class ProductionCompanyService {
     private final IProductionCompanyRepository productionRepo;
 	private final IAuthenticationService authenticationService;
 
-    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepo, IProductionCompanyRepository productionRepo) {
+    private final ProductionCompanyIdGen idGen;
+
+    public ProductionCompanyService(IAuthenticationService authenticationService,IRepository<Order> orderRepo, IEventRepository eventRepo, IRepository<User> userRepo, IProductionCompanyRepository productionRepo, ProductionCompanyIdGen idGen) {
         this.authenticationService = authenticationService;
         this.productionRepo=productionRepo;
         this.orderRepo=orderRepo;
         this.eventRepo=eventRepo;
         this.userRepo=userRepo;
+        this.idGen=idGen;
     }
 
     public Result<List<OrderDTO>> viewSalesHistory(String sessionToken, int productionCompanyID){
@@ -116,7 +120,32 @@ public class ProductionCompanyService {
     }
 
     public Result<ProductionCompanyDTO> createProductionCompany(String sessionToken, String companyName) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        try{
+            logger.info("ProductionCompanyService.createProductionCompany: Creating production company with name {}",companyName);
+
+            String userID=validateAndGetUserID(sessionToken);
+            logger.info("ProductionCompanyService.createProductionCompany: Session token verified successfully.");
+
+            ProductionCompany newCompany = ProductionCompany.createNewCompany(companyName, userID, idGen.getNextId());
+            productionRepo.save(newCompany);
+
+            logger.info("ProductionCompanyService.createProductionCompany: Successfully created production company with name {} and id {}",companyName, newCompany.getProductionCompanyID());
+            return Result.makeOk(new ProductionCompanyDTO(newCompany));
+
+        }catch(AuthException e)
+        {
+            logger.warn("ProductionCompanyService.createProductionCompany: Auth error: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } 
+        catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.createProductionCompany: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.createProductionCompany: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
 
     //gets all orders for the company
@@ -158,6 +187,24 @@ public class ProductionCompanyService {
             .collect(Collectors.toSet());
     }
 
+    public Result<ProductionCompanyDTO> getProductionCompany(int companyID)
+    {
+        try{
+            logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",companyID);
+            ProductionCompany company=productionRepo.findByID(String.valueOf(companyID));
+            logger.info("ProductionCompanyService.getProductionCompany: Successfully retrieved production company with id {}",companyID);
+            return Result.makeOk(new ProductionCompanyDTO(company));
+        }catch(IllegalArgumentException e)
+        {
+            logger.warn("ProductionCompanyService.getProductionCompany: IllegalArgumentException: "+e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("ProductionCompanyService.getProductionCompany: Unexpected error",e);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs)
     {
         return orderRepo.getAll().stream()
@@ -186,5 +233,6 @@ public class ProductionCompanyService {
         userRepo.findByID(userID);
         return userID;
     }
+    
 
 }

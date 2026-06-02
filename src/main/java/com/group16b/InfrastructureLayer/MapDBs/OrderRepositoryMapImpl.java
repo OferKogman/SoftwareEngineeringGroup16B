@@ -56,6 +56,7 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 		return this.orders.values().stream()
 				.filter(order -> order.isCompleted())
 				.filter(order -> order.getSubjectId().equals(String.valueOf(subjectId)))
+				.map(Order::new)
 				.toList();
 	}
 

@@ -14,7 +14,9 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
 
 import io.jsonwebtoken.JwtException;
+import org.springframework.stereotype.Service;
 
+@Service
 public class UserService {
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
@@ -90,10 +92,10 @@ public class UserService {
             return Result.makeOk(true);
             
         } catch (JwtException e) {
-			logger.error("JWT authentication error during event deactivation: " + e.getMessage());
+			logger.error("JWT authentication error during user password update: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		} catch (Exception e) {
-			logger.error("Unexpected error during event deactivation: " + e.getMessage());
+			logger.error("Unexpected error during user password update: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

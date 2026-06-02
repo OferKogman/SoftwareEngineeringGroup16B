@@ -29,7 +29,9 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 import io.jsonwebtoken.JwtException;
+import org.springframework.stereotype.Service;
 
+@Service
 public class EventService {
 
 	private static final Logger logger = LoggerFactory.getLogger(EventService.class);

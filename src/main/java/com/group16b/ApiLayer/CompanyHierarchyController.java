@@ -1,5 +1,4 @@
 package com.group16b.ApiLayer;
-import java.util.List;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -16,13 +15,11 @@ import com.group16b.ApplicationLayer.CompanyHierarchyService;
 import com.group16b.ApplicationLayer.DTOs.AssignManagerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.AssignOwnerRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.ChangeManagerPermissionRequestDTO;
-import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.DTOs.InviteHandleRequestDTO;
-import com.group16b.ApplicationLayer.Objects.Result;
 
 @RestController
 @RequestMapping("/production-companies/{companyId}")
-public class CompanyHierarchyController {
+public class CompanyHierarchyController extends BaseController {
     private final CompanyHierarchyService companyHierarchyService;
 
     public CompanyHierarchyController(CompanyHierarchyService companyHierarchyService) {
@@ -35,16 +32,7 @@ public class CompanyHierarchyController {
                     @PathVariable("companyId") int companyId,
                     @RequestBody AssignOwnerRequestDTO requestDTO) 
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.assignOwnerToCompany(companyId, requestDTO.getTargetID(), authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.assignOwnerToCompany(companyId, requestDTO.getTargetID(), authToken));
     }
 
     @PostMapping("/managers")
@@ -53,16 +41,7 @@ public class CompanyHierarchyController {
                     @PathVariable("companyId") int companyId,
                     @RequestBody AssignManagerRequestDTO requestDTO) 
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.assignManagerToCompany(companyId, requestDTO.getTargetID(), requestDTO.getPermissions(), authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.assignManagerToCompany(companyId, requestDTO.getTargetID(),requestDTO.getPermissions(), authToken));
     }
 
     @PostMapping("/invites/accept")
@@ -71,16 +50,7 @@ public class CompanyHierarchyController {
                     @PathVariable("companyId") int companyId,
                     @RequestBody InviteHandleRequestDTO requestDTO) 
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.acceptInviteToCompany(companyId, requestDTO.getAssignerID(), authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.acceptInviteToCompany(companyId, requestDTO.getAssignerID(), authToken));
     }
 
     @PostMapping("/invites/reject")
@@ -89,16 +59,7 @@ public class CompanyHierarchyController {
                     @PathVariable("companyId") int companyId,
                     @RequestBody InviteHandleRequestDTO requestDTO) 
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.rejectInviteToCompany(companyId, requestDTO.getAssignerID(), authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.rejectInviteToCompany(companyId, requestDTO.getAssignerID(), authToken));
     }
 
     @DeleteMapping("/owners/me")
@@ -106,16 +67,7 @@ public class CompanyHierarchyController {
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId) 
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.forfeitOwnership(companyId, authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.forfeitOwnership(companyId, authToken));
     }
 
     @DeleteMapping("/members/{targetId}")
@@ -124,16 +76,7 @@ public class CompanyHierarchyController {
             @PathVariable("companyId") int companyId,
             @PathVariable("targetId") String targetId)
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.removeOwnerManager(targetId, companyId, authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.removeOwnerManager(targetId,companyId, authToken));
     }
 
     @PatchMapping("/managers/permissions")
@@ -142,16 +85,7 @@ public class CompanyHierarchyController {
                     @PathVariable("companyId") int companyId,
                     @RequestBody ChangeManagerPermissionRequestDTO requestDTO) 
     {
-        try {
-            Result<Boolean> result = companyHierarchyService.changeManagerPermission(requestDTO.getTargetID(), companyId, requestDTO.getNewPermissions(), authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok().build();
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithNoReturnData(() -> companyHierarchyService.changeManagerPermission(requestDTO.getTargetID(),companyId, requestDTO.getNewPermissions(), authToken));
     }
 
     @GetMapping("/hierarchy-tree")
@@ -159,16 +93,7 @@ public class CompanyHierarchyController {
                     @RequestHeader("Authorization") String authToken, 
                     @PathVariable("companyId") int companyId) 
     {
-        try {
-            Result<List<HierarchyNodeDTO>> result = companyHierarchyService.hierarchyTree(companyId, authToken);
-            if(result.isSuccess()) {
-                return ResponseEntity.ok(result.getValue());
-            } else {
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
-        }
+        return executeWithReturnData(() -> companyHierarchyService.hierarchyTree(companyId, authToken));
     }
 
 }

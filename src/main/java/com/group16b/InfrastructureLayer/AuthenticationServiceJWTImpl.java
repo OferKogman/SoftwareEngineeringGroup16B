@@ -7,7 +7,6 @@ import javax.crypto.SecretKey;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.fasterxml.jackson.databind.deser.std.StringArrayDeserializer;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.SessionToken;
 
@@ -19,29 +18,29 @@ import io.jsonwebtoken.security.Keys;
 @Service
 public class AuthenticationServiceJWTImpl implements IAuthenticationService {
 
-	private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
-	private final long adminExpirationTime = 1000 * 60 * 15; // 15 minutes
+    private final long userExpirationTime = 1000 * 60 * 60; // 1 hour
+    private final long adminExpirationTime = 1000 * 60 * 15; // 15 minutes
 
-	@Value(value = "${jwt.secret}")
-	private SecretKey userKey;
-    private SecretKey adminKey;
+    private final SecretKey userKey;
+    private final SecretKey adminKey;
 
-    public AuthenticationServiceJWTImpl(@Value("${jwt.secret}") String userSecret, @Value("${jwt.secret}") String adminSecret) {
+    public AuthenticationServiceJWTImpl(@Value("${jwt.secret}") String userSecret,
+            @Value("${jwt.admin-secret:${jwt.secret}}") String adminSecret) {
         this.userKey = Keys.hmacShaKeyFor(userSecret.getBytes());
         this.adminKey = Keys.hmacShaKeyFor(adminSecret.getBytes());
     }
 
     private String createToken(String subject, String role, long expirationMillis, SecretKey key) {
         return Jwts.builder()
-                .setSubject(subject)//subject is either id or sessionToken for guest
-                .claim("role", role)//Guest, Signed, Admin
+                .setSubject(subject)// subject is either id or sessionToken for guest
+                .claim("role", role)// Guest, Signed, Admin
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(key)
                 .compact();
     }
 
-    //attempt to recieve data from admin or user, the two possible keys for token
+    // attempt to recieve data from admin or user, the two possible keys for token
     private Claims getAllClaims(String token) {
         try {
             return Jwts.parserBuilder()
@@ -49,16 +48,16 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
-        } catch (JwtException e1) {//isnt of user type so we will try admin type
+        } catch (JwtException e1) {// isnt of user type so we will try admin type
             return Jwts.parserBuilder()
-                .setSigningKey(adminKey)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        } 
+                    .setSigningKey(adminKey)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+        }
     }
-	
-	public String generateVisitor_GuestToken(SessionToken session) {
+
+    public String generateVisitor_GuestToken(SessionToken session) {
         return createToken(session.getValue(), "Guest", userExpirationTime, userKey);
     }
 
@@ -69,7 +68,6 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     public String generateAdminToken(String adminID) {
         return createToken(String.valueOf(adminID), "Admin", adminExpirationTime, adminKey);
     }
-
 
     @Override
     public boolean validateToken(String token) {
@@ -92,7 +90,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     }
 
     @Override
-    public boolean isUserToken(String token){
+    public boolean isUserToken(String token) {
         try {
             return this.extractRoleFromToken(token).equals("Signed");
         } catch (Exception e) {
@@ -101,7 +99,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     }
 
     @Override
-    public boolean isGuestToken(String token){
+    public boolean isGuestToken(String token) {
         try {
             return this.extractRoleFromToken(token).equals("Guest");
         } catch (Exception e) {
@@ -110,7 +108,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     }
 
     @Override
-    public boolean isAdminToken(String token){
+    public boolean isAdminToken(String token) {
         try {
             return this.extractRoleFromToken(token).equals("Admin");
         } catch (Exception e) {

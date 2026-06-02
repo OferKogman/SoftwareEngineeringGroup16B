@@ -19,7 +19,9 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 
 import io.jsonwebtoken.JwtException;
+import org.springframework.stereotype.Service;
 
+@Service
 public class CompanyHierarchyService {
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 

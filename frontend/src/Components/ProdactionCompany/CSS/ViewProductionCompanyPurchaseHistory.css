@@ -1,0 +1,68 @@
+.production-company-history {
+  margin-top: 2rem;
+}
+
+.production-company-history h1 {
+  margin: 0 0 2rem;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.8rem, 3vw, 2.6rem);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f5ecff;
+  text-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
+}
+
+.purchase-history-filter {
+  width: min(26rem, 100%);
+  margin: 0 auto 2rem auto;
+  padding: 1.2rem;
+  border-radius: 1rem;
+  background: rgba(12, 12, 12, 0.9);
+  border: 1px solid rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 22px rgba(168, 85, 247, 0.35);
+}
+
+.filter-label {
+  display: block;
+  margin-bottom: 0.7rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 0.8rem 1rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(168, 85, 247, 0.7);
+  background: #181818;
+  color: white;
+  font-size: 1rem;
+}
+
+.orders-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(18rem, 1fr));
+  gap: 1.0rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .orders-list {
+    grid-template-columns: repeat(2, minmax(18rem, 1fr));
+  }
+
+  .production-top-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .orders-list {
+    grid-template-columns: 1fr;
+  }
+
+  .production-company-page {
+    padding: 1.5rem;
+  }
+}

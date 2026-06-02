@@ -2,37 +2,42 @@ package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 import java.time.LocalDateTime;
 
-public class CouponCodeDiscount implements DiscountPolicy{
+public class CouponCodeDiscount implements DiscountPolicy {
     private double discountPercentage;
-    private double discountAmount;
     private String code;
-    private LocalDateTime expiryDate;
-    public CouponCodeDiscount(double discountPercentage, double discountAmount, String code, LocalDateTime expiryDate) {
-        if(expiryDate.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Discount is expired");
-        }
-        if(code == null){
-            throw new IllegalArgumentException("Null code");
-        }
-        if(code.isEmpty()){
-            throw new IllegalArgumentException("Empty code");
-        }
-        if(discountPercentage<0 || discountPercentage >100){
+    private LocalDateTime expiryDate;   // null = no expiry
+    private Integer maxUsages;          // null = unlimited
+    private int currentUsages;
+
+    public CouponCodeDiscount(double discountPercentage, String code, LocalDateTime expiryDate, Integer maxUsages) {
+        if (code == null || code.isEmpty())
+            throw new IllegalArgumentException("Code cannot be null or empty.");
+        if (expiryDate != null && expiryDate.isBefore(LocalDateTime.now()))
+            throw new IllegalArgumentException("Discount is expired.");
+        if (discountPercentage < 0 || discountPercentage > 100)
             throw new IllegalArgumentException("Discount percentage must be between 0 and 100.");
-        }
-        if(discountAmount<0){
-            throw new IllegalArgumentException("Cannot have a negative discount.");
-        }
-        this.discountAmount = discountAmount;
+        if (maxUsages != null && maxUsages < 1)
+            throw new IllegalArgumentException("Max usages must be at least 1.");
         this.discountPercentage = discountPercentage;
         this.code = code;
         this.expiryDate = expiryDate;
+        this.maxUsages = maxUsages;
+        this.currentUsages = 0;
     }
 
-    public double calculateDiscount(double basePrice){
-        if(LocalDateTime.now().isAfter(this.expiryDate)){
-            return basePrice; //discount expired.
-        }
-        return basePrice * (1-this.discountPercentage/100) - this.discountAmount;
+    public double getDiscountPercentage() { return discountPercentage; }
+    public String getCode() { return code; }
+    public LocalDateTime getExpiryDate() { return expiryDate; }
+    public Integer getMaxUsages() { return maxUsages; }
+    public int getCurrentUsages() { return currentUsages; }
+
+    @Override
+    public double calculateDiscount(double originalPrice) {
+        if (expiryDate != null && LocalDateTime.now().isAfter(expiryDate))
+            return originalPrice;
+        if (maxUsages != null && currentUsages >= maxUsages)
+            return originalPrice;
+        currentUsages++;
+        return originalPrice * (1 - discountPercentage / 100);
     }
 }
