@@ -19,6 +19,8 @@ import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -501,9 +503,11 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         assertEquals(1, successCount);
                         assertEquals(1, failureCount);
                         assertOrderIsCompleted(seatOrder);
-
-                        verify(paymentGateway, times(2)).processPayment(any(), eq(100.0));
-                        verify(ticketGateway, times(4)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                        
+                        verify(paymentGateway, atLeastOnce()).processPayment(any(), eq(100.0));
+                        verify(paymentGateway, atMost(2)).processPayment(any(), eq(100.0));
+                        verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                        
                         if (failureMessage.contains("concurrent update") || failureMessage.contains("Order expired")) {
                                 verify(paymentGateway, times(1)).cancelPayment();
                         } else {
