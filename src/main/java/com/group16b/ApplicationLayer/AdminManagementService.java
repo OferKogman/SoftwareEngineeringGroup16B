@@ -243,9 +243,9 @@ public class AdminManagementService {
 
 
 
-    public Result<String> registerNewAdmin(String sToken, String newAdminID, String newAdminUsername, String newAdminPassword, String newAdminEmail){
+    public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try {
-            logger.info("AdminManagementService.registerNewAdmin: Attempting to register new admin with ID {}", newAdminID);
+            logger.info("AdminManagementService.registerNewAdmin: Attempting to register new admin with userName {}", newAdminUsername);
             if (!authenticationService.validateToken(sToken)  ) {
                 logger.error("AdminManagementService.registerNewAdmin: Invalid token");
                 return Result.makeFail("Invalid token");
@@ -258,7 +258,7 @@ public class AdminManagementService {
             boolean checkIfAdminAlreadyExists;
             boolean checkIfUsernameAlreadyExists;
             try {
-                checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminID) != null;
+                checkIfAdminAlreadyExists = systemAdminRepo.findByID(newAdminUsername) != null;
             } catch (Exception e) {
                 logger.info("AdminManagementService.registerNewAdmin: attempting to get admindID in repo");
                 checkIfAdminAlreadyExists = false;
@@ -275,41 +275,41 @@ public class AdminManagementService {
             while(!success){
                 try{
                 if(checkIfAdminAlreadyExists ) {
-                    logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing ID {}", newAdminID);
-                    return Result.makeFail("Admin with ID " + newAdminID + " already exists");
+                    logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing username {}", newAdminUsername);
+                    return Result.makeFail("Admin with userName " + newAdminUsername + " already exists");
                 }
                 if(checkIfUsernameAlreadyExists){
                     logger.warn("AdminManagementService.registerNewAdmin: Attempt to register admin with existing username {}", newAdminUsername);
                     return Result.makeFail("Admin with username " + newAdminUsername + " already exists");
                 }
-                SystemAdmin newAdmin = new SystemAdmin(newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
+                SystemAdmin newAdmin = new SystemAdmin(newAdminUsername, newAdminPassword, newAdminEmail);
                 systemAdminRepo.save(newAdmin);
                 success = true;
-                logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with ID {}", newAdminID);
-                return Result.makeOk("Admin with ID " + newAdminID + " has been registered successfully.");
+                logger.info("AdminManagementService.registerNewAdmin: Successfully registered new admin with userName {}", newAdminUsername);
+                return Result.makeOk("Admin with userName " + newAdminUsername + " has been registered successfully.");
                 }
                 catch(IllegalArgumentException e) {
-                    logger.warn("AdminManagementService.registerNewAdmin: Illegal argument while registering new admin with ID {}. Retrying...", newAdminID, e);
+                    logger.warn("AdminManagementService.registerNewAdmin: Illegal argument while registering new admin with userName {}. Retrying...", newAdminUsername, e);
                     success = true; // stop retrying, this is not a transient error
                 }
                 catch(OptimisticLockingFailureException e) {
-                    logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with ID {}. Retrying...", newAdminID, e);
+                    logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with userName {}. Retrying...", newAdminUsername, e);
                 }
             }
         }
         catch(OptimisticLockingFailureException e) {
-            logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with ID {}. Retrying...", newAdminID, e);
+            logger.warn("AdminManagementService.registerNewAdmin: Optimistic locking failure while registering new admin with userName {}. Retrying...", newAdminUsername, e);
             //go back to while loop
 
         }
         catch(IllegalArgumentException e) {
-            logger.error("AdminManagementService.registerNewAdmin: Invalid input provided for new admin registration with ID {}", newAdminID, e);
+            logger.error("AdminManagementService.registerNewAdmin: Invalid input provided for new admin registration with userName {}", newAdminUsername, e);
             return Result.makeFail("Invalid input: " + e.getMessage());
         }
         catch(Exception e) {
-            logger.error("AdminManagementService.registerNewAdmin: Error occurred while registering new admin with ID {}", newAdminID, e);
-            return Result.makeFail("Error occurred while registering new admin with ID " + newAdminID);
+            logger.error("AdminManagementService.registerNewAdmin: Error occurred while registering new admin with userName {}", newAdminUsername, e);
+            return Result.makeFail("Error occurred while registering new admin with userName " + newAdminUsername);
         }
-        return Result.makeFail("Failed to register new admin with ID " + newAdminID);
+        return Result.makeFail("Failed to register new admin with userName " + newAdminUsername);
     }
 }

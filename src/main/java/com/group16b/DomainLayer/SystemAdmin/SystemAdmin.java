@@ -2,11 +2,6 @@ package com.group16b.DomainLayer.SystemAdmin;
 
 import java.security.MessageDigest;
 
-import java.util.List;
-
-import com.group16b.DomainLayer.Event.Event;
-
-
 public class SystemAdmin {
 	private String username;
 	private String password;
