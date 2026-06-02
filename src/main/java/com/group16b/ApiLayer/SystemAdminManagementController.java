@@ -63,4 +63,9 @@ public class SystemAdminManagementController extends BaseController {
     public ResponseEntity<?> getAllProductionCompanies(@RequestHeader("Authorization") String sessionToken){
         return executeWithReturnData(() -> adminManagementService.getAllProductionCompanies(sessionToken));
     }
+
+    @GetMapping("/users")
+    public ResponseEntity<?> getAllUsers(@RequestHeader("Authorization") String sessionToken){
+        return executeWithReturnData(() -> adminManagementService.getAllUsers(sessionToken));
+    }
 }
