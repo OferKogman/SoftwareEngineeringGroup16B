@@ -51,5 +51,11 @@ public class ProductionCompanyController extends BaseController {
     {
         return executeWithReturnData(() -> productionCompanyService.getProductionCompany(companyId));
     }
+
+    @GetMapping("/{companyId}/events")
+    public ResponseEntity<?> getCompanyEvents(@PathVariable("companyId") int companyId)
+    {
+        return executeWithReturnData(() -> productionCompanyService.getCompanyAllEvents(companyId));
+    }
     
 }

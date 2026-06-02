@@ -3,10 +3,10 @@ import { TbStar, TbStarFilled, TbStarHalfFilled } from "react-icons/tb";
 import { useNavigate, useParams } from "react-router-dom";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import type { VenueData } from "../../DTOs/VenueDTO";
-import type { ProductionCompanyDTO } from "../ProdactionCompany/ProdctionCompanyForm";
 import ViewDiscountPolicies from "../ViewDiscountPolicies";
 import ViewPurchasePolicies from "../ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
+import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 
 export default function ViewEvent() {
   const { eventID } = useParams();

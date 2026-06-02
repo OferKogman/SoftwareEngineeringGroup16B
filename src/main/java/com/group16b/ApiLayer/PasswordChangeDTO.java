@@ -4,7 +4,10 @@ public class PasswordChangeDTO {
     private String oldPassword;
     private String newPassword;
 
-    public PasswordChangeDTO(String oldPassword, String newPassword){
+    public PasswordChangeDTO() {
+    }
+
+    public PasswordChangeDTO(String oldPassword, String newPassword) {
         this.oldPassword = oldPassword;
         this.newPassword = newPassword;
     }
@@ -24,5 +27,5 @@ public class PasswordChangeDTO {
     public void setNewPassword(String newPassword) {
         this.newPassword = newPassword;
     }
-    
+
 }

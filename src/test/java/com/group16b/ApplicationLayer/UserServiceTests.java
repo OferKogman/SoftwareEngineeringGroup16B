@@ -18,6 +18,7 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.TicketGateway; 
@@ -47,8 +48,9 @@ public class UserServiceTests {
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
         TicketGateway ticketGateway = new TicketGateway();
+        ProductionCompanyRepositoryMapImpl productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
-        userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo);
+        userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo, productionCompanyRepository);
 
         // for get user order history tests, we need to have a user with orders in the repo and a valid token for that user
         sessionToken = authService.generateVisitor_SignedToken("test2@test.com");
@@ -126,7 +128,7 @@ public class UserServiceTests {
         Result<Boolean> result = userService.updateUserPassword(token, "WrongPassword!", "NewPassword456!");
 
         assertFalse(result.isSuccess());
-        assertEquals("An unexpected error occurred: Old password is incorrect.", result.getError());
+        assertEquals("Old password is incorrect.", result.getError());
 
         User untouchedUser = userRepo.findByID("member@test.com");
         assertTrue(untouchedUser.confirmPassword("OldPassword123!"));

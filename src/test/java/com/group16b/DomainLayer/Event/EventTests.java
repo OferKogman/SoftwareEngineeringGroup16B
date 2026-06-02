@@ -9,7 +9,13 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+<<<<<<< HEAD
+=======
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+>>>>>>> f51193753d110aa8a825fad5b1dc03f9f49103f7
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
@@ -265,7 +271,157 @@ public class EventTests {
 			event.activateEvent();
 			event.enrollInLottery("user1");
 		} catch (Exception e) {
-			assertEquals("Event does not have a lottery purchase policy.", e.getMessage());
+			assertEquals("Event does not have a lottery policy.", e.getMessage());
+		}
+	}
+
+	private Event createValidEvent() {
+		return new Event(new EventRecord(
+				"1",
+				"name",
+				LocalDateTime.parse("2027-10-10T10:00:00"),
+				LocalDateTime.parse("2027-10-10T12:00:00"),
+				"Artist",
+				"Category",
+				1,
+				0,
+				0
+		), "0");
+	}
+	@Test
+	public void validateLotteryCode_existingLotteryPolicy_delegatesToPolicy() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		doNothing().when(lotteryPolicy).validateLotteryCode("code123");
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		assertDoesNotThrow(() -> event.validateLotteryCode("code123"));
+		verify(lotteryPolicy, times(1)).validateLotteryCode("code123");
+	}
+
+	@Test
+	public void validateLotteryCode_noLotteryPolicy_throwsException() {
+		Event event = createValidEvent();
+
+		try {
+			event.validateLotteryCode("code123");
+		} catch (Exception e) {
+			assertEquals("Event does not have a lottery policy.", e.getMessage());
+		}
+	}
+
+	@Test
+	public void validateLotteryCode_policyRejectsCode_throwsPolicyException() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		doThrow(new IllegalStateException("Invalid lottery code."))
+				.when(lotteryPolicy).validateLotteryCode("badCode");
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		try {
+			event.validateLotteryCode("badCode");
+		} catch (Exception e) {
+			assertEquals("Invalid lottery code.", e.getMessage());
+		}
+	}
+
+	@Test
+	public void renewLotteryCode_existingLotteryPolicy_delegatesToPolicy() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		doNothing().when(lotteryPolicy).renewLotteryCode("code123");
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		assertDoesNotThrow(() -> event.renewLotteryCode("code123"));
+		verify(lotteryPolicy, times(1)).renewLotteryCode("code123");
+	}
+
+	@Test
+	public void renewLotteryCode_noLotteryPolicy_doesNotThrow() {
+		Event event = createValidEvent();
+
+		assertDoesNotThrow(() -> event.renewLotteryCode("code123"));
+	}
+
+	@Test
+	public void renewLotteryCode_policyThrows_doesNotThrowBecauseExceptionIsSwallowed() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		doThrow(new IllegalStateException("Code exploded."))
+				.when(lotteryPolicy).renewLotteryCode("badCode");
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		assertDoesNotThrow(() -> event.renewLotteryCode("badCode"));
+		verify(lotteryPolicy, times(1)).renewLotteryCode("badCode");
+	}
+
+	@Test
+	public void lotteryUseCode_existingLotteryPolicy_delegatesToPolicy() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		doNothing().when(lotteryPolicy).useCode("code123");
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		assertDoesNotThrow(() -> event.lotteryUseCode("code123"));
+		verify(lotteryPolicy, times(1)).useCode("code123");
+	}
+
+	@Test
+	public void lotteryUseCode_noLotteryPolicy_throwsException() {
+		Event event = createValidEvent();
+
+		try {
+			event.lotteryUseCode("code123");
+		} catch (Exception e) {
+			assertEquals("Event does not have a lottery policy.", e.getMessage());
+		}
+	}
+
+	@Test
+	public void lotteryUseCode_policyRejectsCode_throwsPolicyException() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		doThrow(new IllegalStateException("Lottery code already used."))
+				.when(lotteryPolicy).useCode("usedCode");
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		try {
+			event.lotteryUseCode("usedCode");
+		} catch (Exception e) {
+			assertEquals("Lottery code already used.", e.getMessage());
+		}
+	}
+
+	@Test
+	public void verifyDoesNotHaveLotteryPolicy_noLotteryPolicy_doesNotThrow() {
+		Event event = createValidEvent();
+
+		assertDoesNotThrow(() -> event.verifyDoesNotHaveLotteryPolicy());
+	}
+
+	@Test
+	public void verifyDoesNotHaveLotteryPolicy_hasLotteryPolicy_throwsException() {
+		Event event = createValidEvent();
+		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
+
+		event.addEventPurchasePolicy(lotteryPolicy);
+
+		try {
+			event.verifyDoesNotHaveLotteryPolicy();
+		} catch (Exception e) {
+			assertEquals("Event has a lottery purchase policy.", e.getMessage());
 		}
 	}
 

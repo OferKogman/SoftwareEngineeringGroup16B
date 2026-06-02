@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import ViewUserCompanyList from "../ViewUserCompanyList";
-import ViewUserPurchaseHistory from "../ViewUserPurchaseHistory";
 import ChangePasswordForm from "./ChangePasswordForm";
+import ViewUserCompanyList from "./ViewUserCompanyList";
+import ViewUserPurchaseHistory from "./ViewUserPurchaseHistory";
 
 export default function UserManagement() {
   const navigate = useNavigate();
@@ -37,7 +37,13 @@ export default function UserManagement() {
       </div>
 
       {/* Companies */}
-      <div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+        }}
+      >
         <button onClick={() => setShowCompanies(!showCompanies)}>
           {showCompanies ? "▼" : "▶"} My Production Companies
         </button>

@@ -1,46 +1,39 @@
 import { Route, Routes } from "react-router-dom";
+import AdminLoginForm from "./Components/Admin/AdminLoginForm";
+import AdminManagement from "./Components/Admin/AdminManagement";
+import EventCreationForm from "./Components/Event/EventCreationForm";
+import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
-import LoginForm, { type LoginData } from "./Components/User/LoginForm";
-import type { RegistrationData } from "./Components/User/RegistrationForm";
-import RegistrationForm from "./Components/User/RegistrationForm";
-import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
-import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
-import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
-import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
-import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
-import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
-import CreateEvent from     "./Components/Event/EventCreationForm";
-import EventUpdateForm from "./Components/Event/EventUpdateForm";
+import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
+import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
+import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
+import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
+import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
+import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
+import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
+import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
+import RegistrationForm from "./Components/User/UserRegistrationForm";
 
 export default function AppRoutes() {
-  async function handleLogin(data: LoginData) {
-    console.log("Logging in with data:", data);
-    return Promise.resolve();
-  }
-
-  async function handleRegister(data: RegistrationData) {
-    console.log("Registering with data:", data);
-    return Promise.resolve();
-  }
-
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={<LoginForm title="Login" onLogin={handleLogin} />}
-      />
-      <Route
-        path="/register"
-        element={
-          <RegistrationForm title="Register" onRegistration={handleRegister} />
-        }
-      />
+      <Route path="/login" element={<LoginForm title="Login" />} />
+      <Route path="/register" element={<RegistrationForm title="Register" />} />
       <Route path="/users" element={<UserManagement />} />
 
+      <Route path="/admins" element={<AdminManagement />} />
+      <Route
+        path="/admins/login"
+        element={<AdminLoginForm title="Admin Login" />}
+      />
+      <Route path="/admins/management" element={<AdminManagement />} />
+
       <Route path="/events/search" element={<SearchEvents />} />
+
+      <Route path="/companies/create" element={<CreateProdactionCompany />} />
 
       <Route
         path="/companies/:companyId"
@@ -56,10 +49,8 @@ export default function AppRoutes() {
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<CompanySettings />} />
-        <Route path="events/create"element={<CreateEvent />}/>
-        <Route path="events/:eventID/manage" element={<EventUpdateForm />}/>
-
-  
+        <Route path="events/create" element={<EventCreationForm />} />
+        <Route path="events/:eventID/manage" element={<EventUpdateForm />} />
       </Route>
       <Route path="/events/:eventID" element={<ViewEvent />} />
     </Routes>

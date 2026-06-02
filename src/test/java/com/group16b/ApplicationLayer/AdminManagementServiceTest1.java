@@ -26,7 +26,6 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
-import com.group16b.DomainLayer.SystemAdmin.ISystemAdminRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
@@ -45,7 +44,7 @@ public class AdminManagementServiceTest1 {
 
     private AdminManagementService adminManagementService;
     private IAuthenticationService tokenService;
-    private ISystemAdminRepository systemAdminRepository;
+    private IRepository<SystemAdmin> systemAdminRepository;
     private IEventRepository eventRepository;
     private IRepository<Venue> venueRepository;
     private IRepository<User> userRepository;
@@ -205,14 +204,14 @@ public class AdminManagementServiceTest1 {
 
     @Test
     public void testRegisterNewAdminSuccess() {
-        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "1", "newAdmin", "password123",
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "newAdmin", "password123",
                 "admin@example.com");
         assertTrue(result.isSuccess());
     }
 
     @Test
     public void testRegisterNewAdminInvalidToken() {
-        Result<String> result = adminManagementService.registerNewAdmin(invalidToken, "1", "admin", "pass",
+        Result<String> result = adminManagementService.registerNewAdmin(invalidToken, "admin", "pass",
                 "email@example.com");
         assertFalse(result.isSuccess());
     }
@@ -220,8 +219,8 @@ public class AdminManagementServiceTest1 {
     @Test
     public void testRegisterNewAdminUnauthorized() {
 
-        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, "1", "admin", "pass",
-                "email@example.com");
+        Result<String> result = adminManagementService.registerNewAdmin(sessionToken, "newAdmin", "password123",
+                "admin@example.com");
         assertFalse(result.isSuccess());
     }
 @Test
@@ -266,7 +265,7 @@ public class AdminManagementServiceTest1 {
         String newAdminEmail = "newadmin@example.com";
         CountDownLatch startLatch = new CountDownLatch(1);
         Runnable registerTask = () -> {
-            adminManagementService.registerNewAdmin(adminToken, newAdminID, newAdminUsername, newAdminPassword, newAdminEmail);
+            adminManagementService.registerNewAdmin(adminToken, newAdminUsername, newAdminPassword, newAdminEmail);
         };
         Thread thread1 = new Thread(registerTask);
         Thread thread2 = new Thread(registerTask);
@@ -276,7 +275,7 @@ public class AdminManagementServiceTest1 {
         thread1.join();
         thread2.join();
         // Verify that only one admin is registered
-        SystemAdmin registeredAdmin = systemAdminRepository.findByID(newAdminID);
+        SystemAdmin registeredAdmin = systemAdminRepository.findByID(newAdminUsername);
         assertNotNull(registeredAdmin, "Expected one admin to be registered");
     }
     @Test

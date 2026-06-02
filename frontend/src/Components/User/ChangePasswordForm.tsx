@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSession } from "../../App";
 
 export type ChangePasswordData = {
   oldPassword: string;
@@ -25,6 +26,8 @@ export default function ChangePasswordForm({
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const { sessionToken } = useSession();
+
   function updateField<K extends keyof ChangePasswordData>(
     field: K,
     value: ChangePasswordData[K],
@@ -48,15 +51,13 @@ export default function ChangePasswordForm({
     setIsSubmitting(true);
 
     try {
-      const authToken = localStorage.getItem("authToken") || "";
-
       const response = await fetch(
-        "http://localhost:8080/users/change-password",
+        "http://localhost:8080/api/user/updateUserPassword",
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: authToken,
+            Authorization: sessionToken,
           },
           body: JSON.stringify({
             oldPassword: formData.oldPassword,
@@ -65,10 +66,18 @@ export default function ChangePasswordForm({
         },
       );
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let message = responseText;
+
+      try {
+        const data = responseText ? JSON.parse(responseText) : null;
+        message = data?.message || responseText;
+      } catch {
+        message = responseText;
+      }
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to change password.");
+        throw new Error(message || "Failed to change password.");
       }
 
       setFormData(initialFormData);
