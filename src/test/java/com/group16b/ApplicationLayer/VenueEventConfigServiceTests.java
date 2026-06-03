@@ -1,8 +1,16 @@
 package com.group16b.ApplicationLayer;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -13,20 +21,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
+import com.group16b.ApplicationLayer.Records.EntranceRecord;
 import com.group16b.ApplicationLayer.Records.FieldSegRecord;
+import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
 import com.group16b.ApplicationLayer.Records.SeatRecord;
+import com.group16b.ApplicationLayer.Records.StageRecord;
+import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.ApplicationLayer.Records.VenueRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -35,8 +40,12 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.Location;
+import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 
 public class VenueEventConfigServiceTests {
 
@@ -85,13 +94,15 @@ public class VenueEventConfigServiceTests {
 
     private VenueRecord createValidVenueRecord() {
         List<SeatRecord> dummySeats = new ArrayList<>();
-        ChosenSeatingSegRecord dummySeg = new ChosenSeatingSegRecord("VIP", dummySeats);
+        ChosenSeatingSegRecord dummySeg = new ChosenSeatingSegRecord("VIP", dummySeats, new GridRectangleRecord(5, 4 ,6 , 5));
 
         List<FieldSegRecord> dummyField = new ArrayList<>();
         List<ChosenSeatingSegRecord> dummySeatSeg = new ArrayList<>();
         dummySeatSeg.add(dummySeg);
 
-        VenueRecord dummyVenue = new VenueRecord(venueName, "Madison Square Garden", dummyField, dummySeatSeg);
+        VenueRecord dummyVenue;
+        dummyVenue = new VenueRecord(venueName, "Madison Square Garden", dummyField, dummySeatSeg, new ArrayList<StageRecord>(),
+                new ArrayList<EntranceRecord>(), new VenueGridRecord(6, 7), new ArrayList<EventScheduleDTO>());
 
         return dummyVenue;
     }
@@ -342,5 +353,82 @@ public class VenueEventConfigServiceTests {
         assertFalse(result.isSuccess());
 
         assertEquals("An unexpected system error occurred while saving the layout.", result.getError());
+    }
+
+@Test
+    void getVenue_ValidTokenAndVenueExists_ReturnsOkResultWithDTO() {
+        String targetVenueID = "venue-123";
+        
+        Location dummyLocation = new Location(
+                "Madison Square Garden", "4", "Pennsylvania Plaza",
+                "New York", "NY", "USA", 40.75, -73.99);
+
+        Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ConcurrentHashMap<>(), targetVenueID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
+
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockVenueRepository.findByID(targetVenueID)).thenReturn(realVenue);
+
+        Result<?> result = configService.getVenue(validToken, targetVenueID);
+
+        assertTrue(result.isSuccess(), "Expected success when fetching a valid venue.");
+        assertTrue(result.getValue() != null, "Expected a VenueDTO to be returned in the Result payload."); 
+        verify(mockVenueRepository, times(1)).findByID(targetVenueID);
+    }
+
+    @Test
+    void getVenue_InvalidToken_ReturnsFailResult() {
+        String targetVenueID = "venue-123";
+        when(mockAuthService.validateToken("bad.token")).thenReturn(false);
+
+        Result<?> result = configService.getVenue("bad.token", targetVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed. Please log in again.", result.getError());
+        verify(mockVenueRepository, never()).findByID(anyString());
+    }
+
+    @Test
+    void getVenue_TokenIsNotUserToken_ReturnsFailResult() {
+        String targetVenueID = "venue-123";
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(false);
+
+        Result<?> result = configService.getVenue(validToken, targetVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed. Please log in again.", result.getError());
+        verify(mockVenueRepository, never()).findByID(anyString());
+    }
+
+    @Test
+    void getVenue_VenueDoesNotExist_ReturnsFailResult() {
+        String missingVenueID = "ghost-venue";
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockVenueRepository.findByID(missingVenueID))
+                .thenThrow(new IllegalArgumentException("Venue not found"));
+
+        Result<?> result = configService.getVenue(validToken, missingVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Configuration failed: Venue not found", result.getError());
+    }
+
+    @Test
+    void getVenue_SystemException_ReturnsFailResult() {
+        String targetVenueID = "venue-123";
+        when(mockAuthService.validateToken(validToken)).thenReturn(true);
+        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+        
+        when(mockVenueRepository.findByID(targetVenueID))
+                .thenThrow(new RuntimeException("Database connection lost"));
+
+        Result<?> result = configService.getVenue(validToken, targetVenueID);
+
+        assertFalse(result.isSuccess());
+        assertEquals("An unexpected system error occurred", result.getError());
     }
 }

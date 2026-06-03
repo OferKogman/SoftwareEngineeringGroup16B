@@ -1,16 +1,16 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,11 +26,11 @@ class VenueTests {
                 "Test Venue",
                 new Location("Test Location", "1", "Dizengoff", "Tel Aviv", null, "Israel", null, null),
                 Map.of(
-                        "F1", new FieldSeg("F1", 100),
+                        "F1", new FieldSeg("F1", 100, new GridRectangle(1, 2, 3, 4)),
                         "S1", new ChosenSeatingSeg("S1", Map.of(
                                 "1-1", new Seat(1, 1),
-                                "1-2", new Seat(1, 2)))),
-                "venue1");
+                                "1-2", new Seat(1, 2)), new GridRectangle(5, 6, 7, 8))),
+                "venue1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
         start = LocalDateTime.now().plusDays(1);
         end = LocalDateTime.now().plusDays(2);
     }
@@ -106,7 +106,7 @@ class VenueTests {
         venue.bookEvent(start, end, 1);
 
         venue.reserveTickets("F1", 10, 1);
-        venue.freeTickets("F1", 10, 1);
+        venue.cancelFieldReservation("F1", 10, 1);
 
         FieldSeg fieldSeg = (FieldSeg) venue.getSegmentByID("F1");
         assertEquals(100, fieldSeg.getStock(1));
@@ -116,7 +116,7 @@ class VenueTests {
     void freeTickets_fieldSegment_noTicketsToBeFreed() {
         venue.bookEvent(start, end, 1);
         assertThrows(IllegalArgumentException.class,
-                () -> venue.freeTickets("F1", 10, 1));
+                () -> venue.cancelFieldReservation("F1", 10, 1));
     }
 
     @Test
@@ -135,7 +135,7 @@ class VenueTests {
         venue.bookEvent(start, end, 1);
 
         venue.reserveTickets("S1", List.of("1-1"), 1);
-        venue.freeTickets("S1", List.of("1-1"), 1);
+        venue.cancelSeatReservation("S1", List.of("1-1"), 1);
 
         ChosenSeatingSeg chosenSeatingSeg = (ChosenSeatingSeg) venue.getSegmentByID("S1");
         Seat s = chosenSeatingSeg.getMap().get("1-1");
@@ -145,7 +145,6 @@ class VenueTests {
     @Test
     void freeTickets_chosenSeatingSegment_noTicketsToBeFreed() {
         venue.bookEvent(start, end, 1);
-        assertThrows(IllegalArgumentException.class,
-                () -> venue.freeTickets("S1", List.of("1-1"), 1));
+        assertThrows(IllegalArgumentException.class,() -> venue.cancelSeatReservation("S1", List.of("1-1"), 1));
     }
 }
