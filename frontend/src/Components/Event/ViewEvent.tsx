@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { TbStar, TbStarFilled, TbStarHalfFilled } from "react-icons/tb";
 import { useNavigate, useParams } from "react-router-dom";
+import { useSession } from "../../App";
 import type { EventDTO } from "../../DTOs/EventDTO";
-import type { VenueData } from "../../DTOs/VenueDTO";
+import { locationToString, type LocationDTO } from "../../DTOs/LocationDTO";
+import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import ViewDiscountPolicies from "../ViewDiscountPolicies";
 import ViewPurchasePolicies from "../ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
-import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 
 export default function ViewEvent() {
   const { eventID } = useParams();
@@ -14,6 +15,7 @@ export default function ViewEvent() {
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
   const [location, setLocation] = useState<string>("");
   const [companyName, setCompanyName] = useState<string>("");
+  const { sessionToken } = useSession();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,14 +35,21 @@ export default function ViewEvent() {
         setEventDTO(event);
 
         const locationResponse = await fetch(
-          `http://localhost:8080/venues/${event.venueID}`,
+          `http://localhost:8080/venues/${event.eventVenueID}/location`,
+          {
+            method: "Get",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: sessionToken,
+            },
+          },
         );
 
-        const venue: VenueData = await locationResponse.json();
-        setLocation(venue.location);
+        const loc: LocationDTO = await locationResponse.json();
+        setLocation(locationToString(loc));
 
         const companyResponse = await fetch(
-          `http://localhost:8080/production-companies/${event.productionCompanyID}`,
+          `http://localhost:8080/production-companies/${event.eventProductionCompanyID}`,
         );
         const company: ProductionCompanyDTO = await companyResponse.json();
         setCompanyName(company.name);
@@ -62,41 +71,43 @@ export default function ViewEvent() {
     <div className="event-view">
       {error && <p className="form-error">{error}</p>}
 
-      <h1 className="event-title">{eventDTO.name}</h1>
+      <h1 className="event-title">{eventDTO.eventName}</h1>
 
       <div className="event-details">
         <p>
-          <strong>Venue:</strong> {eventDTO.venueID}
+          <strong>Venue:</strong> {eventDTO.eventVenueID}
         </p>
         <p>
           <strong>Location:</strong> {location}
         </p>
         <p>
-          <strong>Start Time:</strong> {eventDTO.startTime}
+          <strong>Start Time:</strong> {eventDTO.eventStartTime}
         </p>
         <p>
-          <strong>End Time:</strong> {eventDTO.endTime}
+          <strong>End Time:</strong> {eventDTO.eventEndTime}
         </p>
         <p>
-          <strong>Artist:</strong> {eventDTO.artist}
+          <strong>Artist:</strong> {eventDTO.eventArtist}
         </p>
         <p>
-          <strong>Category:</strong> {eventDTO.category}
+          <strong>Category:</strong> {eventDTO.eventCategory}
         </p>
         <p
-          onClick={() => navigate(`/companies/${eventDTO.productionCompanyID}`)}
+          onClick={() =>
+            navigate(`/companies/${eventDTO.eventProductionCompanyID}`)
+          }
         >
           <strong>Production Company:</strong> {companyName}
         </p>
         <p>
-          <strong>Price:</strong> {eventDTO.price}$
+          <strong>Price:</strong> {eventDTO.eventPrice}$
         </p>
         <p>
           <strong>Rating</strong>
           <span className="rating-stars">
-            {renderRating(eventDTO.rating)}
+            {renderRating(eventDTO.eventRating)}
             <span className="rating-text">
-              {eventDTO.rating}
+              {eventDTO.eventRating}
               {"/5"}
             </span>
           </span>
@@ -104,10 +115,10 @@ export default function ViewEvent() {
       </div>
 
       <h3>Discount Policy</h3>
-      <ViewDiscountPolicies discountPolicy={eventDTO.discountPolicy} />
+      <ViewDiscountPolicies discountPolicy={eventDTO.eventDiscountPolicy} />
 
       <h3>Purchase Policy</h3>
-      <ViewPurchasePolicies purchasePolicy={eventDTO.purchasePolicy} />
+      <ViewPurchasePolicies purchasePolicy={eventDTO.eventPurchasePolicy} />
     </div>
   );
 }

@@ -94,7 +94,7 @@ export default function CompanyEvents() {
         {events.map((event) => (
           <div key={event.eventID} className="company-event-card">
             <div>
-              <h3>Event Name: {event.name}</h3>
+              <h3>Event Name: {event.eventName}</h3>
               <p>Event ID: {event.eventID}</p>
             </div>
 
