@@ -45,6 +45,7 @@ import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImp
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
 
 public class PurchasePolicyServiceTests {
     private PurchasePolicyService purchasePolicyService;
