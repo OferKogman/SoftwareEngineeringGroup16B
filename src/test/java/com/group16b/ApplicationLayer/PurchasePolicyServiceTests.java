@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -483,23 +483,28 @@ public class PurchasePolicyServiceTests {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         assertDoesNotThrow(() -> e.getLotteryPolicy());
     }
+
     @Test
-    public void getCompanyPurchasePolicy_Success() {
-        Result<Set<PurchasePolicy>> res = purchasePolicyService.getCompanyPurchasePolicy("user1", company.getProductionCompanyID());
+    public void createEventPurchasePolicy_Success() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", e1.getEventID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertTrue(res.isSuccess());
     }
 
     @Test
-    public void getCompanyPurchasePolicy_FailInvalidToken() {
-        Result<Set<PurchasePolicy>> res = purchasePolicyService.getCompanyPurchasePolicy("invalid_token", company.getProductionCompanyID());
+    public void createEventPurchasePolicy_FailInvalidToken() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("invalid_token", e1.getEventID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertFalse(res.isSuccess());
     }
 
     @Test
-    public void getCompanyPurchasePolicy_FailCompanyNotFound() {
-        Result<Set<PurchasePolicy>> res = purchasePolicyService.getCompanyPurchasePolicy("user1", 999);
+    public void createEventPurchasePolicy_FailNoPermission() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user2", e1.getEventID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertFalse(res.isSuccess());
     }
 
-
+    @Test
+    public void createEventPurchasePolicy_FailEventNotFound() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", 999, new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
+        assertFalse(res.isSuccess());
+    }
 }
