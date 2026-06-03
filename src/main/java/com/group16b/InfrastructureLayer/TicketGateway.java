@@ -14,7 +14,10 @@ public class TicketGateway implements ITicketGateway{
         if (eventId == -5){ // Simulate a failure in ticket generation for testing purposes
             throw new TicketGenerationException("Event ID cannot be null");
         }
-        return null;
+        if(seatId == null) {
+            seatId = "FIELD";
+        }
+        return new TicketDTO(String.valueOf(eventId), subjectId, segmentId, seatId, price);
     }
 
 }

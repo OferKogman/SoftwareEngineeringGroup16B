@@ -17,7 +17,10 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
+
 import org.springframework.stereotype.Service;
+
+import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 
 @Service
 public class VenueEventConfigService {
@@ -181,5 +184,40 @@ public class VenueEventConfigService {
             logger.error("VenueEventConfigService.configureLayoutAndInventory: System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while saving the layout.");
         }
+    }
+
+    public Result<VenueDTO> getVenue(String sessionToken, String venueID){
+        try{
+            logger.info(
+                "VenueEventConfigService.getVenue: Attempting to get venue with id: {}", venueID);
+
+            if (!authService.validateToken(sessionToken)) {
+                logger.warn("VenueEventConfigService.getVenue: Invalid or expired session token.");
+                return Result.makeFail("Authentication failed. Please log in again.");
+            }
+
+            if (!authService.isUserToken(sessionToken)) {
+                logger.warn("VenueEventConfigService.getVenue: Expected a user session token");
+                return Result.makeFail("Authentication failed. Please log in again.");
+            }
+
+            logger.info("VenueEventConfigService.getVenue: Verifying venue exists for id {}",
+                    venueID);
+            Venue venue = venueRepository.findByID(venueID);
+
+            logger.info(
+                "VenueEventConfigService.getVenue: Successfully found venue for ID {}",
+                venueID);
+
+            return Result.makeOk(new VenueDTO(venue));
+        } catch (IllegalArgumentException e) {
+            logger.warn(
+                    "VenueEventConfigService.getVenue: Domain logic error during configuration: {}",
+                    e.getMessage());
+            return Result.makeFail("Configuration failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("VenueEventConfigService.getVenue: System error: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred");
+        }   
     }
 }

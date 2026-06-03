@@ -167,20 +167,44 @@ public class Venue {
             }
         }
     }
+	public OrderType segmentType(String segmentId) {
+		Segment segment = segments.get(segmentId);
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+		}
+		if (segment instanceof ChosenSeatingSeg) {
+			return OrderType.SEAT;
+		} else if (segment instanceof FieldSeg) {
+			return OrderType.FIELD;
+		} else {
+			throw new IllegalArgumentException("Unknown segment type for segment ID " + segmentId);
+		}
+	}
 	
 	public void cancelEvent(LocalDateTime starTime, int eventID) {
 		if (scheduledEvents.remove(eventID) == null) {
 			throw new IllegalArgumentException("Venue is not reserved for this event at requested date !");
 		}
 	}
-
-	public void freeTickets(String segmentId, List<String> seatIds, int eventID){
-		this.freeSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
+	public void cancelSeatReservation(String segmentId, List<String> seatIds, int eventID) {
+		this.freeTickets(segmentId, seatIds, 0, eventID);
 	}
-
-	public void freeTickets(String segmentId, int quantity, int eventID){
-		this.freeSeats(ReservationRequest.forField(eventID, quantity, segmentId));
-	} 
+	public void cancelFieldReservation(String segmentId, int quantity, int eventID) {
+		this.freeTickets(segmentId, null, quantity, eventID);
+	}
+	private void freeTickets(String segmentId, List<String> seatIds, int quantity, int eventID) {
+		Segment segment = segments.get(segmentId);
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+		}
+		if (segment instanceof ChosenSeatingSeg) {
+			this.freeSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
+		} else if (segment instanceof FieldSeg) {
+			this.freeSeats(ReservationRequest.forField(eventID, quantity, segmentId));
+		} else {
+			throw new IllegalArgumentException("Unknown segment type for segment ID " + segmentId);
+		}
+	}
 
     public void reserveTickets(String segmentId, List<String> seatIds, int eventID) {
         this.reserveSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
