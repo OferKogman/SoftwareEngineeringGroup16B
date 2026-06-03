@@ -8,6 +8,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
@@ -29,7 +30,6 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 import io.jsonwebtoken.JwtException;
-import org.springframework.stereotype.Service;
 
 @Service
 public class EventService {
@@ -114,20 +114,33 @@ public class EventService {
 			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.activateEvent: Session token verified successfully.");
 
-			logger.info("EventService.activateEvent: retrieving event for activation");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("EventService.activateEvent: retrieving production company for event activation");
-			ProductionCompany company = productionCompanyRepository
-					.findByID(String.valueOf(event.getEventProductionCompanyID()));
+			while (true) {
+				logger.info("EventService.activateEvent: retrieving event for activation");
+				event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("EventService.activateEvent: Validating user permissions for event activation.");
-			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("EventService.activateEvent: User permissions validated successfully.");
+				logger.info("EventService.activateEvent: retrieving production company for event activation");
+				ProductionCompany company = productionCompanyRepository
+						.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("EventService.activateEvent: Attempting to activate event: " + event.getEventName());
-			event.activateEvent();
-			eventRepository.save(event);
+				logger.info("EventService.activateEvent: Validating user permissions for event activation.");
+				company.validateUserPermissions(userID, RoleType.OWNER);
+				logger.info("EventService.activateEvent: User permissions validated successfully.");
+
+				logger.info("EventService.activateEvent: Attempting to activate event: " + event.getEventName());
+				event.activateEvent();
+				try {
+					eventRepository.save(event);
+					break;
+				} catch (OptimisticLockingFailureException e) {
+					logger.error(
+							"EventService.activateEvent: Concurrent modification error during event activation: "
+									+ e.getMessage());
+					return Result
+							.makeFail("Failed to activate event due to concurrent modification. Please try again.");
+				}
+			}
 			logger.info("EventService.activateEvent: Event activated successfully with ID: " + event.getEventID());
 
 			return Result.makeOk(true);
@@ -145,10 +158,6 @@ public class EventService {
 			logger.error(
 					"EventService.activateEvent: JWT authentication error during event activation: " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (OptimisticLockingFailureException e) {
-			logger.error("EventService.activateEvent: Concurrent modification error during event activation: "
-					+ e.getMessage());
-			return Result.makeFail("Failed to activate event due to concurrent modification. Please try again.");
 		} catch (Exception e) {
 			logger.error("EventService.activateEvent: Unexpected error during event activation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
@@ -160,20 +169,33 @@ public class EventService {
 			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.deactivateEvent: Session token verified successfully.");
 
-			logger.info("EventService.deactivateEvent: retrieving event for deactivation");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("EventService.deactivateEvent: retrieving production company for event deactivation");
-			ProductionCompany company = productionCompanyRepository
-					.findByID(String.valueOf(event.getEventProductionCompanyID()));
+			while (true) {
+				logger.info("EventService.deactivateEvent: retrieving event for deactivation");
+				event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("EventService.deactivateEvent: Validating user permissions for event deactivation.");
-			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("EventService.deactivateEvent: User permissions validated successfully.");
+				logger.info("EventService.deactivateEvent: retrieving production company for event deactivation");
+				ProductionCompany company = productionCompanyRepository
+						.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("EventService.deactivateEvent: Attempting to deactivate event: " + event.getEventName());
-			event.deactivateEvent();
-			eventRepository.save(event);
+				logger.info("EventService.deactivateEvent: Validating user permissions for event deactivation.");
+				company.validateUserPermissions(userID, RoleType.OWNER);
+				logger.info("EventService.deactivateEvent: User permissions validated successfully.");
+
+				logger.info("EventService.deactivateEvent: Attempting to deactivate event: " + event.getEventName());
+				event.deactivateEvent();
+				try {
+					eventRepository.save(event);
+					break;
+				} catch (OptimisticLockingFailureException e) {
+					logger.error(
+							"EventService.deactivateEvent: Concurrent modification error during event deactivation: "
+									+ e.getMessage());
+					return Result
+							.makeFail("Failed to deactivate event due to concurrent modification. Please try again.");
+				}
+			}
 			logger.info("EventService.deactivateEvent: Event deactivated successfully with ID: " + event.getEventID());
 
 			return Result.makeOk(true);
@@ -191,10 +213,6 @@ public class EventService {
 			logger.error("EventService.deactivateEvent: JWT authentication error during event deactivation: "
 					+ e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (OptimisticLockingFailureException e) {
-			logger.error("EventService.deactivateEvent: Concurrent modification error during event deactivation: "
-					+ e.getMessage());
-			return Result.makeFail("Failed to deactivate event due to concurrent modification. Please try again.");
 		} catch (Exception e) {
 			logger.error("EventService.deactivateEvent: Unexpected error during event deactivation: " + e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
@@ -221,60 +239,84 @@ public class EventService {
 		try {
 			String userID = validateAndGetUserID(sessionToken);
 			logger.info("EventService.editEvent: Session token verified successfully.");
-
-			logger.info("EventService.editEvent: retrieving event for edition");
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("EventService.editEvent: retrieving production company for event edition");
-			ProductionCompany company = productionCompanyRepository
-					.findByID(String.valueOf(event.getEventProductionCompanyID()));
+			while (true) {
+				logger.info("EventService.editEvent: retrieving event for edition");
+				event = eventRepository.findByID(String.valueOf(eventID));
 
-			logger.info("EventService.editEvent: Validating user permissions for event edition.");
-			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("EventService.editEvent: User permissions validated successfully.");
+				logger.info("EventService.editEvent: retrieving production company for event edition");
+				ProductionCompany company = productionCompanyRepository
+						.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
-			logger.info("EventService.editEvent: Attempting to edit event with ID: " + eventID);
-			if (getEditParam(editParams, "name", String.class) != null) {
-				event.setEventName(getEditParam(editParams, "name", String.class));
+				logger.info("EventService.editEvent: Validating user permissions for event edition.");
+				company.validateUserPermissions(userID, RoleType.OWNER);
+				logger.info("EventService.editEvent: User permissions validated successfully.");
+
+				logger.info("EventService.editEvent: Attempting to edit event with ID: " + eventID);
+				if (getEditParam(editParams, "name", String.class) != null) {
+					event.setEventName(getEditParam(editParams, "name", String.class));
+				}
+				if (getEditParam(editParams, "artist", String.class) != null) {
+					event.setEventArtist(getEditParam(editParams, "artist", String.class));
+				}
+				if (getEditParam(editParams, "category", String.class) != null) {
+					event.setEventCategory(getEditParam(editParams, "category", String.class));
+				}
+				if (getEditParam(editParams, "startTime", java.time.LocalDateTime.class) != null
+						&& getEditParam(editParams, "endTime", java.time.LocalDateTime.class) != null) {
+					event.setEventNewTime(getEditParam(editParams, "startTime", java.time.LocalDateTime.class),
+							getEditParam(editParams, "endTime", java.time.LocalDateTime.class));
+				} else if (getEditParam(editParams, "startTime", java.time.LocalDateTime.class) != null
+						|| getEditParam(editParams, "endTime", java.time.LocalDateTime.class) != null) {
+					return Result.makeFail("Must edit both start and end time together to update event time !");
+				}
+				if (getEditParam(editParams, "venue", String.class) != null) {
+					Venue oldVenue = venueRepository.findByID(event.getEventVenueID());
+					while (true) {
+						oldVenue.cancelEvent(event.getEventStartTime(), event.getEventID());
+						try {
+							venueRepository.save(oldVenue);
+							break;
+						} catch (OptimisticLockingFailureException e) {
+							logger.error(
+									"EventService.editEvent: Concurrent modification error during venue cancellation for event edition: "
+											+ e.getMessage());
+						}
+					}
+					String newVenueID = getEditParam(editParams, "venue", String.class);
+					while (true) {
+						Venue newVenue = venueRepository.findByID(newVenueID);
+						newVenue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), event.getEventID());
+						try {
+							venueRepository.save(newVenue);
+							break;
+						} catch (OptimisticLockingFailureException e) {
+							logger.error(
+									"EventService.editEvent: Concurrent modification error during venue booking for event edition: "
+											+ e.getMessage());
+						}
+					}
+
+					event.setEventVenue(newVenueID);
+				}
+				if (getEditParam(editParams, "eventRating", Double.class) != null) {
+					event.setEventRating(getEditParam(editParams, "eventRating", Double.class));
+				}
+				try {
+					eventRepository.save(event);
+					break;
+				} catch (OptimisticLockingFailureException e) {
+					logger.error("EventService.editEvent: Concurrent modification error during event edition: "
+							+ e.getMessage());
+				}
 			}
-			if (getEditParam(editParams, "artist", String.class) != null) {
-				event.setEventArtist(getEditParam(editParams, "artist", String.class));
-			}
-			if (getEditParam(editParams, "category", String.class) != null) {
-				event.setEventCategory(getEditParam(editParams, "category", String.class));
-			}
-			if (getEditParam(editParams, "startTime", java.time.LocalDateTime.class) != null
-					&& getEditParam(editParams, "endTime", java.time.LocalDateTime.class) != null) {
-				event.setEventNewTime(getEditParam(editParams, "startTime", java.time.LocalDateTime.class),
-						getEditParam(editParams, "endTime", java.time.LocalDateTime.class));
-			} else if (getEditParam(editParams, "startTime", java.time.LocalDateTime.class) != null
-					|| getEditParam(editParams, "endTime", java.time.LocalDateTime.class) != null) {
-				return Result.makeFail("Must edit both start and end time together to update event time !");
-			}
-			if (getEditParam(editParams, "venue", String.class) != null) {
-				Venue oldVenue = venueRepository.findByID(event.getEventVenueID());
-				oldVenue.cancelEvent(event.getEventStartTime(), event.getEventID());
-				String newVenueID = getEditParam(editParams, "venue", String.class);
-				Venue newVenue = venueRepository.findByID(newVenueID);
-				newVenue.bookEvent(event.getEventStartTime(), event.getEventEndTime(), event.getEventID());
-				venueRepository.save(oldVenue);
-				venueRepository.save(newVenue);
-				event.setEventVenue(newVenueID);
-			}
-			if (getEditParam(editParams, "eventRating", Double.class) != null) {
-				event.setEventRating(getEditParam(editParams, "eventRating", Double.class));
-			}
-			eventRepository.save(event);
 
 			logger.info("EventService.editEvent: Event edited successfully with ID: " + eventID);
 			return Result.makeOk(new EventDTO(event));
 		} catch (IllegalArgumentException e) {
 			logger.error("EventService.editEvent: " + e.getMessage());
 			return Result.makeFail(e.getMessage());
-		} catch (OptimisticLockingFailureException e) {
-			logger.error(
-					"EventService.editEvent: Concurrent modification error during event edition: " + e.getMessage());
-			return Result.makeFail("Failed to edit event due to concurrent modification. Please try again.");
 		} catch (AuthException e) {
 			logger.error("EventService.editEvent: Invalid session token. " + e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
@@ -305,16 +347,30 @@ public class EventService {
 			company.validateUserPermissions(userID, RoleType.OWNER);
 			logger.info("EventService.editStockInSegmentsForEvent: User permissions validated successfully.");
 
-			logger.info(
-					"EventService.editStockInSegmentsForEvent: Attempting to edit stock in segments for event with ID: "
-							+ eventID);
 			Venue venue = venueRepository.findByID(event.getEventVenueID());
 
-			for (Map.Entry<String, Integer> entry : segmentsAndNewStock.entrySet()) {
-				Segment currSeg = venue.getSegmentByID(entry.getKey());
-				currSeg.setStockForEvent(eventID, entry.getValue());
+			while (true) {
+				logger.info(
+						"EventService.editStockInSegmentsForEvent: Attempting to edit stock in segments for event with ID: "
+								+ eventID);
+				venue = venueRepository.findByID(event.getEventVenueID());
+
+				for (Map.Entry<String, Integer> entry : segmentsAndNewStock.entrySet()) {
+					Segment currSeg = venue.getSegmentByID(entry.getKey());
+					currSeg.setStockForEvent(eventID, entry.getValue());
+				}
+				try {
+					venueRepository.save(venue);
+					break;
+				} catch (OptimisticLockingFailureException e) {
+					logger.error(
+							"EventService.editStockInSegmentsForEvent: Concurrent modification error during stock edition: "
+									+ e.getMessage());
+					return Result
+							.makeFail(
+									"Failed to edit stock in segments for event due to concurrent modification. Please try again.");
+				}
 			}
-			venueRepository.save(venue);
 
 			return Result.makeOk("EventService.editStockInSegmentsForEvent: Changed stocks for eventID: " + eventID);
 		} catch (IllegalArgumentException e) {
