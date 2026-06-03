@@ -21,17 +21,30 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  const addNotification = useCallback((notification: Omit<NotificationData, "id">) => {
-    const id = generateNotificationId();
-    const newNotification = { ...notification, id };
-    
-    setNotifications((prev) => [...prev, newNotification]);
+const addNotification = useCallback((notification: Omit<NotificationData, "id">) => {
+    setNotifications((prev) => {
+      // check if a notification with the exact same message and type is already on screen
+      const isDuplicate = prev.some(
+        (n) => n.message === notification.message && n.type === notification.type
+      );
 
-    if (notification.duration) {
-      setTimeout(() => {
-        removeNotification(id);
-      }, notification.duration);
-    }
+      if (isDuplicate) {
+        return prev; 
+      }
+
+      const id = generateNotificationId();
+      const newNotification = { ...notification, id };
+
+      //set up the timeout if a duration was provided
+      if (notification.duration) {
+        setTimeout(() => {
+          removeNotification(id);
+        }, notification.duration);
+      }
+
+      //add notificationto the arr
+      return [...prev, newNotification];
+    });
   }, [removeNotification]);
 
   const clearAll = useCallback(() => {
