@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import type { EventDTO } from "../DTOs/EventDTO";
+import type { EventDTO } from "../../DTOs/EventDTO";
 
 type CompanyEventListProps = {
   onEditEvent: (companyID: number, eventID: number) => void | Promise<void>;
@@ -22,46 +22,15 @@ export default function ViewCompanyEvents({
 
     async function loadEvents() {
       try {
-        //const response = await fetch(`/api/events/${id}`);
+        const response = await fetch(
+          `http://localhost:8080/production-companies/${companyID}/events`,
+        );
 
-        //if (!response.ok) {
-        //  throw new Error("Failed to load event.");
-        //}
+        if (!response.ok) {
+          throw new Error("Failed to load event.");
+        }
 
-        //const event: EventDTO = await response.json();
-
-        const eventList: EventDTO[] = [
-          {
-            eventID: 0,
-            active: true,
-            venueID: "Live Park",
-            name: "Last Tour Ever",
-            startTime: "2027-06-22T14:30",
-            endTime: "2027-06-22T18:30",
-            artist: "Queen",
-            category: "Rock",
-            productionCompanyID: 0,
-            discountPolicy: null,
-            purchasePolicy: null,
-            price: 100000,
-            rating: 5,
-          },
-          {
-            eventID: 1,
-            active: true,
-            venueID: "Live Park",
-            name: "Last Tour Ever For Real This Time",
-            startTime: "2028-06-22T14:30",
-            endTime: "2028-06-22T18:30",
-            artist: "Queen",
-            category: "Rock",
-            productionCompanyID: 0,
-            discountPolicy: null,
-            purchasePolicy: null,
-            price: 10000000,
-            rating: 5,
-          },
-        ];
+        const eventList: EventDTO[] = await response.json();
         setEventDTOList(eventList);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load events.");
