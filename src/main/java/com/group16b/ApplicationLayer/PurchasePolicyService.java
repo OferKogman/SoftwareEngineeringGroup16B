@@ -17,6 +17,11 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.AgePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.MaxTicketsPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.TicketAmountPolicy;
 
 import org.springframework.stereotype.Service;
 
@@ -128,7 +133,7 @@ public class PurchasePolicyService {
         }
     }
 
-    public Result<Boolean> createCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicy policy) {
+    public Result<Boolean> createCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicyRecord record) {
         try {
             logger.info("PurchasePolicyService.createCompanyPurchasePolicy: Received request for company ID: {}", companyID);
             if (!authenticationService.validateToken(sessionToken))
@@ -140,7 +145,7 @@ public class PurchasePolicyService {
 
             ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
             company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
-            company.addPurchasePolicy(policy);
+            company.addPurchasePolicy(buildPolicy(record));
             productionCompanyRepository.save(company);
 
             logger.info("PurchasePolicyService.createCompanyPurchasePolicy: Policy added to company {} successfully", companyID);
@@ -152,6 +157,16 @@ public class PurchasePolicyService {
             logger.error("PurchasePolicyService.createCompanyPurchasePolicy: Unexpected error: {}", e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+    private PurchasePolicy buildPolicy(PurchasePolicyRecord record) {
+        return switch (record.type()) {
+            case "AGE" -> new AgePolicy(record.minAge(), record.maxAge());
+            case "MIN_TICKETS" -> new MinTicketsPolicy(record.minTickets());
+            case "MAX_TICKETS" -> new MaxTicketsPolicy(record.maxTickets());
+            case "TICKET_AMOUNT" -> new TicketAmountPolicy(record.minTickets(), record.maxTickets());
+            default -> throw new IllegalArgumentException("Unknown policy type: " + record.type());
+        };
     }
 
 }
