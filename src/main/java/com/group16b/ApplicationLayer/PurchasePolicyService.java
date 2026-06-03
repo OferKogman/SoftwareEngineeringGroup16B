@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.Set;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -15,6 +16,7 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
 import org.springframework.stereotype.Service;
 
@@ -125,4 +127,31 @@ public class PurchasePolicyService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+
+    public Result<Boolean> createCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicy policy) {
+        try {
+            logger.info("PurchasePolicyService.createCompanyPurchasePolicy: Received request for company ID: {}", companyID);
+            if (!authenticationService.validateToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            if (!authenticationService.isUserToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            userRepository.findByID(userID);
+
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
+            company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
+            company.addPurchasePolicy(policy);
+            productionCompanyRepository.save(company);
+
+            logger.info("PurchasePolicyService.createCompanyPurchasePolicy: Policy added to company {} successfully", companyID);
+            return Result.makeOk(true);
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.createCompanyPurchasePolicy: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("PurchasePolicyService.createCompanyPurchasePolicy: Unexpected error: {}", e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
 }
