@@ -16,7 +16,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
-import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -484,34 +483,26 @@ public class PurchasePolicyServiceTests {
     }
 
     @Test
-    public void editEventPurchasePolicy_Success() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        e1.addEventPurchasePolicy(oldPolicy);
-        eventRepository.save(e1);
-        Result<Boolean> res = purchasePolicyService.editEventPurchasePolicy("user1", e1.getEventID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+    public void createEventPurchasePolicy_Success() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", e1.getEventID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertTrue(res.isSuccess());
     }
 
     @Test
-    public void editEventPurchasePolicy_FailInvalidToken() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        Result<Boolean> res = purchasePolicyService.editEventPurchasePolicy("invalid_token", e1.getEventID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+    public void createEventPurchasePolicy_FailInvalidToken() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("invalid_token", e1.getEventID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertFalse(res.isSuccess());
     }
 
     @Test
-    public void editEventPurchasePolicy_FailNoPermission() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        e1.addEventPurchasePolicy(oldPolicy);
-        eventRepository.save(e1);
-        Result<Boolean> res = purchasePolicyService.editEventPurchasePolicy("user2", e1.getEventID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+    public void createEventPurchasePolicy_FailNoPermission() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user2", e1.getEventID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertFalse(res.isSuccess());
     }
 
     @Test
-    public void editEventPurchasePolicy_FailEventNotFound() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        Result<Boolean> res = purchasePolicyService.editEventPurchasePolicy("user1", 999, oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+    public void createEventPurchasePolicy_FailEventNotFound() {
+        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", 999, new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertFalse(res.isSuccess());
     }
 }
