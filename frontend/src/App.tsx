@@ -5,6 +5,7 @@ import Header from "./Components/Layouts/Header";
 import "./CSS/App.css";
 
 import { NotificationProvider } from "./Components/Notification/NotificationContext";
+import NotificationsContainer from "./Components/Notification/NotificationContainer";
 
 type SessionContextType = {
   sessionToken: string;
@@ -110,7 +111,8 @@ function App() {
           <NotificationProvider>
             <div className={`app ${theme}`}>
               
-              
+              <NotificationsContainer />
+                
               <Header theme={theme} setTheme={setTheme} />
               <AppRoutes />
             </div>
