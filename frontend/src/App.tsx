@@ -4,6 +4,8 @@ import AppRoutes from "./AppRoutes";
 import Header from "./Components/Layouts/Header";
 import "./CSS/App.css";
 
+import { NotificationProvider } from "./Components/Notification/NotificationContext";
+
 type SessionContextType = {
   sessionToken: string;
   setSessionToken: React.Dispatch<React.SetStateAction<string | null>>;
@@ -47,6 +49,7 @@ function App() {
   const [loggedIn, setLoggedIn] = useState<boolean>(
     localStorage.getItem("isLoggedIn") === "true",
   );
+  
   useEffect(() => {
     localStorage.setItem("theme", theme);
   }, [theme]);
@@ -103,10 +106,16 @@ function App() {
     <BrowserRouter>
       <SessionContext.Provider value={{ sessionToken, setSessionToken }}>
         <LoggedInContext.Provider value={{ loggedIn, setLoggedIn }}>
-          <div className={`app ${theme}`}>
-            <Header theme={theme} setTheme={setTheme} />
-            <AppRoutes />
-          </div>
+          
+          <NotificationProvider>
+            <div className={`app ${theme}`}>
+              
+              
+              <Header theme={theme} setTheme={setTheme} />
+              <AppRoutes />
+            </div>
+          </NotificationProvider>
+
         </LoggedInContext.Provider>
       </SessionContext.Provider>
     </BrowserRouter>
