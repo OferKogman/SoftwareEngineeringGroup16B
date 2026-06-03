@@ -1,5 +1,12 @@
 package com.group16b.ApplicationLayer;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -8,14 +15,8 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -29,12 +30,10 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
-import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
@@ -101,11 +100,11 @@ public class EventServiceTests {
 
                 location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
 
-                segment1 = new FieldSeg("segment1", 50);
+                segment1 = new FieldSeg("segment1", 50, new GridRectangle(0, 0, 10, 5));
                 Map<String, Segment> segmentMap = new TreeMap<>();
                 segmentMap.put("segment1", segment1);
 
-                Venue venue1 = new Venue("Test Venue", location1, segmentMap, "venue1");
+                Venue venue1 = new Venue("Test Venue", location1, segmentMap, "venue1", new VenueGrid(10, 10), new TreeMap<>(), new TreeMap<>());
 
                 LocalDateTime startTime = LocalDateTime.now().plusDays(1);
                 LocalDateTime endTime = LocalDateTime.now().plusDays(2);
