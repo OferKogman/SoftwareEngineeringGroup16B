@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -29,9 +30,13 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.FieldSeg;
+import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Entrance;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -81,11 +86,11 @@ public class AdminManagementServiceTest1 {
         invalidToken = "invalidToken";
         
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
-        segment1 = new FieldSeg("segment1", 50);
+        segment1 = new FieldSeg("segment1", 50, new GridRectangle(1, 2, 3, 4));//added basic area since we don't test stuff about it here
 
         Map<String, Segment> segmentMap = new TreeMap<>();
         segmentMap.put("segment1", segment1);
-        venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID");
+        venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
 
         
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);

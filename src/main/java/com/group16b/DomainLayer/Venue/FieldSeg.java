@@ -7,14 +7,14 @@ public class FieldSeg extends Segment {
 	private final int size;
 	private Map<Integer, Integer> stock;
 
-	public FieldSeg(String segID, int size) {
-		super(segID);
+	public FieldSeg(String segID, int size, GridRectangle area) {
+		super(segID, area);
 		this.size = size;
 		stock = new HashMap<Integer, Integer>();
 	}
 
 	public FieldSeg(FieldSeg other) {
-		super(other.segmentID);
+		super(other.segmentID, other.area);
 		this.size = other.size;
 		this.stock = new HashMap<>(other.stock);
 	}

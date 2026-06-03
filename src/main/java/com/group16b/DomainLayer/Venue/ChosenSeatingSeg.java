@@ -11,13 +11,13 @@ public class ChosenSeatingSeg extends Segment {
 	protected final Map<String, Seat> seats;
 	private int IDforSeat = 0;
 
-	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats) {
-		super(segmentID);
+	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
+		super(segmentID, area);
 		this.seats = seats;
 	}
 
-	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats) {
-		super(segmentID);
+	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats, GridRectangle area) {
+		super(segmentID, area);
 		this.seats = new ConcurrentHashMap<>();
 		for (SeatRecord sr : seats) {
 			String seatId = sr.row() + "-" + sr.number();
@@ -26,7 +26,7 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	public ChosenSeatingSeg(ChosenSeatingSeg other) {
-		super(other.segmentID);
+		super(other.segmentID, other.area);
 		this.IDforSeat = other.IDforSeat;
 		this.seats = new ConcurrentHashMap<>();
 		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {

@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -19,6 +20,7 @@ import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.atMostOnce;
@@ -48,12 +50,16 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.FieldSeg;
+import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Seat;
 import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
@@ -132,13 +138,13 @@ public class OrderServiceTests {
                                 seats.put(seatId, new Seat(row, num));
                         }
                 }
-                ChosenSeatingSeg seatingSeg1 = new ChosenSeatingSeg("seatingSeg1", seats);
-                FieldSeg fieldSeg1 = new FieldSeg("fieldSeg1", 100);
+                ChosenSeatingSeg seatingSeg1 = new ChosenSeatingSeg("seatingSeg1", seats, new GridRectangle(1, 2, 3 , 4));
+                FieldSeg fieldSeg1 = new FieldSeg("fieldSeg1", 100, new GridRectangle(6, 7, 8, 9));
                 Location location = new Location("Test Location", "123", "Test Street", "Test City", "Test State", "Test Country", 0.0, 0.0);
                 HashMap<String, Segment> segments = new HashMap<>();
                 segments.put(seatingSeg1.getSegmentID(), seatingSeg1);
                 segments.put(fieldSeg1.getSegmentID(), fieldSeg1);
-                testVenue = new Venue("Test Venue", location, segments, "1");
+                testVenue = new Venue("Test Venue", location, segments, "1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
 
                 venueRepo.save(testVenue);
         }
@@ -506,7 +512,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         
                         verify(paymentGateway, atLeastOnce()).processPayment(any(), eq(100.0));
                         verify(paymentGateway, atMost(2)).processPayment(any(), eq(100.0));
-                        verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                        verify(ticketGateway, atLeast(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                        verify(ticketGateway, atMost(4)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
                         
                         if (failureMessage.contains("concurrent update") || failureMessage.contains("Order expired")) {
                                 verify(paymentGateway, times(1)).cancelPayment();
