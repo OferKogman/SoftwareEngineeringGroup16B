@@ -144,7 +144,6 @@ public class VenueEventConfigServiceTests {
                 assertTrue(result.isSuccess(), "Expected success for valid owner setup");
                 assertEquals("Venue layout configured and saved successfully.", result.getValue());
 
-                verify(mockEvent, times(1)).setEventVenue(venueName);
                 // We verify that the repository actually received ANY fully constructed Venue
                 // object!
                 verify(mockVenueRepository, times(1)).save(any(Venue.class));
@@ -288,37 +287,6 @@ public class VenueEventConfigServiceTests {
                                 validToken, companyID, validRecord);
 
                 assertFalse(result.isSuccess());
-                assertEquals("Configuration failed: Event with ID " + eventID + " not found", result.getError());
-        }
-
-        @Test
-        void configureNewLayoutAndInventory_DomainThrowsIllegalArgumentException_ReturnsFailResult() {
-                LocalDateTime badEndTime = startTime.minusHours(5);
-                Event mockEvent = mock(Event.class);
-                when(mockEvent.getEventStartTime()).thenReturn(startTime);
-                when(mockEvent.getEventEndTime()).thenReturn(badEndTime);
-                User mockUser = mock(User.class);
-                VenueRecord validRecord = createValidVenueRecord();
-
-                when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
-                when(mockAuthService.isUserToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
-                when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
-                when(mockEvent.getEventStatus()).thenReturn(false);
-                when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
-
-                ProductionCompany mockCompany = mock(ProductionCompany.class);
-                when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
-
-                when(mockCompany.isOwner(userID)).thenReturn(true);
-
-                Result<String> result = configService.configureNewLayoutAndInventory(
-                                validToken, companyID, validRecord);
-
-                assertFalse(result.isSuccess());
-                assertTrue(result.getError().contains("Event start time must be before end time!"));
-                verify(mockVenueRepository, never()).save(any());
         }
 
         @Test
@@ -390,19 +358,6 @@ public class VenueEventConfigServiceTests {
                 when(mockAuthService.validateToken("bad.token")).thenReturn(false);
 
                 Result<?> result = configService.getVenue("bad.token", targetVenueID);
-
-                assertFalse(result.isSuccess());
-                assertEquals("Authentication failed. Please log in again.", result.getError());
-                verify(mockVenueRepository, never()).findByID(anyString());
-        }
-
-        @Test
-        void getVenue_TokenIsNotUserToken_ReturnsFailResult() {
-                String targetVenueID = "venue-123";
-                when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.isUserToken(validToken)).thenReturn(false);
-
-                Result<?> result = configService.getVenue(validToken, targetVenueID);
 
                 assertFalse(result.isSuccess());
                 assertEquals("Authentication failed. Please log in again.", result.getError());

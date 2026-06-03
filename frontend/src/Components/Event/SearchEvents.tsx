@@ -53,8 +53,14 @@ export default function SearchEvents() {
 
       const filteredData = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => {
-          if (value === undefined || value === null) return false;
-          if (Array.isArray(value) && value.length === 0) return false;
+          if (value === undefined || value === null) {
+            return false;
+          }
+
+          if (Array.isArray(value) && value.length === 0) {
+            return false;
+          }
+
           return true;
         }),
       );
