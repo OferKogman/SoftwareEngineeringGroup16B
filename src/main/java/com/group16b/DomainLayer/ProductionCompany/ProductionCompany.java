@@ -15,6 +15,7 @@ import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
+
 public class ProductionCompany {
     private int productionCompanyID;
     private double rating;
@@ -25,6 +26,8 @@ public class ProductionCompany {
     private final HashMap<String, MembershipNode> membersNodes=new HashMap<>();
     private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
     private final HashMap<String, Set<String>> childrenByUser = new HashMap<>();
+    private final Set<PurchasePolicy> purchasePolicies = new HashSet<>();
+    private final Set<DiscountPolicy> discountPolicies = new HashSet<>();
 
     public ProductionCompany(ProductionCompany other)
     {
@@ -51,6 +54,9 @@ public class ProductionCompany {
                 new HashSet<>(entry.getValue())
             );
         }
+
+        this.purchasePolicies.addAll(other.purchasePolicies);
+        this.discountPolicies.addAll(other.discountPolicies);
     }
     public ProductionCompany(int id, String name, double rating, String founderID)
     {
@@ -112,15 +118,15 @@ public class ProductionCompany {
         this.version=version;
     }
 
-    public Set<DiscountPolicy> getDiscountPolicy()
-    {
-        return null;
+    public Set<DiscountPolicy> getDiscountPolicy() {
+        return new HashSet<>(discountPolicies);
     }
 
-    public Set<PurchasePolicy> getPurchasePolicy()
-    {
-        return null;
+    public Set<PurchasePolicy> getPurchasePolicy() {
+        return new HashSet<>(purchasePolicies);
     }
+
+
 
     public boolean isFounder(String userID)
     {
@@ -464,5 +470,21 @@ public class ProductionCompany {
     public boolean hasOutgoingInvites(String userID)
     {
         return invites.keySet().stream().anyMatch(k->k.assignerId.equals(userID));
+    }
+
+    public void addPurchasePolicy(PurchasePolicy pp) {
+        purchasePolicies.add(pp);
+    }
+
+    public void removePurchasePolicy(PurchasePolicy pp) {
+        purchasePolicies.remove(pp);
+    }
+
+    public void addDiscountPolicy(DiscountPolicy dp) {
+        discountPolicies.add(dp);
+    }
+
+    public void removeDiscountPolicy(DiscountPolicy dp) {
+        discountPolicies.remove(dp);
     }
 }
