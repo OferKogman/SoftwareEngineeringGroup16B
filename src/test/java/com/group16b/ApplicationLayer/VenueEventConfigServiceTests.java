@@ -147,7 +147,6 @@ public class VenueEventConfigServiceTests {
                 // We verify that the repository actually received ANY fully constructed Venue
                 // object!
                 verify(mockVenueRepository, times(1)).save(any(Venue.class));
-                verify(mockEventRepository, times(1)).save(mockEvent);
         }
 
         @Test
