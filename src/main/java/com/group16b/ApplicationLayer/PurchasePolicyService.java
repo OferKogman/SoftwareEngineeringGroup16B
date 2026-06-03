@@ -195,4 +195,31 @@ public class PurchasePolicyService {
         };
     }
 
+    public Result<Boolean> createEventPurchasePolicy(String sessionToken, int eventID, PurchasePolicyRecord record) {
+        try {
+            logger.info("PurchasePolicyService.createEventPurchasePolicy: Received request for event ID: {}", eventID);
+            if (!authenticationService.validateToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            if (!authenticationService.isUserToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            userRepository.findByID(userID);
+
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+            company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
+            event.addEventPurchasePolicy(buildPolicy(record));
+            eventRepo.save(event);
+
+            logger.info("PurchasePolicyService.createEventPurchasePolicy: Policy added to event {} successfully", eventID);
+            return Result.makeOk(true);
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.createEventPurchasePolicy: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("PurchasePolicyService.createEventPurchasePolicy: Unexpected error: {}", e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
 }
