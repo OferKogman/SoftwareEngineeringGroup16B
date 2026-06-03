@@ -20,8 +20,8 @@ public class ChosenSeatingSeg extends Segment {
 		super(segmentID, area);
 		this.seats = new ConcurrentHashMap<>();
 		for (SeatRecord sr : seats) {
-			String seatId = sr.row() + "-" + sr.number();
-			this.seats.put(seatId, new Seat(sr.row(), sr.number()));
+			String seatId = sr.row() + "-" + sr.column();
+			this.seats.put(seatId, new Seat(sr.row(), sr.column()));
 		}
 	}
 

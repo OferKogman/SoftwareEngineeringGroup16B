@@ -82,7 +82,7 @@ export default function EventCreationForm({
       const message = await response.text();
       throw new Error(message || "Failed to create event.");
     }
-    navigate(`/companies/${companyId}/venue-config`);
+    navigate(`/companies/${companyId}/events`);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

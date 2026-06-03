@@ -1,21 +1,17 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../App";
+import type { EventDTO } from "../../DTOs/EventDTO";
 import "./CSS/CompanyEvents.css";
 
 const API_BASE = "http://localhost:8080";
-
-interface CompanyEvent {
-  id: number;
-  name: string;
-}
 
 export default function CompanyEvents() {
   const navigate = useNavigate();
   const { companyId } = useParams();
   const { sessionToken } = useSession();
 
-  const [events, setEvents] = useState<CompanyEvent[]>([]);
+  const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -96,15 +92,15 @@ export default function CompanyEvents() {
 
       <div className="company-events-list">
         {events.map((event) => (
-          <div key={event.id} className="company-event-card">
+          <div key={event.eventID} className="company-event-card">
             <div>
-              <h3>{event.name}</h3>
-              <p>Event ID: {event.id}</p>
+              <h3>Event Name: {event.name}</h3>
+              <p>Event ID: {event.eventID}</p>
             </div>
 
             <button
               className="manage-event-button"
-              onClick={() => handleManageEvent(event.id)}
+              onClick={() => handleManageEvent(event.eventID)}
             >
               Manage Event
             </button>
