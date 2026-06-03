@@ -1,7 +1,6 @@
 package com.group16b.DomainLayer.Venue;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +10,7 @@ import com.group16b.ApplicationLayer.Records.EntranceRecord;
 import com.group16b.ApplicationLayer.Records.FieldSegRecord;
 import com.group16b.ApplicationLayer.Records.StageRecord;
 import com.group16b.ApplicationLayer.Records.VenueGridRecord;
+import com.group16b.DomainLayer.Order.OrderType;
 
 public class Venue {
 	private volatile String name;

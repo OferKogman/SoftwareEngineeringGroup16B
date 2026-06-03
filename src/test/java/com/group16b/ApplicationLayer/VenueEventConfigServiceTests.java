@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,8 +40,12 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.Location;
+import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 
 public class VenueEventConfigServiceTests {
 
@@ -358,7 +363,7 @@ public class VenueEventConfigServiceTests {
                 "Madison Square Garden", "4", "Pennsylvania Plaza",
                 "New York", "NY", "USA", 40.75, -73.99);
 
-        Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ArrayList<>(), new ArrayList<>(), targetVenueID);
+        Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ConcurrentHashMap<>(), targetVenueID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
 
         when(mockAuthService.validateToken(validToken)).thenReturn(true);
         when(mockAuthService.isUserToken(validToken)).thenReturn(true);
