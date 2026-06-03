@@ -45,7 +45,7 @@ import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 
-public class AdminManagementServiceTest1 {
+public class AdminManagementServiceTest {
 
     private AdminManagementService adminManagementService;
     private IAuthenticationService tokenService;
