@@ -68,13 +68,9 @@ public class DefaultPurchasePolicy implements PurchasePolicy {
         this.minAge = minAge;
     }
 
-    public void setNoSingleSeatLeft(boolean noSingleSeatLeft){
-        this.noSingleSeatLeft = noSingleSeatLeft;
-    }
+    
 
-    public boolean validatePurchase(){ //int age, int ticketCount, int seatsRemainingInSection
-        //return (age >= this.minAge && ticketCount >= this.minTicketsPerTransaction && ticketCount <= this.maxTicketsPerTransaction && (!this.noSingleSeatLeft || seatsRemainingInSection - ticketCount != 1));
-        return true;
-    }
+    @Override
+    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
 
 }

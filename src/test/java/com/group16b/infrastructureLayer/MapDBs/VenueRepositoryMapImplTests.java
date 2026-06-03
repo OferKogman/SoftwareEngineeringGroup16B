@@ -1,10 +1,6 @@
 package com.group16b.infrastructureLayer.MapDBs;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
-
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -12,10 +8,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 
 public class VenueRepositoryMapImplTests {
@@ -141,7 +144,7 @@ public class VenueRepositoryMapImplTests {
     @Test
     void save_ConcurrentWritesToSameVenue_OptimisticLockPreventsOverwrites() throws InterruptedException {
         // Setup: Pre-load the map with a real venue (Version 1)
-        Venue realVenue = new Venue("venue_1", null, new ArrayList<>(), new ArrayList<>(), "venueID"); 
+        Venue realVenue = new Venue("venue_1", null, new ConcurrentHashMap<>(), "venueID", new VenueGrid(6, 7), new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
         realVenue.setVersion(1L);
         venues.put("venue_1", realVenue);
         

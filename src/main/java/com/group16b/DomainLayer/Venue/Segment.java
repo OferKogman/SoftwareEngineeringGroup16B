@@ -4,9 +4,11 @@ import java.util.Map;
 
 abstract public class Segment {
 	protected final String segmentID;
+	protected GridRectangle area;
 
-	public Segment(String segmentID) {
+	public Segment(String segmentID, GridRectangle area) {
 		this.segmentID = segmentID;
+		this.area = area;
 	}
 
 	public String getSegmentID() {
