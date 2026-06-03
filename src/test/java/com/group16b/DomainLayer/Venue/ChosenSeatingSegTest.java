@@ -25,6 +25,7 @@ public class ChosenSeatingSegTest {
                         seat1.getSeatId(), seat1,
                         seat2.getSeatId(), seat2
                 )
+                , new GridRectangle(5, 4 ,6 , 5)
         );
     }
 
@@ -100,7 +101,7 @@ public class ChosenSeatingSegTest {
         seats.put("1-1", seat1);
         seats.put("1-2", seat2);
 
-        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats);
+        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats, new GridRectangle(3, 5 ,2 , 51));
 
         segment.reserve(ReservationRequest.forSeats(100, List.of("1-1", "1-2"), "seg1"));
 
@@ -116,7 +117,7 @@ public class ChosenSeatingSegTest {
         Map<String, Seat> seats = new HashMap<>();
         seats.put("1-1", seat1);
 
-        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats);
+        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats, new GridRectangle(5, 4 ,6 , 5));
 
         segment.reserve(ReservationRequest.forSeats(100, List.of("1-1"), "seg1"));
         segment.cancelReservation(ReservationRequest.forSeats(100, List.of("1-1"), "seg1"));
@@ -132,7 +133,7 @@ public class ChosenSeatingSegTest {
         Map<String, Seat> seats = new HashMap<>();
         seats.put("1-1", seat1);
 
-        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats);
+        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats, new GridRectangle(5, 4 ,6 , 5));
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -150,7 +151,7 @@ public class ChosenSeatingSegTest {
         Map<String, Seat> seats = new HashMap<>();
         seats.put("1-1", seat1);
 
-        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats);
+        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", seats, new GridRectangle(5, 4 ,6 , 5));
 
         segment.reserve(ReservationRequest.forSeats(100, List.of("1-1"), "seg1"));
 
@@ -162,7 +163,7 @@ public class ChosenSeatingSegTest {
 
     @Test
     void getSegmentType_shouldReturnS() {
-        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", new HashMap<>());
+        ChosenSeatingSeg segment = new ChosenSeatingSeg("seg1", new HashMap<>(), new GridRectangle(5, 4 ,6 , 5));
 
         assertEquals("S", segment.getSegmentType());
     }

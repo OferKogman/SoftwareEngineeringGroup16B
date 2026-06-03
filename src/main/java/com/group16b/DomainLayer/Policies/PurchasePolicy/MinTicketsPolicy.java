@@ -22,5 +22,5 @@ public class MinTicketsPolicy implements PurchasePolicy {
     }
 
     @Override
-    public boolean validatePurchase() { return true; }
+    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
 }

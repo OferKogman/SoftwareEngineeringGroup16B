@@ -1,6 +1,7 @@
 package com.group16b.DomainLayer.SystemAdmin;
 
 import java.security.MessageDigest;
+import java.nio.charset.StandardCharsets;
 
 public class SystemAdmin {
 	private String username;
@@ -11,10 +12,10 @@ public class SystemAdmin {
 	public SystemAdmin(String username, String password, String email) {
 		this.username = username;
 		this.email = email;
-		version = 0;
+		this.version = 0;
 		setPassword(password);
-
 	}
+
 	public SystemAdmin(SystemAdmin other) {
 		this.username = other.username;
 		this.password = other.password;
@@ -22,35 +23,52 @@ public class SystemAdmin {
 		this.version = other.version;
 	}
 
+
+
 	public String getUsername() {
 		return username;
 	}
+
 	public String getEmail() {
 		return email;
 	}
 
+	public long getVersion() {
+		return version;
+	}
+
+
+
+	public void setVersion(long version) {
+		this.version = version;
+	}
+
+
+
+
 	private void setPassword(String newPassword) {
 		try {
-			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			messageDigest.update(newPassword.getBytes());
-			String stringHash = new String(messageDigest.digest());
-			this.password = stringHash;
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(newPassword.getBytes(StandardCharsets.UTF_8));
+			this.password = new String(md.digest(), StandardCharsets.ISO_8859_1);
+			this.version++; // Increment version whenever password is set/changed
 		} catch (Exception e) {
-			System.out.println("Error hashing password: " + e.getMessage());
+			throw new RuntimeException("Error hashing password: " + e.getMessage(), e);
 		}
 	}
 
+
 	public boolean confirmPassword(String password) {
 		try {
-			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			messageDigest.update(password.getBytes());
-			String stringHash = new String(messageDigest.digest());
-			return this.password.equals(stringHash);
+			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			md.update(password.getBytes(StandardCharsets.UTF_8));
+			String hash = new String(md.digest(), StandardCharsets.ISO_8859_1);
+			return this.password.equals(hash);
 		} catch (Exception e) {
-			System.out.println("Error hashing password: " + e.getMessage());
-			return false;	
+			throw new RuntimeException("Error hashing password: " + e.getMessage(), e);
 		}
 	}
+
 
 	@Override
 	public boolean equals(Object obj) {
@@ -60,58 +78,10 @@ public class SystemAdmin {
 		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		
 		SystemAdmin other = (SystemAdmin) obj;
-		return (this.username.equals(other.username) &&
-				this.password.equals(other.password) &&
-				this.email.equals(other.email));
+		return this.username.equals(other.username)
+				&& this.password.equals(other.password)
+				&& this.email.equals(other.email);
 	}
-
-	/*public void closeProductionCompany(int productionCompanyId) {
-		ProductionCompanyRepositoryMapImpl productionCompanyRepo = ProductionCompanyRepositoryMapImpl.getInstance();
-		ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
-		
-		if(company == null) {
-			System.out.println("Production company with ID " + productionCompanyId + " does not exist.");
-			return;
-		}
-
-		EventRepositoryMapImpl eventRepo = EventRepositoryMapImpl.getInstance();
-		List<Integer> productionCompanyIDs = new LinkedList<>();
-		productionCompanyIDs.add(productionCompanyId);
-
-		List<Event> companyEvents = eventRepo.searchEvents(null, null, null, null, null, null, null, null, null, productionCompanyIDs);
-		List<User> companyUsers = company.getAssociatedUsers();
-		try{
-			if(!companyEvents.isEmpty()) {
-				deactivateEvents(companyEvents);
-			}
-
-			if(!companyUsers.isEmpty()) {
-				deactivateUsers(companyUsers, productionCompanyId);
-			}
-			productionCompanyRepo.removeProductionCompany(productionCompanyId);
-		}
-		catch(Exception e) {
-			System.out.println("Error closing production company: " + e.getMessage());
-		}
-
-	}
-		*/
-
-	public long getVersion()
-	{
-		return version;
-	}
-	public void setVersion(long version)
-	{
-		this.version=version;
-	}
-
-	public void updateAdmin(SystemAdmin other)
-	{
-		//wtf is that? is that instead of setVersion?
-	}
-
 
 }
