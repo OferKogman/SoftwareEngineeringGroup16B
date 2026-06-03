@@ -178,11 +178,6 @@ public class VenueEventConfigService {
                 return Result.makeFail("Authentication failed. Please log in again.");
             }
 
-            if (!authService.isUserToken(sessionToken)) {
-                logger.warn("VenueEventConfigService.getVenue: Expected a user session token");
-                return Result.makeFail("Authentication failed. Please log in again.");
-            }
-
             logger.info("VenueEventConfigService.getVenue: Verifying venue exists for id {}",
                     venueID);
             Venue venue = venueRepository.findByID(venueID);
