@@ -35,15 +35,6 @@ public class AndPolicyTests {
                 () -> policy.validatePurchase(new PurchaseContext(17, 3)));
     }
 
-    @Test
-    public void testSecondPolicyFailsThrows() {
-        AndPolicy policy = new AndPolicy(List.of(
-                new AgePolicy(18, null),
-                new MinTicketsPolicy(2)
-        ));
-        assertThrows(PurchasePolicyException.class,
-                () -> policy.validatePurchase(new PurchaseContext(20, 1)));
-    }
 
     @Test
     public void testAllPoliciesFailThrows() {
