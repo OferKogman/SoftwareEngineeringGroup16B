@@ -3,12 +3,14 @@ package com.group16b.ApplicationLayer.DTOs;
 import com.group16b.ApplicationLayer.Records.VenueRecord;
 
 public class ConfigureNewLayoutAndInventoryDTO {
-    private int companyID, eventID;
+    private int companyID;
     private VenueRecord newVenueLayout;
 
-    public ConfigureNewLayoutAndInventoryDTO(int companyID, int eventID, VenueRecord newVenueLayout){
+    public ConfigureNewLayoutAndInventoryDTO() {
+    }
+
+    public ConfigureNewLayoutAndInventoryDTO(int companyID, VenueRecord newVenueLayout) {
         this.companyID = companyID;
-        this.eventID = eventID;
         this.newVenueLayout = newVenueLayout;
     }
 
@@ -18,14 +20,6 @@ public class ConfigureNewLayoutAndInventoryDTO {
 
     public void setCompanyID(int companyID) {
         this.companyID = companyID;
-    }
-
-    public int getEventID() {
-        return eventID;
-    }
-
-    public void setEventID(int eventID) {
-        this.eventID = eventID;
     }
 
     public VenueRecord getNewVenueLayout() {
