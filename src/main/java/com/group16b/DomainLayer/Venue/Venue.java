@@ -229,6 +229,14 @@ public class Venue {
 		}
 		segment.cancelReservation(request);
 	}
+
+	public double getPriceForSegment(String segmentId, int eventID) {
+		Segment segment = segments.get(segmentId);
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+		}
+		return segment.getPrice(eventID);
+	}
 	
 	public String getID(){
 		return id;
