@@ -12,6 +12,7 @@ import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
+import VenueEditor from "./Components/ProdactionCompany/VenueEditor";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
@@ -45,7 +46,8 @@ export default function AppRoutes() {
           element={<ProductionCompanyPurchaseHistory />}
         />
         <Route path="total-revenue" element={<TotalRevenue />} />
-        <Route path="venue-config" element={<CompanyEvents />} />
+        <Route path="events" element={<CompanyEvents />} />
+        <Route path="venue-config" element={<VenueEditor />} />
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<CompanySettings />} />

@@ -16,25 +16,30 @@ import com.group16b.ApplicationLayer.DTOs.ConfigureNewLayoutAndInventoryDTO;
 
 @RestController
 @RequestMapping("/venues")
-public class VenueEventConfigController extends BaseController{
+public class VenueEventConfigController extends BaseController {
     private final VenueEventConfigService venueEventConfigService;
-    
-    public VenueEventConfigController(VenueEventConfigService venueEventConfigService){
+
+    public VenueEventConfigController(VenueEventConfigService venueEventConfigService) {
         this.venueEventConfigService = venueEventConfigService;
     }
 
     @PostMapping("/configureNewLayoutAndInventory")
-    public ResponseEntity<?> configureNewLayoutAndInventory(@RequestHeader("Authorization") String sessionToken, @RequestBody ConfigureNewLayoutAndInventoryDTO requestDTO){
-        return executeWithReturnData(() -> venueEventConfigService.configureNewLayoutAndInventory(sessionToken, requestDTO.getCompanyID(), requestDTO.getEventID(), requestDTO.getNewVenueLayout()));
+    public ResponseEntity<?> configureNewLayoutAndInventory(@RequestHeader("Authorization") String sessionToken,
+            @RequestBody ConfigureNewLayoutAndInventoryDTO requestDTO) {
+        return executeWithReturnData(() -> venueEventConfigService.configureNewLayoutAndInventory(sessionToken,
+                requestDTO.getCompanyID(), requestDTO.getNewVenueLayout()));
     }
 
     @PutMapping("/configureLayoutAndInventory")
-    public ResponseEntity<?> configureLayoutAndInventory(@RequestHeader("Authorization") String sessionToken, @RequestBody ConfigureLayoutAndInventoryDTO requestDTO){
-        return executeWithReturnData(() -> venueEventConfigService.configureLayoutAndInventory(sessionToken, requestDTO.getCompanyID(), requestDTO.getEventID(), requestDTO.getVenueID()));
+    public ResponseEntity<?> configureLayoutAndInventory(@RequestHeader("Authorization") String sessionToken,
+            @RequestBody ConfigureLayoutAndInventoryDTO requestDTO) {
+        return executeWithReturnData(() -> venueEventConfigService.configureLayoutAndInventory(sessionToken,
+                requestDTO.getCompanyID(), requestDTO.getEventID(), requestDTO.getVenueID()));
     }
 
     @GetMapping("/{venueID}/location")
-    public ResponseEntity<?> getVenue (@RequestHeader("Authorization") String sessionToken, @PathVariable("venueID") String venueID){
+    public ResponseEntity<?> getVenue(@RequestHeader("Authorization") String sessionToken,
+            @PathVariable("venueID") String venueID) {
         return executeWithReturnData(() -> venueEventConfigService.getVenue(sessionToken, venueID));
     }
 }

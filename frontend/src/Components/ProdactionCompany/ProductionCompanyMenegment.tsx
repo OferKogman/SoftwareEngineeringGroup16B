@@ -140,7 +140,8 @@ export default function ProductionCompanyManagement() {
         <aside className="company-management-sidebar">
           <NavLink to="total-revenue">Total Revenue</NavLink>
           <NavLink to="sales-history">Sales History</NavLink>
-          <NavLink to="venue-config">Events</NavLink>
+          <NavLink to="events">Events</NavLink>
+          <NavLink to="venue-config">Create Venue</NavLink>
           <NavLink to="members">Members & Permissions</NavLink>
           <NavLink to="hierarchy">Hierarchy Tree</NavLink>
           <NavLink to="settings">Company Settings</NavLink>
