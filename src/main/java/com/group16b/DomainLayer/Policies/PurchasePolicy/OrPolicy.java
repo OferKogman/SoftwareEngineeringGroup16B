@@ -15,5 +15,13 @@ public class OrPolicy implements PurchasePolicy {
     public List<PurchasePolicy> getPolicies() { return policies; }
 
     @Override
-    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
+    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException {
+        for (PurchasePolicy policy : policies) {
+            try {
+                policy.validatePurchase(context);
+                return;
+            } catch (PurchasePolicyException ignored) {}
+        }
+        throw new PurchasePolicyException("Purchase does not satisfy any of the required policies.");
+    }
 }
