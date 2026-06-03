@@ -10,11 +10,13 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -479,5 +481,23 @@ public class PurchasePolicyServiceTests {
 
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         assertDoesNotThrow(() -> e.getLotteryPolicy());
+    }
+
+    @Test
+    public void getEventPurchasePolicy_Success() {
+        Result<Set<PurchasePolicy>> res = purchasePolicyService.getEventPurchasePolicy("user1", e1.getEventID());
+        assertTrue(res.isSuccess());
+    }
+
+    @Test
+    public void getEventPurchasePolicy_FailInvalidToken() {
+        Result<Set<PurchasePolicy>> res = purchasePolicyService.getEventPurchasePolicy("invalid_token", e1.getEventID());
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void getEventPurchasePolicy_FailEventNotFound() {
+        Result<Set<PurchasePolicy>> res = purchasePolicyService.getEventPurchasePolicy("user1", 999);
+        assertFalse(res.isSuccess());
     }
 }
