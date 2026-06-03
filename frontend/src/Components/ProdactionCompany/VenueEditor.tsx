@@ -1,21 +1,16 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
+import { useSession } from "../../App";
 import type {
   ChosenSeatingSegData,
   EntranceData,
   FieldSegData,
-  GridRectangleData,
   SeatData,
   StageData,
   VenueData,
   VenueGridData,
-} from "../DTOs/VenueDTO";
-import VenueDisplay from "./VenueDisplay";
-
-type VenueEditorProps = {
-  onSubmitVenue: (venue: VenueData) => void | Promise<void>;
-  onCancel?: () => void;
-};
+} from "../../DTOs/VenueDTO";
+import VenueDisplay from "../Shared/VenueDisplay";
 
 const initialGrid: VenueGridData = {
   rows: 10,
@@ -75,13 +70,16 @@ type SelectedEntranceData = {
   gridColumn: number;
 };
 
-export default function VenueEditor({
-  onSubmitVenue,
-  onCancel,
-}: VenueEditorProps) {
-  const { venueID } = useParams();
+export default function VenueEditor() {
+  const { companyId } = useParams();
+  const { sessionToken } = useSession();
   const [formData, setFormData] = useState<VenueData>(initialVenue);
+  const [venueName, setVenueName] = useState<string>(initialVenue.name);
+  const [venueLocation, setVenueLocation] = useState<string>(
+    initialVenue.location,
+  );
   const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
 
   const [selectedCell, setSelectedCell] = useState<SelectedCellData | null>(
     null,
@@ -103,84 +101,66 @@ export default function VenueEditor({
   const [pendingRectangle, setPendingRectangle] =
     useState<PendingRectangleData | null>(null);
 
-  useEffect(() => {
-    if (!venueID) {
+  async function onSubmitVenue() {
+    setError("");
+    setSuccess("");
+
+    if (!companyId) {
+      setError("Missing company ID or event ID.");
       return;
     }
-    async function loadVenue() {
-      try {
-        //const response = await fetch(`/api/venues/${venueID}`);
 
-        //if (!response.ok) {
-        //throw new Error("Failed to load event.");
-        //}
+    const trimmedName = venueName.trim();
+    const trimmedLocation = venueLocation.trim();
 
-        //const venue: VenueData = await response.json();
-
-        const fieldRec: GridRectangleData = {
-          startRow: 1,
-          startColumn: 1,
-          rowCount: 5,
-          columnCount: 5,
-        };
-
-        const field: FieldSegData = {
-          segmentID: "F1",
-          size: 50,
-          area: fieldRec,
-        };
-
-        const seat1: SeatData = {
-          row: 1,
-          column: 1,
-        };
-
-        const seat2: SeatData = {
-          row: 1,
-          column: 2,
-        };
-
-        const seat3: SeatData = {
-          row: 2,
-          column: 3,
-        };
-
-        const seatRec: GridRectangleData = {
-          startRow: 1,
-          startColumn: 6,
-          rowCount: 5,
-          columnCount: 5,
-        };
-
-        const seatSeg: ChosenSeatingSegData = {
-          segmentID: "S1",
-          seats: [seat1, seat2, seat3],
-          area: seatRec,
-        };
-
-        const grid: VenueGridData = {
-          rows: 20,
-          columns: 20,
-        };
-
-        const venue: VenueData = {
-          name: "",
-          location: "",
-          grid: grid,
-          fieldSeg: [field],
-          seatSeg: [seatSeg],
-          stages: [],
-          entrances: [],
-        };
-
-        setFormData(venue);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load event.");
-      }
+    if (trimmedName === "") {
+      setError("Venue name cannot be empty.");
+      return;
     }
 
-    void loadVenue();
-  }, [venueID]);
+    if (trimmedLocation === "") {
+      setError("Venue location cannot be empty.");
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "http://localhost:8080/venues/configureNewLayoutAndInventory",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
+          },
+          body: JSON.stringify({
+            companyID: Number(companyId),
+            newVenueLayout: {
+              ...formData,
+              name: trimmedName,
+              location: trimmedLocation,
+            },
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to configure venue layout.");
+      }
+
+      setSuccess("Venue created successfully.");
+      setVenueName("");
+      setVenueLocation("");
+      setFormData(initialVenue);
+      clearSelections();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to configure venue layout.",
+      );
+    }
+  }
 
   function clearSelections() {
     setSelectedCell(null);
@@ -840,6 +820,42 @@ export default function VenueEditor({
     >
       <h2>Venue Editor</h2>
       {error && <p className="form-error">{error}</p>}
+      {success && <p className="form-success">{success}</p>}
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          marginBottom: "12px",
+          width: "260px",
+        }}
+      >
+        <label>
+          Venue Name
+          <input
+            type="text"
+            value={venueName}
+            onChange={(event) => {
+              setVenueName(event.currentTarget.value);
+            }}
+            style={{ width: "100%" }}
+          />
+        </label>
+
+        <label>
+          Venue Location
+          <input
+            type="text"
+            value={venueLocation}
+            onChange={(event) => {
+              setVenueLocation(event.currentTarget.value);
+            }}
+            style={{ width: "100%" }}
+          />
+        </label>
+      </div>
+
       <div
         style={{
           position: "relative",
@@ -878,15 +894,10 @@ export default function VenueEditor({
 
       {
         <div className="form-actions">
-          {onCancel && (
-            <button type="button" onClick={onCancel}>
-              Cancel
-            </button>
-          )}
           <button
             type="button"
             onClick={() => {
-              void onSubmitVenue(formData);
+              void onSubmitVenue();
             }}
           >
             {"Save Changes"}
