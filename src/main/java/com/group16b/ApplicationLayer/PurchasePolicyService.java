@@ -23,6 +23,7 @@ import com.group16b.DomainLayer.Policies.PurchasePolicy.AgePolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.MaxTicketsPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.TicketAmountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
 @Service
 public class PurchasePolicyService {
@@ -195,4 +196,34 @@ public class PurchasePolicyService {
         };
     }
 
+    public Result<Boolean> editEventPurchasePolicy(String sessionToken, int eventID, PurchasePolicy oldPolicy, PurchasePolicyRecord newRecord) {
+        try {
+            logger.info("PurchasePolicyService.editEventPurchasePolicy: Received request for event ID: {}", eventID);
+            if (!authenticationService.validateToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            if (!authenticationService.isUserToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            userRepository.findByID(userID);
+
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+            company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
+            event.removeEventPurchasePolicy(oldPolicy);
+            event.addEventPurchasePolicy(buildPolicy(newRecord));
+            eventRepo.save(event);
+
+            logger.info("PurchasePolicyService.editEventPurchasePolicy: Policy updated for event {} successfully", eventID);
+            return Result.makeOk(true);
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.editEventPurchasePolicy: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("PurchasePolicyService.editEventPurchasePolicy: Unexpected error: {}", e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
 }
+
+
