@@ -9,7 +9,7 @@ class FieldSegTest {
 
     @Test
     void reserve_shouldDecreaseStock() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
         fieldSeg.addEvent(100);
 
         fieldSeg.reserve(ReservationRequest.forField(100, 3, "field1"));
@@ -19,7 +19,7 @@ class FieldSegTest {
 
     @Test
     void cancelReservation_shouldIncreaseStock() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
         fieldSeg.addEvent(100);
 
         fieldSeg.reserve(ReservationRequest.forField(100, 3, "field1"));
@@ -30,7 +30,7 @@ class FieldSegTest {
 
     @Test
     void reserve_moreThanAvailableStock_shouldThrow() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
         fieldSeg.addEvent(100);
 
         assertThrows(
@@ -42,7 +42,7 @@ class FieldSegTest {
 
     @Test
     void cancelReservation_moreThanFieldSize_shouldThrow() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
         fieldSeg.addEvent(100);
 
         assertThrows(
@@ -52,14 +52,14 @@ class FieldSegTest {
 
     @Test
     void getSegmentType_shouldReturnF() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
 
         assertEquals("F", fieldSeg.getSegmentType());
     }
 
     @Test
     void reserve_exactAvailableStock_shouldDepleteStockToZero() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
         fieldSeg.addEvent(100);
 
         fieldSeg.reserve(ReservationRequest.forField(100, 10, "field1"));
@@ -69,7 +69,7 @@ class FieldSegTest {
 
     @Test
     void reserve_unrelatedEvent_shouldThrow() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
 
         assertThrows(
                 IllegalArgumentException.class,
@@ -79,7 +79,7 @@ class FieldSegTest {
 
     @Test
     void cancelReservation_unrelatedEvent_shouldThrow() {
-        FieldSeg fieldSeg = new FieldSeg("field1", 10);
+        FieldSeg fieldSeg = new FieldSeg("field1", 10, new GridRectangle(5, 4 ,6 , 5));
 
         assertThrows(
                 IllegalArgumentException.class,

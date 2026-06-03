@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -29,10 +30,14 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.FieldSeg;
+import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 
@@ -127,11 +132,11 @@ public class EventServiceTests {
 
         location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
 
-        segment1 = new FieldSeg("segment1", 50);
+        segment1 = new FieldSeg("segment1", 50, new GridRectangle(1, 2 ,3 ,4));
         Map<String, Segment> segmentMap = new TreeMap<>();
         segmentMap.put("segment1", segment1);
 
-        Venue venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID");
+        Venue venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
         when(mockVenueRepository.findByID("venue1")).thenReturn(venue1);
 
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);

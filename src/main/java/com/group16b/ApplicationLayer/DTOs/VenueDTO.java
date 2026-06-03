@@ -3,17 +3,26 @@ package com.group16b.ApplicationLayer.DTOs;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.group16b.ApplicationLayer.Records.EntranceRecord;
+import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
+import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.EventSchedule;
 import com.group16b.DomainLayer.Venue.FieldSeg;
+import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 
 public class VenueDTO {
     private String name;
     private LocationDTO location; 
     private Map<String, SegmentDTO> segments;
     private Map<Integer, EventScheduleDTO> events;
+	private final Map<String, EntranceRecord> entrances;
+	private VenueGridRecord grid;
 
     public VenueDTO(Venue venue) {
         this.name = venue.getName();
@@ -33,6 +42,13 @@ public class VenueDTO {
             events.put(entry.getKey(), new EventScheduleDTO(entry.getValue()));
         }
 
+        this.entrances = new ConcurrentHashMap<>();
+        for(Map.Entry<String, Entrance> entry: venue.getEntrances().entrySet()){
+            GridRectangle currArea = entry.getValue().getArea();
+            entrances.put(entry.getKey(), new EntranceRecord(entry.getKey(), new GridRectangleRecord(currArea.getStartRow(), currArea.getStartColumn(), currArea.getRowCount(), currArea.getColumnCount())));
+        }
+
+        this.grid = new VenueGridRecord(venue.getGrid().getRows(), venue.getGrid().getColumns());
     }
 
     public String getName() { 
@@ -61,5 +77,21 @@ public class VenueDTO {
 
     public void setSegments(Map<String, SegmentDTO> segments) { 
         this.segments = segments; 
+    }
+
+        public Map<Integer, EventScheduleDTO> getEvents() {
+        return events;
+    }
+
+    public void setEvents(Map<Integer, EventScheduleDTO> events) {
+        this.events = events;
+    }
+
+    public VenueGridRecord getGrid() {
+        return grid;
+    }
+
+    public void setGrid(VenueGridRecord grid) {
+        this.grid = grid;
     }
 }
