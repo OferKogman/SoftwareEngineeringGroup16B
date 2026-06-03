@@ -23,6 +23,7 @@ import com.group16b.DomainLayer.Policies.PurchasePolicy.AgePolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.MaxTicketsPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.TicketAmountPolicy;
+import java.util.Set;
 
 @Service
 public class PurchasePolicyService {
@@ -193,6 +194,27 @@ public class PurchasePolicyService {
             case "TICKET_AMOUNT" -> new TicketAmountPolicy(record.minTickets(), record.maxTickets());
             default -> throw new IllegalArgumentException("Unknown policy type: " + record.type());
         };
+    }
+
+    public Result<Set<PurchasePolicy>> getEventPurchasePolicy(String sessionToken, int eventID) {
+        try {
+            logger.info("PurchasePolicyService.getEventPurchasePolicy: Received request for event ID: {}", eventID);
+            if (!authenticationService.validateToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            if (!authenticationService.isUserToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            userRepository.findByID(userID);
+
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+            return Result.makeOk(event.getEventPurchasePolicy());
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.getEventPurchasePolicy: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("PurchasePolicyService.getEventPurchasePolicy: Unexpected error: {}", e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
 
 }
