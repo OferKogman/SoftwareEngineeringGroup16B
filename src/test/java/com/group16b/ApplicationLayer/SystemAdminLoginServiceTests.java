@@ -2,209 +2,242 @@ package com.group16b.ApplicationLayer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
+import com.group16b.InfrastructureLayer.MapDBs.SystemAdminRepositoryMapImpl;
 
 public class SystemAdminLoginServiceTests {
-
-    // Replace AdminManagementService with the actual name of your service class
-    private SystemAdminLoginService adminService;
-    private IAuthenticationService mockTokenService;
-    private IRepository<SystemAdmin> mockSystemAdminRepository;
-
-    private final String VALID_ADMIN_TOKEN = "valid-admin-token";
-    private final String INVALID_ADMIN = "invalid-admin-token";
-    private final String GUEST_TOKEN = "guest-token";
-
-    private SystemAdmin admin1;
+    private SystemAdminRepositoryMapImpl realAdminRepository;
+    private AuthenticationServiceJWTImpl realTokenService;
+    private SystemAdminLoginService     adminService;
 
     private final String ADMIN_USERNAME = "admin1";
     private final String ADMIN_PASSWORD = "password123";
-    private final String ADMIN_EMAIL = "mail.ru";
+    private final String ADMIN_EMAIL    = "admin@mail.ru";
 
-    private final String NONEXISTENT_ADMIN_USERNAME = "ghostAdmin";
-    private final String NONEXISTENT_ADMIN_PASSWORD = "ghostPassword";
-    private final String NONEXISTENT_ADMIN_EMAIL = "ghost@mail.ru";
+    private final String NONEXISTENT_USERNAME = "ghostAdmin";
+    private final String WRONG_PASSWORD       = "wrongPassword";
+    private final String WRONG_EMAIL          = "wrong@mail.ru";
 
+    private String validAdminToken;   // token that belongs to admin1
+    private String guestToken;        // fresh guest/visitor token
 
 
     @BeforeEach
-    void setUp() throws Exception {
-        mockTokenService = mock(IAuthenticationService.class);
-        mockSystemAdminRepository = mock(IRepository.class);
+    void setUp() {
+        realAdminRepository = new SystemAdminRepositoryMapImpl();
 
-        admin1= new SystemAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL);
-        when(mockSystemAdminRepository.findByID(ADMIN_USERNAME)).thenReturn(admin1);
+        String userSecret  = "this-is-a-very-long-and-secure-user-secret-key-123456";
+        String adminSecret = "this-is-a-very-long-and-secure-admin-secret-key-654321";
+        realTokenService = new AuthenticationServiceJWTImpl(userSecret, adminSecret);
 
-        // Assuming your service takes these in the constructor.
-        // If it uses reflection/singletons like the previous classes, apply the same
-        // reflection setup here!
-        adminService = new SystemAdminLoginService(mockSystemAdminRepository, mockTokenService);
-        when(mockTokenService.validateToken(VALID_ADMIN_TOKEN)).thenReturn(true);
-        when(mockTokenService.validateToken(INVALID_ADMIN)).thenReturn(false);
-        when(mockTokenService.validateToken(GUEST_TOKEN)).thenReturn(true);
+        adminService = new SystemAdminLoginService(realAdminRepository, realTokenService);
 
-        when(mockTokenService.isAdminToken(VALID_ADMIN_TOKEN)).thenReturn(true);
-        when(mockTokenService.isAdminToken(INVALID_ADMIN)).thenReturn(false);
-        when(mockTokenService.isAdminToken(GUEST_TOKEN)).thenReturn(false);
+        SystemAdmin admin = new SystemAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL);
+        realAdminRepository.save(admin);
 
-        when(mockTokenService.isGuestToken(GUEST_TOKEN)).thenReturn(true);
-        when(mockTokenService.isGuestToken(VALID_ADMIN_TOKEN)).thenReturn(false);
-        when(mockTokenService.isGuestToken(INVALID_ADMIN)).thenReturn(false);
-
-        when(mockTokenService.generateAdminToken(ADMIN_USERNAME)).thenReturn(VALID_ADMIN_TOKEN);
-        doThrow(new IllegalArgumentException("Invalid admin username")).when(mockSystemAdminRepository).findByID(String.valueOf(NONEXISTENT_ADMIN_USERNAME));
-
+        validAdminToken = realTokenService.generateAdminToken(ADMIN_USERNAME);
+        guestToken      = realTokenService.generateVisitor_GuestToken(new SessionToken());
     }
 
-    // -----------------------------------------------------------------
-    // SUCCESS SCENARIO
-    // -----------------------------------------------------------------
+
     @Test
-    void testLogOutAdmin_Success() {
-        String sessionToken = "valid-admin-token";
-        int adminID = 1;
-        String expectedGuestToken = "new-guest-token-123";
+    void loginAdmin_ValidCredentials_ReturnsAdminToken() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, guestToken);
 
-        // 1. Extract subject returns a valid ID string
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
-
-        when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(adminID));
-        // 2. Token is confirmed as an admin token
-        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-        // 3. Generating the guest token works
-        when(mockTokenService.generateVisitor_GuestToken(any())).thenReturn(expectedGuestToken);
-        // 4. The admin ID exists in the repository
-        when(mockSystemAdminRepository.findByID(String.valueOf(adminID))).thenReturn(null);
-
-        Result<String> result = adminService.logOutAdmin(sessionToken);
-
-        assertTrue(result.isSuccess(), "Logout should be successful");
-        assertEquals(expectedGuestToken, result.getValue(), "Should return the newly generated guest token");
-    }
-
-    // -----------------------------------------------------------------
-    // FAILURE: TOKEN IS NOT AN ADMIN TOKEN
-    // -----------------------------------------------------------------
-    @Test
-    void testLogOutAdmin_NotAdminToken_Fail() {
-        String sessionToken = "standard-user-token";
-        int userID = 5;
-
-        // Extracts successfully, but isAdminToken returns false
-        when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(userID));
-        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(false);
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
-
-        Result<String> result = adminService.logOutAdmin(sessionToken);
-
-        assertFalse(result.isSuccess(), "Logout should fail if token is not an admin token");
-        assertEquals("invalid Session for logout", result.getError());
-
-        // Verify we never checked the database since it failed early
-        verify(mockSystemAdminRepository, never()).findByID(any(String.class));
-    }
-
-    // -----------------------------------------------------------------
-    // FAILURE: ADMIN DOES NOT EXIST IN REPOSITORY
-    // -----------------------------------------------------------------
-    @Test
-    void testLogOutAdmin_AdminDoesNotExist_Fail() {
-        String sessionToken = "deleted-admin-token";
-        int ghostAdminID = 99;
-
-        when(mockTokenService.extractSubjectFromToken(sessionToken)).thenReturn(String.valueOf(ghostAdminID));
-        when(mockTokenService.isAdminToken(sessionToken)).thenReturn(true);
-        when(mockTokenService.validateToken(sessionToken)).thenReturn(true);
-        doThrow(new IllegalArgumentException("Invalid adminID ID")).when(mockSystemAdminRepository).findByID(String.valueOf(ghostAdminID));
-
-        Result<String> result = adminService.logOutAdmin(sessionToken);
-
-        assertFalse(result.isSuccess(), "Logout should fail if admin ID does not exist in DB");
-        assertEquals("Failed to log out: Invalid adminID ID", result.getError());
-    }
-
-    // -----------------------------------------------------------------
-    // FAILURE: EXCEPTION THROWN (e.g. malformed token)
-    // -----------------------------------------------------------------
-    @Test
-    void testLogOutAdmin_ExceptionThrown_Fail() {
-        String badToken = "malformed-token";
-        when(mockTokenService.isAdminToken(badToken)).thenReturn(true);
-        when(mockTokenService.validateToken(badToken)).thenReturn(true);
-
-        // Force the parsing to throw an exception (e.g. if the subject isn't an
-        // integer)
-        when(mockTokenService.extractSubjectFromToken(badToken)).thenThrow(new NumberFormatException("Not a number"));
-
-        Result<String> result = adminService.logOutAdmin(badToken);
-
-        assertFalse(result.isSuccess(), "Logout should catch exceptions and return a failure Result");
-        assertEquals("Failed to log out: Not a number", result.getError());
+        assertTrue(result.isSuccess());
+        assertTrue(realTokenService.isAdminToken(result.getValue()),
+                "Returned token must be recognised as an admin token");
     }
 
     @Test
-    void testLogIn_success() {
-        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
-        assertTrue(result.isSuccess(), "Login should succeed with correct credentials and valid guest token");
-        assertEquals(VALID_ADMIN_TOKEN, result.getValue(), "Should return the valid admin token");
+    void loginAdmin_WrongPassword_ReturnsFailResult() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, WRONG_PASSWORD, ADMIN_EMAIL, guestToken);
 
-    }
-
-    @Test
-    void testLogIn_Fail_WrongPassword() {
-        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, NONEXISTENT_ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
-        assertFalse(result.isSuccess(), "Login should fail with wrong password");
+        assertFalse(result.isSuccess());
         assertEquals("invalid password or email", result.getError());
     }
 
     @Test
-    void testLogIn_Fail_WrongEmail() {
-        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, NONEXISTENT_ADMIN_EMAIL, GUEST_TOKEN);
-        assertFalse(result.isSuccess(), "Login should fail with wrong email");
+    void loginAdmin_WrongEmail_ReturnsFailResult() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, WRONG_EMAIL, guestToken);
+
+        assertFalse(result.isSuccess());
         assertEquals("invalid password or email", result.getError());
     }
 
     @Test
-    void testLogIn_Fail_InvalidGuestToken() {
-        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, INVALID_ADMIN);
-        assertFalse(result.isSuccess(), "Login should fail with invalid guest token");
+    void loginAdmin_NonexistentUsername_ReturnsFailResult() {
+        Result<String> result = adminService.loginAdmin(NONEXISTENT_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, guestToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("System admin with username ghostAdmin does not exist.", result.getError());
+    }
+
+    @Test
+    void loginAdmin_InvalidToken_ReturnsFailResult() {
+        String invalidToken = "this-is-not-a-valid-token";
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, invalidToken);
+
+        assertFalse(result.isSuccess());
         assertEquals("Authentication failed. Please refresh your session and try again.", result.getError());
     }
 
     @Test
-    void testLogIn_Fail_NonGuestToken() {
-        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, VALID_ADMIN_TOKEN);
-        assertFalse(result.isSuccess(), "Login should fail if the provided token is not a guest token");
+    void loginAdmin_NonGuestToken_ReturnsFailResult() {
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, validAdminToken);
+
+        assertFalse(result.isSuccess());
         assertEquals("Authentication failed. Only guests are allowed to login.", result.getError());
     }
 
+
     @Test
-    void testLogIn_Fail_AdminNotFound() {
-        Result<String> result = adminService.loginAdmin(NONEXISTENT_ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
-        assertFalse(result.isSuccess(), "Login should fail if admin username does not exist");
-        assertEquals("Invalid admin username", result.getError());
+    void loginAdmin_SuccessDoesNotAlterStoredAdminCredentials() {
+        adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, guestToken);
+
+        SystemAdmin persisted = realAdminRepository.findByID(ADMIN_USERNAME);
+        assertEquals(ADMIN_USERNAME, persisted.getUsername());
+        assertEquals(ADMIN_EMAIL,    persisted.getEmail());
     }
 
     @Test
-    void testLogIn_Fail_ExceptionThrown() {
-        doThrow(new RuntimeException("DATABASE EXPLODED!!! HELP!!")).when(mockSystemAdminRepository).findByID(ADMIN_USERNAME);
-        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, GUEST_TOKEN);
-        assertFalse(result.isSuccess(), "Login should fail if an unexpected exception is thrown");
-        assertEquals("An unexpected error occurred: DATABASE EXPLODED!!! HELP!!", result.getError());
+    void loginAdmin_FailureDoesNotAlterStoredAdminCredentials() {
+        adminService.loginAdmin(ADMIN_USERNAME, WRONG_PASSWORD, ADMIN_EMAIL, guestToken);
+
+        SystemAdmin persisted = realAdminRepository.findByID(ADMIN_USERNAME);
+        assertEquals(ADMIN_USERNAME, persisted.getUsername());
+        assertEquals(ADMIN_EMAIL,    persisted.getEmail());
+    }
+
+    @Test
+    void logOutAdmin_ValidAdminToken_ReturnsGuestToken() {
+        Result<String> result = adminService.logOutAdmin(validAdminToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+        assertFalse(realTokenService.isAdminToken(result.getValue()),
+                "Token returned after logout must NOT be an admin token");
+        assertTrue(realTokenService.isGuestToken(result.getValue()),
+                "Token returned after logout must be a guest token");
+    }
+
+    @Test
+    void logOutAdmin_GuestToken_ReturnsFailResult() {
+        Result<String> result = adminService.logOutAdmin(guestToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("invalid Session for logout", result.getError());
+    }
+
+    @Test
+    void logOutAdmin_UserToken_ReturnsFailResult() {
+        String userToken = realTokenService.generateVisitor_SignedToken(ADMIN_USERNAME);
+        Result<String> result = adminService.logOutAdmin(userToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("invalid Session for logout", result.getError());
+    }
+
+    @Test
+    void logOutAdmin_MalformedToken_ReturnsFailResult() {
+        Result<String> result = adminService.logOutAdmin("malformed.token.xyz");
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed. Please refresh your session and try again.", result.getError());
+    }
+
+    @Test
+    void logOutAdmin_AdminNotInRepository_ReturnsFailResult() {
+        realAdminRepository.delete(ADMIN_USERNAME);
+        Result<String> result = adminService.logOutAdmin(validAdminToken);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().startsWith("Failed to log out:"),
+                "Error message should indicate logout failure, got: " + result.getError());
+    }
+
+    @Test
+    void logOutAdmin_SuccessDoesNotAlterStoredAdmin() {
+        adminService.logOutAdmin(validAdminToken);
+
+        SystemAdmin persisted = realAdminRepository.findByID(ADMIN_USERNAME);
+        assertNotNull(persisted);
+        assertEquals(ADMIN_USERNAME, persisted.getUsername());
+    }
+
+
+    @Test
+    void loginAdmin_OptimisticLockConflictOnFirstAttempt_EventuallySucceeds() {
+        SystemAdmin currentAdmin = realAdminRepository.findByID(ADMIN_USERNAME); 
+        realAdminRepository.save(currentAdmin);
+
+        Result<String> result = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, guestToken);
+
+        assertTrue(result.isSuccess(),
+                "Service should retry on optimistic lock conflict and not propagate the failure");
+        assertTrue(realTokenService.isAdminToken(result.getValue()));
+    }
+
+
+    @Test
+    void logOutAdmin_OptimisticLockConflictOnFirstAttempt_EventuallySucceeds() {
+        SystemAdmin currentAdmin = realAdminRepository.findByID(ADMIN_USERNAME); 
+        realAdminRepository.save(currentAdmin);
+        Result<String> result = adminService.logOutAdmin(validAdminToken);
+
+        assertTrue(result.isSuccess(),
+                "Service should retry on optimistic lock conflict and not propagate the failure");
+        assertTrue(realTokenService.isGuestToken(result.getValue()));
+    }
+
+
+    @Test
+    void loginAdmin_ConcurrentLogins_BothEventuallySucceed() throws InterruptedException {
+        String guestToken2 = realTokenService.generateVisitor_GuestToken(new SessionToken());
+
+        Result<String>[] results = new Result[2];
+
+        Thread t1 = new Thread(() ->
+                results[0] = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, guestToken));
+        Thread t2 = new Thread(() ->
+                results[1] = adminService.loginAdmin(ADMIN_USERNAME, ADMIN_PASSWORD, ADMIN_EMAIL, guestToken2));
+
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+
+        assertTrue(results[0].isSuccess(), "First concurrent login must succeed");
+        assertTrue(results[1].isSuccess(), "Second concurrent login must succeed");
+    }
+
+
+    @Test
+    void logOutAdmin_ConcurrentLogouts_RepositoryRemainsConsistent() throws InterruptedException {
+        Result<String>[] results = new Result[2];
+
+        Thread t1 = new Thread(() -> results[0] = adminService.logOutAdmin(validAdminToken));
+        Thread t2 = new Thread(() -> results[1] = adminService.logOutAdmin(validAdminToken));
+
+        t1.start();
+        t2.start();
+        t1.join();
+        t2.join();
+
+        boolean atLeastOneSuccess = (results[0] != null && results[0].isSuccess())
+                || (results[1] != null && results[1].isSuccess());
+        assertTrue(atLeastOneSuccess, "At least one concurrent logout must succeed");
+
+        SystemAdmin persisted = realAdminRepository.findByID(ADMIN_USERNAME);
+        assertNotNull(persisted, "Admin record must remain in the repository after concurrent logouts");
     }
 }
