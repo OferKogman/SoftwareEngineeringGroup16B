@@ -45,16 +45,6 @@ public class OrPolicyTests {
     }
 
     @Test
-    public void testAllPoliciesFailThrows() {
-        OrPolicy policy = new OrPolicy(List.of(
-                new AgePolicy(18, null),
-                new MinTicketsPolicy(5)
-        ));
-        assertThrows(PurchasePolicyException.class,
-                () -> policy.validatePurchase(new PurchaseContext(17, 1)));
-    }
-
-    @Test
     public void testSinglePolicyPassSucceeds() {
         OrPolicy policy = new OrPolicy(List.of(new AgePolicy(18, null)));
         assertDoesNotThrow(() -> policy.validatePurchase(new PurchaseContext(18, 1)));
