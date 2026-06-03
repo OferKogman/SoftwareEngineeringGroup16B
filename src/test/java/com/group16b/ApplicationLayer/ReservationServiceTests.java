@@ -44,6 +44,8 @@ import com.group16b.DomainLayer.Venue.Seat;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 
 
 
@@ -83,9 +85,7 @@ public class ReservationServiceTests {
     static void beforeAll() throws NoSuchAlgorithmException {
         PurchasePolicy alwaysValidPurchasePolicy = new PurchasePolicy() {
             @Override
-            public boolean validatePurchase() {
-                return true;
-            }
+            public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
         };
 
         DiscountPolicy noDiscountPolicy = new DiscountPolicy() {

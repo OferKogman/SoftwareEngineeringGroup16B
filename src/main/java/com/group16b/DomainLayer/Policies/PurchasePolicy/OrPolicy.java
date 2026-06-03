@@ -15,5 +15,5 @@ public class OrPolicy implements PurchasePolicy {
     public List<PurchasePolicy> getPolicies() { return policies; }
 
     @Override
-    public boolean validatePurchase() { return true; }
+    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
 }
