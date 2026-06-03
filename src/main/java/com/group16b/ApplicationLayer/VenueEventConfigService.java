@@ -81,7 +81,7 @@ public class VenueEventConfigService {
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: creating a new venue");
             Venue venue = new Venue(newVenueLayout.name(), loc, newVenueLayout.fieldSeg(), newVenueLayout.seatSeg(),
-                    "venueID");
+                    "venueID", newVenueLayout.grid(), newVenueLayout.stages(), newVenueLayout.entrances());
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: booking the event in the venue");
             venue.bookEvent(targetEvent.getEventStartTime(), targetEvent.getEventEndTime(), eventID);

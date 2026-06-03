@@ -1,16 +1,16 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -26,11 +26,11 @@ class VenueTests {
                 "Test Venue",
                 new Location("Test Location", "1", "Dizengoff", "Tel Aviv", null, "Israel", null, null),
                 Map.of(
-                        "F1", new FieldSeg("F1", 100),
+                        "F1", new FieldSeg("F1", 100, new GridRectangle(1, 2, 3, 4)),
                         "S1", new ChosenSeatingSeg("S1", Map.of(
                                 "1-1", new Seat(1, 1),
-                                "1-2", new Seat(1, 2)))),
-                "venue1");
+                                "1-2", new Seat(1, 2)), new GridRectangle(5, 6, 7, 8))),
+                "venue1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
         start = LocalDateTime.now().plusDays(1);
         end = LocalDateTime.now().plusDays(2);
     }

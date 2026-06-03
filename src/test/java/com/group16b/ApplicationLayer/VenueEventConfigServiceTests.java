@@ -1,8 +1,15 @@
 package com.group16b.ApplicationLayer;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -13,20 +20,17 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
+import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
+import com.group16b.ApplicationLayer.Records.EntranceRecord;
 import com.group16b.ApplicationLayer.Records.FieldSegRecord;
+import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
 import com.group16b.ApplicationLayer.Records.SeatRecord;
+import com.group16b.ApplicationLayer.Records.StageRecord;
+import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.ApplicationLayer.Records.VenueRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -85,13 +89,15 @@ public class VenueEventConfigServiceTests {
 
     private VenueRecord createValidVenueRecord() {
         List<SeatRecord> dummySeats = new ArrayList<>();
-        ChosenSeatingSegRecord dummySeg = new ChosenSeatingSegRecord("VIP", dummySeats);
+        ChosenSeatingSegRecord dummySeg = new ChosenSeatingSegRecord("VIP", dummySeats, new GridRectangleRecord(5, 4 ,6 , 5));
 
         List<FieldSegRecord> dummyField = new ArrayList<>();
         List<ChosenSeatingSegRecord> dummySeatSeg = new ArrayList<>();
         dummySeatSeg.add(dummySeg);
 
-        VenueRecord dummyVenue = new VenueRecord(venueName, "Madison Square Garden", dummyField, dummySeatSeg);
+        VenueRecord dummyVenue;
+        dummyVenue = new VenueRecord(venueName, "Madison Square Garden", dummyField, dummySeatSeg, new ArrayList<StageRecord>(),
+                new ArrayList<EntranceRecord>(), new VenueGridRecord(6, 7), new ArrayList<EventScheduleDTO>());
 
         return dummyVenue;
     }

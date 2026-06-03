@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,10 +40,14 @@ import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.FieldSeg;
+import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Seat;
 import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
 
@@ -112,15 +117,15 @@ public class ReservationServiceTests {
         seats.put("1-2", new Seat(1, 2));
         seats.put("1-3", new Seat(1, 3));
 
-        ChosenSeatingSeg segment = new ChosenSeatingSeg(SEGMENT_ID, seats);
+        ChosenSeatingSeg segment = new ChosenSeatingSeg(SEGMENT_ID, seats, new GridRectangle(5, 4 ,6 , 5));
 
-        fieldSegment = new FieldSeg(FIELD_SEGMENT_ID, 100);
+        fieldSegment = new FieldSeg(FIELD_SEGMENT_ID, 100, new GridRectangle(1, 2 ,6 , 5));
 
         HashMap<String, Segment> segments = new HashMap<>();
         segments.put(SEGMENT_ID, segment);
         segments.put(FIELD_SEGMENT_ID, fieldSegment);
 
-        Venue realVenue = new Venue("venue", null, segments, VENUE_ID);
+        Venue realVenue = new Venue("venue", null, segments, VENUE_ID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
         venue = spy(realVenue);
 
         EventRecord eventRecord = new EventRecord(
