@@ -395,4 +395,270 @@ public class AdminManagementServiceTest1 {
         long successCount = results.stream().filter(Result::isSuccess).count();
         assertEquals(1, successCount, "Exactly one closure should succeed");
     }
+    @Test
+    public void testRegisterNewAdminNullToken() {
+        Result<String> result = adminManagementService.registerNewAdmin(null, "admin", "pass", "email@example.com");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRegisterNewAdminEmptyUsername() {
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "", "password123", "admin@example.com");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRegisterNewAdminNullUsername() {
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, null, "password123", "admin@example.com");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRegisterNewAdminEmptyPassword() {
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "newAdmin", "", "admin@example.com");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRegisterNewAdminNullEmail() {
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "newAdmin", "password123", null);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRegisterNewAdminDuplicateEmail() {
+        adminManagementService.registerNewAdmin(adminToken, "admin1", "password123", "duplicate@example.com");
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "admin2", "password456", "duplicate@example.com");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRegisterNewAdminDuplicateUsername() {
+        adminManagementService.registerNewAdmin(adminToken, "sameAdmin", "password123", "first@example.com");
+        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "sameAdmin", "password456", "second@example.com");
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testCloseProductionCompanyInvalidToken() {
+        Result<String> result = adminManagementService.closeProductionCompany(1, invalidToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testCloseProductionCompanyNullToken() {
+        Result<String> result = adminManagementService.closeProductionCompany(1, null);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testCloseNonExistentProductionCompany() {
+        Result<String> result = adminManagementService.closeProductionCompany(99999, adminToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRemoveUserSuccess() {
+        User targetUser = new User("remove@example.com", "password123");
+        userRepository.save(targetUser);
+        Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), adminToken);
+        assertTrue(result.isSuccess());
+        assertThrows(IllegalArgumentException.class, () -> userRepository.findByID(targetUser.getEmail()));
+    }
+
+    @Test
+    public void testRemoveUserInvalidToken() {
+        User targetUser = new User("remove2@example.com", "password123");
+        userRepository.save(targetUser);
+        Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), invalidToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRemoveUserNullToken() {
+        User targetUser = new User("remove3@example.com", "password123");
+        userRepository.save(targetUser);
+        Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), null);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRemoveNonExistentUser() {
+        Result<String> result = adminManagementService.removeUser("ghost@example.com", adminToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testRemoveUserUnauthorized() {
+        User targetUser = new User("remove4@example.com", "password123");
+        userRepository.save(targetUser);
+        Result<String> result = adminManagementService.removeUser(targetUser.getEmail(), sessionToken);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByCompanySuccess() {
+        ProductionCompany company = new ProductionCompany(2, "TestCompany", 1, user.getEmail());
+        productionCompanyRepository.save(company);
+        int companyID = company.getProductionCompanyID();
+
+        eventRepository.save(e1);
+
+        Order order = new Order("segment1", 1, 1.0, e1.getEventID(), user.getEmail());
+        order.CompleteOrder();
+        orderRepository.save(order);
+
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(adminToken, companyID);
+        assertTrue(result.isSuccess());
+        assertFalse(result.getValue().isEmpty());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByCompanyInvalidToken() {
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(invalidToken, 1);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByCompanyNullToken() {
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(null, 1);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByCompanyUnauthorized() {
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(sessionToken, 1);
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByCompanyNoOrders() {
+        ProductionCompany company = new ProductionCompany(3, "EmptyCompany", 1, user.getEmail());
+        productionCompanyRepository.save(company);
+        int companyID = company.getProductionCompanyID();
+
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByCompany(adminToken, companyID);
+        assertTrue(result.isSuccess());
+        assertTrue(result.getValue().isEmpty());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByUserNullEmail() {
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(adminToken, null);
+        assertTrue(result.isSuccess());
+        assertTrue(result.getValue().isEmpty());
+    }
+
+    @Test
+    public void testViewPurchaseHistoryByUserMultipleUsersIsolated() {
+        User user2 = new User("other@example.com", "password");
+        int eventID = e1.getEventID();
+
+        Order order1 = new Order("segment1", 1, 1.0, eventID, user.getEmail());
+        order1.CompleteOrder();
+        Order order2 = new Order("segment2", 1, 2.0, eventID, user2.getEmail());
+        order2.CompleteOrder();
+
+        orderRepository.save(order1);
+        orderRepository.save(order2);
+
+        Result<List<OrderDTO>> result = adminManagementService.viewPurchesHistoryByUser(adminToken, user.getEmail());
+        assertTrue(result.isSuccess());
+        assertEquals(1, result.getValue().size());
+        assertEquals(order1.getOrderId(), result.getValue().get(0).getOrderId());
+    }
+
+    @Test
+    public void testCloseProductionCompanyTwice() {
+        ProductionCompany company = new ProductionCompany(4, "Company2", 1, user.getEmail());
+        productionCompanyRepository.save(company);
+        int companyID = company.getProductionCompanyID();
+
+        Result<String> first = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> second = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(first.isSuccess());
+        assertFalse(second.isSuccess());
+    }
+
+    @Test
+    public void testRemoveUserTwice() {
+        User targetUser = new User("twice@example.com", "password123");
+        userRepository.save(targetUser);
+
+        Result<String> first = adminManagementService.removeUser(targetUser.getEmail(), adminToken);
+        Result<String> second = adminManagementService.removeUser(targetUser.getEmail(), adminToken);
+
+        assertTrue(first.isSuccess());
+        assertFalse(second.isSuccess());
+    }
+
+    @Test
+    public void concurrentRegisterAdmin_SameEmail_OnlyOneSucceeds() throws InterruptedException {
+        CountDownLatch startLatch = new CountDownLatch(1);
+        List<Result<String>> results = new ArrayList<>();
+
+        Runnable registerTask = () -> {
+            try {
+                startLatch.await();
+                Result<String> result = adminManagementService.registerNewAdmin(adminToken, "adminA", "pass", "shared@example.com");
+                synchronized (results) {
+                    results.add(result);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Thread t1 = new Thread(registerTask);
+        Thread t2 = new Thread(registerTask);
+        t1.start();
+        t2.start();
+        startLatch.countDown();
+        t1.join();
+        t2.join();
+
+        assertEquals(2, results.size());
+        long successCount = results.stream().filter(Result::isSuccess).count();
+        assertEquals(1, successCount);
+    }
+
+    @Test
+    public void concurrentCloseProductionCompany_MultipleCompanies_EachClosedOnce() throws InterruptedException {
+        ProductionCompany company1 = new ProductionCompany(10, "CompanyA", 1, user.getEmail());
+        ProductionCompany company2 = new ProductionCompany(11, "CompanyB", 1, user.getEmail());
+        productionCompanyRepository.save(company1);
+        productionCompanyRepository.save(company2);
+
+        CountDownLatch startLatch = new CountDownLatch(1);
+        List<Result<String>> results = new ArrayList<>();
+
+        Runnable closeA = () -> {
+            try {
+                startLatch.await();
+                Result<String> r = adminManagementService.closeProductionCompany(company1.getProductionCompanyID(), adminToken);
+                synchronized (results) { results.add(r); }
+            } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        };
+
+        Runnable closeB = () -> {
+            try {
+                startLatch.await();
+                Result<String> r = adminManagementService.closeProductionCompany(company2.getProductionCompanyID(), adminToken);
+                synchronized (results) { results.add(r); }
+            } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        };
+
+        Thread t1 = new Thread(closeA);
+        Thread t2 = new Thread(closeB);
+        t1.start();
+        t2.start();
+        startLatch.countDown();
+        t1.join();
+        t2.join();
+
+        assertEquals(2, results.size());
+        long successCount = results.stream().filter(Result::isSuccess).count();
+        assertEquals(2, successCount);
+    }
 }
