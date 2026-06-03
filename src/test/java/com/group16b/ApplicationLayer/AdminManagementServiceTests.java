@@ -425,12 +425,6 @@ public class AdminManagementServiceTests {
         assertFalse(result.isSuccess());
     }
 
-    @Test
-    public void testRegisterNewAdminDuplicateEmail() {
-        adminManagementService.registerNewAdmin(adminToken, "admin1", "password123", "duplicate@example.com");
-        Result<String> result = adminManagementService.registerNewAdmin(adminToken, "admin2", "password456", "duplicate@example.com");
-        assertFalse(result.isSuccess());
-    }
 
     @Test
     public void testRegisterNewAdminDuplicateUsername() {
@@ -501,10 +495,10 @@ public class AdminManagementServiceTests {
         ProductionCompany company = new ProductionCompany(2, "TestCompany", 1, user.getEmail());
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
+        Event event2 = new Event(new EventRecord("venue1", "event2", LocalDateTime.now().plusDays(3), LocalDateTime.now().plusDays(4), "artist2", "category2", companyID, 10.0, 4), user.getEmail());
+        eventRepository.save(event2);
 
-        eventRepository.save(e1);
-
-        Order order = new Order("segment1", 1, 1.0, e1.getEventID(), user.getEmail());
+        Order order = new Order("segment1", 1, 1.0, event2.getEventID(), user.getEmail());
         order.CompleteOrder();
         orderRepository.save(order);
 

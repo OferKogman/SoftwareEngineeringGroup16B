@@ -48,6 +48,9 @@ public class SystemAdmin {
 
 	private void setPassword(String newPassword) {
 		try {
+			if(newPassword == null || newPassword.isEmpty()) {
+				throw new IllegalArgumentException("Password cannot be null or empty.");
+			}
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.update(newPassword.getBytes(StandardCharsets.UTF_8));
 			this.password = new String(md.digest(), StandardCharsets.ISO_8859_1);
@@ -68,7 +71,9 @@ public class SystemAdmin {
 			throw new RuntimeException("Error hashing password: " + e.getMessage(), e);
 		}
 	}
-
+	public boolean isPasswordSet() {
+		return this.password != null && !this.password.isEmpty();
+	}
 
 	@Override
 	public boolean equals(Object obj) {
