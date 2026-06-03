@@ -3,7 +3,9 @@ package com.group16b.ApplicationLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
 
+import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -17,10 +19,6 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
-
-import org.springframework.stereotype.Service;
-
-import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 
 @Service
 public class VenueEventConfigService {
@@ -45,13 +43,12 @@ public class VenueEventConfigService {
         this.locationService = locationService;
     }
 
-    public Result<String> configureNewLayoutAndInventory(String sessionToken, int companyID, int eventID,
+    public Result<String> configureNewLayoutAndInventory(String sessionToken, int companyID,
             VenueRecord newVenueLayout) {
 
         try {
             logger.info(
-                    "VenueEventConfigService.configureLayoutAndInventory: Attempting to configure venue layout for event {}",
-                    eventID);
+                    "VenueEventConfigService.configureLayoutAndInventory: Attempting to configure new venue layout");
 
             if (!authService.validateToken(sessionToken)) {
                 logger.warn("VenueEventConfigService.configureLayoutAndInventory: Invalid or expired session token.");
@@ -64,10 +61,6 @@ public class VenueEventConfigService {
             }
 
             String userID = authService.extractSubjectFromToken(sessionToken);
-
-            logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying event exists for id {}",
-                    eventID);
-            Event targetEvent = eventRepository.findByID(String.valueOf(eventID));
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: Verifying user exists for id {}", userID);
             userRepository.findByID(userID);
@@ -84,23 +77,12 @@ public class VenueEventConfigService {
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: creating a new venue");
             Venue venue = new Venue(newVenueLayout.name(), loc, newVenueLayout.fieldSeg(), newVenueLayout.seatSeg(),
-                    "venueID");
-
-            logger.info("VenueEventConfigService.configureLayoutAndInventory: booking the event in the venue");
-            venue.bookEvent(targetEvent.getEventStartTime(), targetEvent.getEventEndTime(), eventID);
+                    newVenueLayout.name(), newVenueLayout.grid(), newVenueLayout.stages(),
+                    newVenueLayout.entrances());
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: saving venue changes to repository");
             venueRepository.save(venue);
 
-            logger.info("VenueEventConfigService.configureLayoutAndInventory: mark the event with correct venue");
-            targetEvent.setEventVenue(venue.getName());
-
-            logger.info("VenueEventConfigService.configureLayoutAndInventory: saving changes to event");
-            eventRepository.save(targetEvent);
-
-            logger.info(
-                    "VenueEventConfigService.configureLayoutAndInventory: Successfully configured venue and initialized inventory for event {}",
-                    eventID);
             return Result.makeOk("Venue layout configured and saved successfully.");
 
         } catch (OptimisticLockingFailureException e) {
@@ -186,10 +168,10 @@ public class VenueEventConfigService {
         }
     }
 
-    public Result<VenueDTO> getVenue(String sessionToken, String venueID){
-        try{
+    public Result<VenueDTO> getVenue(String sessionToken, String venueID) {
+        try {
             logger.info(
-                "VenueEventConfigService.getVenue: Attempting to get venue with id: {}", venueID);
+                    "VenueEventConfigService.getVenue: Attempting to get venue with id: {}", venueID);
 
             if (!authService.validateToken(sessionToken)) {
                 logger.warn("VenueEventConfigService.getVenue: Invalid or expired session token.");
@@ -206,8 +188,8 @@ public class VenueEventConfigService {
             Venue venue = venueRepository.findByID(venueID);
 
             logger.info(
-                "VenueEventConfigService.getVenue: Successfully found venue for ID {}",
-                venueID);
+                    "VenueEventConfigService.getVenue: Successfully found venue for ID {}",
+                    venueID);
 
             return Result.makeOk(new VenueDTO(venue));
         } catch (IllegalArgumentException e) {
@@ -218,6 +200,6 @@ public class VenueEventConfigService {
         } catch (Exception e) {
             logger.error("VenueEventConfigService.getVenue: System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred");
-        }   
+        }
     }
 }
