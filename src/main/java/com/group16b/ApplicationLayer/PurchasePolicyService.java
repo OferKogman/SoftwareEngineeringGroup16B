@@ -1,6 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -193,6 +194,27 @@ public class PurchasePolicyService {
             case "TICKET_AMOUNT" -> new TicketAmountPolicy(record.minTickets(), record.maxTickets());
             default -> throw new IllegalArgumentException("Unknown policy type: " + record.type());
         };
+    }
+
+    public Result<Set<PurchasePolicy>> getCompanyPurchasePolicy(String sessionToken, int companyID) {
+        try {
+            logger.info("PurchasePolicyService.getCompanyPurchasePolicy: Received request for company ID: {}", companyID);
+            if (!authenticationService.validateToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            if (!authenticationService.isUserToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            userRepository.findByID(userID);
+
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
+            return Result.makeOk(company.getPurchasePolicy());
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.getCompanyPurchasePolicy: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("PurchasePolicyService.getCompanyPurchasePolicy: Unexpected error: {}", e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
 
 }

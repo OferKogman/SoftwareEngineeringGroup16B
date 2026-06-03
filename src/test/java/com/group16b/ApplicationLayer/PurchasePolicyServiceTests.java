@@ -10,11 +10,13 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -43,6 +45,7 @@ import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImp
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
 
 public class PurchasePolicyServiceTests {
     private PurchasePolicyService purchasePolicyService;
@@ -480,4 +483,23 @@ public class PurchasePolicyServiceTests {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         assertDoesNotThrow(() -> e.getLotteryPolicy());
     }
+    @Test
+    public void getCompanyPurchasePolicy_Success() {
+        Result<Set<PurchasePolicy>> res = purchasePolicyService.getCompanyPurchasePolicy("user1", company.getProductionCompanyID());
+        assertTrue(res.isSuccess());
+    }
+
+    @Test
+    public void getCompanyPurchasePolicy_FailInvalidToken() {
+        Result<Set<PurchasePolicy>> res = purchasePolicyService.getCompanyPurchasePolicy("invalid_token", company.getProductionCompanyID());
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void getCompanyPurchasePolicy_FailCompanyNotFound() {
+        Result<Set<PurchasePolicy>> res = purchasePolicyService.getCompanyPurchasePolicy("user1", 999);
+        assertFalse(res.isSuccess());
+    }
+
+
 }
