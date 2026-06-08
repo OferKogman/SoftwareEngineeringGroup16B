@@ -84,7 +84,7 @@ public class PurchasePolicyService {
 
                 logger.info("PurchasePolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}",
                         eventID);
-                e.addEventPurchasePolicy(lotteryPolicy);
+                e.setLotteryPolicy(lotteryPolicy);
 
                 logger.info("PurchasePolicyService.createLotteryPolicy: saving changes to repository");
                 try {

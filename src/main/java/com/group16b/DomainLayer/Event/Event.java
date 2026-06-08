@@ -224,14 +224,14 @@ public class Event {
 		if (lotteryPolicy == null) {
 			throw new IllegalStateException("Event does not have a lottery policy.");
 		}
-		return lotteryPolicy;
+		return new LotteryPolicy(lotteryPolicy);
 	}
 
 	public void setLotteryPolicy(LotteryPolicy lotteryPolicy) {
 		if (this.lotteryPolicy != null) {
 			throw new IllegalStateException("Event already has a lottery policy.");
 		}
-		this.lotteryPolicy = lotteryPolicy;
+		this.lotteryPolicy = new LotteryPolicy(lotteryPolicy);
 	}
 
 	public void validateLotteryCode(String lotteryCode) throws IllegalStateException {
