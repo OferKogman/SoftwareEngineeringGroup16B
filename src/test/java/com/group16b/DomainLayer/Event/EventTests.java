@@ -241,7 +241,7 @@ public class EventTests {
 			event.activateEvent();
 			LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 			doNothing().when(lotteryPolicy).enrollInLottery(anyInt(), anyString());
-			event.addEventPurchasePolicy(lotteryPolicy);
+			event.setLotteryPolicy(lotteryPolicy);
 			event.enrollInLottery("user1");
 		});
 	}
@@ -253,7 +253,7 @@ public class EventTests {
 					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
 			LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 			doNothing().when(lotteryPolicy).enrollInLottery(anyInt(), anyString());
-			event.addEventPurchasePolicy(lotteryPolicy);
+			event.setLotteryPolicy(lotteryPolicy);
 			event.enrollInLottery("user1");
 		} catch (Exception e) {
 			assertEquals("Can't enroll in lottery for an inactive event", e.getMessage());
@@ -292,7 +292,7 @@ public class EventTests {
 
 		doNothing().when(lotteryPolicy).validateLotteryCode("code123");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.validateLotteryCode("code123"));
 		verify(lotteryPolicy, times(1)).validateLotteryCode("code123");
@@ -317,7 +317,7 @@ public class EventTests {
 		doThrow(new IllegalStateException("Invalid lottery code."))
 				.when(lotteryPolicy).validateLotteryCode("badCode");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		try {
 			event.validateLotteryCode("badCode");
@@ -333,7 +333,7 @@ public class EventTests {
 
 		doNothing().when(lotteryPolicy).renewLotteryCode("code123");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.renewLotteryCode("code123"));
 		verify(lotteryPolicy, times(1)).renewLotteryCode("code123");
@@ -354,7 +354,7 @@ public class EventTests {
 		doThrow(new IllegalStateException("Code exploded."))
 				.when(lotteryPolicy).renewLotteryCode("badCode");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.renewLotteryCode("badCode"));
 		verify(lotteryPolicy, times(1)).renewLotteryCode("badCode");
@@ -367,7 +367,7 @@ public class EventTests {
 
 		doNothing().when(lotteryPolicy).useCode("code123");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.lotteryUseCode("code123"));
 		verify(lotteryPolicy, times(1)).useCode("code123");
@@ -392,7 +392,7 @@ public class EventTests {
 		doThrow(new IllegalStateException("Lottery code already used."))
 				.when(lotteryPolicy).useCode("usedCode");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		try {
 			event.lotteryUseCode("usedCode");
@@ -413,7 +413,7 @@ public class EventTests {
 		Event event = createValidEvent();
 		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		try {
 			event.verifyDoesNotHaveLotteryPolicy();

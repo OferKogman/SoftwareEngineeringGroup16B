@@ -231,7 +231,7 @@ public class Event {
 		if (this.lotteryPolicy != null) {
 			throw new IllegalStateException("Event already has a lottery policy.");
 		}
-		this.lotteryPolicy = new LotteryPolicy(lotteryPolicy);
+		this.lotteryPolicy = lotteryPolicy;
 	}
 
 	public void validateLotteryCode(String lotteryCode) throws IllegalStateException {
