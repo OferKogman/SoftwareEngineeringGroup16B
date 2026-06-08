@@ -100,6 +100,9 @@ public class PurchasePolicyService {
         } catch (IllegalArgumentException e) {
             logger.error("PurchasePolicyService.createLotteryPolicy: " + e.getMessage());
             return Result.makeFail(e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("PurchasePolicyService.createLotteryPolicy: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error(
                     "PurchasePolicyService.createLotteryPolicy: An unexpected error occurred while creating a lottery"
