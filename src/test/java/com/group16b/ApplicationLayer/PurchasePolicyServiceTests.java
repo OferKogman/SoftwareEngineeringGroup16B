@@ -260,7 +260,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_Success() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", e1.getEventID());
         assertTrue(res.isSuccess());
@@ -272,7 +272,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailInvalidToken() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("invalid_token", e1.getEventID());
         assertFalse(res.isSuccess());

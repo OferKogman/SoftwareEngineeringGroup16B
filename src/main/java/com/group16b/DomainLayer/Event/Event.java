@@ -224,7 +224,7 @@ public class Event {
 		if (lotteryPolicy == null) {
 			throw new IllegalStateException("Event does not have a lottery policy.");
 		}
-		return new LotteryPolicy(lotteryPolicy);
+		return lotteryPolicy;
 	}
 
 	public void setLotteryPolicy(LotteryPolicy lotteryPolicy) {
