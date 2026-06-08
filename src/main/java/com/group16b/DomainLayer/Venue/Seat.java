@@ -3,6 +3,8 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.persistence.Embeddable;
+@Embeddable
 public class Seat {
 	private final String seatId;
 	private final int row;
@@ -15,6 +17,14 @@ public class Seat {
 		this.row = row;
 		this.number = number;
 		stock = new HashMap<Integer, Boolean>();
+	}
+
+	public Seat() {
+		// Default constructor for JPA
+		this.seatId = null;
+		this.row = 0;
+		this.number = 0;
+		this.stock = new HashMap<Integer, Boolean>();
 	}
 
 	public Seat(Seat other) {

@@ -1,5 +1,8 @@
 package com.group16b.DomainLayer.Venue;
 
+import jakarta.persistence.Embeddable;
+
+@Embeddable
 public class Location {
     private String name;
     private String houseNumber;

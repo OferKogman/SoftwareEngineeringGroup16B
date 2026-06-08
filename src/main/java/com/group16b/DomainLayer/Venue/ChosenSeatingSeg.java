@@ -7,13 +7,31 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.Records.SeatRecord;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
+@Entity
+@Table(name = "chosen_seating_segments")
 public class ChosenSeatingSeg extends Segment {
-	protected final Map<String, Seat> seats;
 	private int IDforSeat = 0;
+
+    @ElementCollection
+    @CollectionTable(name = "seats", joinColumns = @JoinColumn(name = "segmentID"))
+    @MapKeyColumn(name = "seat_key")
+	protected final Map<String, Seat> seats;
+
 
 	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
 		super(segmentID, area);
 		this.seats = seats;
+	}
+
+	public ChosenSeatingSeg() {
+		// Default constructor for JPA
+		this.seats = new ConcurrentHashMap<>();
 	}
 
 	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats, GridRectangle area) {

@@ -12,16 +12,47 @@ import com.group16b.ApplicationLayer.Records.StageRecord;
 import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.DomainLayer.Order.OrderType;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+
+@Entity
+@Table(name = "venues")
 public class Venue {
 	private volatile String name;
+	@Embedded
 	private final Location location;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @MapKey(name = "segmentID")
+    @JoinColumn(name = "venue_id")
 	private final Map<String, Segment> segments;
+	
+    @OneToMany(cascade = CascadeType.ALL)
+    @MapKey(name = "name")
+    @JoinColumn(name = "venue_id")
 	private final Map<String, Stage> stages;
+
+    @OneToMany(cascade = CascadeType.ALL)
+    @MapKey(name = "eventKey")
+    @JoinColumn(name = "venue_id")
 	private final Map<String, Entrance> entrances;
+
+	@OneToMany(cascade = CascadeType.ALL)
+	@MapKey(name = "eventID")
+	@JoinColumn(name = "venue_id")
 	private final Map<Integer, EventSchedule> scheduledEvents;
 	private int IDForSeg = 0;
 	private long version;
+	@Id
 	private final String id;
+	@Embedded
 	private VenueGrid grid;
 
 	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances) {
@@ -57,7 +88,14 @@ public class Venue {
         }
         this.id = id;
     }
-
+	protected Venue() {
+		this.location = null;
+		this.segments = null;
+		this.stages = null;
+		this.entrances = null;
+		this.scheduledEvents = null;
+		this.id = null;
+	}
 	
 	public Venue(Venue other) {
         this.name = other.getName();
