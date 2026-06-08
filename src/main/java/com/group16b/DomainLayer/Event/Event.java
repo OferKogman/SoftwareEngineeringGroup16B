@@ -71,7 +71,7 @@ public class Event {
 		this.rating = other.getEventRating();
 		this.ownerId = other.getOwnerId();
 		this.version = other.getVersion();
-		lotteryPolicy = new LotteryPolicy(other.getLotteryPolicy());
+		lotteryPolicy = other.lotteryPolicy == null ? null : new LotteryPolicy(other.getLotteryPolicy());
 	}
 
 	private Set<DiscountPolicy> copyDiscountPolicies(Set<DiscountPolicy> policies) {
