@@ -507,4 +507,36 @@ public class PurchasePolicyServiceTests {
         Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", 999, new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
         assertFalse(res.isSuccess());
     }
+
+    @Test
+    public void editCompanyPurchasePolicy_Success() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        company.addPurchasePolicy(oldPolicy);
+        productionCompanyRepository.save(company);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertTrue(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_FailInvalidToken() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("invalid_token", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_FailNoPermission() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        company.addPurchasePolicy(oldPolicy);
+        productionCompanyRepository.save(company);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user2", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_FailCompanyNotFound() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", 999, oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertFalse(res.isSuccess());
+    }
 }
