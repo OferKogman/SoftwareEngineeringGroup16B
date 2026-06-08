@@ -24,6 +24,7 @@ public class Event {
 	private final int productionCompanyID;
 	private final Set<DiscountPolicy> discountPolicy;
 	private final Set<PurchasePolicy> purchasePolicy;
+	private LotteryPolicy lotteryPolicy;
 	private double price;
 	private double rating;
 	private final String ownerId;
@@ -51,6 +52,7 @@ public class Event {
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;
 		this.version = 0;
+		lotteryPolicy = null;
 	}
 
 	public Event(Event other) {
@@ -69,6 +71,7 @@ public class Event {
 		this.rating = other.getEventRating();
 		this.ownerId = other.getOwnerId();
 		this.version = other.getVersion();
+		lotteryPolicy = new LotteryPolicy(other.getLotteryPolicy());
 	}
 
 	private Set<DiscountPolicy> copyDiscountPolicies(Set<DiscountPolicy> policies) {
@@ -218,12 +221,17 @@ public class Event {
 
 	// lottery
 	public LotteryPolicy getLotteryPolicy() throws IllegalStateException {
-		LotteryPolicy lp = purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst()
-				.map(pp -> ((LotteryPolicy) pp)).orElse(null);
-		if (lp == null) {
+		if (lotteryPolicy == null) {
 			throw new IllegalStateException("Event does not have a lottery policy.");
 		}
-		return lp;
+		return lotteryPolicy;
+	}
+
+	public void setLotteryPolicy(LotteryPolicy lotteryPolicy) {
+		if (this.lotteryPolicy != null) {
+			throw new IllegalStateException("Event already has a lottery policy.");
+		}
+		this.lotteryPolicy = lotteryPolicy;
 	}
 
 	public void validateLotteryCode(String lotteryCode) throws IllegalStateException {
