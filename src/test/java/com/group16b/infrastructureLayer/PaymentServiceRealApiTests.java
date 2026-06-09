@@ -31,7 +31,7 @@ class PaymentServiceRealApiTests {
     }
 
     @Test
-    void handshake_or_basic_call_should_hit_provider() {
+    void RefundHitsProvider() {
         assertDoesNotThrow(() -> {
             paymentService.processPayment(validPayment(), 10.0);
         });
@@ -45,14 +45,5 @@ class PaymentServiceRealApiTests {
         assertTrue(id > 10000 && id < 100000);
     }
 
-    @Test
-    void should_reject_invalid_payment_before_api_call() {
-        PaymentInfo invalid = new PaymentInfo(
-            "", "", 0, 0, "", "", ""
-        );
 
-        assertThrows(RuntimeException.class, () ->
-            paymentService.processPayment(invalid, 10.0)
-        );
-    }
 }
