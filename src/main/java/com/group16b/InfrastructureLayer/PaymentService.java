@@ -1,12 +1,14 @@
 package com.group16b.InfrastructureLayer;
 
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
 import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 
 import java.math.BigDecimal;
+import java.time.Year;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -32,6 +34,7 @@ public class PaymentService implements IPaymentGateway {
     //pay, returns the transaction id if successful, or throw on failure
     public int processPayment(PaymentInfo paymentInfo, double amount)
     {   
+        validatePaymentInfo(paymentInfo,amount);
         //prepare the http request
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
         requestBody.add("action_type","pay");
@@ -55,12 +58,12 @@ public class PaymentService implements IPaymentGateway {
         try{
             response = restTemplate.postForEntity(BASE_URL, requestEntity, String.class);
         }catch (RestClientException  e){
-            throw new PaymentFailedException("Failed to contact payment provider", e);
+            throw new PaymentStatusUnknownException("Failed to contact payment provider", e);
         }
 
         String responseBody = response.getBody();
         if(responseBody == null || responseBody.isBlank()) {
-            throw new PaymentFailedException("Payment provider returned empty response");
+            throw new PaymentStatusUnknownException("Payment provider returned empty response");
         }
 
         final int transactionId;
@@ -70,7 +73,7 @@ public class PaymentService implements IPaymentGateway {
         }
         catch(NumberFormatException e)
         {
-            throw new PaymentFailedException("Invalid response from payment provider: " + responseBody,e);
+            throw new PaymentStatusUnknownException("Invalid response from payment provider: " + responseBody,e);
         }
 
         if(transactionId ==-1)
@@ -103,14 +106,14 @@ public class PaymentService implements IPaymentGateway {
         }
         catch (RestClientException e)
         {
-            throw new RefundStatusUnknownException("Failed to contact payment provider during refund",e);
+            throw new RefundStatusUnknownException("Failed to contact payment provider during refund: " + transactionId +".", e);
         }
 
         String responseBody = response.getBody();
 
         if(responseBody == null || responseBody.isBlank())
         {
-            throw new RefundStatusUnknownException("Payment provider returned empty refund response");
+            throw new RefundStatusUnknownException("Payment provider returned empty refund response for: " + transactionId);
         }
 
         final int refundResult;
@@ -121,7 +124,7 @@ public class PaymentService implements IPaymentGateway {
         }
         catch(NumberFormatException e)
         {
-            throw new RefundStatusUnknownException("Invalid refund response from payment provider: " + responseBody,e);
+            throw new RefundStatusUnknownException("Invalid refund response from payment provider during refund for: " + transactionId + ", response: " + responseBody, e);
         }
 
         if(refundResult != 1)
@@ -130,4 +133,30 @@ public class PaymentService implements IPaymentGateway {
         }
     }
 
+    //can be expanded as needed, like verify number is legit
+    //or verify card is expired like: year==cur year => check month
+    //validate id is legit, etc.
+    private void validatePaymentInfo(PaymentInfo paymentInfo, double amount)
+    {
+        if(amount <= 0)
+            throw new IllegalArgumentException("Amount must be positive");
+
+        if(paymentInfo.cardNumber() == null || paymentInfo.cardNumber().isBlank())
+            throw new IllegalArgumentException("Card number is required");
+
+        if(paymentInfo.cvv() == null || paymentInfo.cvv().isBlank())
+            throw new IllegalArgumentException("CVV is required");
+
+        if(paymentInfo.month() < 1 || paymentInfo.month() > 12)
+            throw new IllegalArgumentException("Invalid expiration month");
+
+        if(paymentInfo.year() < Year.now().getValue())
+            throw new IllegalArgumentException("Card is expired");
+
+        if(paymentInfo.holder()==null || paymentInfo.holder().isBlank())
+            throw new IllegalArgumentException("card holder is blank");
+
+        if(paymentInfo.id() == null || paymentInfo.id().isBlank())
+            throw new IllegalArgumentException("card holder id is blank");
+    }
 }
