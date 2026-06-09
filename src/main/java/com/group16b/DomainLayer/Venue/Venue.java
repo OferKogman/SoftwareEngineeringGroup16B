@@ -12,17 +12,70 @@ import com.group16b.ApplicationLayer.Records.StageRecord;
 import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.DomainLayer.Order.OrderType;
 
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+
+@Entity
+@Table(name = "venues")
 public class Venue {
-	private volatile String name;
-	private final Location location;
-	private final Map<String, Segment> segments;
-	private final Map<String, Stage> stages;
-	private final Map<String, Entrance> entrances;
-	private final Map<Integer, EventSchedule> scheduledEvents;
-	private int IDForSeg = 0;
-	private long version;
-	private final String id;
-	private VenueGrid grid;
+
+    @Id
+    private final String id;
+
+    private volatile String name;
+
+    @Version // Automatically tracks updates for safe concurrent writes
+    private long version;
+
+    @Embedded
+	@AttributeOverride(name = "name", column = @Column(name = "location_name"))
+    private final Location location;
+
+    @Embedded
+    private VenueGrid grid;
+
+    private int IDForSeg = 0;
+
+    // --- 1. ENTITY COLLECTIONS (@OneToMany) ---
+
+    // Map Key points directly to the 'segmentID' property inside Segment
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "venue_id")
+    @MapKey(name = "segmentID")
+    private final Map<String, Segment> segments;
+
+    // Map Key points directly to the auto-generated database ID inside EventSchedule
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "venue_id")
+    @MapKey(name = "dbId")
+    private final Map<Integer, EventSchedule> scheduledEvents;
+
+
+    // --- 2. EMBEDDABLE COLLECTIONS (@ElementCollection) ---
+
+    // Maps embeddable components into a separate, clean collection storage table
+    @ElementCollection
+    @CollectionTable(name = "venue_stages", joinColumns = @JoinColumn(name = "venue_id"))
+    @MapKeyColumn(name = "stage_map_key") // Stores the Map's String key
+    private final Map<String, Stage> stages;
+
+    @ElementCollection
+    @CollectionTable(name = "venue_entrances", joinColumns = @JoinColumn(name = "venue_id"))
+    @MapKeyColumn(name = "entrance_map_key") // Stores the Map's String key
+    private final Map<String, Entrance> entrances;
 
 	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances) {
         this.name = name;
@@ -57,7 +110,14 @@ public class Venue {
         }
         this.id = id;
     }
-
+	protected Venue() {
+		this.location = null;
+		this.segments = null;
+		this.stages = null;
+		this.entrances = null;
+		this.scheduledEvents = null;
+		this.id = null;
+	}
 	
 	public Venue(Venue other) {
         this.name = other.getName();
