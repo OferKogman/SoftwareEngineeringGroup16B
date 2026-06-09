@@ -4,6 +4,7 @@ import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 
+import java.math.BigDecimal;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 @Service
@@ -25,28 +27,55 @@ public class PaymentService implements IPaymentGateway {
         this.restTemplate = restTemplate;
     }
 
-    //pay, returns the transaction id if successful, or -1 on fail
-    public int processPayment(PaymentInfo paymentInfo, double price)
-    {
+    //pay, returns the transaction id if successful, or throw on failure
+    public int processPayment(PaymentInfo paymentInfo, double amount)
+    {   
+        //prepare the http request
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
         requestBody.add("action_type","pay");
         requestBody.add("currency", paymentInfo.currency());
-        requestBody.add("cardNumber", paymentInfo.cardNumber());
+        requestBody.add("card_number", paymentInfo.cardNumber());
         requestBody.add("month", String.valueOf(paymentInfo.month()));
         requestBody.add("year", String.valueOf(paymentInfo.year()));
         requestBody.add("holder", paymentInfo.holder());
         requestBody.add("cvv", paymentInfo.cvv());
         requestBody.add("id", paymentInfo.id());
-        requestBody.add("price", String.valueOf(price));
+        requestBody.add("amount", BigDecimal.valueOf(amount).toPlainString());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+        
+        //send and get the response
+        final ResponseEntity<String> response;
 
-        ResponseEntity<String> response = restTemplate.postForEntity(BASE_URL, requestEntity, String.class);
+        try{
+            response = restTemplate.postForEntity(BASE_URL, requestEntity, String.class);
+        }catch (RestClientException  e){
+            throw new PaymentFailedException("Failed to contact payment provider", e);
+        }
 
-        return Integer.parseInt(response.getBody().trim());
+        String responseBody = response.getBody();
+        if(responseBody == null || responseBody.isBlank()) {
+            throw new PaymentFailedException("Payment provider returned empty response");
+        }
+
+        final int transactionId;
+        try
+        {
+            transactionId = Integer.parseInt(responseBody.trim());
+        }
+        catch(NumberFormatException e)
+        {
+            throw new PaymentFailedException("Invalid response from payment provider: " + responseBody,e);
+        }
+
+        if(transactionId ==-1)
+        {
+            throw new PaymentFailedException("Payment failed for card with 4 last digits: " + paymentInfo.cardNumber().substring(paymentInfo.cardNumber().length() - 4));
+        }
+        return transactionId;
     }
 
     public void cancelPayment(){}
