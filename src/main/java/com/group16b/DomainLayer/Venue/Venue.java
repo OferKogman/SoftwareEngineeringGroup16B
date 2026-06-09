@@ -12,48 +12,70 @@ import com.group16b.ApplicationLayer.Records.StageRecord;
 import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.DomainLayer.Order.OrderType;
 
+import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKey;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
 
 @Entity
 @Table(name = "venues")
 public class Venue {
-	private volatile String name;
-	@Embedded
-	private final Location location;
 
-    @OneToMany(cascade = CascadeType.ALL)
+    @Id
+    private final String id;
+
+    private volatile String name;
+
+    @Version // Automatically tracks updates for safe concurrent writes
+    private long version;
+
+    @Embedded
+	@AttributeOverride(name = "name", column = @Column(name = "location_name"))
+    private final Location location;
+
+    @Embedded
+    private VenueGrid grid;
+
+    private int IDForSeg = 0;
+
+    // --- 1. ENTITY COLLECTIONS (@OneToMany) ---
+
+    // Map Key points directly to the 'segmentID' property inside Segment
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "venue_id")
     @MapKey(name = "segmentID")
-    @JoinColumn(name = "venue_id")
-	private final Map<String, Segment> segments;
-	
-    @OneToMany(cascade = CascadeType.ALL)
-    @MapKey(name = "name")
-    @JoinColumn(name = "venue_id")
-	private final Map<String, Stage> stages;
+    private final Map<String, Segment> segments;
 
-    @OneToMany(cascade = CascadeType.ALL)
-    @MapKey(name = "eventKey")
+    // Map Key points directly to the auto-generated database ID inside EventSchedule
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "venue_id")
-	private final Map<String, Entrance> entrances;
+    @MapKey(name = "dbId")
+    private final Map<Integer, EventSchedule> scheduledEvents;
 
-	@OneToMany(cascade = CascadeType.ALL)
-	@MapKey(name = "eventID")
-	@JoinColumn(name = "venue_id")
-	private final Map<Integer, EventSchedule> scheduledEvents;
-	private int IDForSeg = 0;
-	private long version;
-	@Id
-	private final String id;
-	@Embedded
-	private VenueGrid grid;
+
+    // --- 2. EMBEDDABLE COLLECTIONS (@ElementCollection) ---
+
+    // Maps embeddable components into a separate, clean collection storage table
+    @ElementCollection
+    @CollectionTable(name = "venue_stages", joinColumns = @JoinColumn(name = "venue_id"))
+    @MapKeyColumn(name = "stage_map_key") // Stores the Map's String key
+    private final Map<String, Stage> stages;
+
+    @ElementCollection
+    @CollectionTable(name = "venue_entrances", joinColumns = @JoinColumn(name = "venue_id"))
+    @MapKeyColumn(name = "entrance_map_key") // Stores the Map's String key
+    private final Map<String, Entrance> entrances;
 
 	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances) {
         this.name = name;

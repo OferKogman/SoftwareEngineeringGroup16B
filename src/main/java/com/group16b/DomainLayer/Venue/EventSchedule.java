@@ -14,7 +14,7 @@ import jakarta.persistence.Id;
 public class EventSchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long dbId;
+    private Integer dbId;
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 

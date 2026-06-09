@@ -7,21 +7,24 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.Records.SeatRecord;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 @Entity
 @Table(name = "chosen_seating_segments")
 public class ChosenSeatingSeg extends Segment {
 	private int IDforSeat = 0;
 
-    @ElementCollection
-    @CollectionTable(name = "seats", joinColumns = @JoinColumn(name = "segmentID"))
-    @MapKeyColumn(name = "seat_key")
-	protected final Map<String, Seat> seats;
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "segment_id") // Creates a foreign key column in the seats table linking back here
+    @MapKey(name = "seatId")         // Tells Hibernate to use the seatId property from Seat as the Map Key
+    protected final Map<String, Seat> seats;
 
 
 	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {

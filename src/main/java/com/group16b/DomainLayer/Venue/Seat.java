@@ -3,14 +3,36 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 
-import jakarta.persistence.Embeddable;
-@Embeddable
-public class Seat {
-	private final String seatId;
-	private final int row;
-	private final int number;
 
-	private final Map<Integer, Boolean> stock;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "seats")
+public class Seat {
+    @Id
+    private final String seatId;
+    private final int row;
+    private final int number;
+
+    // --- ADD THE Jpa Mapping Strategy Here ---
+    @ElementCollection
+    @CollectionTable(
+        name = "seat_stock", 
+        joinColumns = @JoinColumn(name = "seat_id") // Links to the seat identifier
+    )
+    @MapKeyColumn(name = "event_id")      // The Map Key (Integer event ID)
+    @Column(name = "is_reserved")         // The Map Value (Boolean availability status)
+    private final Map<Integer, Boolean> stock;
 
 	public Seat(int row, int number) {
 		this.seatId = row + "-" + number;
