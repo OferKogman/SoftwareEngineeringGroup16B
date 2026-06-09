@@ -1,5 +1,6 @@
 package com.group16b.InfrastructureLayer;
 
+import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
@@ -8,7 +9,7 @@ import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 
 import java.math.BigDecimal;
-import java.time.Year;
+import java.time.YearMonth;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +23,9 @@ import org.springframework.web.client.RestTemplate;
 
 @Service
 public class PaymentService implements IPaymentGateway {
+    private static final int MIN_TRANSACTION_ID=10000;
+    private static final int MAX_TRANSACTION_ID=100000;
+
 
     private static final String BASE_URL="https://damp-lynna-wsep-1984852e.koyeb.app/";
 
@@ -78,8 +82,10 @@ public class PaymentService implements IPaymentGateway {
 
         if(transactionId ==-1)
         {
-            throw new PaymentFailedException("Payment failed for card with 4 last digits: " + paymentInfo.cardNumber().substring(paymentInfo.cardNumber().length() - 4));
+            throw new PaymentFailedException("Payment was rejected by payment provider");
         }
+        if(!isValidTransactionId(transactionId))
+            throw new PaymentStatusUnknownException("Provider returned invalid transaction id: "+transactionId);
         return transactionId;
     }
 
@@ -127,36 +133,59 @@ public class PaymentService implements IPaymentGateway {
             throw new RefundStatusUnknownException("Invalid refund response from payment provider during refund for: " + transactionId + ", response: " + responseBody, e);
         }
 
-        if(refundResult != 1)
+        if(refundResult == -1)
         {
             throw new RefundFailedException("Refund failed for transaction " + transactionId);
+        }
+
+        if(refundResult != 1)
+        {
+            throw new RefundStatusUnknownException("Provider returned invalid refund result: " + refundResult + ", for transaction " + transactionId);
         }
     }
 
     //can be expanded as needed, like verify number is legit
-    //or verify card is expired like: year==cur year => check month
     //validate id is legit, etc.
-    private void validatePaymentInfo(PaymentInfo paymentInfo, double amount)
+    //ill let someone else do it if they want
+    private static void validatePaymentInfo(PaymentInfo paymentInfo, double amount)
     {
+        if(paymentInfo == null)
+            throw new IllegalPaymentInfoException("Payment information is required");
         if(amount <= 0)
-            throw new IllegalArgumentException("Amount must be positive");
+            throw new IllegalPaymentInfoException("Amount must be positive");
 
         if(paymentInfo.cardNumber() == null || paymentInfo.cardNumber().isBlank())
-            throw new IllegalArgumentException("Card number is required");
+            throw new IllegalPaymentInfoException("Card number is required");
 
         if(paymentInfo.cvv() == null || paymentInfo.cvv().isBlank())
-            throw new IllegalArgumentException("CVV is required");
-
-        if(paymentInfo.month() < 1 || paymentInfo.month() > 12)
-            throw new IllegalArgumentException("Invalid expiration month");
-
-        if(paymentInfo.year() < Year.now().getValue())
-            throw new IllegalArgumentException("Card is expired");
+            throw new IllegalPaymentInfoException("CVV is required");
 
         if(paymentInfo.holder()==null || paymentInfo.holder().isBlank())
-            throw new IllegalArgumentException("card holder is blank");
+            throw new IllegalPaymentInfoException("card holder is blank");
 
         if(paymentInfo.id() == null || paymentInfo.id().isBlank())
-            throw new IllegalArgumentException("card holder id is blank");
+            throw new IllegalPaymentInfoException("card holder id is blank");
+        validateExpirationDate(paymentInfo.year(), paymentInfo.month());
     }
+
+    
+    private static void validateExpirationDate(int year, int month)
+    {
+        if(month < 1 || month > 12)
+            throw new IllegalPaymentInfoException(
+                "Invalid expiration month: " + month);
+
+        YearMonth expiration = YearMonth.of(year, month);
+
+        if(expiration.isBefore(YearMonth.now()))
+            throw new IllegalPaymentInfoException(
+                "Card is expired");
+    }
+
+    private static boolean isValidTransactionId(int id)
+    {
+        return id >= MIN_TRANSACTION_ID && id <= MAX_TRANSACTION_ID;
+    }
+
+    
 }
