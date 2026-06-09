@@ -13,6 +13,7 @@ import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
@@ -60,7 +61,7 @@ public class OrderService {
 	}
 
     public Result<List<TicketDTO>> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
-		boolean paymentSucceeded = false;
+		Integer transactionId = null;
 		try {
 			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
 
@@ -82,12 +83,9 @@ public class OrderService {
 			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, subjectID);
 			double price = order.getTotalOrderprice();
 
-
 			// 4.Payment processing
 			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
-			paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
-			paymentSucceeded = true;
-
+			transactionId = paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
 			
 			// 5. ticket generation
 			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, subjectID);
@@ -102,48 +100,48 @@ public class OrderService {
 
 		} catch (OrderExpiredException e) {
 			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}", orderID, e.getMessage());
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			safeRefund(transactionId);
 			_cancelOrder(orderID);
 			return Result.makeFail("Order expired: " + e.getMessage());
 
 		} catch (PaymentFailedException e) {
-			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Payment failed: " + e.getMessage());
 
 		} catch (TicketGenerationException e) {
 			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			safeRefund(transactionId);
 
 			return Result.makeFail("Ticket generation failed: " + e.getMessage());
 
 		} catch (AuthException e) {
-			logger.error("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 
 		} catch (IllegalArgumentException e) {
-			logger.error("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Invalid argument: " + e.getMessage());
 
 		} catch (IllegalStateException e) {
-			logger.error("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Illegal state: " + e.getMessage());
 
 		} catch (OptimisticLockingFailureException e) {
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			safeRefund(transactionId);
 			return Result.makeFail("Could not complete order due to concurrent update. Please try again.");
-
+		
+		} catch(PaymentStatusUnknownException e){
+			logger.error("OrderService.CompleteActiveOrder: payment status unknown for order {}. Requires manual reconciliation.",orderID,e);
+			return Result.makeFail("Payment could not be verified. If you were charged, please contact support with your order ID.");
+		
 		}catch (Exception e) {
 			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			safeRefund(transactionId);
 
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-
 		}
 	}
+
 	private List<TicketDTO> generateTicketsForOrder(Order order, String subjectID, double price) {
         List<TicketDTO> ticketDTOs = new ArrayList<>();
 		if (order.getOrderType() == OrderType.SEAT) {
@@ -471,5 +469,18 @@ public class OrderService {
         String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
         return subjectID;
     }
+
+	
+	private void safeRefund(Integer transactionId) {
+		//payment didnt proceed
+		if (transactionId == null) 
+			return;
+
+		try {
+			paymentService.cancelPayment(transactionId);
+		} catch (Exception e) {
+			logger.error("Refund failed for transaction {}", transactionId, e);
+		}
+	}
 	
 }
