@@ -49,6 +49,9 @@ public class OrderService {
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
 
+	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
+	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
+
     public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
@@ -99,10 +102,10 @@ public class OrderService {
 			return Result.makeOk(ticketDTOs);
 
 		} catch (OrderExpiredException e) {
-			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}", orderID, e.getMessage());
+			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}.", orderID, e.getMessage());
 			safeRefund(transactionId);
 			_cancelOrder(orderID);
-			return Result.makeFail("Order expired: " + e.getMessage());
+			return Result.makeFail("Order expired: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
 
 		} catch (PaymentFailedException e) {
 			logger.warn("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
@@ -112,7 +115,7 @@ public class OrderService {
 			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
 			safeRefund(transactionId);
 
-			return Result.makeFail("Ticket generation failed: " + e.getMessage());
+			return Result.makeFail("Ticket generation failed: " + e.getMessage()+". "+REFUND_MSG);
 
 		} catch (AuthException e) {
 			logger.warn("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
@@ -128,17 +131,17 @@ public class OrderService {
 
 		} catch (OptimisticLockingFailureException e) {
 			safeRefund(transactionId);
-			return Result.makeFail("Could not complete order due to concurrent update. Please try again.");
+			return Result.makeFail("Could not complete order due to concurrent update. Please try again. "+POSSIBLE_REFUND_MSG);
 		
 		} catch(PaymentStatusUnknownException e){
 			logger.error("OrderService.CompleteActiveOrder: payment status unknown for order {}. Requires manual reconciliation.",orderID,e);
-			return Result.makeFail("Payment could not be verified. If you were charged, please contact support with your order ID.");
+			return Result.makeFail("Payment could not be verified. "+POSSIBLE_REFUND_MSG);
 		
 		}catch (Exception e) {
 			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
 			safeRefund(transactionId);
 
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
 		}
 	}
 
@@ -470,7 +473,7 @@ public class OrderService {
         return subjectID;
     }
 
-	
+	//no need to care for the exception type, as it is a automatic refund, meaning that any issue here is critical and should betreated the same way
 	private void safeRefund(Integer transactionId) {
 		//payment didnt proceed
 		if (transactionId == null) 
