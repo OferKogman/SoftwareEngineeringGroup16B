@@ -92,6 +92,8 @@ public class PaymentService implements IPaymentGateway {
     // refunds a payment, throws on failure
     public void cancelPayment(int transactionId)
     {
+        if(!isValidTransactionId(transactionId))
+            throw new IllegalArgumentException("Illegal transaction id: "+transactionId);
         //prepare the http request
         MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
 
