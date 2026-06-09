@@ -1,6 +1,8 @@
 package com.group16b.InfrastructureLayer;
 
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 
@@ -78,6 +80,54 @@ public class PaymentService implements IPaymentGateway {
         return transactionId;
     }
 
-    public void cancelPayment(){}
+    // refunds a payment, throws on failure
+    public void cancelPayment(int transactionId)
+    {
+        //prepare the http request
+        MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+
+        requestBody.add("action_type", "refund");
+        requestBody.add("transaction_id", String.valueOf(transactionId));
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
+
+        //send and get the response
+        final ResponseEntity<String> response;
+
+        try
+        {
+            response = restTemplate.postForEntity(BASE_URL, requestEntity, String.class);
+        }
+        catch (RestClientException e)
+        {
+            throw new RefundStatusUnknownException("Failed to contact payment provider during refund",e);
+        }
+
+        String responseBody = response.getBody();
+
+        if(responseBody == null || responseBody.isBlank())
+        {
+            throw new RefundStatusUnknownException("Payment provider returned empty refund response");
+        }
+
+        final int refundResult;
+
+        try
+        {
+            refundResult = Integer.parseInt(responseBody.trim());
+        }
+        catch(NumberFormatException e)
+        {
+            throw new RefundStatusUnknownException("Invalid refund response from payment provider: " + responseBody,e);
+        }
+
+        if(refundResult != 1)
+        {
+            throw new RefundFailedException("Refund failed for transaction " + transactionId);
+        }
+    }
 
 }
