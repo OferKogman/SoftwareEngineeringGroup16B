@@ -12,20 +12,19 @@ import static org.mockito.Mockito.when;
 import java.time.YearMonth;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.Mock;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.InfrastructureLayer.PaymentService;
 
@@ -46,6 +45,11 @@ class PaymentServiceTests{
     private final String LEGAL_ID="20444444";
 
     private final double AMOUNT=100.0;
+
+    private final int MIN_T_ID=10000;
+    private final String BELOW_T_MIN_ID=String.valueOf(MIN_T_ID-1);
+    private final int MAX_T_ID=100000;
+    private final String ABOVE_T_MAX_ID=String.valueOf(MAX_T_ID+1);
 
     
     @BeforeEach
@@ -246,6 +250,96 @@ class PaymentServiceTests{
         var ex = assertThrows(IllegalPaymentInfoException.class,() -> paymentService.processPayment(tweakDate(expired.getYear(), expired.getMonthValue()),AMOUNT));
 
         assertEquals("Card is expired", ex.getMessage());
+    }
+
+    @Test
+    void givenProviderUnavailable_whenProcessPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenThrow(new RestClientException("Connection failed"));
+
+        var ex = assertThrows(PaymentStatusUnknownException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Failed to contact payment provider", ex.getMessage());
+    }
+
+    @Test
+    void givenNullResponse_whenProcessPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        var ex = assertThrows(PaymentStatusUnknownException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Payment provider returned empty response",ex.getMessage());
+    }
+
+    @Test
+    void givenBlankResponse_whenProcessPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>("   ", HttpStatus.OK));
+
+        var ex = assertThrows(PaymentStatusUnknownException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Payment provider returned empty response",ex.getMessage());
+    }
+
+    @Test
+    void givenNonNumericResponse_whenProcessPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>("abc", HttpStatus.OK));
+
+        var ex = assertThrows(PaymentStatusUnknownException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Invalid response from payment provider: abc",ex.getMessage());
+    }
+
+    @Test
+    void givenRejectedPayment_whenProcessPayment_throwPaymentFailed()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>("-1", HttpStatus.OK));
+
+        var ex = assertThrows(PaymentFailedException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Payment was rejected by payment provider",ex.getMessage());
+    }
+
+    @Test
+    void givenTooSmallTransactionId_whenProcessPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(BELOW_T_MIN_ID, HttpStatus.OK));
+
+        var ex = assertThrows(PaymentStatusUnknownException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Provider returned invalid transaction id: "+BELOW_T_MIN_ID,ex.getMessage());
+    }
+
+    @Test
+    void givenTooBigTransactionId_whenProcessPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(ABOVE_T_MAX_ID, HttpStatus.OK));
+
+        var ex = assertThrows(PaymentStatusUnknownException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
+
+        assertEquals("Provider returned invalid transaction id: "+ABOVE_T_MAX_ID,ex.getMessage());
+    }
+
+    @Test
+    void givenMinTransactionId_whenProcessPayment_success()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(MIN_T_ID), HttpStatus.OK));
+
+        int id = paymentService.processPayment(validPayment(), AMOUNT);
+
+        assertEquals(MIN_T_ID, id);
+    }
+
+    @Test
+    void givenMaxTransactionId_whenProcessPayment_success()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(MAX_T_ID), HttpStatus.OK));
+
+        int id = paymentService.processPayment(validPayment(), AMOUNT);
+
+        assertEquals(MAX_T_ID, id);
     }
 
 
