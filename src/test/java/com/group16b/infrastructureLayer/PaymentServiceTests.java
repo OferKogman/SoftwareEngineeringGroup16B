@@ -25,6 +25,8 @@ import org.springframework.web.client.RestTemplate;
 import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.InfrastructureLayer.PaymentService;
 
@@ -50,6 +52,9 @@ class PaymentServiceTests{
     private final String BELOW_T_MIN_ID=String.valueOf(MIN_T_ID-1);
     private final int MAX_T_ID=100000;
     private final String ABOVE_T_MAX_ID=String.valueOf(MAX_T_ID+1);
+
+    private final int REJECTED_OPERATION=-1;
+    private final int ACCEPTED_REFUND_RES=1;
 
     
     @BeforeEach
@@ -295,7 +300,7 @@ class PaymentServiceTests{
     @Test
     void givenRejectedPayment_whenProcessPayment_throwPaymentFailed()
     {
-        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>("-1", HttpStatus.OK));
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(REJECTED_OPERATION), HttpStatus.OK));
 
         var ex = assertThrows(PaymentFailedException.class,() -> paymentService.processPayment(validPayment(), AMOUNT));
 
@@ -342,7 +347,107 @@ class PaymentServiceTests{
         assertEquals(MAX_T_ID, id);
     }
 
+    @Test
+    void givenValidTransactionId_whenCancelPayment_success()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(ACCEPTED_REFUND_RES), HttpStatus.OK));
 
-    
+        assertDoesNotThrow(() -> paymentService.cancelPayment(TRANSACTION_ID));
+    }
+
+    //T_ID boundary tests
+    @Test
+    void givenMinTransactionId_whenCancelPayment_success()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(ACCEPTED_REFUND_RES), HttpStatus.OK));
+
+        assertDoesNotThrow(() -> paymentService.cancelPayment(MIN_T_ID));
+    }
+
+    @Test
+    void givenMaxTransactionId_whenCancelPayment_success()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(ACCEPTED_REFUND_RES), HttpStatus.OK));
+
+        assertDoesNotThrow(() -> paymentService.cancelPayment(MAX_T_ID));
+    }
+
+    @Test
+    void givenTooSmallTransactionId_whenCancelPayment_throwIllegalArgument()
+    {
+        var ex = assertThrows(IllegalArgumentException.class,() -> paymentService.cancelPayment(MIN_T_ID - 1));
+
+        assertEquals("Illegal transaction id: " + (MIN_T_ID - 1),ex.getMessage());
+    }
+
+    @Test
+    void givenTooBigTransactionId_whenCancelPayment_throwIllegalArgument()
+    {
+        var ex = assertThrows(IllegalArgumentException.class,() -> paymentService.cancelPayment(MAX_T_ID + 1));
+
+        assertEquals("Illegal transaction id: " + (MAX_T_ID + 1),ex.getMessage());
+    }
+
+    //sad tests
+    @Test
+    void givenProviderUnavailable_whenCancelPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenThrow(new RestClientException("Connection failed"));
+
+        var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
+
+        assertEquals("Failed to contact payment provider during refund: "+ TRANSACTION_ID + ".",ex.getMessage());
+    }
+
+    @Test
+    void givenNullResponse_whenCancelPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(null, HttpStatus.OK));
+
+        var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
+
+        assertEquals("Payment provider returned empty refund response for: "+ TRANSACTION_ID,ex.getMessage());
+    }
+
+    @Test
+    void givenBlankResponse_whenCancelPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>("   ", HttpStatus.OK));
+
+        var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
+
+        assertEquals("Payment provider returned empty refund response for: " + TRANSACTION_ID,ex.getMessage());
+    }
+
+    @Test
+    void givenNonNumericResponse_whenCancelPayment_throwStatusUnknown()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>("abc", HttpStatus.OK));
+
+        var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
+
+        assertEquals("Invalid refund response from payment provider during refund for: " + TRANSACTION_ID + ", response: abc",ex.getMessage());
+    }
+
+    @Test
+    void givenRefundRejected_whenCancelPayment_throwRefundFailed()
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(String.valueOf(REJECTED_OPERATION), HttpStatus.OK));
+
+        var ex = assertThrows(RefundFailedException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
+
+        assertEquals("Refund failed for transaction " + TRANSACTION_ID,ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"0", "2", "-2", "100", "-100"})
+    void givenInvalidRefundResult_whenCancelPayment_throwStatusUnknown(String result)
+    {
+        when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(new ResponseEntity<>(result, HttpStatus.OK));
+
+        var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
+
+        assertEquals("Provider returned invalid refund result: " + result + ", for transaction " + TRANSACTION_ID,ex.getMessage());
+    }
 
 }
