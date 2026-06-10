@@ -36,6 +36,7 @@ public class PaymentService implements IPaymentGateway {
     }
 
     //pay, returns the transaction id if successful, or throw on failure
+    @Override
     public int processPayment(PaymentInfo paymentInfo, double amount)
     {   
         validatePaymentInfo(paymentInfo,amount);
@@ -90,6 +91,7 @@ public class PaymentService implements IPaymentGateway {
     }
 
     // refunds a payment, throws on failure
+    @Override
     public void cancelPayment(int transactionId)
     {
         if(!isValidTransactionId(transactionId))
