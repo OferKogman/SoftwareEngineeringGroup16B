@@ -153,6 +153,8 @@ public class PaymentService implements IPaymentGateway {
     {
         if(paymentInfo == null)
             throw new IllegalPaymentInfoException("Payment information is required");
+        if(paymentInfo.currency()==null ||paymentInfo.currency().isBlank())
+            throw new IllegalPaymentInfoException("Currency is requiered");
         if(amount <= 0)
             throw new IllegalPaymentInfoException("Amount must be positive");
 
