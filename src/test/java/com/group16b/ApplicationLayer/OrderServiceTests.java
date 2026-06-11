@@ -87,6 +87,8 @@ public class OrderServiceTests {
         private ProductionCompany testPCompany;
         private Order seatOrder;
         private Order fieldOrder;
+
+        private final int TRANSACTION_ID=12345;
         
         @BeforeEach
         void setUp() {
@@ -107,6 +109,7 @@ public class OrderServiceTests {
         seedOrders();
 
         setUpAuthMocks();
+        setUpPaymentMocks();
 
         orderService = new OrderService(
                 authService,
@@ -185,6 +188,10 @@ public class OrderServiceTests {
                 when(authService.extractSubjectFromToken("admin")).thenReturn(testAdmin.getEmail());
                 when(authService.isAdminToken("admin")).thenReturn(true);
         }
+        private void setUpPaymentMocks()
+        {
+                when(paymentGateway.processPayment(any(), anyInt())).thenReturn(TRANSACTION_ID);
+        }
 
         // _______________CompleteActiveOrder tests:_________________
 
@@ -196,7 +203,7 @@ public class OrderServiceTests {
                 assertOrderIsCompleted(seatOrder);
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
-                verify(paymentGateway, never()).cancelPayment();
+                verify(paymentGateway, never()).cancelPayment(anyInt());
                 verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
         }
 
@@ -209,7 +216,7 @@ public class OrderServiceTests {
                 assertOrderIsCompleted(fieldOrder);
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(150.0));
-                verify(paymentGateway, never()).cancelPayment();
+                verify(paymentGateway, never()).cancelPayment(anyInt());
                 verify(ticketGateway, times(3)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
         }
 
@@ -264,7 +271,7 @@ public class OrderServiceTests {
                 assertTrue(result.getError().contains("Payment failed"));
                 assertOrderIsActive(seatOrder);
 
-                verify(paymentGateway, never()).cancelPayment();
+                verify(paymentGateway, never()).cancelPayment(anyInt());
                 verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
         }
 
@@ -280,7 +287,7 @@ public class OrderServiceTests {
                 assertTrue(result.getError().contains("Ticket generation failed"));
                 assertOrderIsActive(seatOrder);
 
-                verify(paymentGateway, times(1)).cancelPayment();
+                verify(paymentGateway, times(1)).cancelPayment(anyInt());
         }
 //------
         @Test
@@ -351,7 +358,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 assertTrue(result.getError().contains("Order expired"));
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(paymentGateway, never()).cancelPayment();
+                verify(paymentGateway, never()).cancelPayment(anyInt());
                 verify(mockOrderRepo, times(1)).delete("expired-order");
         }
 
@@ -399,7 +406,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 assertEquals(2, result.getValue().size());
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
-                verify(paymentGateway, never()).cancelPayment();
+                verify(paymentGateway, never()).cancelPayment(anyInt());
                 verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
                 verify(mockOrderRepo, times(3)).findByID("lock-order");
                 verify(retryOrder1, times(1)).CompleteOrder();
@@ -458,7 +465,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 assertTrue(result.getError().contains("concurrent update"));
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
-                verify(paymentGateway, times(1)).cancelPayment();
+                verify(paymentGateway, times(1)).cancelPayment(anyInt());
                 verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
                 verify(mockOrderRepo, times(4)).findByID("lock-fail-order");
         }
@@ -516,9 +523,9 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         verify(ticketGateway, atMost(4)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
                         
                         if (failureMessage.contains("concurrent update") || failureMessage.contains("Order expired")) {
-                                verify(paymentGateway, times(1)).cancelPayment();
+                                verify(paymentGateway, times(1)).cancelPayment(TRANSACTION_ID);
                         } else {
-                                verify(paymentGateway, atMostOnce()).cancelPayment();
+                                verify(paymentGateway, atMostOnce()).cancelPayment(TRANSACTION_ID);
                         }
                 } finally {
                         executor.shutdownNow();
@@ -526,7 +533,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
         }
 
         private PaymentInfo validPaymentInfo() {
-                return new PaymentInfo("4111111111111111", "Ran Test", "12/30", "123");
+                return new PaymentInfo("shekel","12345678910",1,2026,"moshe rabenu","012","215000000");
         }
 
         private void assertOrderIsActive(Order order) {

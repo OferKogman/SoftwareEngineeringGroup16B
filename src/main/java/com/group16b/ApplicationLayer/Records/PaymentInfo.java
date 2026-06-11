@@ -1,4 +1,4 @@
 package com.group16b.ApplicationLayer.Records;
 
-public record PaymentInfo(String cardNumber, String cardHolderName, String expirationDate, String cvv) {
+public record PaymentInfo(String currency, String cardNumber, int month, int year, String holder, String cvv, String id) {
 }
