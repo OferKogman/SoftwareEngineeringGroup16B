@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
@@ -65,7 +66,7 @@ public class UserServiceTests {
         OrderRepositoryMapImpl orderRepo = new OrderRepositoryMapImpl();
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
-        TicketGateway ticketGateway = new TicketGateway();
+        TicketGateway ticketGateway = new TicketGateway(mock(RestTemplate.class));
         ProductionCompanyRepositoryMapImpl productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
         userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo, productionCompanyRepository);
