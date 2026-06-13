@@ -81,7 +81,7 @@ public class PaymentService implements IPaymentGateway {
 
         int refundResult = wsepClient.parseIntegerResponse(responseBody,body -> new RefundStatusUnknownException("Invalid response from payment provider during refund id: "+transactionId+", response: " + body));
         
-        wsepClient.validateBinaryResult(refundResult, 
+        wsepClient.validateSuccessFailureResult(refundResult, 
             ()->new RefundFailedException("Refund failed for transaction " + transactionId), 
             ()->new RefundStatusUnknownException("Provider returned invalid refund result: " + refundResult + ", for transaction " + transactionId));
 

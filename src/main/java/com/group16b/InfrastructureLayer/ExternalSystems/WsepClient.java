@@ -48,14 +48,14 @@ public class WsepClient
             throw emptyResponseExceptionFactory.get();
         }
 
-        return body.trim();
+        return body;
     }
 
     public int parseIntegerResponse(String responseBody,Function<String, RuntimeException> invalidResponseExceptionFactory)
     {
         try
         {
-            return Integer.parseInt(responseBody);
+            return Integer.parseInt(responseBody.trim());
         }
         catch(NumberFormatException e)
         {
@@ -63,7 +63,7 @@ public class WsepClient
         }
     }
 
-    public void validateBinaryResult(int result,Supplier<RuntimeException> failedExceptionFactory,Supplier<RuntimeException> unknownStatusFactory)
+    public void validateSuccessFailureResult(int result,Supplier<RuntimeException> failedExceptionFactory,Supplier<RuntimeException> unknownStatusFactory)
     {
         if(result == -1)
             throw failedExceptionFactory.get();
