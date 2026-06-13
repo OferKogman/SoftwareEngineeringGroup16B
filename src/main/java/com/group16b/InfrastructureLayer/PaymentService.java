@@ -7,6 +7,7 @@ import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
 import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 import java.math.BigDecimal;
 import java.time.YearMonth;
@@ -14,12 +15,9 @@ import java.time.YearMonth;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 public class PaymentService implements IPaymentGateway {
@@ -27,12 +25,10 @@ public class PaymentService implements IPaymentGateway {
     private static final int MAX_TRANSACTION_ID=100000;
 
 
-    private static final String BASE_URL="https://damp-lynna-wsep-1984852e.koyeb.app/";
+    private final WsepClient wsepClient;
 
-    private final RestTemplate restTemplate;
-
-    public PaymentService(RestTemplate restTemplate) {
-        this.restTemplate = restTemplate;
+    public PaymentService( WsepClient wsepClient) {
+        this.wsepClient = wsepClient;
     }
 
     //pay, returns the transaction id if successful, or throw on failure
@@ -58,28 +54,12 @@ public class PaymentService implements IPaymentGateway {
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
         
         //send and get the response
-        final ResponseEntity<String> response;
+        String responseBody =wsepClient.sendRequest(requestEntity,
+                e -> new PaymentStatusUnknownException("Failed to contact payment provider", e),
+                () -> new PaymentStatusUnknownException("Payment provider returned empty response")
+            );
 
-        try{
-            response = restTemplate.postForEntity(BASE_URL, requestEntity, String.class);
-        }catch (RestClientException  e){
-            throw new PaymentStatusUnknownException("Failed to contact payment provider", e);
-        }
-
-        String responseBody = response.getBody();
-        if(responseBody == null || responseBody.isBlank()) {
-            throw new PaymentStatusUnknownException("Payment provider returned empty response");
-        }
-
-        final int transactionId;
-        try
-        {
-            transactionId = Integer.parseInt(responseBody.trim());
-        }
-        catch(NumberFormatException e)
-        {
-            throw new PaymentStatusUnknownException("Invalid response from payment provider: " + responseBody,e);
-        }
+        int transactionId =wsepClient.parseIntegerResponse(responseBody,body -> new PaymentStatusUnknownException("Invalid response from payment provider: " + body));
 
         if(transactionId ==-1)
         {
@@ -108,44 +88,16 @@ public class PaymentService implements IPaymentGateway {
         HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
 
         //send and get the response
-        final ResponseEntity<String> response;
+        String responseBody = wsepClient.sendRequest(requestEntity,  
+            e -> new RefundStatusUnknownException("Failed to contact payment provider during refund for transaction id: "+transactionId, e),
+            () -> new RefundStatusUnknownException("Payment provider returned empty response during refund for transaction id: "+transactionId));
 
-        try
-        {
-            response = restTemplate.postForEntity(BASE_URL, requestEntity, String.class);
-        }
-        catch (RestClientException e)
-        {
-            throw new RefundStatusUnknownException("Failed to contact payment provider during refund: " + transactionId +".", e);
-        }
+        int refundResult = wsepClient.parseIntegerResponse(responseBody,body -> new RefundStatusUnknownException("Invalid response from payment provider during refund id: "+transactionId+", response: " + body));
+        
+        wsepClient.validateBinaryResult(refundResult, 
+            ()->new RefundFailedException("Refund failed for transaction " + transactionId), 
+            ()->new RefundStatusUnknownException("Provider returned invalid refund result: " + refundResult + ", for transaction " + transactionId));
 
-        String responseBody = response.getBody();
-
-        if(responseBody == null || responseBody.isBlank())
-        {
-            throw new RefundStatusUnknownException("Payment provider returned empty refund response for: " + transactionId);
-        }
-
-        final int refundResult;
-
-        try
-        {
-            refundResult = Integer.parseInt(responseBody.trim());
-        }
-        catch(NumberFormatException e)
-        {
-            throw new RefundStatusUnknownException("Invalid refund response from payment provider during refund for: " + transactionId + ", response: " + responseBody, e);
-        }
-
-        if(refundResult == -1)
-        {
-            throw new RefundFailedException("Refund failed for transaction " + transactionId);
-        }
-
-        if(refundResult != 1)
-        {
-            throw new RefundStatusUnknownException("Provider returned invalid refund result: " + refundResult + ", for transaction " + transactionId);
-        }
     }
 
     //can be expanded as needed, like verify number is legit

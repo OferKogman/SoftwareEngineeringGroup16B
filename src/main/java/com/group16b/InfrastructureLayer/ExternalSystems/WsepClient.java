@@ -55,4 +55,13 @@ public class WsepClient
             throw invalidResponseExceptionFactory.apply(responseBody);
         }
     }
+
+    public void validateBinaryResult(int result,Supplier<RuntimeException> failedExceptionFactory,Supplier<RuntimeException> unknownStatusFactory)
+    {
+        if(result == -1)
+            throw failedExceptionFactory.get();
+
+        if(result != 1)
+            throw unknownStatusFactory.get();
+    }
 }

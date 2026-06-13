@@ -29,6 +29,7 @@ import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
 import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.InfrastructureLayer.PaymentService;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 
 class PaymentServiceTests{
@@ -61,7 +62,7 @@ class PaymentServiceTests{
     void setup()
     {
         restTemplate=mock(RestTemplate.class);
-        paymentService=new PaymentService(restTemplate);
+        paymentService=new PaymentService(new WsepClient(restTemplate));
         ResponseEntity<String> response =new ResponseEntity<>(TRANSACTION_ID_STRING, HttpStatus.OK);
 
         when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(response);
@@ -396,7 +397,7 @@ class PaymentServiceTests{
 
         var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
 
-        assertEquals("Failed to contact payment provider during refund: "+ TRANSACTION_ID + ".",ex.getMessage());
+        assertEquals("Failed to contact payment provider during refund for transaction id: "+ TRANSACTION_ID,ex.getMessage());
     }
 
     @Test
@@ -406,7 +407,7 @@ class PaymentServiceTests{
 
         var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
 
-        assertEquals("Payment provider returned empty refund response for: "+ TRANSACTION_ID,ex.getMessage());
+        assertEquals("Payment provider returned empty response during refund for transaction id: "+ TRANSACTION_ID,ex.getMessage());
     }
 
     @Test
@@ -416,7 +417,7 @@ class PaymentServiceTests{
 
         var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
 
-        assertEquals("Payment provider returned empty refund response for: " + TRANSACTION_ID,ex.getMessage());
+        assertEquals("Payment provider returned empty response during refund for transaction id: " + TRANSACTION_ID,ex.getMessage());
     }
 
     @Test
@@ -426,7 +427,7 @@ class PaymentServiceTests{
 
         var ex = assertThrows(RefundStatusUnknownException.class,() -> paymentService.cancelPayment(TRANSACTION_ID));
 
-        assertEquals("Invalid refund response from payment provider during refund for: " + TRANSACTION_ID + ", response: abc",ex.getMessage());
+        assertEquals("Invalid response from payment provider during refund id: " + TRANSACTION_ID + ", response: abc",ex.getMessage());
     }
 
     @Test
