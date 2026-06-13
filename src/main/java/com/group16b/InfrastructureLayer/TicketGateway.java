@@ -1,16 +1,9 @@
 package com.group16b.InfrastructureLayer;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientException;
-import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
-import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
 import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
@@ -19,8 +12,6 @@ import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 @Service
 public class TicketGateway implements ITicketGateway{
-
-    private static final String BASE_URL="https://damp-lynna-wsep-1984852e.koyeb.app/";
 
     private final WsepClient wsepClient;
 
