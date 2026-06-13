@@ -12,9 +12,6 @@ import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -48,13 +45,8 @@ public class PaymentService implements IPaymentGateway {
         requestBody.add("id", paymentInfo.id());
         requestBody.add("amount", BigDecimal.valueOf(amount).toPlainString());
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
-        
         //send and get the response
-        String responseBody =wsepClient.sendRequest(requestEntity,
+        String responseBody =wsepClient.sendRequest(requestBody,
                 e -> new PaymentStatusUnknownException("Failed to contact payment provider", e),
                 () -> new PaymentStatusUnknownException("Payment provider returned empty response")
             );
@@ -82,13 +74,8 @@ public class PaymentService implements IPaymentGateway {
         requestBody.add("action_type", "refund");
         requestBody.add("transaction_id", String.valueOf(transactionId));
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(requestBody, headers);
-
         //send and get the response
-        String responseBody = wsepClient.sendRequest(requestEntity,  
+        String responseBody = wsepClient.sendRequest(requestBody,  
             e -> new RefundStatusUnknownException("Failed to contact payment provider during refund for transaction id: "+transactionId, e),
             () -> new RefundStatusUnknownException("Payment provider returned empty response during refund for transaction id: "+transactionId));
 

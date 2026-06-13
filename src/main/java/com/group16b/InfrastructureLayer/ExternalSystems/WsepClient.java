@@ -4,8 +4,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -21,8 +24,12 @@ public class WsepClient
         this.restTemplate = restTemplate;
     }
 
-    public String sendRequest(HttpEntity<?> request,Function<RestClientException, RuntimeException> communicationExceptionFactory,Supplier<RuntimeException> emptyResponseExceptionFactory)
+    public String sendRequest(MultiValueMap<String, String> requestBody,Function<RestClientException, RuntimeException> communicationExceptionFactory,Supplier<RuntimeException> emptyResponseExceptionFactory)
     {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+        HttpEntity<MultiValueMap<String, String>> request =new HttpEntity<>(requestBody, headers);
         final ResponseEntity<String> response;
 
         try
