@@ -63,7 +63,7 @@ public class OrderService {
 		this.ticketGateway = ticketGateway;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+    public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
 		Integer transactionId = null;
 		try {
 			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
@@ -81,7 +81,6 @@ public class OrderService {
 			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, subjectID);
 			order.verifyBelongsToSubject(subjectID);
 
-
 			//3. price calculation
 			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, subjectID);
 			double price = order.getTotalOrderprice();
@@ -91,15 +90,15 @@ public class OrderService {
 			transactionId = paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
 			
 			// 5. ticket generation
-			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, subjectID);
-			List<TicketDTO> ticketDTOs = generateTicketsForOrder(order, subjectID, price);
+			logger.info("OrderService.CompleteActiveOrder: generating ticket for order {} for user {}", orderID, subjectID);
+			String ticket = generateTicketForOrder(order, subjectID);
 			
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
 			completeOrderWithOptimisticRetry(orderID, subjectID);
 			
 			// 7. return tickets
-			return Result.makeOk(ticketDTOs);
+			return Result.makeOk(ticket);
 
 		} catch (OrderExpiredException e) {
 			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}.", orderID, e.getMessage());
@@ -145,28 +144,11 @@ public class OrderService {
 		}
 	}
 
-	private List<TicketDTO> generateTicketsForOrder(Order order, String subjectID, double price) {
-        List<TicketDTO> ticketDTOs = new ArrayList<>();
+	private String generateTicketForOrder(Order order, String subjectID) {
 		if (order.getOrderType() == OrderType.SEAT) {
-			List<String> seats = order.getSeats();
-
-			for (int i = 0; i < order.getNumOfTickets(); i++) {
-					String seatId = null;
-					if (seats != null && i < seats.size()) {
-							seatId = seats.get(i);
-					}
-					TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), subjectID, order.getSegmentId(), seatId, price);
-
-					ticketDTOs.add(ticketDTO);
-			}
-			return ticketDTOs;
+			return ticketGateway.generateSeatingTicket(order.getEventId(), subjectID, order.getSegmentId(), order.getSeats());
 		}else{
-			for (int i = 0; i < order.getNumOfTickets(); i++) {
-					TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), subjectID, order.getSegmentId(), null, price);
-
-					ticketDTOs.add(ticketDTO);
-			}
-			return ticketDTOs;
+			return ticketGateway.generateGeneralAdmissionTicket(order.getEventId(), subjectID, order.getSegmentId(), order.getNumOfTickets());
 		}
 	}
 
