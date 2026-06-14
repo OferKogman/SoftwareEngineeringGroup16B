@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
@@ -65,6 +66,7 @@ public class OrderService {
 
     public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
 		Integer transactionId = null;
+		String ticket=null;
 		try {
 			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
 
@@ -91,18 +93,18 @@ public class OrderService {
 			
 			// 5. ticket generation
 			logger.info("OrderService.CompleteActiveOrder: generating ticket for order {} for user {}", orderID, subjectID);
-			String ticket = generateTicketForOrder(order, subjectID);
+			ticket = generateTicketForOrder(order, subjectID);
 			
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
-			completeOrderWithOptimisticRetry(orderID, subjectID);
+			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
 			
 			// 7. return tickets
 			return Result.makeOk(ticket);
 
 		} catch (OrderExpiredException e) {
 			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}.", orderID, e.getMessage());
-			safeRefund(transactionId);
+			safeExternalRollback(transactionId,ticket);
 			_cancelOrder(orderID);
 			return Result.makeFail("Order expired: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
 
@@ -112,7 +114,7 @@ public class OrderService {
 
 		} catch (TicketGenerationException e) {
 			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
-			safeRefund(transactionId);
+			safeExternalRollback(transactionId,ticket);
 
 			return Result.makeFail("Ticket generation failed: " + e.getMessage()+". "+REFUND_MSG);
 
@@ -129,16 +131,17 @@ public class OrderService {
 			return Result.makeFail("Illegal state: " + e.getMessage());
 
 		} catch (OptimisticLockingFailureException e) {
-			safeRefund(transactionId);
+			safeExternalRollback(transactionId,ticket);
 			return Result.makeFail("Could not complete order due to concurrent update. Please try again. "+POSSIBLE_REFUND_MSG);
-		
 		} catch(PaymentStatusUnknownException e){
 			logger.error("OrderService.CompleteActiveOrder: payment status unknown for order {}. Requires manual reconciliation.",orderID,e);
 			return Result.makeFail("Payment could not be verified. "+POSSIBLE_REFUND_MSG);
-		
+		}catch (IssueTicketStatusUnknownException e){
+			logger.error("OrderService.CompleteActiveOrder: Issue Ticket status unknown for order {}. Requires manual reconciliation.",orderID,e);
+			return Result.makeFail("Ticket could not be verified. "+POSSIBLE_REFUND_MSG);
 		}catch (Exception e) {
 			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
-			safeRefund(transactionId);
+			safeExternalRollback(transactionId,ticket);
 
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
 		}
@@ -152,7 +155,7 @@ public class OrderService {
 		}
 	}
 
-	private void completeOrderWithOptimisticRetry(String orderID, String subjectID) {
+	private void completeOrderWithOptimisticRetry(String orderID, String subjectID, int transactionId, String externalTicket) {
 		final int maxRetries = 3;
 
 		for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -162,6 +165,8 @@ public class OrderService {
 				freshOrder.validiteOrderIsActive();
 				freshOrder.verifyBelongsToSubject(subjectID);
 
+				freshOrder.setTransactionId(transactionId);
+				freshOrder.setExternalTicket(externalTicket);
 				freshOrder.CompleteOrder();
 				orderRepo.save(freshOrder);
 				return;
@@ -466,6 +471,24 @@ public class OrderService {
 		} catch (Exception e) {
 			logger.error("Refund failed for transaction {}", transactionId, e);
 		}
+	}
+
+	private void safeTicketRevoke(String ticket)
+	{
+		if(ticket==null)
+			return;
+		try{
+			ticketGateway.revokeTicket(ticket);
+		}catch(Exception e)
+		{
+			logger.error("Ticket revoke failed for ticket {}",ticket,e);
+		}
+	}
+
+	private void safeExternalRollback(Integer transactionId, String ticket)
+	{
+		safeRefund(transactionId);
+		safeTicketRevoke(ticket);
 	}
 	
 }
