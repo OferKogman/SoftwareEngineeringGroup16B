@@ -1,16 +1,13 @@
 package com.group16b.InfrastructureLayer;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.JsonpCharacterEscapes;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.IllegalTicketInfoException;
 import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
@@ -45,8 +42,23 @@ public class TicketGateway implements ITicketGateway{
             throw new IllegalTicketInfoException("Error mapping seats to payload: ",e);
         }
 
+        return issueTicket(requestBody);
+    }
+
+    @Override
+    public String generateGeneralAdmissionTicket(int eventId, String customerId, String zone, int quantity)
+    {
+        validateStandingArgs(eventId, customerId, zone, quantity);
+        MultiValueMap<String, String> requestBody=prepareTicketIssueBody(eventId, customerId, zone);
+        requestBody.add("quantity",String.valueOf(quantity));
+        return issueTicket(requestBody);
+        
+    }
+
+    private String issueTicket(MultiValueMap<String,String> requestBody)
+    {
         String responseBody=wsepClient.sendRequest(requestBody,
-                e-> new IssueTicketStatusUnknownException("Failed to contact ticket provider when issueing ticket."),
+                e-> new IssueTicketStatusUnknownException("Failed to contact ticket provider when issuing ticket."),
                 ()-> new IssueTicketStatusUnknownException("ticket provider returned empty response when issuing ticket."));
         responseBody=responseBody.trim();
         if("-1".equals(responseBody))
@@ -81,18 +93,22 @@ public class TicketGateway implements ITicketGateway{
     {
         if(seats==null || seats.isEmpty())
             throw new IllegalTicketInfoException("For a seating ticket, seats cannot be empty.");
-        validatCommonTicketArgs(eventId, customer, zone);
+        if(seats.stream().anyMatch(s -> s == null || s.isBlank()))
+            throw new IllegalTicketInfoException("For a seating ticket, all seat identifiers must be non-blank.");
+        validateCommonTicketArgs(eventId, customer, zone);
     }
 
     private void validateStandingArgs(int eventId, String customer, String zone, int quantity)
     {
         if(quantity<=0)
-            throw new IllegalTicketInfoException("For a standing ticket, quanty must be positive.");
-        validatCommonTicketArgs(eventId, customer, zone);
+            throw new IllegalTicketInfoException("For a standing ticket, quantity must be positive.");
+        validateCommonTicketArgs(eventId, customer, zone);
     }
 
-    private void validatCommonTicketArgs(int eventId, String customer, String zone)
+    private void validateCommonTicketArgs(int eventId, String customer, String zone)
     {
+        if(eventId <= 0)
+            throw new IllegalTicketInfoException("Event id must be positive.");
         if(customer==null || customer.isBlank())
             throw new IllegalTicketInfoException("Customer id cannot be empty.");
         if(zone==null || zone.isBlank())
