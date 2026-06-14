@@ -25,7 +25,7 @@ class TicketGatewayRealApiTests {
                 123,
                 "smoke-test-user",
                 "A",
-                List.of("1", "2"));
+                List.of("A-1", "A-2"));
 
         assertNotNull(ticketId);
         assertFalse(ticketId.isBlank());

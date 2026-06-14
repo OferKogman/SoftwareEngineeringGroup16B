@@ -26,7 +26,9 @@ import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.Exceptions.IllegalTicketInfoException;
 import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
+import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.InfrastructureLayer.TicketGateway;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
@@ -152,7 +154,7 @@ public class TicketGatewayTests {
     }
 
     @Test
-    void seatingTicket_restClientException_throwsIssueTicketUnknownStatus() {
+    void IssueTicket_restClientException_throwsIssueTicketUnknownStatus() {
         mockCommunicationFailure();
 
         IssueTicketStatusUnknownException ex = assertThrows(IssueTicketStatusUnknownException.class,() -> ticketGateway.generateSeatingTicket(VALID_EVENT_ID,VALID_CUSTOMER,VALID_ZONE,VALID_SEATS));
@@ -164,14 +166,92 @@ public class TicketGatewayTests {
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"", " ", "    "})
-    void seatingTicket_nullOrBlankResponse_throwsIssueTicketUnknownStatus(String responseBody) {
+    void IssueTicket_nullOrBlankResponse_throwsIssueTicketUnknownStatus(String responseBody) {
         when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
                 .thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
 
-        RuntimeException ex = assertThrows(RuntimeException.class,() -> ticketGateway.generateSeatingTicket(VALID_EVENT_ID,VALID_CUSTOMER,VALID_ZONE,VALID_SEATS));
-
-        assertTrue(ex.getClass().getSimpleName().contains("IssueTicketStatusUnknownException"),"Expected IssueTicketStatusUnknownException but got: " + ex.getClass().getName());
+        IssueTicketStatusUnknownException ex = assertThrows(IssueTicketStatusUnknownException.class,() -> ticketGateway.generateSeatingTicket(VALID_EVENT_ID,VALID_CUSTOMER,VALID_ZONE,VALID_SEATS));
+        assertEquals("ticket provider returned empty response when issuing ticket.", ex.getMessage());
     }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0,-1,-100})
+    void standingTicket_invalidQuantity_throwsIllegalTicketInfoException(int num) {
+        IllegalTicketInfoException ex = assertThrows(IllegalTicketInfoException.class,() -> ticketGateway.generateGeneralAdmissionTicket(VALID_EVENT_ID,VALID_CUSTOMER,VALID_ZONE,num));
+
+        assertEquals("For a standing ticket, quantity must be positive.", ex.getMessage());
+    }
+
+    //--------------- REVOKE YOUR BELIEFS ---------------------
+
+    @Test
+    void revokeTicket_goodTicket_yay()
+    {
+        assertDoesNotThrow(()->ticketGateway.revokeTicket(TICKET));
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "   "})
+    void revokeTicket_givenBlankTicket_throwIllegaArg(String sasuke)
+    {
+        IllegalArgumentException ex=assertThrows(IllegalArgumentException.class, ()->ticketGateway.revokeTicket(sasuke));
+        assertEquals("Ticket cannot be blank.", ex.getMessage());
+    }
+
+    @Test
+    void revokeTicket_restClientException_throwsIssueTicketUnknownStatus() {
+        mockCommunicationFailure();
+
+        TicketRevokeUnknownStatusException ex = assertThrows(TicketRevokeUnknownStatusException.class,() -> ticketGateway.revokeTicket(TICKET));
+
+        assertEquals("Failed to contact ticket provider when revoking ticket: "+TICKET, ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"", " ", "    "})
+    void revokeTicket_nullOrBlankResponse_throwsIssueTicketUnknownStatus(String responseBody) {
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(responseBody, HttpStatus.OK));
+
+        TicketRevokeUnknownStatusException ex = assertThrows(TicketRevokeUnknownStatusException.class,() -> ticketGateway.revokeTicket(TICKET));
+        assertEquals("ticket provider returned empty response when revoking ticket: "+TICKET, ex.getMessage());
+    }
+
+    @Test
+    void revokeTicket_resultMinusOne_throwsRevokeFailureException() {
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("-1", HttpStatus.OK));
+
+        RevokeTicketFailureException ex = assertThrows(RevokeTicketFailureException.class,() -> ticketGateway.revokeTicket(TICKET));
+
+        assertTrue(ex.getMessage().contains("revoke failed for ticket"));
+    }
+
+    @Test
+    void revokeTicket_invalidNumberResponse_throwsUnknownStatus() {
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>("not-a-number", HttpStatus.OK));
+
+        TicketRevokeUnknownStatusException ex = assertThrows(TicketRevokeUnknownStatusException.class,() -> ticketGateway.revokeTicket(TICKET));
+
+        assertTrue(ex.getMessage().contains("Invalid response from ticket provider"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 2, 999, -2})
+    void revokeTicket_nonStandardResult_throwsUnknownStatus(int result) {
+        when(restTemplate.postForEntity(anyString(), any(HttpEntity.class), eq(String.class)))
+                .thenReturn(new ResponseEntity<>(String.valueOf(result), HttpStatus.OK));
+
+        TicketRevokeUnknownStatusException ex = assertThrows(TicketRevokeUnknownStatusException.class,() -> ticketGateway.revokeTicket(TICKET));
+
+        assertTrue(ex.getMessage().contains("invalid ticket revoke result"));
+    }
+
+
+
 
 
     
