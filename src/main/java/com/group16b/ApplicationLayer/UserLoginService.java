@@ -23,9 +23,12 @@ public class UserLoginService {
         this.tokenService = tokenService;
     }
 
-    public Result<String> createGuestSession() {
+    public Result<String> ensureGuestSession(String SessionToken) {
         logger.info("UserLoginService.createGuestSession: Attempting to create a new guest session.");
         try {
+            if(SessionToken!=null && tokenService.validateToken(SessionToken))
+                return Result.makeOk(SessionToken);
+
             SessionToken newSession = new SessionToken();
             String token = tokenService.generateVisitor_GuestToken(newSession);
             
@@ -90,7 +93,7 @@ public class UserLoginService {
             
             userRepository.findByID(recievedID); 
 
-            Result<String> res = this.createGuestSession();
+            Result<String> res = this.ensureGuestSession(null);
 
             if (res.isSuccess()) {
                 logger.info("UserLoginService.logOutMember: User ID {} successfully logged out.", recievedID);                
