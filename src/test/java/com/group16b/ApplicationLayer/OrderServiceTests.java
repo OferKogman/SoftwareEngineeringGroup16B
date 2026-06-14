@@ -34,7 +34,9 @@ import static org.mockito.Mockito.when;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
@@ -352,6 +354,51 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
         }
 
         @Test
+        void completeActiveOrder_paymentStatusUnknown_failsWithoutRollback() {
+                doThrow(new PaymentStatusUnknownException("provider timeout")).when(paymentGateway).processPayment(any(), anyDouble());
+
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(),"user1",validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Payment could not be verified"));
+
+                assertOrderIsActive(seatOrder);
+
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
+                verify(ticketGateway, never()).revokeTicket(anyString());
+        }
+
+        @Test
+        void completeActiveOrder_ticketStatusUnknown_failsWithoutRollback() {
+                doThrow(new IssueTicketStatusUnknownException("provider timeout")).when(ticketGateway).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(),"user1",validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Ticket could not be verified"));
+
+                assertOrderIsActive(seatOrder);
+
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).revokeTicket(anyString());
+        }
+        @Test
+        void completeActiveOrder_ticketGenerationFails_refundFails_stillReturnsFailure() {
+                doThrow(new TicketGenerationException("ticket failed")).when(ticketGateway).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+
+                doThrow(new RuntimeException("refund failed")).when(paymentGateway).cancelPayment(anyInt());
+
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(),"user1",validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Ticket generation failed"));
+
+                verify(paymentGateway).cancelPayment(anyInt());
+        }
+
+        @Test
         void completeActiveOrder_expiredOrder_failsCancelsOrderAndFreesReservation() {
                 Order expiredOrder = mock(Order.class);
 
@@ -437,6 +484,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 verify(mockOrderRepo, times(3)).findByID("lock-order");
                 verify(retryOrder1, times(1)).CompleteOrder();
                 verify(retryOrder2, times(1)).CompleteOrder();
+                verify(paymentGateway,never()).cancelPayment(anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
@@ -494,6 +543,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 verify(paymentGateway, times(1)).cancelPayment(anyInt());
                 verify(ticketGateway, times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
                 verify(mockOrderRepo, times(4)).findByID("lock-fail-order");
+                verify(ticketGateway,times(1)).revokeTicket(anyString());
         }
         
         @Test
@@ -601,6 +651,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         private void assertOrderIsCompleted(Order order) {
                 assertTrue(orderRepo.findByID(order.getOrderId()).isCompleted());
         }
+
+        
 
 
         // _______________ changeSeatsToOrder tests:_________________
