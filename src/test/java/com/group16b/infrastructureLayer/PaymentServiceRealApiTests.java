@@ -11,12 +11,13 @@ import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.InfrastructureLayer.PaymentService;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 
 @Tag("external")
 class PaymentServiceRealApiTests {
 
-    private PaymentService paymentService=new PaymentService(new RestTemplate());
+    private PaymentService paymentService=new PaymentService(new WsepClient(new RestTemplate()));
 
     private PaymentInfo validPayment() {
         return new PaymentInfo(

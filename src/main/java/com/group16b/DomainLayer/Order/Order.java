@@ -16,6 +16,9 @@ public class Order {
 	private final String subjectID;
 	private long version;
 
+	private Integer transactioId=null;
+	private String externalTicket=null;
+
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
 		this.orderId = "order_" + ++idCounter;
@@ -90,6 +93,26 @@ public class Order {
 
 	public OrderType getOrderType() {
 		return orderType;
+	}
+
+	public Integer getTransactionId()
+	{
+		return transactioId;
+	}
+
+	public String getExternalTicket()
+	{
+		return externalTicket;
+	}
+
+	public void setTransactionId(int transactionId)
+	{
+		this.transactioId=transactionId;
+	}
+
+	public void setExternalTicket(String ticket)
+	{
+		this.externalTicket=ticket;
 	}
 
 	public void verifyTypeSeats(){
