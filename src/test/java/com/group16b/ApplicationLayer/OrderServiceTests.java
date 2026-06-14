@@ -198,8 +198,8 @@ public class OrderServiceTests {
         }
         private void setUpTicketMocks()
         {
-                when(ticketGateway.generateGeneralAdmissionTicket(TRANSACTION_ID, anyString(), anyString(), anyInt())).thenReturn(FILED_TIKET);
-                when(ticketGateway.generateSeatingTicket(TRANSACTION_ID, anyString(), anyString(), any())).thenReturn(SEATING_TICKET);
+                when(ticketGateway.generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt())).thenReturn(FILED_TIKET);
+                when(ticketGateway.generateSeatingTicket(anyInt(), anyString(), anyString(), any())).thenReturn(SEATING_TICKET);
         }
 
         // _______________CompleteActiveOrder tests:_________________
@@ -242,7 +242,7 @@ public class OrderServiceTests {
                 assertOrderIsActive(seatOrder);
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
                 verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
         }
@@ -256,7 +256,7 @@ public class OrderServiceTests {
                 assertOrderIsActive(seatOrder);
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
                 verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
         }
@@ -269,7 +269,7 @@ public class OrderServiceTests {
                 assertTrue(result.getError().contains("Invalid argument"));
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
                 verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
         }
@@ -288,7 +288,7 @@ public class OrderServiceTests {
                 assertOrderIsActive(seatOrder);
 
                 verify(paymentGateway, never()).cancelPayment(anyInt());
-                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
                 verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
         }
@@ -329,7 +329,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
         assertTrue(orderRepo.findByID(otherUserOrder.getOrderId()).isActive());
 
         verify(paymentGateway, never()).processPayment(any(), anyDouble());
-        verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+        verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
         verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
         verify(ticketGateway,never()).revokeTicket(anyString());
 }
@@ -346,7 +346,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 assertTrue(result.getError().contains("Illegal state"));
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
                 verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
         }
@@ -433,7 +433,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
                 verify(paymentGateway, never()).cancelPayment(anyInt());
-                verify(ticketGateway, times(2)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
+                verify(ticketGateway, times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
                 verify(mockOrderRepo, times(3)).findByID("lock-order");
                 verify(retryOrder1, times(1)).CompleteOrder();
                 verify(retryOrder2, times(1)).CompleteOrder();
@@ -492,7 +492,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
                 verify(paymentGateway, times(1)).cancelPayment(anyInt());
-                verify(ticketGateway, times(2)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
+                verify(ticketGateway, times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
                 verify(mockOrderRepo, times(4)).findByID("lock-fail-order");
         }
         
