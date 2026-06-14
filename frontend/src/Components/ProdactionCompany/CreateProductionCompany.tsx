@@ -1,4 +1,4 @@
-// src/Components/CreateProdactionCompany.tsx
+// src/Components/CreateProductionCompany.tsx
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -6,7 +6,7 @@ import { useSession } from "../../App";
 
 const API_BASE = "http://localhost:8080";
 
-export default function CreateProdactionCompany() {
+export default function CreateProductionCompany() {
   const navigate = useNavigate();
 
   const [companyName, setCompanyName] = useState("");
@@ -70,25 +70,30 @@ export default function CreateProdactionCompany() {
 
   return (
     <div style={{ padding: "24px" }}>
-      <h1>Create Production Company</h1>
-
       {error && <p style={{ color: "red" }}>{error}</p>}
       {message && <p style={{ color: "green" }}>{message}</p>}
 
       <form onSubmit={handleCreateCompany}>
         <div>
-          <label>Company Name</label>
-          <br />
+          <p
+            style={{
+              fontSize: "1.25rem",
+              fontWeight: "bold",
+              marginBottom: "4px",
+            }}
+          >
+            Create New Production Company
+          </p>
+          <label style={{ marginRight: "8px" }}>Company Name</label>
 
           <input
+            style={{ padding: "4px", width: "12rem", marginBottom: "8px" }}
             type="text"
             value={companyName}
             onChange={(event) => setCompanyName(event.target.value)}
             placeholder="Enter production company name"
           />
         </div>
-
-        <br />
 
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Creating..." : "Create Company"}

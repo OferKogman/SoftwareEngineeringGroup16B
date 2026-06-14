@@ -7,35 +7,39 @@ import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
-import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import VenueEditor from "./Components/ProdactionCompany/VenueEditor";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
+import ChangePasswordForm from "./Components/User/ChangePasswordForm";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
+import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
+import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
 
 export default function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<LoginForm title="Login" />} />
       <Route path="/register" element={<RegistrationForm title="Register" />} />
-      <Route path="/users" element={<UserManagement />} />
-
+      <Route path="/users/management" element={<UserManagement />}>
+        <Route
+          path="change-password"
+          element={<ChangePasswordForm title={""} />}
+        />
+        <Route path="purchase-history" element={<ViewUserPurchaseHistory />} />
+        <Route path="companies" element={<ViewUserCompanyList />} />
+      </Route>
       <Route path="/admins" element={<AdminManagement />} />
       <Route
         path="/admins/login"
         element={<AdminLoginForm title="Admin Login" />}
       />
       <Route path="/admins/management" element={<AdminManagement />} />
-
       <Route path="/events/search" element={<SearchEvents />} />
-
-      <Route path="/companies/create" element={<CreateProdactionCompany />} />
-
       <Route
         path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../../App";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import CreateProductionCompany from "../ProdactionCompany/CreateProductionCompany";
 
 export default function ViewUserCompanyList() {
   const { sessionToken } = useSession();
@@ -59,37 +60,40 @@ export default function ViewUserCompanyList() {
       {error && <p className="form-error">{error}</p>}
 
       {!error ? (
-        companyDTOList.length === 0 ? (
-          <p>No companies found</p>
-        ) : (
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Rating</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {companyDTOList.map((company) => (
-                <tr key={company.id}>
-                  <td>{company.id}</td>
-                  <td>{company.name}</td>
-                  <td>{company.rating}</td>
-                  <td>
-                    <button
-                      onClick={() => navigate(`/companies/${company.id}`)}
-                    >
-                      Manage
-                    </button>
-                  </td>
+        <div>
+          <CreateProductionCompany />
+          {companyDTOList.length === 0 ? (
+            <p>No companies found</p>
+          ) : (
+            <table style={{ borderCollapse: "collapse", width: "100%" }}>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Name</th>
+                  <th>Rating</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )
+              </thead>
+
+              <tbody>
+                {companyDTOList.map((company) => (
+                  <tr key={company.id}>
+                    <td>{company.id}</td>
+                    <td>{company.name}</td>
+                    <td>{company.rating}</td>
+                    <td>
+                      <button
+                        onClick={() => navigate(`/companies/${company.id}`)}
+                      >
+                        Manage
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
       ) : (
         <></>
       )}
