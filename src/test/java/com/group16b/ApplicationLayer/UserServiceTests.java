@@ -29,7 +29,8 @@ import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.TicketGateway; 
+import com.group16b.InfrastructureLayer.TicketGateway;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient; 
 
 public class UserServiceTests {
 
@@ -66,7 +67,7 @@ public class UserServiceTests {
         OrderRepositoryMapImpl orderRepo = new OrderRepositoryMapImpl();
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
-        TicketGateway ticketGateway = new TicketGateway(mock(RestTemplate.class));
+        TicketGateway ticketGateway = new TicketGateway(new WsepClient(mock(RestTemplate.class)));
         ProductionCompanyRepositoryMapImpl productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
         userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo, productionCompanyRepository);
