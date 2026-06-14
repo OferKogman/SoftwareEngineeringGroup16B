@@ -34,7 +34,7 @@ public class TicketGateway implements ITicketGateway{
         MultiValueMap<String, String> requestBody=prepareTicketIssueBody(eventId, cusomerId, zone);
         requestBody.add("is_seating","true");
 
-        List<Map<String,String>> seatPayload= seats.stream().map( id -> Map.of("seat", id)).toList();
+        List<Map<String,String>> seatPayload =seats.stream().map(this::mapSeat).toList();
         try{
             requestBody.add("seats", objectMapper.writeValueAsString(seatPayload));
         }
@@ -124,6 +124,19 @@ public class TicketGateway implements ITicketGateway{
         requestBody.add("zone", zone);
 
         return requestBody;
+    }
+
+    private Map<String,String> mapSeat(String seatId)
+    {
+        String[] parts = seatId.split("-");
+
+        if(parts.length != 2)
+            throw new IllegalTicketInfoException("Invalid seat id format: " + seatId);
+
+        return Map.of(
+            "row", parts[0],
+            "seat", parts[1]
+        );
     }
 
 }
