@@ -1,62 +1,30 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ChangePasswordForm from "./ChangePasswordForm";
-import ViewUserCompanyList from "./ViewUserCompanyList";
-import ViewUserPurchaseHistory from "./ViewUserPurchaseHistory";
+import { NavLink, useOutlet } from "react-router-dom";
+import "./CSS/UserManagement.css";
 
 export default function UserManagement() {
-  const navigate = useNavigate();
-
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
-  const [showCompanies, setShowCompanies] = useState(false);
+  const outlet = useOutlet();
 
   return (
-    <div>
-      <h1>User Management</h1>
-
-      <div>
-        <button onClick={() => setShowChangePassword(!showChangePassword)}>
-          Change Password
-        </button>
+    <div className="user-management-page">
+      <div className="user-management-header">
+        <h1>User Management</h1>
       </div>
 
-      {showChangePassword && <ChangePasswordForm title="Change Password" />}
+      <div className="user-management-body">
+        <aside className="user-management-sidebar">
+          <NavLink to="change-password">Change Password</NavLink>
+          <NavLink to="purchase-history">Purchase History</NavLink>
+          <NavLink to="companies">My Production Companies</NavLink>
+        </aside>
 
-      {/* Purchase History */}
-      <div>
-        <button onClick={() => setShowPurchaseHistory(!showPurchaseHistory)}>
-          {showPurchaseHistory ? "▼" : "▶"} Purchase History
-        </button>
-
-        {showPurchaseHistory && (
-          <div>
-            <ViewUserPurchaseHistory />
-          </div>
-        )}
-      </div>
-
-      {/* Companies */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <button onClick={() => setShowCompanies(!showCompanies)}>
-          {showCompanies ? "▼" : "▶"} My Production Companies
-        </button>
-
-        {showCompanies && (
-          <div style={{ marginTop: "10px" }}>
-            <button onClick={() => navigate("/companies/create")}>
-              Create Company
-            </button>
-
-            <ViewUserCompanyList />
-          </div>
-        )}
+        <main className="user-management-content">
+          {outlet ?? (
+            <div className="user-management-default-content">
+              <h2>User Management</h2>
+              <p>Select an option from the sidebar.</p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

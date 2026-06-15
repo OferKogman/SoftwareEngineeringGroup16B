@@ -6,13 +6,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
@@ -21,7 +29,8 @@ import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.TicketGateway; 
+import com.group16b.InfrastructureLayer.TicketGateway;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient; 
 
 public class UserServiceTests {
 
@@ -32,6 +41,17 @@ public class UserServiceTests {
     private String noOrdersToken;
     private String guestToken;
     private String adminToken;
+    private String noCompaniesToken;
+    private String nonExistentUserToken;
+
+    private final int USER_COMPANY_ID=1;
+    private final int USER_COMPANY_ID_2=3;
+    private final int NON_USER_COMPANY_ID=999;
+
+    private final String USER_EMAIL = "test2@test.com";
+    private final String OTHER_USER_EMAIL = "noorders@test.com";
+    private final String NO_COMPANY_USER_EMAIL = "no-comps@wa.com";
+    private final String NON_EXISTENT_USER_EMAIL = "birds are fake";
 
 
 @BeforeEach
@@ -47,17 +67,19 @@ public class UserServiceTests {
         OrderRepositoryMapImpl orderRepo = new OrderRepositoryMapImpl();
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
-        TicketGateway ticketGateway = new TicketGateway();
+        TicketGateway ticketGateway = new TicketGateway(new WsepClient(mock(RestTemplate.class)));
         ProductionCompanyRepositoryMapImpl productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
         userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo, productionCompanyRepository);
 
         // for get user order history tests, we need to have a user with orders in the repo and a valid token for that user
-        sessionToken = authService.generateVisitor_SignedToken("test2@test.com");
+        sessionToken = authService.generateVisitor_SignedToken(USER_EMAIL);
         noOrdersToken = authService.generateVisitor_SignedToken("noorders@test.com");
+        noCompaniesToken = authService.generateVisitor_SignedToken(NO_COMPANY_USER_EMAIL);
         guestToken = authService.generateVisitor_GuestToken(new SessionToken("guest-session"));
         adminToken = authService.generateAdminToken("admin@test.com");
-        User tUser = new User("test2@test.com", "Password123!");
+        nonExistentUserToken = authService.generateVisitor_SignedToken(NON_EXISTENT_USER_EMAIL);
+        User tUser = new User(USER_EMAIL, "Password123!");
         userRepo.save(tUser);
         Order orderSeat1 = new Order( "seg1", List.of("A1", "A2"), 100.0, 1, "test2@test.com");
         orderSeat1.CompleteOrder();
@@ -85,6 +107,14 @@ public class UserServiceTests {
         otherOrder2.CompleteOrder();
         orderRepo.save(otherOrder2);
 
+        ProductionCompany company1 = new ProductionCompany(USER_COMPANY_ID, "User's Company",0.0,USER_EMAIL);
+        ProductionCompany company2 = new ProductionCompany(NON_USER_COMPANY_ID, "Non User's Company",0.0,OTHER_USER_EMAIL);
+        ProductionCompany company3 = new ProductionCompany(USER_COMPANY_ID_2, "Other Company",0.0,USER_EMAIL);
+        productionCompanyRepository.save(company1);
+        productionCompanyRepository.save(company2);
+        productionCompanyRepository.save(company3);
+
+        userRepo.save(new User(NO_COMPANY_USER_EMAIL, "Password123!"));
     }
 
     @Test
@@ -221,5 +251,79 @@ public class UserServiceTests {
         assertTrue(result.isSuccess());
         assertNotNull(result.getValue());
         assertEquals(5, result.getValue().size());
+    }
+
+    @Test
+    void getAllUserCompanies_validUserToken_returnsNonEmptyCompanyList() {
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(sessionToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+        assertEquals(2, result.getValue().size());
+        assertTrue(result.getValue().stream().anyMatch(c -> c.getId() == USER_COMPANY_ID));
+        assertTrue(result.getValue().stream().anyMatch(c -> c.getId() == USER_COMPANY_ID_2));
+    }
+
+    @Test
+    void getAllUserCompanies_validUserTokenWithNoCompanies_returnsEmptyCompanyList() {
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(noCompaniesToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+        assertEquals(0, result.getValue().size());
+    }
+
+    @Test
+    void getAllUserCompanies_guestToken_returnsFail() {
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(guestToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed: Only users are allowed to perform operation", result.getError());
+    }
+
+    @Test
+    void getAllUserCompanies_adminToken_returnsFail() {
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(adminToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed: Only users are allowed to perform operation", result.getError());
+    }
+
+    @Test
+    void getAllUserCompanies_invalidToken_returnsFail() {
+        String invalidToken = "this-is-not-a-real-token-because-chaos";
+
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(invalidToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed: Invalid Token", result.getError());
+    }
+
+    @Test
+    void getAllUserCompanies_nullToken_returnsFail() {
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(null);
+
+        assertFalse(result.isSuccess());
+        assertEquals("JWT String argument cannot be null or empty.", result.getError());
+    }
+
+    @Test
+    void getAllUserCompanies_userNotFound_returnsFail() {
+        Result<List<ProductionCompanyDTO>> result = userService.getAllUserCompanies(nonExistentUserToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("User with ID "+NON_EXISTENT_USER_EMAIL+" not found.", result.getError());
+    }
+
+    @Test
+    void getAllUserCompanies_unexpcetedError_returnsFail() {
+        IAuthenticationService faultyAuthService = mock(IAuthenticationService.class);
+        when(faultyAuthService.validateToken(anyString())).thenThrow(new RuntimeException("Database Exploded!!!!!"));
+        UserService faultyUserService = new UserService(faultyAuthService, null, null, null, null, null, null);
+
+        Result<List<ProductionCompanyDTO>> result = faultyUserService.getAllUserCompanies(sessionToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("An unexpected error occurred: Database Exploded!!!!!", result.getError());
     }
 }

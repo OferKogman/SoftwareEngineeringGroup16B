@@ -62,7 +62,7 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
         )}
         {loggedIn && (
           <>
-            <button className="login-button" onClick={() => navigate("/users")}>
+            <button className="login-button" onClick={() => navigate("/users/management")}>
               My Profile
             </button>
             <button className="login-button" onClick={() => handleLogout()}>
