@@ -397,12 +397,6 @@ public class EventService {
 
 	public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
 		try {
-			// TODO: to delete after testing
-			if (!searchParams.isEmpty()) {
-			List<EventDTO> test = eventRepository.getAll().stream().map(EventDTO::new).toList();
-			return Result.makeOk(test);
-			}
-			// end of TODO
 			
 			logger.info("EventService.searchEvents: Attempting to search events with parameters: " + searchParams);
 			List<String> locationNames = getParam(searchParams, "location", String.class);
