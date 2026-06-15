@@ -1,12 +1,12 @@
 import { useState } from "react";
-
+//String currency, , , ,
 type PaymentFormData = {
-  firstName: string;
+  firstName: string; //String holder
   lastName: string;
-  idNumber: string;
-  cardNumber: string;
-  expiryDate: string;
-  cvv: string;
+  idNumber: string; // String id
+  cardNumber: string; //String cardNumber,
+  expiryDate: string; // int month, int year
+  cvv: string; //String cvv
 };
 
 type PaymentPayload = {

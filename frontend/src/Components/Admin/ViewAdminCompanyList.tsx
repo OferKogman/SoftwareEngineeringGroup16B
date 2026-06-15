@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSession } from "../../App";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");

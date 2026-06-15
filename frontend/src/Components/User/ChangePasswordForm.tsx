@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
 
 export type ChangePasswordData = {
   oldPassword: string;

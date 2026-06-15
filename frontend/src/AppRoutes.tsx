@@ -21,6 +21,7 @@ import CreateOrder from "./Components/Order/CreateOrder";
 import PaymentPage from "./Components/Order/PaymentPage";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
+import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany"
 
 export default function AppRoutes() {
   return (

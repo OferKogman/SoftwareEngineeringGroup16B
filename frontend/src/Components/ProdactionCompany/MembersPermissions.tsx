@@ -6,8 +6,6 @@ import ChangeManagerPermissions, {
 } from "./ChangeManagerPermissions";
 import "./CSS/MembersPermissions.css";
 
-const API_BASE = "http://localhost:8080";
-
 type AssignMemberData =
   | { role: "OWNER"; callerID: string; targetID: string }
   | {
@@ -23,10 +21,6 @@ export default function MembersPermissions() {
   const [removeTargetId, setRemoveTargetId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-
-  function getAuthToken() {
-    return localStorage.getItem("authToken") || "";
-  }
 
   async function handleAssignMember(data: AssignMemberData) {
     setMessage("");
@@ -45,7 +39,7 @@ export default function MembersPermissions() {
     setMessage(
       `Mock success: ${data.role === "OWNER" ? "owner" : "manager"} invite sent to ${
         data.targetID
-      }.`
+      }.`,
     );
 
     /*
@@ -88,7 +82,7 @@ export default function MembersPermissions() {
   async function handleChangePermissions(
     targetID: string,
     _companyID: number,
-    newPermissions: Set<ManagerPermissions>
+    newPermissions: Set<ManagerPermissions>,
   ) {
     setMessage("");
     setError("");
@@ -191,9 +185,7 @@ export default function MembersPermissions() {
         </div>
 
         <div className="members-card">
-          <ChangeManagerPermissions
-            onSubmit={handleChangePermissions}
-          />
+          <ChangeManagerPermissions onSubmit={handleChangePermissions} />
         </div>
 
         <form className="members-card" onSubmit={handleRemoveMember}>
@@ -205,9 +197,7 @@ export default function MembersPermissions() {
               type="text"
               required
               value={removeTargetId}
-              onChange={(event) =>
-                setRemoveTargetId(event.target.value)
-              }
+              onChange={(event) => setRemoveTargetId(event.target.value)}
               placeholder="Target ID"
             />
           </label>

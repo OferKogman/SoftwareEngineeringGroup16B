@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSession } from "../../App";
 import type { UserDTO } from "../../DTOs/UserDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 
 type UsersListProps = {
   users?: UserDTO[] | null;
@@ -42,7 +42,7 @@ export default function ViewUsers({ users }: UsersListProps) {
     }
 
     void loadUsers();
-  }, [users]);
+  });
 
   if (userDTOList.length === 0) {
     return <div>No users found</div>;

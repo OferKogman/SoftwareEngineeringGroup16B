@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
 import PaymentForm from "./PaymentForm";
 import "./CSS/PaymentPage.css";
 
@@ -84,7 +84,9 @@ export default function PaymentPage() {
     if (!sessionToken) {
       throw new Error("Missing session token.");
     }
-
+    const [monthText, yearText] = paymentData.expiryDate.split("/");
+    const month = Number(monthText);
+    const year = 2000 + Number(yearText);
     const response = await fetch(
     `${API_BASE}/api/order/completeActiveOrder`,
     {
@@ -95,14 +97,15 @@ export default function PaymentPage() {
         Accept: "application/json",
         },
         body: JSON.stringify({
-            userId: paymentData.idNumber,
             orderID: orderId,
-            amount: paymentData.amount,
             paymentInfo: {
-                cardNumber: paymentData.cardNumber,
-                cardHolderName: `${paymentData.firstName} ${paymentData.lastName}`,
-                expirationDate: paymentData.expiryDate,
-                cvv: paymentData.cvv,
+              currency: "ILS",
+              cardNumber: paymentData.cardNumber,
+              month: month,
+              year: year,
+              holder: `${paymentData.firstName} ${paymentData.lastName}`,
+              cvv: paymentData.cvv,
+              id: paymentData.idNumber,
             },
             }),
     }

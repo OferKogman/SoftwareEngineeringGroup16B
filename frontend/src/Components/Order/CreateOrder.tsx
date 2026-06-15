@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import "./CSS/CreateOrder.css";
 import PaymentForm from "./PaymentForm";
