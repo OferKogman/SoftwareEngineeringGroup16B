@@ -46,4 +46,9 @@ public class OrderController extends BaseController{
     public ResponseEntity<?> cancelOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId){
         return executeWithReturnData(() -> orderService.cancelOrder(orderId, sessionToken));
     }
+
+    @PutMapping("/getOrderPrice/{orderId}")
+    public ResponseEntity<?> getOrderPrice(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId){
+        return executeWithReturnData(() -> orderService.getOrderPrice(orderId, sessionToken));
+    }
 }
