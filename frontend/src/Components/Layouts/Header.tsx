@@ -1,5 +1,6 @@
 import { BiSearchAlt } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import SystemLogo from "../../Assets/SystemLogo.png";
 import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
 import { useSession } from "../../GlobalContext/SessionContext";
@@ -12,19 +13,19 @@ type ThemeToggleProps = {
 };
 
 export default function Header({ theme, setTheme }: ThemeToggleProps) {
-  const { sessionToken, setSessionToken } = useSession();
+  const { setSessionToken } = useSession();
   const { loggedIn, setLoggedIn } = useLoggedIn();
   const navigate = useNavigate();
+  const apiFetch = useApiFetch();
 
   async function handleLogout() {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         "http://localhost:8080/api/user/login/logout",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: sessionToken,
           },
         },
       );

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import type { EventDTO } from "../../DTOs/EventDTO";
+import { useApiFetch } from "../../apiFetch";
 
 type CompanyEventListProps = {
   onEditEvent: (companyID: number, eventID: number) => void | Promise<void>;
@@ -15,6 +16,8 @@ export default function ViewCompanyEvents({
   const [error, setError] = useState<string>("");
   const [eventDTOList, setEventDTOList] = useState<EventDTO[] | null>(null);
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     if (!companyID) {
       return;
@@ -22,8 +25,11 @@ export default function ViewCompanyEvents({
 
     async function loadEvents() {
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `http://localhost:8080/production-companies/${companyID}/events`,
+          {
+            method: "GET",
+          },
         );
 
         if (!response.ok) {
@@ -38,7 +44,7 @@ export default function ViewCompanyEvents({
     }
 
     void loadEvents();
-  }, [companyID]);
+  }, [companyID, apiFetch]);
 
   if (!companyID) {
     return <div>Missing company id</div>;

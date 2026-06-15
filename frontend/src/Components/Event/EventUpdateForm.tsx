@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import "./CSS/EventUpdateForm.css";
 
 const API_BASE = "http://localhost:8080";
 
 export type EventUpdateDetails = {
-  venueID: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  artist: string;
-  category: string;
+  venueID: string | null;
+  name: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  artist: string | null;
+  category: string | null;
 };
 
 const initialFormData: EventUpdateDetails = {
@@ -33,6 +34,8 @@ export default function EventUpdateForm() {
 
   const [isToggling, setIsToggling] = useState(false);
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     if (!eventID) {
       return;
@@ -40,38 +43,19 @@ export default function EventUpdateForm() {
 
     async function loadEvent() {
       try {
-        //const response = await fetch(`/api/events/${id}`);
-
-        //if (!response.ok) {
-        //  throw new Error("Failed to load event.");
-        //}
-
-        //const event: EventDTO = await response.json();
-
-        const event: EventDTO = {
-          eventID: 0,
-          eventStatus: true,
-          eventVenueID: "Live Park",
-          eventName: "Last Tour Ever",
-          eventStartTime: "2026-06-22T14:30",
-          eventEndTime: "2026-06-22T18:30",
-          eventArtist: "Queen",
-          eventCategory: "Rock",
-          eventProductionCompanyID: 0,
-          eventDiscountPolicy: null,
-          eventPurchasePolicy: null,
-          eventPrice: 100000,
-          eventRating: 5,
-        };
-        setEventDTO(event);
-        setFormData({
-          venueID: "",
-          name: "",
-          startDate: "",
-          endDate: "",
-          artist: "",
-          category: "",
+        const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
+
+        if (!response.ok) {
+          throw new Error("Failed to load event.");
+        }
+
+        const event: EventDTO = await response.json();
+        setEventDTO(event);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }
@@ -98,16 +82,32 @@ export default function EventUpdateForm() {
     try {
       const updatedEvent: EventUpdateDetails = {
         ...formData,
-        venueID: formData.venueID.trim(),
-        name: formData.name.trim(),
-        startDate: formData.startDate.trim(),
-        endDate: formData.endDate.trim(),
-        artist: formData.artist.trim(),
-        category: formData.category.trim(),
+        venueID:
+          formData.venueID?.trim() === ""
+            ? null
+            : formData.venueID?.trim() || null,
+        name:
+          formData.name?.trim() === "" ? null : formData.name?.trim() || null,
+        startDate:
+          formData.startDate?.trim() === ""
+            ? null
+            : formData.startDate?.trim() || null,
+        endDate:
+          formData.endDate?.trim() === ""
+            ? null
+            : formData.endDate?.trim() || null,
+        artist:
+          formData.artist?.trim() === ""
+            ? null
+            : formData.artist?.trim() || null,
+        category:
+          formData.category?.trim() === ""
+            ? null
+            : formData.category?.trim() || null,
       };
 
-      const response = await fetch(`/api/events/${eventID}`, {
-        method: "PUT",
+      const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
@@ -137,7 +137,7 @@ export default function EventUpdateForm() {
     try {
       const endpoint = shouldActivate ? "activate" : "deactivate";
 
-      const response = await fetch(
+      const response = await apiFetch(
         `${API_BASE}/events/${eventID}/${endpoint}`,
         {
           method: "POST",
@@ -188,7 +188,7 @@ export default function EventUpdateForm() {
           }}
         />
 
-        <span className="event-active-slider" />
+        <strong className="event-active-slider" />
       </label>
 
       <label className="form-label">
@@ -201,7 +201,7 @@ export default function EventUpdateForm() {
               "Venue name cannot be empty or whitespace.",
             )
           }
-          value={formData.venueID}
+          value={formData.venueID || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("venueID", event.target.value);
@@ -220,7 +220,7 @@ export default function EventUpdateForm() {
               "Event name cannot be empty or whitespace.",
             )
           }
-          value={formData.name}
+          value={formData.name || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("name", event.target.value);
@@ -233,8 +233,8 @@ export default function EventUpdateForm() {
         <span>Start date</span>
         <input
           type="datetime-local"
-          required={formData.endDate.trim() !== ""}
-          value={formData.startDate}
+          required={formData.endDate?.trim() !== ""}
+          value={formData.startDate || ""}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
               "Please enter a valid start date and time.",
@@ -252,9 +252,9 @@ export default function EventUpdateForm() {
         <span>End date</span>
         <input
           type="datetime-local"
-          required={formData.startDate.trim() !== ""}
-          min={getMinimumEndDateTime(formData.startDate)}
-          value={formData.endDate}
+          required={formData.startDate?.trim() !== ""}
+          min={getMinimumEndDateTime(formData.startDate || "")}
+          value={formData.endDate || ""}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
               "Please enter a valid end date and time.\nMust be after now and start time.",
@@ -278,7 +278,7 @@ export default function EventUpdateForm() {
               "Artist name cannot be empty or whitespace.",
             )
           }
-          value={formData.artist}
+          value={formData.artist || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("artist", event.target.value);
@@ -297,7 +297,7 @@ export default function EventUpdateForm() {
               "Category cannot be empty or whitespace.",
             )
           }
-          value={formData.category}
+          value={formData.category || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("category", event.target.value);

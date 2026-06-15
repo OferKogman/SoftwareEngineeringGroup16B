@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useSession } from "../../GlobalContext/SessionContext";
+import { useApiFetch } from "../../apiFetch";
 
 export type EventCreationData = {
   venueID: string;
@@ -39,6 +40,7 @@ export default function EventCreationForm({
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken } = useSession();
+  const apiFetch = useApiFetch();
 
   function updateField<K extends keyof EventCreationData>(
     field: K,
@@ -69,11 +71,10 @@ export default function EventCreationForm({
     console.log("companyId from route:", companyId);
     console.log("eventData:", eventData);
 
-    const response = await fetch(`http://localhost:8080/events`, {
+    const response = await apiFetch(`http://localhost:8080/events`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: sessionToken,
       },
       body: JSON.stringify(eventData),
     });

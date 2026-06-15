@@ -3,6 +3,7 @@ import { useState } from "react";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import "./CSS/SearchEvents.css";
 import ViewEventsList from "./ViewEventsList";
+import { useApiFetch } from "../../apiFetch";
 
 type SearchEventsFilters = {
   names?: string[];
@@ -37,6 +38,8 @@ export default function SearchEvents() {
   const [events, setEvents] = useState<EventDTO[] | null>(null);
   const [error, setError] = useState("");
 
+  const apiFetch = useApiFetch();
+
   function updateField<K extends keyof SearchEventsFilters>(
     field: K,
     value: SearchEventsFilters[K],
@@ -67,7 +70,7 @@ export default function SearchEvents() {
 
       console.log(filteredData);
 
-      const response = await fetch("http://localhost:8080/events/search", {
+      const response = await apiFetch("http://localhost:8080/events/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

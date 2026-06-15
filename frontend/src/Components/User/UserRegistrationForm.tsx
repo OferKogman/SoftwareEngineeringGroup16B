@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type { UserDTO } from "../../DTOs/UserDTO";
 import "./CSS/UserRegistrationForm.css";
 
@@ -27,9 +28,11 @@ export default function UserRegistrationForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
 
+  const apiFetch = useApiFetch();
+
   async function onUserRegistration({ email, password }: UserRegistrationData) {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `http://localhost:8080/api/user/registerUser`,
         {
           method: "POST",

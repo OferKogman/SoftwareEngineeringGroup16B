@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type {
   ChosenSeatingSegData,
   EntranceData,
@@ -101,6 +102,8 @@ export default function VenueEditor() {
   const [pendingRectangle, setPendingRectangle] =
     useState<PendingRectangleData | null>(null);
 
+  const apiFetch = useApiFetch();
+
   async function onSubmitVenue() {
     setError("");
     setSuccess("");
@@ -113,6 +116,11 @@ export default function VenueEditor() {
     const trimmedName = venueName.trim();
     const trimmedLocation = venueLocation.trim();
 
+    if (!sessionToken) {
+      setError("Missing session token.");
+      return;
+    }
+
     if (trimmedName === "") {
       setError("Venue name cannot be empty.");
       return;
@@ -124,13 +132,12 @@ export default function VenueEditor() {
     }
 
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         "http://localhost:8080/venues/configureNewLayoutAndInventory",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: sessionToken,
           },
           body: JSON.stringify({
             companyID: Number(companyId),

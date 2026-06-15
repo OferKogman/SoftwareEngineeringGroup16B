@@ -3,6 +3,7 @@ import { NavLink, useOutlet, useParams } from "react-router-dom";
 import "../../CSS/Management.css";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
+import { useApiFetch } from "../../apiFetch";
 
 const API_BASE = "http://localhost:8080";
 
@@ -56,6 +57,8 @@ export default function EventManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -75,12 +78,8 @@ export default function EventManagement() {
       }
 
       try {
-        const response = await fetch(`${API_BASE}/events/${eventID}`, {
+        const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: sessionToken,
-          },
         });
 
         const data = await readResponseBody(response);
@@ -114,7 +113,7 @@ export default function EventManagement() {
     return () => {
       cancelled = true;
     };
-  }, [eventID, sessionToken]);
+  }, [eventID, sessionToken, apiFetch]);
 
   return (
     <div className="management-page">

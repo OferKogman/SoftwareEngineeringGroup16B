@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch.tsx";
 import type { OrderDTO } from "../../DTOs/OrderDTO.tsx";
 import "./CSS/ViewOrder.css";
 
@@ -22,24 +23,31 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
     order ?? locationState?.order ?? null,
   );
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
-    if (order) {
-      setOrderDTO(order);
-      return;
-    }
-
-    if (locationState?.order) {
-      setOrderDTO(locationState.order);
-      return;
-    }
-
     if (!orderID) {
       return;
     }
 
     async function loadOrder() {
+      if (order) {
+        setOrderDTO(order);
+        return;
+      }
+
+      if (locationState?.order) {
+        setOrderDTO(locationState.order);
+        return;
+      }
+
       try {
-        const response = await fetch(`http://localhost:8080/orders/${orderID}`);
+        const response = await apiFetch(
+          `http://localhost:8080/orders/${orderID}`,
+          {
+            method: "GET",
+          },
+        );
 
         if (!response.ok) {
           throw new Error(await response.text());
@@ -64,7 +72,7 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
     }
 
     void loadOrder();
-  }, [orderID, order, locationState?.order]);
+  }, [orderID, order, locationState?.order, apiFetch]);
 
   if (!orderDTO) {
     return <div className="loading">Loading order...</div>;

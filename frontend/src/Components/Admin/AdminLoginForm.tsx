@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSession } from "../../GlobalContext/SessionContext";
 import "../User/CSS/UserLoginForm.css";
+import { useApiFetch } from "../../apiFetch";
 
 export type AdminLoginData = {
   username: string;
@@ -24,17 +25,17 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
+  const apiFetch = useApiFetch();
 
   const navigate = useNavigate();
 
   async function onAdminLogin({ username, email, password }: AdminLoginData) {
     try {
       console.log("token:", sessionToken);
-      const response = await fetch(`http://localhost:8080/api/admin/login`, {
+      const response = await apiFetch(`http://localhost:8080/api/admin/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: sessionToken,
         },
         body: JSON.stringify({ username, password, email }),
       });
