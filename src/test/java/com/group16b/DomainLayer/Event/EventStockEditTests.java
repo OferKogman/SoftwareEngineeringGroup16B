@@ -22,6 +22,7 @@ import com.group16b.ApplicationLayer.EventService;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.EventSegmentConfigUpdateRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
@@ -109,22 +110,24 @@ public class EventStockEditTests {
         when(mockVenue.getSegmentByID("SEG_A")).thenReturn(mockSegmentA);
         when(mockVenue.getSegmentByID("SEG_B")).thenReturn(mockSegmentB);
 
-        Map<String, Integer> segmentsAndNewStock = new HashMap<>();
-        segmentsAndNewStock.put("SEG_A", 100);
-        segmentsAndNewStock.put("SEG_B", 50);
+        Map<String, EventSegmentConfigUpdateRecord> segmentsAndNewStock = new HashMap<>();
+        segmentsAndNewStock.put("SEG_A", new EventSegmentConfigUpdateRecord(100,10.0));
+        segmentsAndNewStock.put("SEG_B", new EventSegmentConfigUpdateRecord(50,6.9));
 
         Result<String> result = eventService.editStockInSegmentsForEvent(segmentsAndNewStock, EVENT_ID, VALID_TOKEN);
 
         assertTrue(result.isSuccess(), "Stock edit should succeed. Error: " + result.getError());
         verify(mockSegmentA, times(1)).setStockForEvent(EVENT_ID, 100);
         verify(mockSegmentB, times(1)).setStockForEvent(EVENT_ID, 50);
+        verify(mockSegmentA, times(1)).setPrice(EVENT_ID, 10.0);
+        verify(mockSegmentB, times(1)).setPrice(EVENT_ID, 6.9);
     }
 
     @Test
     void editStockInSegmentsForEvent_InvalidToken_Fails() {
         when(mockAuthService.validateToken(VALID_TOKEN)).thenReturn(false);
 
-        Map<String, Integer> stockMap = new HashMap<>();
+        Map<String, EventSegmentConfigUpdateRecord> stockMap = new HashMap<>();
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
 
         assertFalse(result.isSuccess());
@@ -135,7 +138,7 @@ public class EventStockEditTests {
     void editStockInSegmentsForEvent_NotUserToken_Fails() {
         when(mockAuthService.isUserToken(VALID_TOKEN)).thenReturn(false);
 
-        Map<String, Integer> stockMap = new HashMap<>();
+        Map<String, EventSegmentConfigUpdateRecord> stockMap = new HashMap<>();
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
 
         assertFalse(result.isSuccess());
@@ -156,7 +159,7 @@ public class EventStockEditTests {
         doThrow(new IllegalArgumentException("Unauthorized action")).when(mockCompany).validateUserPermissions(USER_ID,
                 RoleType.OWNER);
 
-        Map<String, Integer> stockMap = new HashMap<>();
+        Map<String, EventSegmentConfigUpdateRecord> stockMap = new HashMap<>();
         Result<String> result = eventService.editStockInSegmentsForEvent(stockMap, EVENT_ID, VALID_TOKEN);
 
         assertFalse(result.isSuccess());

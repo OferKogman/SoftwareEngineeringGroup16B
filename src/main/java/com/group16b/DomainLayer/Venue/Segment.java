@@ -53,7 +53,6 @@ abstract public class Segment {
 	public String getSegmentID() {
 		return segmentID;
 	}
-
 	
 	public double getPrice(int eventID)
 	{
