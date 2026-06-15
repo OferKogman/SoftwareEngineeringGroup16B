@@ -31,9 +31,7 @@ type FormErrors = {
 
 type PaymentFormProps = {
   amount: number;
-  onPaymentSubmit: (
-    paymentData: PaymentPayload
-  ) => Promise<void> | void;
+  onPaymentSubmit: (paymentData: PaymentPayload) => Promise<void> | void;
 };
 
 export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProps) {
@@ -106,7 +104,7 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
 
     return newErrors;
   }
-
+  
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {

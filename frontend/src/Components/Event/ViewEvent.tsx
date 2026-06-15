@@ -54,7 +54,7 @@ export default function ViewEvent() {
         const company: ProductionCompanyDTO = await companyResponse.json();
         setCompanyName(company.name);
 
-        console.log("Loaded event from API:", event);
+        
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }

@@ -22,6 +22,25 @@ type PaymentPayload = {
   amount: number;
 };
 
+  async function getPrice(orderId: string, sessionToken: string) {
+    try {
+          const response = await fetch(`${API_BASE}/api/order/getOrderPrice/${orderId}`, {
+              method: "PUT",
+              headers: {
+              Authorization: sessionToken,
+              Accept: "application/json",
+              },
+          });
+          const data = await response.json();
+          console.log("getOrderPrice response:", data);
+          return data.value;
+      } catch (err) {
+          console.error("Failed to fetch order price:", err);
+          return 0;
+      }
+  }
+
+
 export default function PaymentPage() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -29,10 +48,36 @@ export default function PaymentPage() {
 
   const state = location.state as PaymentLocationState | null;
   const orderId = state?.orderId;
-  const amount = state?.amount ?? 0;
+
+  const [amount, setAmount] = useState<number>(0);
+  const [isLoadingPrice, setIsLoadingPrice] = useState<boolean>(true);
 
   const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function loadPrice() {
+      if (!orderId || !sessionToken) {
+        setIsLoadingPrice(false);
+        return;
+      }
+
+      try {
+        setError("");
+        setIsLoadingPrice(true);
+
+        const price = await getPrice(orderId, sessionToken);
+
+        setAmount(price);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load order price.");
+      } finally {
+        setIsLoadingPrice(false);
+      }
+    }
+
+    void loadPrice();
+  }, [orderId, sessionToken]);
 
   useEffect(() => {
     const timerID = window.setInterval(() => {
@@ -99,7 +144,6 @@ export default function PaymentPage() {
         body: JSON.stringify({
             orderID: orderId,
             paymentInfo: {
-              currency: "ILS",
               cardNumber: paymentData.cardNumber,
               month: month,
               year: year,
@@ -128,6 +172,13 @@ export default function PaymentPage() {
       </div>
     );
   }
+  if (isLoadingPrice) {
+  return (
+    <div className="payment-page">
+      <p>Loading payment amount...</p>
+    </div>
+  );
+}
 
   return (
     <div className="payment-page">
