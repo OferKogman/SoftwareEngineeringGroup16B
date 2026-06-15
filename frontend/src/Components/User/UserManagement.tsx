@@ -1,8 +1,27 @@
 import { NavLink, useOutlet } from "react-router-dom";
 import "../../CSS/Management.css";
+import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
 
 export default function UserManagement() {
   const outlet = useOutlet();
+  const isLoggedIn = useLoggedIn();
+
+  if (!isLoggedIn.loggedIn) {
+    return (
+      <div className="management-page">
+        <div className="management-header">
+          <h1>User Management</h1>
+        </div>
+        <div className="management-body">
+          <div className="management-content">
+            <h2>Access Denied</h2>
+            <p>You must be logged in to access this page.</p>
+          </div>
+        </div>
+        s
+      </div>
+    );
+  }
 
   return (
     <div className="management-page">
