@@ -11,8 +11,10 @@ import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
@@ -48,6 +50,9 @@ public class OrderService {
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
 
+	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
+	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
+
     public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
@@ -59,8 +64,9 @@ public class OrderService {
 		this.ticketGateway = ticketGateway;
 	}
 
-    public Result<List<TicketDTO>> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
-		boolean paymentSucceeded = false;
+    public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+		Integer transactionId = null;
+		String ticket=null;
 		try {
 			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
 
@@ -77,99 +83,79 @@ public class OrderService {
 			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, subjectID);
 			order.verifyBelongsToSubject(subjectID);
 
-
 			//3. price calculation
 			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, subjectID);
 			double price = order.getTotalOrderprice();
 
-
 			// 4.Payment processing
 			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
-			paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
-			paymentSucceeded = true;
-
+			transactionId = paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
 			
 			// 5. ticket generation
-			logger.info("OrderService.CompleteActiveOrder: generating tickets for order {} for user {}", orderID, subjectID);
-			List<TicketDTO> ticketDTOs = generateTicketsForOrder(order, subjectID, price);
+			logger.info("OrderService.CompleteActiveOrder: generating ticket for order {} for user {}", orderID, subjectID);
+			ticket = generateTicketForOrder(order, subjectID);
 			
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
-			completeOrderWithOptimisticRetry(orderID, subjectID);
+			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
 			
 			// 7. return tickets
-			return Result.makeOk(ticketDTOs);
+			return Result.makeOk(ticket);
 
 		} catch (OrderExpiredException e) {
-			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}", orderID, e.getMessage());
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}.", orderID, e.getMessage());
+			safeExternalRollback(transactionId,ticket);
 			_cancelOrder(orderID);
-			return Result.makeFail("Order expired: " + e.getMessage());
+			return Result.makeFail("Order expired: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
 
 		} catch (PaymentFailedException e) {
-			logger.error("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Payment failed: " + e.getMessage());
 
 		} catch (TicketGenerationException e) {
 			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			safeExternalRollback(transactionId,ticket);
 
-			return Result.makeFail("Ticket generation failed: " + e.getMessage());
+			return Result.makeFail("Ticket generation failed: " + e.getMessage()+". "+REFUND_MSG);
 
 		} catch (AuthException e) {
-			logger.error("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 
 		} catch (IllegalArgumentException e) {
-			logger.error("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Invalid argument: " + e.getMessage());
 
 		} catch (IllegalStateException e) {
-			logger.error("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
+			logger.warn("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Illegal state: " + e.getMessage());
 
 		} catch (OptimisticLockingFailureException e) {
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
-			return Result.makeFail("Could not complete order due to concurrent update. Please try again.");
-
+			safeExternalRollback(transactionId,ticket);
+			return Result.makeFail("Could not complete order due to concurrent update. Please try again. "+POSSIBLE_REFUND_MSG);
+		} catch(PaymentStatusUnknownException e){
+			logger.error("OrderService.CompleteActiveOrder: payment status unknown for order {}. Requires manual reconciliation.",orderID,e);
+			return Result.makeFail("Payment could not be verified. "+POSSIBLE_REFUND_MSG);
+		}catch (IssueTicketStatusUnknownException e){
+			logger.error("OrderService.CompleteActiveOrder: Issue Ticket status unknown for order {}. Requires manual reconciliation.",orderID,e);
+			return Result.makeFail("Ticket could not be verified. "+POSSIBLE_REFUND_MSG);
 		}catch (Exception e) {
 			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
-			if (paymentSucceeded) {
-				paymentService.cancelPayment();}
+			safeExternalRollback(transactionId,ticket);
 
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
 		}
 	}
-	private List<TicketDTO> generateTicketsForOrder(Order order, String subjectID, double price) {
-        List<TicketDTO> ticketDTOs = new ArrayList<>();
+
+	private String generateTicketForOrder(Order order, String subjectID) {
 		if (order.getOrderType() == OrderType.SEAT) {
-			List<String> seats = order.getSeats();
-
-			for (int i = 0; i < order.getNumOfTickets(); i++) {
-					String seatId = null;
-					if (seats != null && i < seats.size()) {
-							seatId = seats.get(i);
-					}
-					TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), subjectID, order.getSegmentId(), seatId, price);
-
-					ticketDTOs.add(ticketDTO);
-			}
-			return ticketDTOs;
+			return ticketGateway.generateSeatingTicket(order.getEventId(), subjectID, order.getSegmentId(), order.getSeats());
 		}else{
-			for (int i = 0; i < order.getNumOfTickets(); i++) {
-					TicketDTO ticketDTO = ticketGateway.generateTicket(order.getEventId(), subjectID, order.getSegmentId(), null, price);
-
-					ticketDTOs.add(ticketDTO);
-			}
-			return ticketDTOs;
+			return ticketGateway.generateGeneralAdmissionTicket(order.getEventId(), subjectID, order.getSegmentId(), order.getNumOfTickets());
 		}
 	}
 
-	private void completeOrderWithOptimisticRetry(String orderID, String subjectID) {
+	private void completeOrderWithOptimisticRetry(String orderID, String subjectID, int transactionId, String externalTicket) {
 		final int maxRetries = 3;
 
 		for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -179,6 +165,8 @@ public class OrderService {
 				freshOrder.validiteOrderIsActive();
 				freshOrder.verifyBelongsToSubject(subjectID);
 
+				freshOrder.setTransactionId(transactionId);
+				freshOrder.setExternalTicket(externalTicket);
 				freshOrder.CompleteOrder();
 				orderRepo.save(freshOrder);
 				return;
@@ -471,5 +459,36 @@ public class OrderService {
         String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
         return subjectID;
     }
+
+	//no need to care for the exception type, as it is a automatic refund, meaning that any issue here is critical and should betreated the same way
+	private void safeRefund(Integer transactionId) {
+		//payment didnt proceed
+		if (transactionId == null) 
+			return;
+
+		try {
+			paymentService.cancelPayment(transactionId);
+		} catch (Exception e) {
+			logger.error("Refund failed for transaction {}", transactionId, e);
+		}
+	}
+
+	private void safeTicketRevoke(String ticket)
+	{
+		if(ticket==null)
+			return;
+		try{
+			ticketGateway.revokeTicket(ticket);
+		}catch(Exception e)
+		{
+			logger.error("Ticket revoke failed for ticket {}",ticket,e);
+		}
+	}
+
+	private void safeExternalRollback(Integer transactionId, String ticket)
+	{
+		safeRefund(transactionId);
+		safeTicketRevoke(ticket);
+	}
 	
 }

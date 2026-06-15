@@ -250,17 +250,20 @@ public class PurchasePolicyServiceTests {
             successCount++;
         }
 
-        assertTrue(successCount == 2);
+        assertTrue(successCount == 1);
 
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         assertDoesNotThrow(() -> e.getLotteryPolicy());
+
+        Result<Boolean> errorResult = result1.get().isSuccess() ? result2.get() : result1.get();
+        assertEquals("Event already has a lottery policy.", errorResult.getError());
     }
 
     @Test
     public void enrollLotteryPolicy_Success() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", e1.getEventID());
         assertTrue(res.isSuccess());
@@ -272,7 +275,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailInvalidToken() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("invalid_token", e1.getEventID());
         assertFalse(res.isSuccess());
@@ -284,7 +287,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailNotUserToken() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("guest", e1.getEventID());
         assertFalse(res.isSuccess());
@@ -296,7 +299,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailUserNotFound() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         userRepository.delete("testuser");
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", e1.getEventID());
@@ -309,7 +312,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailEventNotFound() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", 999);
         assertFalse(res.isSuccess());
@@ -321,7 +324,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailInactiveEvent() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         e.deactivateEvent();
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", e1.getEventID());
@@ -334,7 +337,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailPastEnrollDate() throws InterruptedException {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusSeconds(1));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Thread.sleep(1000);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", e1.getEventID());
@@ -347,7 +350,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_FailEnrollTwice() {
         Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        e.addEventPurchasePolicy(lotteryPolicy);
+        e.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(e);
         Result<Boolean> res = purchasePolicyService.enrollInLottery("user1", e1.getEventID());
         assertTrue(res.isSuccess());
@@ -363,7 +366,7 @@ public class PurchasePolicyServiceTests {
     public void enrollLotteryPolicy_TwoThreadsBothSucceeds() throws InterruptedException {
         Event eve = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        eve.addEventPurchasePolicy(lotteryPolicy);
+        eve.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(eve);
 
         CountDownLatch readyLatch = new CountDownLatch(2);
@@ -429,7 +432,7 @@ public class PurchasePolicyServiceTests {
     public void createLotteryPolicy_TwoThreadsOneSucceeds() throws InterruptedException {
         Event eve = eventRepository.findByID(Integer.toString(e1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
-        eve.addEventPurchasePolicy(lotteryPolicy);
+        eve.setLotteryPolicy(lotteryPolicy);
         eventRepository.save(eve);
 
         CountDownLatch readyLatch = new CountDownLatch(2);
@@ -505,6 +508,38 @@ public class PurchasePolicyServiceTests {
     @Test
     public void createEventPurchasePolicy_FailEventNotFound() {
         Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", 999, new PurchasePolicyRecord("MIN_TICKETS", null, null, 1, null));
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_Success() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        company.addPurchasePolicy(oldPolicy);
+        productionCompanyRepository.save(company);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertTrue(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_FailInvalidToken() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("invalid_token", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_FailNoPermission() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        company.addPurchasePolicy(oldPolicy);
+        productionCompanyRepository.save(company);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user2", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        assertFalse(res.isSuccess());
+    }
+
+    @Test
+    public void editCompanyPurchasePolicy_FailCompanyNotFound() {
+        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", 999, oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
         assertFalse(res.isSuccess());
     }
 }

@@ -1,23 +1,142 @@
 package com.group16b.InfrastructureLayer;
+import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.group16b.ApplicationLayer.Exceptions.IllegalTicketInfoException;
+import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
+import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 @Service
 public class TicketGateway implements ITicketGateway{
 
+    private final WsepClient wsepClient;
+    private final ObjectMapper objectMapper=new ObjectMapper();
+
+    public TicketGateway(WsepClient wsepClient)
+    {
+        this.wsepClient=wsepClient;
+    }
+
     @Override
-    public TicketDTO generateTicket(int eventId, String subjectId, String segmentId, String seatId, double price) {
-        if (eventId == -5){ // Simulate a failure in ticket generation for testing purposes
-            throw new TicketGenerationException("Event ID cannot be null");
+    public String generateSeatingTicket(int eventId, String cusomerId, String zone, List<String> seats)
+    {
+        validateSeatingArgs(eventId, cusomerId, zone, seats);
+        MultiValueMap<String, String> requestBody=prepareTicketIssueBody(eventId, cusomerId, zone);
+        requestBody.add("is_seating","true");
+
+        List<Map<String,String>> seatPayload =seats.stream().map(this::mapSeat).toList();
+        try{
+            requestBody.add("seats", objectMapper.writeValueAsString(seatPayload));
         }
-        if(seatId == null) {
-            seatId = "FIELD";
+        catch(JsonProcessingException e){
+            throw new IllegalTicketInfoException("Error mapping seats to payload: ",e);
         }
-        return new TicketDTO(String.valueOf(eventId), subjectId, segmentId, seatId, price);
+
+        return issueTicket(requestBody);
+    }
+
+    @Override
+    public String generateGeneralAdmissionTicket(int eventId, String customerId, String zone, int quantity)
+    {
+        validateStandingArgs(eventId, customerId, zone, quantity);
+        MultiValueMap<String, String> requestBody=prepareTicketIssueBody(eventId, customerId, zone);
+        requestBody.add("quantity",String.valueOf(quantity));
+        return issueTicket(requestBody);
+        
+    }
+
+    private String issueTicket(MultiValueMap<String,String> requestBody)
+    {
+        String responseBody=wsepClient.sendRequest(requestBody,
+                e-> new IssueTicketStatusUnknownException("Failed to contact ticket provider when issuing ticket."),
+                ()-> new IssueTicketStatusUnknownException("ticket provider returned empty response when issuing ticket."));
+        responseBody=responseBody.trim();
+        if("-1".equals(responseBody))
+            throw new TicketGenerationException("ticket provider refused to issue the ticket");
+
+        return responseBody;
+    }
+
+    @Override
+    public void revokeTicket(String externalTicketID)
+    {
+        if(externalTicketID==null || externalTicketID.isBlank())
+            throw new IllegalArgumentException("Ticket cannot be blank.");
+        MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+        requestBody.add("action_type","cancel_ticket");
+        requestBody.add("ticket_id", externalTicketID);
+
+        String responseBody=wsepClient.sendRequest(requestBody, 
+                e -> new TicketRevokeUnknownStatusException("Failed to contact ticket provider when revoking ticket: "+externalTicketID, e), 
+                () -> new TicketRevokeUnknownStatusException("ticket provider returned empty response when revoking ticket: "+externalTicketID));
+
+        final int revokeResult=wsepClient.parseIntegerResponse(responseBody, body -> new TicketRevokeUnknownStatusException("Invalid response from ticket provider: " + body));
+        
+        wsepClient.validateSuccessFailureResult(revokeResult, 
+            ()->new RevokeTicketFailureException("revoke failed for ticket: " + externalTicketID),
+            ()-> new TicketRevokeUnknownStatusException("Provider returned invalid ticket revoke result: " + revokeResult + ", for ticket: " + externalTicketID));
+    }
+
+
+    //no idea what to validate about eventId so whoever knows the busniess rules add the validation later
+    private void validateSeatingArgs(int eventId, String customer, String zone, List<String> seats)
+    {
+        if(seats==null || seats.isEmpty())
+            throw new IllegalTicketInfoException("For a seating ticket, seats cannot be empty.");
+        if(seats.stream().anyMatch(s -> s == null || s.isBlank()))
+            throw new IllegalTicketInfoException("For a seating ticket, all seat identifiers must be non-blank.");
+        validateCommonTicketArgs(eventId, customer, zone);
+    }
+
+    private void validateStandingArgs(int eventId, String customer, String zone, int quantity)
+    {
+        if(quantity<=0)
+            throw new IllegalTicketInfoException("For a standing ticket, quantity must be positive.");
+        validateCommonTicketArgs(eventId, customer, zone);
+    }
+
+    private void validateCommonTicketArgs(int eventId, String customer, String zone)
+    {
+        if(eventId <= 0)
+            throw new IllegalTicketInfoException("Event id must be positive.");
+        if(customer==null || customer.isBlank())
+            throw new IllegalTicketInfoException("Customer id cannot be empty.");
+        if(zone==null || zone.isBlank())
+            throw new IllegalTicketInfoException("Zone cannot be empty.");
+    }
+
+    private MultiValueMap<String, String> prepareTicketIssueBody(int eventId, String customer, String zone)
+    {
+        MultiValueMap<String, String> requestBody = new LinkedMultiValueMap<>();
+        requestBody.add("action_type","issue_ticket");
+        requestBody.add("event_id", String.valueOf(eventId));
+        requestBody.add("customer_id", customer);
+        requestBody.add("zone", zone);
+
+        return requestBody;
+    }
+
+    private Map<String,String> mapSeat(String seatId)
+    {
+        String[] parts = seatId.split("-");
+
+        if(parts.length != 2)
+            throw new IllegalTicketInfoException("Invalid seat id format: " + seatId);
+
+        return Map.of(
+            "row", parts[0],
+            "seat", parts[1]
+        );
     }
 
 }

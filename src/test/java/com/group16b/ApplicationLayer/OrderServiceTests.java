@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
@@ -33,7 +34,9 @@ import static org.mockito.Mockito.when;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
@@ -87,6 +90,10 @@ public class OrderServiceTests {
         private ProductionCompany testPCompany;
         private Order seatOrder;
         private Order fieldOrder;
+
+        private final int TRANSACTION_ID=12345;
+        private final String SEATING_TICKET="amogus";
+        private final String FILED_TIKET="me and my monkey";
         
         @BeforeEach
         void setUp() {
@@ -107,6 +114,8 @@ public class OrderServiceTests {
         seedOrders();
 
         setUpAuthMocks();
+        setUpPaymentMocks();
+        setUpTicketMocks();
 
         orderService = new OrderService(
                 authService,
@@ -185,70 +194,86 @@ public class OrderServiceTests {
                 when(authService.extractSubjectFromToken("admin")).thenReturn(testAdmin.getEmail());
                 when(authService.isAdminToken("admin")).thenReturn(true);
         }
+        private void setUpPaymentMocks()
+        {
+                when(paymentGateway.processPayment(any(), anyInt())).thenReturn(TRANSACTION_ID);
+        }
+        private void setUpTicketMocks()
+        {
+                when(ticketGateway.generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt())).thenReturn(FILED_TIKET);
+                when(ticketGateway.generateSeatingTicket(anyInt(), anyString(), anyString(), any())).thenReturn(SEATING_TICKET);
+        }
 
         // _______________CompleteActiveOrder tests:_________________
 
         @Test
         void completeActiveOrder_validSeatOrder_completesOrderGeneratesTicketsAndKeepsReservation() {
-                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
+                Result<String> result = orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
                 assertTrue(result.isSuccess());
-                assertEquals(2, result.getValue().size());
+                assertEquals(SEATING_TICKET, result.getValue());
                 assertOrderIsCompleted(seatOrder);
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
-                verify(paymentGateway, never()).cancelPayment();
-                verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
         void completeActiveOrder_validFieldOrder_completesOrderGeneratesTickets() {
-                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(fieldOrder.getOrderId(), "user1", validPaymentInfo());
+                Result<String> result = orderService.CompleteActiveOrder(fieldOrder.getOrderId(), "user1", validPaymentInfo());
 
                 assertTrue(result.isSuccess());
-                assertEquals(3, result.getValue().size());
+                assertEquals(FILED_TIKET, result.getValue());
                 assertOrderIsCompleted(fieldOrder);
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(150.0));
-                verify(paymentGateway, never()).cancelPayment();
-                verify(ticketGateway, times(3)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
         void completeActiveOrder_invalidToken_failsAndDoesNotChangeOrder() {
-                Result<List<TicketDTO>> result =
-                        orderService.CompleteActiveOrder(seatOrder.getOrderId(), "invalid", validPaymentInfo());
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(), "invalid", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Authentication failed"));
                 assertOrderIsActive(seatOrder);
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
         void completeActiveOrder_adminToken_failsAndDoesNotChangeOrder() {
-                Result<List<TicketDTO>> result =
-                        orderService.CompleteActiveOrder(seatOrder.getOrderId(), "admin", validPaymentInfo());
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(), "admin", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Authentication failed"));
                 assertOrderIsActive(seatOrder);
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
         void completeActiveOrder_orderNotFound_fails() {
-                Result<List<TicketDTO>> result =
-                        orderService.CompleteActiveOrder("missing-order-id", "user1", validPaymentInfo());
+                Result<String> result =orderService.CompleteActiveOrder("missing-order-id", "user1", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Invalid argument"));
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
@@ -257,30 +282,33 @@ public class OrderServiceTests {
                         .when(paymentGateway)
                         .processPayment(any(), anyDouble());
 
-                Result<List<TicketDTO>> result =
+                Result<String> result =
                         orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Payment failed"));
                 assertOrderIsActive(seatOrder);
 
-                verify(paymentGateway, never()).cancelPayment();
-                verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
         void completeActiveOrder_ticketGenerationFails_paymentCancelledAndOrderStaysActive() {
-                when(ticketGateway.generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble()))
+                when(ticketGateway.generateSeatingTicket(anyInt(), anyString(), anyString(), any()))
                         .thenThrow(new TicketGenerationException("ticket system failed"));
 
-                Result<List<TicketDTO>> result =
+                Result<String> result =
                         orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Ticket generation failed"));
                 assertOrderIsActive(seatOrder);
 
-                verify(paymentGateway, times(1)).cancelPayment();
+                verify(paymentGateway, times(1)).cancelPayment(anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 //------
         @Test
@@ -295,7 +323,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
 
         orderRepo.save(otherUserOrder);
 
-        Result<List<TicketDTO>> result =
+        Result<String> result =
                 orderService.CompleteActiveOrder(otherUserOrder.getOrderId(), "user1", validPaymentInfo());
 
         assertFalse(result.isSuccess());
@@ -303,7 +331,9 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
         assertTrue(orderRepo.findByID(otherUserOrder.getOrderId()).isActive());
 
         verify(paymentGateway, never()).processPayment(any(), anyDouble());
-        verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+        verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+        verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+        verify(ticketGateway,never()).revokeTicket(anyString());
 }
 
         @Test
@@ -312,13 +342,60 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 order.CompleteOrder();
                 orderRepo.save(order);
 
-                Result<List<TicketDTO>> result = orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
+                Result<String> result = orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Illegal state"));
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(ticketGateway, never()).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
+        }
+
+        @Test
+        void completeActiveOrder_paymentStatusUnknown_failsWithoutRollback() {
+                doThrow(new PaymentStatusUnknownException("provider timeout")).when(paymentGateway).processPayment(any(), anyDouble());
+
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(),"user1",validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Payment could not be verified"));
+
+                assertOrderIsActive(seatOrder);
+
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway, never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
+                verify(ticketGateway, never()).revokeTicket(anyString());
+        }
+
+        @Test
+        void completeActiveOrder_ticketStatusUnknown_failsWithoutRollback() {
+                doThrow(new IssueTicketStatusUnknownException("provider timeout")).when(ticketGateway).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(),"user1",validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Ticket could not be verified"));
+
+                assertOrderIsActive(seatOrder);
+
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).revokeTicket(anyString());
+        }
+        @Test
+        void completeActiveOrder_ticketGenerationFails_refundFails_stillReturnsFailure() {
+                doThrow(new TicketGenerationException("ticket failed")).when(ticketGateway).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+
+                doThrow(new RuntimeException("refund failed")).when(paymentGateway).cancelPayment(anyInt());
+
+                Result<String> result =orderService.CompleteActiveOrder(seatOrder.getOrderId(),"user1",validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Ticket generation failed"));
+
+                verify(paymentGateway).cancelPayment(anyInt());
         }
 
         @Test
@@ -344,14 +421,17 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         ticketGateway
                 );
 
-                Result<List<TicketDTO>> result =
+                Result<String> result =
                         service.CompleteActiveOrder("expired-order", "user1", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Order expired"));
 
                 verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(paymentGateway, never()).cancelPayment();
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
                 verify(mockOrderRepo, times(1)).delete("expired-order");
         }
 
@@ -392,18 +472,20 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         ticketGateway
                 );
 
-                Result<List<TicketDTO>> result =
+                Result<String> result =
                         service.CompleteActiveOrder("lock-order", "user1", validPaymentInfo());
 
                 assertTrue(result.isSuccess());
-                assertEquals(2, result.getValue().size());
+                assertEquals(FILED_TIKET, result.getValue());
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
-                verify(paymentGateway, never()).cancelPayment();
-                verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
                 verify(mockOrderRepo, times(3)).findByID("lock-order");
                 verify(retryOrder1, times(1)).CompleteOrder();
                 verify(retryOrder2, times(1)).CompleteOrder();
+                verify(paymentGateway,never()).cancelPayment(anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
         @Test
@@ -451,82 +533,115 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         ticketGateway
                 );
 
-                Result<List<TicketDTO>> result =
+                Result<String> result =
                         service.CompleteActiveOrder("lock-fail-order", "user1", validPaymentInfo());
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("concurrent update"));
 
                 verify(paymentGateway, times(1)).processPayment(any(), eq(100.0));
-                verify(paymentGateway, times(1)).cancelPayment();
-                verify(ticketGateway, times(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
+                verify(paymentGateway, times(1)).cancelPayment(anyInt());
+                verify(ticketGateway, times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(), anyInt());
                 verify(mockOrderRepo, times(4)).findByID("lock-fail-order");
+                verify(ticketGateway,times(1)).revokeTicket(anyString());
         }
         
         @Test
-        void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() throws Exception {
-                CountDownLatch readyLatch = new CountDownLatch(2);
-                CountDownLatch startLatch = new CountDownLatch(1);
+void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() throws Exception {
+    CountDownLatch readyLatch = new CountDownLatch(2);
+    CountDownLatch startLatch = new CountDownLatch(1);
 
-                ExecutorService executor = Executors.newFixedThreadPool(2);
+    ExecutorService executor = Executors.newFixedThreadPool(2);
 
-                try {
-                        Future<Result<List<TicketDTO>>> firstAttempt = executor.submit(() -> {
-                                readyLatch.countDown();
-                                startLatch.await();
-                                return orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
-                        });
+    try {
+        Future<Result<String>> firstAttempt = executor.submit(() -> {
+            readyLatch.countDown();
+            startLatch.await();
+            return orderService.CompleteActiveOrder(
+                    seatOrder.getOrderId(),
+                    "user1",
+                    validPaymentInfo());
+        });
 
-                        Future<Result<List<TicketDTO>>> secondAttempt = executor.submit(() -> {
-                                readyLatch.countDown();
-                                startLatch.await();
-                                return orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
-                        });
+        Future<Result<String>> secondAttempt = executor.submit(() -> {
+            readyLatch.countDown();
+            startLatch.await();
+            return orderService.CompleteActiveOrder(
+                    seatOrder.getOrderId(),
+                    "user1",
+                    validPaymentInfo());
+        });
 
-                        readyLatch.await();
-                        startLatch.countDown();
+        readyLatch.await();
+        startLatch.countDown();
 
-                        Result<List<TicketDTO>> firstResult = firstAttempt.get();
-                        Result<List<TicketDTO>> secondResult = secondAttempt.get();
+        Result<String> firstResult = firstAttempt.get();
+        Result<String> secondResult = secondAttempt.get();
 
-                        int successCount = 0;
-                        int failureCount = 0;
-                        String failureMessage = "";
-                        if (firstResult.isSuccess()) {
-                                successCount++;
-                        } else {
-                                failureCount++;
-                                failureMessage = firstResult.getError();
-                        }
+        int successCount = 0;
+        int failureCount = 0;
+        String failureMessage = "";
 
-                        if (secondResult.isSuccess()) {
-                                successCount++;
-                        } else {
-                                failureCount++;
-                                failureMessage = secondResult.getError();
-                        }
-
-                        assertEquals(1, successCount);
-                        assertEquals(1, failureCount);
-                        assertOrderIsCompleted(seatOrder);
-                        
-                        verify(paymentGateway, atLeastOnce()).processPayment(any(), eq(100.0));
-                        verify(paymentGateway, atMost(2)).processPayment(any(), eq(100.0));
-                        verify(ticketGateway, atLeast(2)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
-                        verify(ticketGateway, atMost(4)).generateTicket(anyInt(), anyString(), anyString(), any(), anyDouble());
-                        
-                        if (failureMessage.contains("concurrent update") || failureMessage.contains("Order expired")) {
-                                verify(paymentGateway, times(1)).cancelPayment();
-                        } else {
-                                verify(paymentGateway, atMostOnce()).cancelPayment();
-                        }
-                } finally {
-                        executor.shutdownNow();
-                }
+        if (firstResult.isSuccess()) {
+            successCount++;
+            assertEquals(SEATING_TICKET, firstResult.getValue());
+        } else {
+            failureCount++;
+            failureMessage = firstResult.getError();
         }
 
+        if (secondResult.isSuccess()) {
+            successCount++;
+            assertEquals(SEATING_TICKET, secondResult.getValue());
+        } else {
+            failureCount++;
+            failureMessage = secondResult.getError();
+        }
+
+        assertEquals(1, successCount);
+        assertEquals(1, failureCount);
+
+        assertOrderIsCompleted(seatOrder);
+
+        verify(paymentGateway, atLeastOnce())
+                .processPayment(any(), eq(100.0));
+
+        verify(paymentGateway, atMost(2))
+                .processPayment(any(), eq(100.0));
+
+        verify(ticketGateway, atLeastOnce())
+                .generateSeatingTicket(
+                        anyInt(),
+                        anyString(),
+                        anyString(),
+                        anyList());
+
+        verify(ticketGateway, atMost(2))
+                .generateSeatingTicket(
+                        anyInt(),
+                        anyString(),
+                        anyString(),
+                        anyList());
+
+        verify(ticketGateway, never())
+                .generateGeneralAdmissionTicket(
+                        anyInt(),
+                        anyString(),
+                        anyString(),
+                        anyInt());
+
+        verify(paymentGateway, atMostOnce())
+                .cancelPayment(TRANSACTION_ID);
+
+        verify(ticketGateway, atMostOnce())
+                .revokeTicket(SEATING_TICKET);
+    } finally {
+        executor.shutdownNow();
+    }
+}
+
         private PaymentInfo validPaymentInfo() {
-                return new PaymentInfo("4111111111111111", "Ran Test", "12/30", "123");
+                return new PaymentInfo("shekel","12345678910",1,2026,"moshe rabenu","012","215000000");
         }
 
         private void assertOrderIsActive(Order order) {
@@ -536,6 +651,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
         private void assertOrderIsCompleted(Order order) {
                 assertTrue(orderRepo.findByID(order.getOrderId()).isCompleted());
         }
+
+        
 
 
         // _______________ changeSeatsToOrder tests:_________________

@@ -3,8 +3,23 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "field_segments")
 public class FieldSeg extends Segment {
 	private final int size;
+
+    @ElementCollection
+    @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segmentID"))
+    @MapKeyColumn(name = "stock_key")
+    @Column(name = "stock_value")
 	private Map<Integer, Integer> stock;
 
 	public FieldSeg(String segID, int size, GridRectangle area) {
@@ -13,6 +28,12 @@ public class FieldSeg extends Segment {
 		stock = new HashMap<Integer, Integer>();
 	}
 
+	public FieldSeg() {
+		// Default constructor for JPA
+		this.size = 0;
+		this.stock = new HashMap<Integer, Integer>();
+	}
+	
 	public FieldSeg(FieldSeg other) {
 		super(other.segmentID, other.area);
 		this.size = other.size;

@@ -4,7 +4,17 @@ import java.time.LocalDateTime;
 
 import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Table;
+import jakarta.persistence.Id;
+@Entity
+@Table (name = "event_schedules")
 public class EventSchedule {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer dbId;
     private final LocalDateTime startTime;
     private final LocalDateTime endTime;
 
@@ -18,6 +28,11 @@ public class EventSchedule {
         
         this.startTime = startTime;
         this.endTime = endTime;
+    }
+    public EventSchedule() {
+        // Default constructor for JPA
+        this.startTime = null;
+        this.endTime = null;
     }
 
     public EventSchedule(EventScheduleDTO eventScheduleDTO){

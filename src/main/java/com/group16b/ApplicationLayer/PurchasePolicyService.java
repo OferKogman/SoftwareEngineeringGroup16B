@@ -84,7 +84,7 @@ public class PurchasePolicyService {
 
                 logger.info("PurchasePolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}",
                         eventID);
-                e.addEventPurchasePolicy(lotteryPolicy);
+                e.setLotteryPolicy(lotteryPolicy);
 
                 logger.info("PurchasePolicyService.createLotteryPolicy: saving changes to repository");
                 try {
@@ -98,6 +98,9 @@ public class PurchasePolicyService {
             logger.info("PurchasePolicyService.createLotteryPolicy: Lottery policy added to event successfully");
             return Result.makeOk(true);
         } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.createLotteryPolicy: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalStateException e) {
             logger.error("PurchasePolicyService.createLotteryPolicy: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
@@ -220,6 +223,33 @@ public class PurchasePolicyService {
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("PurchasePolicyService.createEventPurchasePolicy: Unexpected error: {}", e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public Result<Boolean> editCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicy oldPolicy, PurchasePolicyRecord newRecord) {
+        try {
+            logger.info("PurchasePolicyService.editCompanyPurchasePolicy: Received request for company ID: {}", companyID);
+            if (!authenticationService.validateToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            if (!authenticationService.isUserToken(sessionToken))
+                return Result.makeFail("Authentication failed. Please log in again.");
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            userRepository.findByID(userID);
+
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
+            company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
+            company.removePurchasePolicy(oldPolicy);
+            company.addPurchasePolicy(buildPolicy(newRecord));
+            productionCompanyRepository.save(company);
+
+            logger.info("PurchasePolicyService.editCompanyPurchasePolicy: Policy updated for company {} successfully", companyID);
+            return Result.makeOk(true);
+        } catch (IllegalArgumentException e) {
+            logger.error("PurchasePolicyService.editCompanyPurchasePolicy: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("PurchasePolicyService.editCompanyPurchasePolicy: Unexpected error: {}", e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }

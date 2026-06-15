@@ -2,6 +2,8 @@ package com.group16b.DomainLayer.Venue;
 
 import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
 
+import jakarta.persistence.Embeddable;
+@Embeddable
 public class GridRectangle {
     private int startRow;
     private int startColumn;

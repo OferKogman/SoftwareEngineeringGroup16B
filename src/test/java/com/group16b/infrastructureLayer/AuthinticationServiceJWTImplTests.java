@@ -79,7 +79,7 @@ public class AuthinticationServiceJWTImplTests {
 		String userID = "42";
 		String token = authService.generateVisitor_SignedToken(userID);
 		// Tamper with the token by changing a character
-		String tamperedToken = token.substring(0, token.length() - 1) + "X";
+		String tamperedToken = token.substring(0, token.length() - 1);
 		assertEquals(false, authService.validateToken(tamperedToken));
 	}
 

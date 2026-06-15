@@ -47,6 +47,9 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 	}
 
 	public synchronized void save(SystemAdmin systemAdmin) {
+		if(!isValid(systemAdmin)) {
+			throw new IllegalArgumentException("System admin data is invalid.");
+		}
 		SystemAdmin existingAdmin = systemAdminsByUsername.get(systemAdmin.getUsername());
 		if (existingAdmin != null) { //if admin exists in the system, update it
 			long newVersion = systemAdmin.getVersion();
@@ -65,6 +68,21 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 			systemAdminsByUsername.put(systemAdmin.getUsername(), adminToStore);
 		}
 		
+	}
+	private boolean isValid(SystemAdmin systemAdmin) {
+		if(systemAdmin == null) {
+			return false;
+		}
+		if(systemAdmin.getUsername() == null || systemAdmin.getUsername().isEmpty()) {
+			return false;
+		}
+		if(systemAdmin.getEmail() == null || systemAdmin.getEmail().isEmpty()) {
+			return false;
+		}
+		if(systemAdmin.isPasswordSet() == false) {
+			return false;
+		}
+		return true;
 	}
 
 	
