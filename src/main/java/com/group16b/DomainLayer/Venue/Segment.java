@@ -14,6 +14,9 @@ abstract public class Segment {
 	public String getSegmentID() {
 		return segmentID;
 	}
+	public GridRectangle getArea() {
+        return area;
+    }
 
 	public abstract void reserve(ReservationRequest request);
 	public abstract void cancelReservation(ReservationRequest request);
@@ -22,4 +25,5 @@ abstract public class Segment {
 	public abstract double getPrice(int eventID);
 	public abstract void setStockForEvent(int eventID, int stock);
 	public abstract Map<?, ?> getMap();
+	
 }

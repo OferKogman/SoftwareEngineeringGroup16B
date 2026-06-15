@@ -115,8 +115,7 @@ public class ReserveService {
             orderRepo.save(order);
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
-            q.removePassed(subjectID);
-            queueImp.save(q);
+            queueRemovePassed(q, subjectID);
             return Result.makeOk("new OrderId: " + order.getOrderId());
         }
         catch (IllegalArgumentException e) {
@@ -210,8 +209,7 @@ public class ReserveService {
             
 
             
-            q.removePassed(subjectID);
-            queueImp.save(q);
+            queueRemovePassed(q, subjectID);
 
 
             return Result.makeOk("new OrderId: " + order.getOrderId());
@@ -318,9 +316,19 @@ public class ReserveService {
     }
 
     private void queueRemovePassed(VirtualQueue q, String subjectID) {
-        if (q != null && subjectID != null) {
+        if (q == null || subjectID == null) {
+            return;
+        }
+
+        try {
             q.removePassed(subjectID);
             queueImp.save(q);
+        } catch (IllegalStateException e) {
+            logger.warn(
+                "ReserveService.queueRemovePassed: Failed to remove user {} from passed queue: {}",
+                subjectID,
+                e.getMessage()
+            );
         }
     }
 

@@ -26,12 +26,7 @@ public class OrderController extends BaseController{
     public ResponseEntity<?> CompleteActiveOrder(@RequestHeader("Authorization") String sessionToken, @RequestBody CompleteActiveOrderRequestDTO requestDTO){
         return executeWithReturnData(() -> orderService.CompleteActiveOrder(requestDTO.getOrderID(), sessionToken, requestDTO.getPaymentInfo()));
     }
-
-   /* *@GetMapping("/getUserOrders")
-    public ResponseEntity<?> getUserOrders(@RequestHeader("Authorization") String sessionToken){
-        return executeWithReturnData(() -> orderService.getUserOrders(sessionToken));
-    }*/ // its in user service now
-
+    
     @PutMapping("/changeSeatsToOrder/{orderId}")
     public ResponseEntity<?> changeSeatsToOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId, @RequestBody List<String> newSeatIds){
         return executeWithReturnData(() -> orderService.changeSeatsToOrder(orderId, sessionToken, newSeatIds));
