@@ -119,6 +119,12 @@ export default function ViewEvent() {
 
       <h3>Purchase Policy</h3>
       <ViewPurchasePolicies purchasePolicy={eventDTO.eventPurchasePolicy} />
+      <button
+        className="order-tickets-button"
+        onClick={() => navigate(`/events/${eventDTO.eventID}/create-order`)}
+      >
+        Order Tickets
+      </button>
     </div>
   );
 }
