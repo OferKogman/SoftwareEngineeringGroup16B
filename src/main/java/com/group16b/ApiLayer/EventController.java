@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.group16b.ApplicationLayer.EventService;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.ApplicationLayer.Records.EventSegmentConfigUpdateRecord;
+import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 
 @RestController
@@ -50,6 +51,7 @@ public class EventController extends BaseController {
         return executeWithNoReturnData(() -> eventService.deactivateEvent(eventID, authToken));
     }
 
+    @PublicEndpoint
     @GetMapping("/{eventID}")
     public ResponseEntity<?> getEventDetails(
         @PathVariable("eventID") int eventID
@@ -75,6 +77,7 @@ public class EventController extends BaseController {
         return executeWithNoReturnData(() -> eventService.editStockInSegmentsForEvent(request, eventID, authToken));
     }
 
+    @PublicEndpoint
     @PostMapping("/search")
     public ResponseEntity<?> searchEvents(
         @RequestBody Map<String, List<Object>> request

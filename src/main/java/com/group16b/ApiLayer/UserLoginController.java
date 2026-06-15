@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.DTOs.LoginRequestDTO;
+import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 import com.group16b.ApplicationLayer.UserLoginService;
 
 @RestController
@@ -34,11 +35,13 @@ public class UserLoginController extends BaseController{
         return executeWithReturnData(() -> userLoginService.logOutMember(sessionToken));
     }
 
+    @PublicEndpoint
     @PostMapping("/guest")
     public ResponseEntity<?> loginGuest() {
         return executeWithReturnData(() -> userLoginService.ensureGuestSession(null));
     }
 
+    @PublicEndpoint
     @PostMapping("/guest/validate")
     public ResponseEntity<?> validateGuest(@RequestHeader(value = "Authorization", required = false) String sessionToken) {
         return executeWithReturnData(() -> userLoginService.ensureGuestSession(sessionToken));
