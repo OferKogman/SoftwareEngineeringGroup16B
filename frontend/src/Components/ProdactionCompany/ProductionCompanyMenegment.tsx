@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useParams } from "react-router-dom";
-import { useSession } from "../../App";
-import "../../CSS/Management.css";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
+import "./CSS/ProductionCompanyManagement.css";
 
 const API_BASE = "http://localhost:8080";
 

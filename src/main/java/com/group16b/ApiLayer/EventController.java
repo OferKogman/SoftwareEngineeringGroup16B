@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.EventService;
 import com.group16b.ApplicationLayer.Records.EventRecord;
+import com.group16b.ApplicationLayer.Records.EventSegmentConfigUpdateRecord;
 
 
 @RestController
@@ -69,7 +70,7 @@ public class EventController extends BaseController {
     public ResponseEntity<?> editEventStock(
         @RequestHeader("Authorization") String authToken,
         @PathVariable("eventID") int eventID,
-        @RequestBody Map<String, Integer> request
+        @RequestBody Map<String, EventSegmentConfigUpdateRecord> request
     ) {
         return executeWithNoReturnData(() -> eventService.editStockInSegmentsForEvent(request, eventID, authToken));
     }

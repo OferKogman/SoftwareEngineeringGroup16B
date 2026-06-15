@@ -1175,4 +1175,87 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
 
                 venueRepo.save(venue);
         }
+
+
+        // _______________ getOrderPrice tests:_________________
+
+        @Test
+        void getOrderPrice_validSeatOrder_returnsPriceAfterDiscountPolicy() {
+                Result<Double> result =
+                        orderService.getOrderPrice(seatOrder.getOrderId(), "user1");
+
+                assertTrue(result.isSuccess());
+                assertEquals(200.0, result.getValue());
+        }
+
+        @Test
+        void getOrderPrice_validFieldOrder_returnsPriceAfterDiscountPolicy() {
+                Result<Double> result =
+                        orderService.getOrderPrice(fieldOrder.getOrderId(), "user1");
+
+                assertTrue(result.isSuccess());
+                assertEquals(450.0, result.getValue());
+        }
+
+        @Test
+        void getOrderPrice_invalidToken_fails() {
+                Result<Double> result =
+                        orderService.getOrderPrice(seatOrder.getOrderId(), "invalid");
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Authentication failed"));
+        }
+
+        @Test
+        void getOrderPrice_adminToken_fails() {
+                Result<Double> result =
+                        orderService.getOrderPrice(seatOrder.getOrderId(), "admin");
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Authentication failed"));
+        }
+
+        @Test
+        void getOrderPrice_orderNotFound_fails() {
+                Result<Double> result =
+                        orderService.getOrderPrice("missing-order-id", "user1");
+
+                assertFalse(result.isSuccess());
+        }
+
+        @Test
+        void getOrderPrice_orderBelongsToDifferentUser_fails() {
+                Order otherUserOrder = new Order(
+                        "seatingSeg1",
+                        List.of("A-3", "A-4"),
+                        100.0,
+                        testEvent.getEventID(),
+                        "other@test.com"
+                );
+
+                orderRepo.save(otherUserOrder);
+
+                Result<Double> result =
+                        orderService.getOrderPrice(otherUserOrder.getOrderId(), "user1");
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("does not belong to subject"));
+        }
+
+        @Test
+        void getOrderPrice_nullOrderId_fails() {
+                Result<Double> result =
+                        orderService.getOrderPrice(null, "user1");
+
+                assertFalse(result.isSuccess());
+        }
+
+        @Test
+        void getOrderPrice_nullToken_fails() {
+                Result<Double> result =
+                        orderService.getOrderPrice(seatOrder.getOrderId(), null);
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Authentication failed"));
+        }
 }

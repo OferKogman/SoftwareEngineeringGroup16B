@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSession } from "../../App";
 import type { EventDTO } from "../../DTOs/EventDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/CompanyEvents.css";
 
 const API_BASE = "http://localhost:8080";
