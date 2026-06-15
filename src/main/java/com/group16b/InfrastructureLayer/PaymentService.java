@@ -1,5 +1,13 @@
 package com.group16b.InfrastructureLayer;
 
+
+import java.math.BigDecimal;
+import java.time.YearMonth;
+
+import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+
 import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
@@ -8,13 +16,6 @@ import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Records.PaymentInfo;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
-
-import java.math.BigDecimal;
-import java.time.YearMonth;
-
-import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 
 @Service
 public class PaymentService implements IPaymentGateway {

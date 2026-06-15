@@ -1181,8 +1181,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
 
         @Test
         void getOrderPrice_validSeatOrder_returnsPriceAfterDiscountPolicy() {
-                Result<Double> result =
-                        orderService.getOrderPrice(seatOrder.getOrderId(), "user1");
+                Result<Double> result = orderService.getOrderPrice(seatOrder.getOrderId(), "user1");
 
                 assertTrue(result.isSuccess());
                 assertEquals(200.0, result.getValue());
