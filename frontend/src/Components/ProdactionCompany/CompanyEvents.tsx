@@ -74,7 +74,7 @@ export default function CompanyEvents() {
   }
 
   function handleManageEvent(eventId: number) {
-    navigate(`/companies/${companyId}/events/${eventId}/manage`);
+    navigate(`/events/${eventId}/management`);
   }
 
   return (

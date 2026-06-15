@@ -7,12 +7,7 @@ export type EditPurchasePolicyData =
   | { policyType: "AGE_LIMIT"; age: number }
   | { policyType: "TICKET_LIMIT"; limitType: TicketLimitType; limit: number };
 
-type EditPurchasePolicyProps = {
-  onSubmit: (data: EditPurchasePolicyData) => void | Promise<void>;
-  onCancel?: () => void;
-};
-
-export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchasePolicyProps) {
+export default function EditPurchasePolicy() {
   const [policyType, setPolicyType] = useState<PolicyType>("AGE_LIMIT");
   const [age, setAge] = useState("");
   const [limit, setLimit] = useState("");
@@ -31,11 +26,17 @@ export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchaseP
           ? { policyType: "AGE_LIMIT", age: Number(age) }
           : { policyType: "TICKET_LIMIT", limitType, limit: Number(limit) };
 
+      async function onSubmit(data: EditPurchasePolicyData) {}
+
       await onSubmit(payload);
       setAge("");
       setLimit("");
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to update purchase policy.");
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update purchase policy.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -105,11 +106,6 @@ export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchaseP
       )}
 
       <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : "Update Policy"}
         </button>

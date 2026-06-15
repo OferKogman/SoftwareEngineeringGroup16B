@@ -1,0 +1,40 @@
+.event-update-form h2 {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  background: rgba(255, 0, 255, 0.1);
+}
+
+.form-label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+.form-label input {
+  width: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+  margin-left: 8px;
+  margin-top: 2px;
+}
+
+.status-toggle {
+  margin: 10px;
+  text-align: center;
+}
+
+.status-toggle button {
+  cursor: pointer;
+}
+
+.form-actions {
+  display: flex;
+  margin-top: 10px;
+  justify-content: center;
+}
+
+.form-actions button {
+  cursor: pointer;
+}
