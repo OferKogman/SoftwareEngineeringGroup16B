@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/ProductionCompanyManagement.css";
@@ -56,6 +57,8 @@ export default function ProductionCompanyManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -75,14 +78,10 @@ export default function ProductionCompanyManagement() {
       }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
           },
         );
 
@@ -119,7 +118,7 @@ export default function ProductionCompanyManagement() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken]);
+  }, [companyId, sessionToken, apiFetch]);
 
   return (
     <div className="management-page">

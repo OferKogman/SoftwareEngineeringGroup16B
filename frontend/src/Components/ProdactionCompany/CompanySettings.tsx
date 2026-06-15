@@ -2,7 +2,6 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import "./CSS/CompanySettings.css";
 
-
 export default function CompanySettings() {
   const { companyId } = useParams();
 

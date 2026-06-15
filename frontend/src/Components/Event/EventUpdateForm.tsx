@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import "./CSS/EventUpdateForm.css";
 
@@ -30,6 +31,8 @@ export default function EventUpdateForm() {
   const [formData, setFormData] = useState<EventUpdateDetails>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     if (!eventID) {
@@ -104,7 +107,7 @@ export default function EventUpdateForm() {
         category: formData.category.trim(),
       };
 
-      const response = await fetch(`/api/events/${eventID}`, {
+      const response = await apiFetch(`/api/events/${eventID}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -136,7 +139,7 @@ export default function EventUpdateForm() {
         ? `${API_BASE}/events/${eventID}/deactivate`
         : `${API_BASE}/events/${eventID}/activate`;
 
-      const response = await fetch(endpoint, {
+      const response = await apiFetch(endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

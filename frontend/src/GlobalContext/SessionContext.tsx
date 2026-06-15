@@ -1,8 +1,9 @@
 import { createContext, useContext } from "react";
 
-type SessionContextType = {
-  sessionToken: string;
-  setSessionToken: React.Dispatch<React.SetStateAction<string | null>>;
+export type SessionContextType = {
+  sessionToken: string | null;
+  setSessionToken: (token: string | null) => void;
+  requestNewSessionToken: () => Promise<string>;
 };
 
 export const SessionContext = createContext<SessionContextType | null>(null);
