@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import type { UserDTO } from "../../DTOs/UserDTO";
-import { useSession } from "../../GlobalContext/SessionContext";
+import { useApiFetch } from "../../apiFetch";
 
 type UsersListProps = {
   users?: UserDTO[] | null;
 };
 
 export default function ViewUsers({ users }: UsersListProps) {
-  const { sessionToken } = useSession();
   const [error, setError] = useState<string>("");
   const [userDTOList, setUserDTOList] = useState<UserDTO[]>([]);
+
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     async function loadUsers() {
@@ -19,14 +20,10 @@ export default function ViewUsers({ users }: UsersListProps) {
           return;
         }
 
-        const response = await fetch(
+        const response = await apiFetch(
           `http://localhost:8080/api/admin-management/users`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
           },
         );
         if (!response.ok) {
@@ -42,7 +39,7 @@ export default function ViewUsers({ users }: UsersListProps) {
     }
 
     void loadUsers();
-  });
+  }, [users, apiFetch]);
 
   if (userDTOList.length === 0) {
     return <div>No users found</div>;

@@ -1,25 +1,22 @@
 import { useEffect, useState } from "react";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
-import { useSession } from "../../GlobalContext/SessionContext";
+import { useApiFetch } from "../../apiFetch";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
   const [companyDTOList, setCompanyDTOList] = useState<
     ProductionCompanyDTO[] | null
   >(null);
-  const { sessionToken } = useSession();
+
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     async function loadCompanies() {
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `http://localhost:8080/api/admin-management/companies`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
           },
         );
 
@@ -38,7 +35,7 @@ export default function ViewAdminCompanyList() {
     }
 
     void loadCompanies();
-  }, [sessionToken]);
+  }, [apiFetch]);
 
   if (!companyDTOList) {
     return <div>No companies found</div>;

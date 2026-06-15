@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/CompanyEvents.css";
@@ -16,6 +17,8 @@ export default function CompanyEvents() {
   const [error, setError] = useState("");
   const [updatingEventId, setUpdatingEventId] = useState<number | null>(null);
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -28,14 +31,10 @@ export default function CompanyEvents() {
       setError("");
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/events`,
           {
             method: "GET",
-            headers: {
-              Authorization: sessionToken,
-              Accept: "application/json",
-            },
           },
         );
 
@@ -68,7 +67,7 @@ export default function CompanyEvents() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken]);
+  }, [companyId, sessionToken, apiFetch]);
 
   function handleCreateEvent() {
     navigate(`/companies/${companyId}/events/create`);
@@ -78,7 +77,10 @@ export default function CompanyEvents() {
     navigate(`/events/${eventId}/management`);
   }
 
-  async function handleEventActiveChange(eventId: number, shouldActivate: boolean) {
+  async function handleEventActiveChange(
+    eventId: number,
+    shouldActivate: boolean,
+  ) {
     if (!sessionToken) {
       setError("Missing session token.");
       return;
@@ -118,9 +120,7 @@ export default function CompanyEvents() {
       );
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update event status.",
+        err instanceof Error ? err.message : "Failed to update event status.",
       );
     } finally {
       setUpdatingEventId(null);

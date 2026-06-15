@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import ViewSaleHistory from "../ViewSaleHistory";
@@ -8,6 +9,8 @@ export default function UserPurchaseHistory() {
   const [error, setError] = useState<string>("");
   const { sessionToken } = useSession();
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     async function loadUserPurchaseHistory() {
       if (!sessionToken) {
@@ -16,15 +19,10 @@ export default function UserPurchaseHistory() {
         return;
       }
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           "http://localhost:8080/api/user/me/order-history",
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-              Accept: "application/json",
-            },
           },
         );
 
@@ -45,7 +43,7 @@ export default function UserPurchaseHistory() {
     }
 
     void loadUserPurchaseHistory();
-  }, [sessionToken]);
+  }, [sessionToken, apiFetch]);
 
   return (
     <div>
