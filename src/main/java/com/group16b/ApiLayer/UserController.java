@@ -45,7 +45,7 @@ public class UserController extends BaseController {
     public ResponseEntity<?> getUserCompanies(@RequestHeader("Authorization") String sessionToken) {
         return executeWithReturnData(() -> userService.getAllUserCompanies(sessionToken));
     }
-
+    
     @GetMapping("/role/admin")
     public ResponseEntity<?> isAdmin(@RequestHeader("Authorization") String sessionToken) {
         return executeWithReturnData(() -> userService.isRole(sessionToken,"Admin"));
