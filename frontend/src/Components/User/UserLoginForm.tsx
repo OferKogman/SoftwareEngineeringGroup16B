@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useLoggedIn, useSession } from "../../App";
+import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/UserLoginForm.css";
 
 export type UserLoginData = {
@@ -22,7 +23,7 @@ export default function UserLoginForm({ title }: UserLoginFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
-  const { loggedIn, setLoggedIn } = useLoggedIn();
+  const { setLoggedIn } = useLoggedIn();
 
   const navigate = useNavigate();
 

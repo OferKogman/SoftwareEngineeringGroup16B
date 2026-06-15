@@ -1,13 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import AdminRegisterForm from "./AdminRegisterForm";
 import ViewAdminCompanyList from "./ViewAdminCompanyList";
 import ViewAdminPurchaseHistory from "./ViewAdminPurchaseHistory";
 import ViewUsersList from "./ViewUsersList";
 
 export default function AdminManagement() {
-  const navigate = useNavigate();
-
   const [showAdminRegisterForm, setShowAdminRegisterForm] = useState(false);
   const [showUsersList, setShowUsersList] = useState(false);
   const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);

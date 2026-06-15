@@ -1,7 +1,8 @@
 import { BiSearchAlt } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
-import { useLoggedIn, useSession } from "../../App";
 import SystemLogo from "../../Assets/SystemLogo.png";
+import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
+import { useSession } from "../../GlobalContext/SessionContext";
 import ThemeToggle from "../Shared/ThemeToggle";
 import "./CSS/Header.css";
 
@@ -62,7 +63,10 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
         )}
         {loggedIn && (
           <>
-            <button className="login-button" onClick={() => navigate("/users/management")}>
+            <button
+              className="login-button"
+              onClick={() => navigate("/users/management")}
+            >
               My Profile
             </button>
             <button className="login-button" onClick={() => handleLogout()}>

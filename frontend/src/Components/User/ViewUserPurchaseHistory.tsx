@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useSession } from "../../App";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import ViewSaleHistory from "../ViewSaleHistory";
 
 export default function UserPurchaseHistory() {

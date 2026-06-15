@@ -5,7 +5,7 @@ import type {
   SeatData,
   VenueData,
 } from "../DTOs/VenueDTO";
-import VenueDisplay from "./VenueDisplay";
+import VenueDisplay from "./Shared/VenueDisplay";
 
 type SegmentAvailability = {
   segmentID: string;
