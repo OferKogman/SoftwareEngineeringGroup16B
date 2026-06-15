@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.UserService;
 import com.group16b.ApplicationLayer.DTOs.LoginRequestDTO;
+import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 @RestController
 @RequestMapping("/api/user")
@@ -21,6 +22,7 @@ public class UserController extends BaseController {
         this.userService = userService;
     }
 
+    @PublicEndpoint
     @PostMapping("/registerUser") // loginRequestDTO has the same fields so I didnt add a seperate dto for
                                   // register
     public ResponseEntity<?> registerUser(@RequestBody LoginRequestDTO requestDTO) {

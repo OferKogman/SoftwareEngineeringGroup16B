@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.ProductionCompanyService;
 import com.group16b.ApplicationLayer.DTOs.CreateProductionCompanyRequestDTO;
+import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 @RestController
 @RequestMapping("/production-companies")
@@ -45,6 +46,7 @@ public class ProductionCompanyController extends BaseController {
         return executeWithReturnData(() -> productionCompanyService.createProductionCompany(authToken,requestDTO.getCompanyName()));
     }
 
+    @PublicEndpoint
     @GetMapping("/{companyId}")
     public ResponseEntity<?> getProductionCompanyDetails(
         @PathVariable("companyId") int companyId)
@@ -52,6 +54,7 @@ public class ProductionCompanyController extends BaseController {
         return executeWithReturnData(() -> productionCompanyService.getProductionCompany(companyId));
     }
 
+    @PublicEndpoint
     @GetMapping("/{companyId}/events")
     public ResponseEntity<?> getCompanyEvents(@PathVariable("companyId") int companyId)
     {
