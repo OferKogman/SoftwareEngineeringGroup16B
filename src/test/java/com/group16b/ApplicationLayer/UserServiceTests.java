@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -53,6 +54,9 @@ public class UserServiceTests {
     private final String NO_COMPANY_USER_EMAIL = "no-comps@wa.com";
     private final String NON_EXISTENT_USER_EMAIL = "birds are fake";
 
+    private final String ADMIN_ROLE="Admin";
+    private final String GUEST_ROLE="Guest";
+    private final String USER_ROLE="Signed";
 
 @BeforeEach
     void setUp() {
@@ -326,4 +330,51 @@ public class UserServiceTests {
         assertFalse(result.isSuccess());
         assertEquals("An unexpected error occurred: Database Exploded!!!!!", result.getError());
     }
+
+    @Test
+    void isRoleAdmin_adminToken_returnTrue()
+    {
+        Result<Boolean> result = userService.isRole(adminToken, ADMIN_ROLE);
+        assertTrue(result.isSuccess());
+        assertEquals(true, result.getValue());
+    }
+    @Test
+    void isRoleUser_adminToken_returnTrue()
+    {
+        Result<Boolean> result = userService.isRole(sessionToken, USER_ROLE);
+        assertTrue(result.isSuccess());
+        assertEquals(true, result.getValue());
+    }
+    @Test
+    void isRoleGuest_adminToken_returnTrue()
+    {
+        Result<Boolean> result = userService.isRole(guestToken, GUEST_ROLE);
+        assertTrue(result.isSuccess());
+        assertEquals(true, result.getValue());
+    }
+    @Test
+    void isRole_InvalidRole_returnFalse()
+    {
+        Result<Boolean> result = userService.isRole(guestToken, ADMIN_ROLE);
+        assertTrue(result.isSuccess());
+        assertEquals(false, result.getValue());
+    }
+    @Test
+    void isRole_BadToekn_returnError()
+    {
+        Result<Boolean> result = userService.isRole("chi-vap-chi-chi", GUEST_ROLE);
+        assertFalse(result.isSuccess());
+        assertEquals("Invalid Token", result.getError());
+    }
+    @Test
+    void isRole_unexpectedError_returnFail()
+    {
+        IAuthenticationService mockAuthenticationService=mock(IAuthenticationService.class);
+        doThrow(new RuntimeException("I recognize the bodies in the water...")).when(mockAuthenticationService).validateToken(anyString());
+        userService=new UserService(mockAuthenticationService, null, null, userRepo, null, null, null);
+        Result<Boolean> result = userService.isRole(guestToken, GUEST_ROLE);
+        assertFalse(result.isSuccess());
+        assertEquals("An unexpected error occured, pls try again later.", result.getError());
+    }
+
 }
