@@ -31,6 +31,8 @@ export default function EventUpdateForm() {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [isToggling, setIsToggling] = useState(false);
+
   useEffect(() => {
     if (!eventID) {
       return;
@@ -126,35 +128,37 @@ export default function EventUpdateForm() {
     }
   }
 
-  async function handleToggleStatus() {
-    if (!eventID || !eventDTO) return;
+  async function handleEventActiveChange(shouldActivate: boolean) {
+    if (!eventID || !eventDTO || isToggling) return;
+
+    setIsToggling(true);
+    setError("");
 
     try {
-      setIsSubmitting(true);
+      const endpoint = shouldActivate ? "activate" : "deactivate";
 
-      const endpoint = eventDTO.eventStatus
-        ? `${API_BASE}/events/${eventID}/deactivate`
-        : `${API_BASE}/events/${eventID}/activate`;
-
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+      const response = await fetch(
+        `${API_BASE}/events/${eventID}/${endpoint}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
         const msg = await response.text();
-        throw new Error(msg || "Failed to update status");
+        throw new Error(msg || `Failed to ${endpoint} event`);
       }
 
       setEventDTO((prev) =>
-        prev ? { ...prev, eventStatus: !prev.eventStatus } : prev,
+        prev ? { ...prev, eventStatus: shouldActivate } : prev,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed");
+      setError(err instanceof Error ? err.message : "Failed to update status");
     } finally {
-      setIsSubmitting(false);
+      setIsToggling(false);
     }
   }
 
@@ -172,15 +176,20 @@ export default function EventUpdateForm() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <div className="status-toggle">
-        <button
-          type="button"
-          onClick={handleToggleStatus}
-          disabled={isSubmitting}
-        >
-          {eventDTO.eventStatus ? "Deactivate event" : "Activate event"}
-        </button>
-      </div>
+      <label className="event-active-toggle">
+        <span>{eventDTO.eventStatus ? "Active" : "Inactive"}</span>
+
+        <input
+          type="checkbox"
+          checked={Boolean(eventDTO.eventStatus)}
+          disabled={isToggling}
+          onChange={(e) => {
+            void handleEventActiveChange(e.currentTarget.checked);
+          }}
+        />
+
+        <span className="event-active-slider" />
+      </label>
 
       <label className="form-label">
         <span>Venue ID</span>
