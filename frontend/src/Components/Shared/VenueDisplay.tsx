@@ -6,7 +6,7 @@ import type {
   SeatData,
   StageData,
   VenueData,
-} from "../DTOs/VenueDTO";
+} from "../../DTOs/VenueDTO";
 
 const fieldAreaColor = "#13c3f6";
 const fieldAreaBorder = "2px solid #0b6c97";
@@ -72,7 +72,12 @@ type VenueDisplayProps = {
     gridRow: number;
     gridColumn: number;
   } | null;
+
+  selectedFieldSegmentID?: string;
+  selectedSeatSegmentID?: string;
+  selectedSeats?: SeatData[];
 };
+
 
 export default function VenueDisplay({
   handleEmptyCellClick,
@@ -84,6 +89,9 @@ export default function VenueDisplay({
   venue,
   pendingRectangle,
   selectionStartCell,
+  selectedFieldSegmentID,
+  selectedSeatSegmentID,
+  selectedSeats = [],
 }: VenueDisplayProps) {
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
@@ -379,6 +387,16 @@ export default function VenueDisplay({
   function isSeatHovered(row: number, column: number) {
     return hoveredSeat?.row === row && hoveredSeat.column === column;
   }
+  function isSeatSelected(seat: SeatData | undefined) {
+    if (!seat) {
+      return false;
+    }
+
+    return selectedSeats.some(
+      (selectedSeat) =>
+        selectedSeat.row === seat.row && selectedSeat.column === seat.column,
+    );
+  }
 
   function handleGridCellClick(row: number, column: number) {
     const fieldSegment = getFieldSegment(row, column);
@@ -453,6 +471,11 @@ export default function VenueDisplay({
             const entrance = getEntrance(row, column);
             const segmentHovered = isSegmentHovered(row, column);
             const seatHovered = isSeatHovered(row, column);
+            const selectedSegment =
+              (fieldSegment && fieldSegment.segmentID === selectedFieldSegmentID) ||
+              (seatSegment && seatSegment.segmentID === selectedSeatSegmentID);
+
+            const seatSelected = isSeatSelected(seat);
             const activeRectangle = pendingRectangle
               ? pendingRectangle
               : selectionStartCell && hoveredCell
@@ -516,6 +539,11 @@ export default function VenueDisplay({
                             undefined,
                             segmentHovered,
                           ),
+                          boxShadow: selectedSegment
+                                ? "0 0 6px 2px rgba(212, 175, 55, 0.65)"
+                                : undefined,
+                              filter: selectedSegment ? "brightness(1.08)" : undefined,
+                              zIndex: selectedSegment ? 2 : 1,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -598,7 +626,7 @@ export default function VenueDisplay({
                       width: "100%",
                       height: "100%",
                       border: seatHovered ? hoverBorder : seatBorder,
-                      backgroundColor: seatHovered ? seatHoverColor : seatColor,
+                      backgroundColor: seatSelected ? "#d4af37" : seatHovered ? seatHoverColor : seatColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

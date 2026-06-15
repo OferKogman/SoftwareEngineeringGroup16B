@@ -70,11 +70,6 @@ public class ChosenSeatingSeg extends Segment {
 		returnSeats(request.getSeatIds(), request.getEventID());
 	}
 
-	@Override
-	public double getPrice(int eventID) {
-		return 0.0;
-	}
-
 	void reserveSeats(List<String> seatIds, int eventID) {
 		List<Seat> reservedSeats = new java.util.ArrayList<>();
 		for (String seatId : seatIds) {

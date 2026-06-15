@@ -1,6 +1,5 @@
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
-import { useSession } from "../../App";
 import type {
   ChosenSeatingSegData,
   EntranceData,
@@ -10,6 +9,7 @@ import type {
   VenueData,
   VenueGridData,
 } from "../../DTOs/VenueDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
 
 const initialGrid: VenueGridData = {

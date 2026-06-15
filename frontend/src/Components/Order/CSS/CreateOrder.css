@@ -1,0 +1,19 @@
+.create-order-layout {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.create-order-side-panel {
+  min-width: 280px;
+}
+
+.order-summary {
+  margin: 24px auto 0;
+  width: 70%;
+  padding: 16px;
+  border: 1px solid #555;
+  border-radius: 8px;
+}

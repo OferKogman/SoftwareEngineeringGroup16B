@@ -179,6 +179,33 @@ public class UserService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+    public Result<Boolean> isRole(String sessionToken,String role)
+    {
+        try
+        {
+            logger.info("UserService.isRole: checking if seeion {} is of Role: {}",sessionToken,role);
+            if(!authenticationService.validateToken(sessionToken))
+            {
+                logger.warn("UserService.isRole: Invalid Token");
+                return Result.makeFail("Invalid Token");
+            }
+            if(!role.equals(authenticationService.extractRoleFromToken(sessionToken)))
+            {
+                logger.info("UserService.isRole: seeion {} is Not of Role: {}",sessionToken,role);
+                return Result.makeOk(false);
+            }
+            logger.info("UserService.isRole: seeion {} is of Role: {}",sessionToken,role);
+            return Result.makeOk(true);
+        } catch (JwtException e) {
+            logger.error("UserService.isRole: JWT authentication error during user companies fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch(Exception e)
+        {
+            logger.error("UserService.isRole: unexpected error occured: ",e);
+            return Result.makeFail("An unexpected error occured, pls try again later.");
+        }
+    }
+
     private String validateAndGetUserID(String sessionToken)
     {
         if (!authenticationService.validateToken(sessionToken)  ) {
@@ -192,6 +219,8 @@ public class UserService {
         userRepo.findByID(userID);
         return userID;
     }
+
+    
 
     
 

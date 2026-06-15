@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.DTOs.CompleteActiveOrderRequestDTO;
 import com.group16b.ApplicationLayer.OrderService;
+import com.group16b.ApplicationLayer.Records.PaymentInfo;
 
 @RestController
 @RequestMapping("/api/order")
@@ -24,14 +25,10 @@ public class OrderController extends BaseController{
 
     @PutMapping("/completeActiveOrder")
     public ResponseEntity<?> CompleteActiveOrder(@RequestHeader("Authorization") String sessionToken, @RequestBody CompleteActiveOrderRequestDTO requestDTO){
-        return executeWithReturnData(() -> orderService.CompleteActiveOrder(requestDTO.getOrderID(), sessionToken, requestDTO.getPaymentInfo()));
+        PaymentInfo newPlymentInfo = new PaymentInfo("ILS", requestDTO.getPaymentInfo().cardNumber(), requestDTO.getPaymentInfo().month(), requestDTO.getPaymentInfo().year(), requestDTO.getPaymentInfo().holder(), requestDTO.getPaymentInfo().cvv(), requestDTO.getPaymentInfo().id());
+        return executeWithReturnData(() -> orderService.CompleteActiveOrder(requestDTO.getOrderID(), sessionToken, newPlymentInfo));
     }
-
-   /* *@GetMapping("/getUserOrders")
-    public ResponseEntity<?> getUserOrders(@RequestHeader("Authorization") String sessionToken){
-        return executeWithReturnData(() -> orderService.getUserOrders(sessionToken));
-    }*/ // its in user service now
-
+    
     @PutMapping("/changeSeatsToOrder/{orderId}")
     public ResponseEntity<?> changeSeatsToOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId, @RequestBody List<String> newSeatIds){
         return executeWithReturnData(() -> orderService.changeSeatsToOrder(orderId, sessionToken, newSeatIds));
@@ -45,5 +42,10 @@ public class OrderController extends BaseController{
     @PutMapping("/cancelOrder/{orderId}")
     public ResponseEntity<?> cancelOrder(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId){
         return executeWithReturnData(() -> orderService.cancelOrder(orderId, sessionToken));
+    }
+
+    @PutMapping("/getOrderPrice/{orderId}")
+    public ResponseEntity<?> getOrderPrice(@RequestHeader("Authorization") String sessionToken, @PathVariable("orderId") String orderId){
+        return executeWithReturnData(() -> orderService.getOrderPrice(orderId, sessionToken));
     }
 }

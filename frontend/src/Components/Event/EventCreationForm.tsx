@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
 
 export type EventCreationData = {
   venueID: string;

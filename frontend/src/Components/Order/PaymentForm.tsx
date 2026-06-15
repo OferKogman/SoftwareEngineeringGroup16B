@@ -1,12 +1,12 @@
 import { useState } from "react";
-
+//String currency, , , ,
 type PaymentFormData = {
-  firstName: string;
+  firstName: string; //String holder
   lastName: string;
-  idNumber: string;
-  cardNumber: string;
-  expiryDate: string;
-  cvv: string;
+  idNumber: string; // String id
+  cardNumber: string; //String cardNumber,
+  expiryDate: string; // int month, int year
+  cvv: string; //String cvv
 };
 
 type PaymentPayload = {
@@ -31,9 +31,7 @@ type FormErrors = {
 
 type PaymentFormProps = {
   amount: number;
-  onPaymentSubmit: (
-    paymentData: PaymentPayload
-  ) => Promise<void> | void;
+  onPaymentSubmit: (paymentData: PaymentPayload) => Promise<void> | void;
 };
 
 export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProps) {
@@ -106,7 +104,7 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
 
     return newErrors;
   }
-
+  
   async function handleSubmit(
     event: React.FormEvent<HTMLFormElement>
   ) {

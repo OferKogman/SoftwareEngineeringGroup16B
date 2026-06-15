@@ -3,33 +3,47 @@ package com.group16b.ApplicationLayer.DTOs;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
 import com.group16b.DomainLayer.Venue.FieldSeg;
+import com.group16b.DomainLayer.Venue.GridRectangle;
 
-public class FieldSegDTO extends SegmentDTO{
+public class FieldSegDTO extends SegmentDTO {
 
     private final int size;
+    private final GridRectangleRecord area;
+    private final ConcurrentMap<Integer, Integer> stocks;
 
-	private ConcurrentMap<Integer, Integer> stocks;
-
-    public FieldSegDTO(FieldSeg fieldSeg){
+    public FieldSegDTO(FieldSeg fieldSeg) {
         super(fieldSeg);
+
         this.size = fieldSeg.getFieldSize();
 
-        stocks = new ConcurrentHashMap<>();
-
+        this.stocks = new ConcurrentHashMap<>();
         this.stocks.putAll(fieldSeg.getMap());
-    } 
-    
+
+        GridRectangle currArea = fieldSeg.getArea();
+        this.area = new GridRectangleRecord(
+                currArea.getStartRow(),
+                currArea.getStartColumn(),
+                currArea.getRowCount(),
+                currArea.getColumnCount()
+        );
+    }
+
     @Override
-    public String getSegmentType(){
+    public String getSegmentType() {
         return "F";
     }
 
-    public int getSize(){
+    public GridRectangleRecord getArea() {
+        return area;
+    }
+
+    public int getSize() {
         return size;
     }
 
-    public ConcurrentMap<Integer, Integer> getStocks(){
+    public ConcurrentMap<Integer, Integer> getStocks() {
         return stocks;
     }
 }
