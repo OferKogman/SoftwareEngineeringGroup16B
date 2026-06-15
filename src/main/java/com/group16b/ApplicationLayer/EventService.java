@@ -16,6 +16,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
+import com.group16b.ApplicationLayer.Records.EventSegmentConfigUpdateRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -329,7 +330,7 @@ public class EventService {
 		}
 	}
 
-	public Result<String> editStockInSegmentsForEvent(Map<String, Integer> segmentsAndNewStock, int eventID,
+	public Result<String> editStockInSegmentsForEvent(Map<String, EventSegmentConfigUpdateRecord> segmentsAndNewStock, int eventID,
 			String sessionToken) {
 		try {
 			String userID = validateAndGetUserID(sessionToken);
@@ -355,9 +356,14 @@ public class EventService {
 								+ eventID);
 				venue = venueRepository.findByID(event.getEventVenueID());
 
-				for (Map.Entry<String, Integer> entry : segmentsAndNewStock.entrySet()) {
+				for (Map.Entry<String, EventSegmentConfigUpdateRecord> entry : segmentsAndNewStock.entrySet()) {
 					Segment currSeg = venue.getSegmentByID(entry.getKey());
-					currSeg.setStockForEvent(eventID, entry.getValue());
+					currSeg.setStockForEvent(eventID, entry.getValue().newStock());
+					
+					double newPrice=entry.getValue().newPrice();
+					if(event.getEventPrice()>newPrice)
+						throw new IllegalArgumentException("New segment price: "+newPrice+" cannot be samller than minimum event price: "+event.getEventPrice());
+					currSeg.setPrice(eventID, newPrice);
 				}
 				try {
 					venueRepository.save(venue);
