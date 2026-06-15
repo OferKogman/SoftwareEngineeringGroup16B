@@ -21,7 +21,7 @@ class PaymentServiceRealApiTests {
 
     private PaymentInfo validPayment() {
         return new PaymentInfo(
-                "USD",
+                "mother russia is calling",
                 "2222333344445555",
                 12,
                 2026,
