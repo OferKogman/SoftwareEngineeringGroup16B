@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
 
 const API_BASE = "http://localhost:8080";
 

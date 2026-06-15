@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSession } from "../../App";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import CreateProductionCompany from "../ProdactionCompany/CreateProductionCompany";
 
 export default function ViewUserCompanyList() {

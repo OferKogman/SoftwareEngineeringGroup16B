@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { TbStar, TbStarFilled, TbStarHalfFilled } from "react-icons/tb";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSession } from "../../App";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import { locationToString, type LocationDTO } from "../../DTOs/LocationDTO";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import ViewDiscountPolicies from "../ViewDiscountPolicies";
 import ViewPurchasePolicies from "../ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
@@ -61,7 +61,7 @@ export default function ViewEvent() {
     }
 
     void loadEvent();
-  }, [eventID]);
+  });
 
   if (!eventDTO) {
     return <div>{error && <p className="form-error">{error}</p>}</div>;

@@ -68,11 +68,11 @@ export default function ViewCompanyEvents({
             {eventDTOList.map((event) => (
               <tr key={event.eventID}>
                 <td>{event.eventID}</td>
-                <td>{event.name}</td>
+                <td>{event.eventName}</td>
                 <td>
                   <button
                     onClick={() =>
-                      onEditEvent(event.productionCompanyID, event.eventID)
+                      onEditEvent(event.eventProductionCompanyID, event.eventID)
                     }
                   >
                     Edit

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useSession } from "../../App";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import ViewOrder from "../Shared/ViewOrder";
 import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 

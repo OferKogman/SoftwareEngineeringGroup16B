@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/TotalRevenue.css";
 
 const API_BASE = "http://localhost:8080";
