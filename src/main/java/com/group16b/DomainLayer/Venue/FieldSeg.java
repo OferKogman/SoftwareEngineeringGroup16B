@@ -48,10 +48,6 @@ public class FieldSeg extends Segment {
 		return stock.get(eventID);
 	}
 
-	public double getPrice(int eventID) {
-		return 0;
-	}
-
 	protected void addStock(int eventID, Integer quantity) {
 		Integer currQty = stock.get(eventID);
 		if (currQty == null) {
