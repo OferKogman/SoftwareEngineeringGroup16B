@@ -359,6 +359,7 @@ public class EventService {
 				for (Map.Entry<String, EventSegmentConfigUpdateRecord> entry : segmentsAndNewStock.entrySet()) {
 					Segment currSeg = venue.getSegmentByID(entry.getKey());
 					currSeg.setStockForEvent(eventID, entry.getValue().newStock());
+					
 					double newPrice=entry.getValue().newPrice();
 					if(event.getEventPrice()>newPrice)
 						throw new IllegalArgumentException("New segment price: "+newPrice+" cannot be samller than minimum event price: "+event.getEventPrice());
