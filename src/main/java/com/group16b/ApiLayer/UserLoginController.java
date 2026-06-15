@@ -36,6 +36,11 @@ public class UserLoginController extends BaseController{
 
     @PostMapping("/guest")
     public ResponseEntity<?> loginGuest() {
-        return executeWithReturnData(() -> userLoginService.createGuestSession());
+        return executeWithReturnData(() -> userLoginService.ensureGuestSession(null));
+    }
+
+    @PostMapping("/guest/validate")
+    public ResponseEntity<?> validateGuest(@RequestHeader(value = "Authorization", required = false) String sessionToken) {
+        return executeWithReturnData(() -> userLoginService.ensureGuestSession(sessionToken));
     }
 }
