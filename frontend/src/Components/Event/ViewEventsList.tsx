@@ -91,7 +91,7 @@ export default function ViewEvents({ events }: EventsListProps) {
           {eventDTOList.map((event) => (
             <tr key={event.eventID}>
               <td>{event.eventID}</td>
-              <td>{event.name}</td>
+              <td>{event.eventName}</td>
 
               <td>
                 <button onClick={() => navigate(`/events/${event.eventID}`)}>

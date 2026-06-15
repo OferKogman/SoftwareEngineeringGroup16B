@@ -1,25 +1,25 @@
-.user-management-page {
+.management-page {
   max-width: 1300px;
   margin: 0 auto;
   padding: 24px;
 }
 
-.user-management-header {
+.management-header {
   border-bottom: 1px;
   padding-bottom: 16px;
   margin-bottom: 24px;
 }
 
-.user-management-header h1 {
+.management-header h1 {
   margin: 0;
   font-size: 28px;
 }
 
-.user-management-header p {
+.management-header p {
   margin: 6px 0 0;
 }
 
-.light .user-management-body {
+.light .management-body {
   background: rgba(0, 0, 0, 0.04);
   color: #111111;
   border: 1px solid rgba(255, 183, 0, 0.15);
@@ -28,7 +28,7 @@
   padding: 20px;
 }
 
-.dark .user-management-body {
+.dark .management-body {
   background: rgba(255, 255, 255, 0.04);
   color: #f5f5f5;
   border: 1px solid rgba(255, 150, 0, 0.15);
@@ -37,13 +37,13 @@
   padding: 20px;
 }
 
-.user-management-body {
+.management-body {
   display: flex;
   gap: 24px;
   align-items: flex-start;
 }
 
-.user-management-sidebar {
+.management-sidebar {
   width: 280px;
   border: 1px;
   border-radius: 8px;
@@ -51,7 +51,7 @@
   flex-shrink: 0;
 }
 
-.light .user-management-sidebar a {
+.light .management-sidebar a {
   background: rgba(0, 0, 0, 0.04);
   color: #111111;
   border: 1px solid rgba(255, 183, 0, 0.15);
@@ -61,7 +61,7 @@
   margin-bottom: 4px;
 }
 
-.dark .user-management-sidebar a {
+.dark .management-sidebar a {
   background: rgba(255, 255, 255, 0.04);
   color: #f5f5f5;
   border: 1px solid rgba(255, 150, 0, 0.15);
@@ -71,7 +71,7 @@
   margin-bottom: 4px;
 }
 
-.user-management-sidebar a {
+.management-sidebar a {
   display: block;
   padding: 14px 18px;
   text-decoration: none;
@@ -79,21 +79,21 @@
   border-bottom: 1px;
 }
 
-.user-management-sidebar a:last-child {
+.management-sidebar a:last-child {
   border-bottom: none;
 }
 
-.light .user-management-sidebar a.active {
+.light .management-sidebar a.active {
   background-color: rgba(100, 100, 100, 0.12);
   font-weight: bold;
 }
 
-.dark .user-management-sidebar a.active {
+.dark .management-sidebar a.active {
   background-color: rgba(240, 246, 252, 0.12);
   font-weight: bold;
 }
 
-.user-management-content {
+.management-content {
   flex: 1;
   min-height: 500px;
   border: 1px;

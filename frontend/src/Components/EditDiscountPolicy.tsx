@@ -1,14 +1,11 @@
 import { useState } from "react";
 
-type EditPurchasePolicyProps = {
-  onSubmit: (discountPercentage: number) => void | Promise<void>;
-  onCancel?: () => void;
-};
-
-export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchasePolicyProps) {
+export default function EditDiscountPolicy() {
   const [discountPercentage, setDiscountPercentage] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function onSubmit(discountPercentage: number) {}
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -19,7 +16,11 @@ export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchaseP
       await onSubmit(Number(discountPercentage));
       setDiscountPercentage("");
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to update purchase policy.");
+      setSubmitError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update discount policy.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -27,7 +28,7 @@ export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchaseP
 
   return (
     <form className="event-creation-form" onSubmit={handleSubmit}>
-      <h2>Edit Purchase Policy</h2>
+      <h2>Edit Discount Policy</h2>
 
       {submitError && <p className="form-error">{submitError}</p>}
 
@@ -46,11 +47,6 @@ export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchaseP
       </label>
 
       <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : "Update Policy"}
         </button>

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useParams } from "react-router-dom";
 import { useSession } from "../../App";
 import "../../CSS/Management.css";
-import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import type { EventDTO } from "../../DTOs/EventDTO";
 
 const API_BASE = "http://localhost:8080";
 
@@ -21,15 +21,15 @@ function getApiError(data: unknown): string {
     }
   }
 
-  return "Company not found";
+  return "event not found";
 }
 
-function isProductionCompanyDTO(data: unknown): data is ProductionCompanyDTO {
+function isEventDTO(data: unknown): data is EventDTO {
   return (
     !!data &&
     typeof data === "object" &&
-    "name" in data &&
-    typeof data.name === "string"
+    "eventName" in data &&
+    typeof data.eventName === "string"
   );
 }
 
@@ -47,25 +47,25 @@ async function readResponseBody(response: Response): Promise<unknown> {
   }
 }
 
-export default function ProductionCompanyManagement() {
-  const { companyId } = useParams();
+export default function EventManagement() {
+  const { eventID } = useParams();
   const { sessionToken } = useSession();
   const outlet = useOutlet();
 
-  const [company, setCompany] = useState<ProductionCompanyDTO | null>(null);
+  const [event, setEvent] = useState<EventDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
-    async function loadCompany() {
+    async function loadEvent() {
       setLoading(true);
       setError("");
-      setCompany(null);
+      setEvent(null);
 
-      if (!companyId) {
-        setError("Missing company id");
+      if (!eventID) {
+        setError("Missing event id");
         setLoading(false);
         return;
       }
@@ -75,16 +75,13 @@ export default function ProductionCompanyManagement() {
       }
 
       try {
-        const response = await fetch(
-          `${API_BASE}/production-companies/${companyId}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
+        const response = await fetch(`${API_BASE}/events/${eventID}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: sessionToken,
           },
-        );
+        });
 
         const data = await readResponseBody(response);
 
@@ -96,16 +93,14 @@ export default function ProductionCompanyManagement() {
           throw new Error(getApiError(data));
         }
 
-        if (!isProductionCompanyDTO(data)) {
-          throw new Error("Invalid company response from server");
+        if (!isEventDTO(data)) {
+          throw new Error("Invalid event response from server");
         }
 
-        setCompany(data);
+        setEvent(data);
       } catch (error) {
         if (!cancelled) {
-          setError(
-            error instanceof Error ? error.message : "Company not found",
-          );
+          setError(error instanceof Error ? error.message : "Event not found");
         }
       } finally {
         if (!cancelled) {
@@ -114,54 +109,52 @@ export default function ProductionCompanyManagement() {
       }
     }
 
-    loadCompany();
+    loadEvent();
 
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken]);
+  }, [eventID, sessionToken]);
 
   return (
     <div className="management-page">
       <div className="management-header">
         <h1>
           {loading
-            ? "Loading company..."
-            : company
-              ? company.name
-              : "Company unavailable"}
+            ? "Loading event..."
+            : event
+              ? event.eventName
+              : "Event unavailable"}
         </h1>
-        <p>Company ID: {companyId ?? "Missing"}</p>
+        <p>Event ID: {eventID ?? "Missing"}</p>
       </div>
 
       {error && <p className="form-error">{error}</p>}
 
       <div className="management-body">
         <aside className="management-sidebar">
-          <NavLink to="total-revenue">Total Revenue</NavLink>
-          <NavLink to="sales-history">Sales History</NavLink>
-          <NavLink to="events">Events</NavLink>
-          <NavLink to="venue-config">Create Venue</NavLink>
-          <NavLink to="members">Members & Permissions</NavLink>
-          <NavLink to="hierarchy">Hierarchy Tree</NavLink>
-          <NavLink to="settings">Company Settings</NavLink>
+          <NavLink to="show">Information</NavLink>
+          <NavLink to="update-info">Update Information</NavLink>
+          <NavLink to="discount-policy">Update Discount Policies</NavLink>
+          <NavLink to="purchase-policy">Update Purchase Policies</NavLink>
+          <NavLink to="inventory">Inventory Management</NavLink>
         </aside>
 
         <main className="management-content">
           {loading ? (
             <div className="management-default-content">
               <h2>Loading...</h2>
-              <p>Loading company data from the server.</p>
+              <p>Loading event data from the server.</p>
             </div>
           ) : error ? (
             <div className="management-default-content">
-              <h2>Cannot load company management</h2>
+              <h2>Cannot load event management</h2>
               <p>{error}</p>
             </div>
           ) : (
             (outlet ?? (
               <div className="management-default-content">
-                <h2>Company Management</h2>
+                <h2>Event Management</h2>
                 <p>Select an option from the sidebar.</p>
               </div>
             ))
