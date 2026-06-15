@@ -397,6 +397,7 @@ public class EventService {
 
 	public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
 		try {
+			
 			logger.info("EventService.searchEvents: Attempting to search events with parameters: " + searchParams);
 			List<String> locationNames = getParam(searchParams, "location", String.class);
 			List<Location> locations = null;

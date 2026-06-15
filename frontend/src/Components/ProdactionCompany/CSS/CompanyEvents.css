@@ -58,3 +58,43 @@
   cursor: pointer;
   font-weight: bold;
 }
+.event-active-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  cursor: pointer;
+}
+
+.event-active-toggle input {
+  display: none;
+}
+
+.event-active-slider {
+  width: 46px;
+  height: 24px;
+  border-radius: 999px;
+  background: #777;
+  position: relative;
+  transition: 0.2s;
+}
+
+.event-active-slider::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: 0.2s;
+}
+
+.event-active-toggle input:checked + .event-active-slider {
+  background: #7b2ff7;
+}
+
+.event-active-toggle input:checked + .event-active-slider::before {
+  transform: translateX(22px);
+}

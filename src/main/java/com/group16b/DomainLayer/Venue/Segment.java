@@ -3,8 +3,6 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
-
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
 import jakarta.persistence.CollectionTable;
@@ -53,6 +51,11 @@ abstract public class Segment {
 	public String getSegmentID() {
 		return segmentID;
 	}
+
+	public GridRectangle getArea() {
+        return area;
+    }
+
 	
 	public double getPrice(int eventID)
 	{
@@ -67,6 +70,7 @@ abstract public class Segment {
 		eventPrices.put(eventID,price);
 	}
 
+
 	public abstract void reserve(ReservationRequest request);
 	public abstract void cancelReservation(ReservationRequest request);
 
@@ -75,10 +79,14 @@ abstract public class Segment {
 	public abstract void setStockForEvent(int eventID, int stock);
 	public abstract Map<?, ?> getMap();
 
+	
+
+
 
 	protected void validateEventId(int eventID)
 	{
 		if(eventID<=0)
 			throw new IllegalArgumentException("Invalid event id: "+eventID);
 	}
+
 }

@@ -54,7 +54,7 @@ export default function ViewEvent() {
         const company: ProductionCompanyDTO = await companyResponse.json();
         setCompanyName(company.name);
 
-        console.log("Loaded event from API:", event);
+        
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }
@@ -119,6 +119,12 @@ export default function ViewEvent() {
 
       <h3>Purchase Policy</h3>
       <ViewPurchasePolicies purchasePolicy={eventDTO.eventPurchasePolicy} />
+      <button
+        className="order-tickets-button"
+        onClick={() => navigate(`/events/${eventDTO.eventID}/create-order`)}
+      >
+        Order Tickets
+      </button>
     </div>
   );
 }

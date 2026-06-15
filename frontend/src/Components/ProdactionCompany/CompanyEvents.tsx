@@ -14,6 +14,7 @@ export default function CompanyEvents() {
   const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [updatingEventId, setUpdatingEventId] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,6 +78,55 @@ export default function CompanyEvents() {
     navigate(`/events/${eventId}/management`);
   }
 
+  async function handleEventActiveChange(eventId: number, shouldActivate: boolean) {
+    if (!sessionToken) {
+      setError("Missing session token.");
+      return;
+    }
+
+    setError("");
+    setUpdatingEventId(eventId);
+
+    try {
+      const endpoint = shouldActivate ? "activate" : "deactivate";
+
+      const response = await fetch(
+        `${API_BASE}/events/${eventId}/${endpoint}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: sessionToken,
+            Accept: "application/json",
+          },
+        },
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || `Failed to ${endpoint} event.`);
+      }
+
+      setEvents((currentEvents) =>
+        currentEvents.map((event) =>
+          event.eventID === eventId
+            ? {
+                ...event,
+                eventStatus: shouldActivate,
+              }
+            : event,
+        ),
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to update event status.",
+      );
+    } finally {
+      setUpdatingEventId(null);
+    }
+  }
+
   return (
     <div className="company-events-page">
       <div className="company-events-header">
@@ -94,9 +144,28 @@ export default function CompanyEvents() {
         {events.map((event) => (
           <div key={event.eventID} className="company-event-card">
             <div>
-              <h3>Event Name: {event.eventName}</h3>
+              <h3>Event Name: {event.eventName ?? event.eventName}</h3>
               <p>Event ID: {event.eventID}</p>
+              <p>Status: {event.eventStatus ? "Active" : "Inactive"}</p>
             </div>
+
+            <label className="event-active-toggle">
+              <span>{event.eventStatus ? "Active" : "Inactive"}</span>
+
+              <input
+                type="checkbox"
+                checked={Boolean(event.eventStatus)}
+                disabled={updatingEventId === event.eventID}
+                onChange={(e) => {
+                  void handleEventActiveChange(
+                    event.eventID,
+                    e.currentTarget.checked,
+                  );
+                }}
+              />
+
+              <span className="event-active-slider" />
+            </label>
 
             <button
               className="manage-event-button"

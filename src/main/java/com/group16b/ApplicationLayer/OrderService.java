@@ -64,6 +64,7 @@ public class OrderService {
 	}
 
     public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+		logger.info(paymentInfo.cardNumber() + "" + paymentInfo.currency());
 		Integer transactionId = null;
 		String ticket=null;
 		try {
@@ -88,6 +89,7 @@ public class OrderService {
 
 			// 4.Payment processing
 			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
+
 			transactionId = paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
 			
 			// 5. ticket generation
