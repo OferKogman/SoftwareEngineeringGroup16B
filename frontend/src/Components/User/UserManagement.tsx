@@ -18,7 +18,6 @@ export default function UserManagement() {
             <p>You must be logged in to access this page.</p>
           </div>
         </div>
-        s
       </div>
     );
   }
