@@ -10,16 +10,13 @@ public class VirtualQueue {
 	private final Map<String, Long> passedQueue;
 	private final int id;
 	private final int pass_num;
-	private final Integer PASS_NUM=50;
+	private static final Integer PASS_NUM=50;
 	private final Integer PASS_TIMEOUT = 60 * 10 * 1000;
 
 	public static final int PASSED_QUEUE = -1;
 
 	public VirtualQueue(int id) {
-		queueLine = new LinkedList<>();
-		this.id = id;
-		this.passedQueue = new LinkedHashMap<>();
-		pass_num = PASS_NUM;
+		this(id,PASS_NUM);
 	}
 	public VirtualQueue(int id, int pass_num) {
 		queueLine = new LinkedList<>();
