@@ -3,13 +3,14 @@ package com.group16b.DomainLayer.DomainServices;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.stereotype.Service;
+
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
-import org.springframework.stereotype.Service;
 
 @Service
 public class EventFilteringService {
@@ -26,9 +27,9 @@ public class EventFilteringService {
     }
 
     public List<Event> searchEvents(List<String> name, List<String> artist, List<String> category, List<String> keyword,
-            List<Double> minPrice,
-            List<Double> maxPrice, List<LocalDateTime> startTime, List<LocalDateTime> endTime, List<Double> eventRating,
-            List<Integer> productionCompanyID, List<Location> locations, List<Double> productionCompanyRating) {
+            List<Number> minPrice,
+            List<Number> maxPrice, List<LocalDateTime> startTime, List<LocalDateTime> endTime, List<Number> eventRating,
+            List<Integer> productionCompanyID, List<Location> locations, List<Number> productionCompanyRating) {
         List<Event> events = eventRepository.searchEvents(name, artist, category, keyword, minPrice, maxPrice,
                 startTime, endTime, eventRating, productionCompanyID);
         events.removeIf(event -> !event.getEventStatus());
@@ -41,8 +42,9 @@ public class EventFilteringService {
                 if (productionCompanyRating.size() != 1) {
                     throw new IllegalArgumentException("Production company rating filter must have exactly one value.");
                 }
-                events.removeIf(event -> productionCompanyRating.get(0) > productionCompanyPolicyRepository
-                        .findByID(String.valueOf(event.getEventProductionCompanyID())).getRating());
+                events.removeIf(
+                        event -> productionCompanyRating.get(0).doubleValue() > productionCompanyPolicyRepository
+                                .findByID(String.valueOf(event.getEventProductionCompanyID())).getRating());
             }
         }
         return events;
