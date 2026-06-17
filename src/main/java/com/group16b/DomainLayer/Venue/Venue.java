@@ -49,7 +49,6 @@ public class Venue {
 
     private int IDForSeg = 0;
 
-    // --- 1. ENTITY COLLECTIONS (@OneToMany) ---
 
     // Map Key points directly to the 'segmentID' property inside Segment
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -64,7 +63,6 @@ public class Venue {
     private final Map<Integer, EventSchedule> scheduledEvents;
 
 
-    // --- 2. EMBEDDABLE COLLECTIONS (@ElementCollection) ---
 
     // Maps embeddable components into a separate, clean collection storage table
     @ElementCollection

@@ -1,0 +1,73 @@
+.payment-page {
+  min-height: 70vh;
+  padding: 32px;
+  color: var(--text-color, #111);
+}
+
+.payment-timer {
+  position: fixed;
+  top: 90px;
+  left: 24px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color, #ccc);
+  background: var(--card-bg, #ffffff);
+  font-weight: bold;
+}
+
+.payment-card {
+  max-width: 460px;
+  margin: 40px auto;
+  padding: 28px;
+  border-radius: 18px;
+  border: 1px solid var(--border-color, #ccc);
+  background: var(--card-bg, #ffffff);
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.12);
+}
+
+.payment-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.payment-card input {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color, #bbb);
+  background: var(--input-bg, #ffffff);
+  color: var(--text-color, #111);
+}
+
+.payment-card button {
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.payment-card form button {
+  background: linear-gradient(135deg, #1d2b64, #8a2be2);
+  color: white;
+}
+
+.payment-cancel-button {
+  width: 100%;
+  margin-top: 16px;
+  background: #8b1e1e;
+  color: white;
+}
+
+.payment-error {
+  color: #ff5c5c;
+  font-weight: bold;
+}
+
+body.dark .payment-page,
+.dark .payment-page {
+  --text-color: #f5f5f5;
+  --card-bg: #151515;
+  --input-bg: #222;
+  --border-color: #555;
+}

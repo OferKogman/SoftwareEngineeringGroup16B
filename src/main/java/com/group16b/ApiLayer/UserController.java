@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.UserService;
 import com.group16b.ApplicationLayer.DTOs.LoginRequestDTO;
+import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 @RestController
 @RequestMapping("/api/user")
@@ -21,6 +22,7 @@ public class UserController extends BaseController {
         this.userService = userService;
     }
 
+    @PublicEndpoint
     @PostMapping("/registerUser") // loginRequestDTO has the same fields so I didnt add a seperate dto for
                                   // register
     public ResponseEntity<?> registerUser(@RequestBody LoginRequestDTO requestDTO) {
@@ -43,4 +45,18 @@ public class UserController extends BaseController {
     public ResponseEntity<?> getUserCompanies(@RequestHeader("Authorization") String sessionToken) {
         return executeWithReturnData(() -> userService.getAllUserCompanies(sessionToken));
     }
+    
+    @GetMapping("/role/admin")
+    public ResponseEntity<?> isAdmin(@RequestHeader("Authorization") String sessionToken) {
+        return executeWithReturnData(() -> userService.isRole(sessionToken,"Admin"));
+    }
+    @GetMapping("/role/signed")
+    public ResponseEntity<?> isSigned(@RequestHeader("Authorization") String sessionToken) {
+        return executeWithReturnData(() -> userService.isRole(sessionToken,"Signed"));
+    }
+    @GetMapping("/role/guest")
+    public ResponseEntity<?> isAGuest(@RequestHeader("Authorization") String sessionToken) {
+        return executeWithReturnData(() -> userService.isRole(sessionToken,"Guest"));
+    }
+
 }

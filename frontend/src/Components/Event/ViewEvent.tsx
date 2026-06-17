@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { TbStar, TbStarFilled, TbStarHalfFilled } from "react-icons/tb";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import { locationToString, type LocationDTO } from "../../DTOs/LocationDTO";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
@@ -15,8 +15,9 @@ export default function ViewEvent() {
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
   const [location, setLocation] = useState<string>("");
   const [companyName, setCompanyName] = useState<string>("");
-  const { sessionToken } = useSession();
+
   const navigate = useNavigate();
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     if (!eventID) {
@@ -25,7 +26,12 @@ export default function ViewEvent() {
 
     async function loadEvent() {
       try {
-        const response = await fetch(`http://localhost:8080/events/${eventID}`);
+        const response = await apiFetch(
+          `http://localhost:8080/events/${eventID}`,
+          {
+            method: "GET",
+          },
+        );
 
         if (!response.ok) {
           throw new Error(await response.text());
@@ -34,34 +40,31 @@ export default function ViewEvent() {
 
         setEventDTO(event);
 
-        const locationResponse = await fetch(
+        const locationResponse = await apiFetch(
           `http://localhost:8080/venues/${event.eventVenueID}/location`,
           {
             method: "Get",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
           },
         );
 
         const loc: LocationDTO = await locationResponse.json();
         setLocation(locationToString(loc));
 
-        const companyResponse = await fetch(
+        const companyResponse = await apiFetch(
           `http://localhost:8080/production-companies/${event.eventProductionCompanyID}`,
+          {
+            method: "GET",
+          },
         );
         const company: ProductionCompanyDTO = await companyResponse.json();
         setCompanyName(company.name);
-
-        console.log("Loaded event from API:", event);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }
     }
 
     void loadEvent();
-  }, [eventID]);
+  }, [apiFetch, eventID]);
 
   if (!eventDTO) {
     return <div>{error && <p className="form-error">{error}</p>}</div>;
@@ -119,6 +122,12 @@ export default function ViewEvent() {
 
       <h3>Purchase Policy</h3>
       <ViewPurchasePolicies purchasePolicy={eventDTO.eventPurchasePolicy} />
+      <button
+        className="order-tickets-button"
+        onClick={() => navigate(`/events/${eventDTO.eventID}/create-order`)}
+      >
+        Order Tickets
+      </button>
     </div>
   );
 }

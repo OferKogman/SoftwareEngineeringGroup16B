@@ -1,13 +1,32 @@
 package com.group16b.DomainLayer.SystemAdmin;
 
 import java.security.MessageDigest;
+
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+
 import java.nio.charset.StandardCharsets;
 
+@Entity
+@Table(name = "system_admins")
 public class SystemAdmin {
-	private String username;
-	private String password;
-	private String email;
-	private long version;
+
+    @Id
+    private String username;
+
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String email;
+
+    @Version
+    private long version;
 
 	public SystemAdmin(String username, String password, String email) {
 		this.username = username;
@@ -21,6 +40,10 @@ public class SystemAdmin {
 		this.password = other.password;
 		this.email = other.email;
 		this.version = other.version;
+	}
+
+	public SystemAdmin() {
+		// Default constructor for JPA
 	}
 
 

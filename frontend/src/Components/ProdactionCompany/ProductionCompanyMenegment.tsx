@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/ProductionCompanyManagement.css";
 
 const API_BASE = "http://localhost:8080";
@@ -56,6 +57,8 @@ export default function ProductionCompanyManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -75,14 +78,10 @@ export default function ProductionCompanyManagement() {
       }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
           },
         );
 
@@ -119,11 +118,11 @@ export default function ProductionCompanyManagement() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken]);
+  }, [companyId, sessionToken, apiFetch]);
 
   return (
-    <div className="company-management-page">
-      <div className="company-management-header">
+    <div className="management-page">
+      <div className="management-header">
         <h1>
           {loading
             ? "Loading company..."
@@ -136,8 +135,8 @@ export default function ProductionCompanyManagement() {
 
       {error && <p className="form-error">{error}</p>}
 
-      <div className="company-management-body">
-        <aside className="company-management-sidebar">
+      <div className="management-body">
+        <aside className="management-sidebar">
           <NavLink to="total-revenue">Total Revenue</NavLink>
           <NavLink to="sales-history">Sales History</NavLink>
           <NavLink to="events">Events</NavLink>
@@ -147,20 +146,20 @@ export default function ProductionCompanyManagement() {
           <NavLink to="settings">Company Settings</NavLink>
         </aside>
 
-        <main className="company-management-content">
+        <main className="management-content">
           {loading ? (
-            <div className="company-management-default-content">
+            <div className="management-default-content">
               <h2>Loading...</h2>
               <p>Loading company data from the server.</p>
             </div>
           ) : error ? (
-            <div className="company-management-default-content">
+            <div className="management-default-content">
               <h2>Cannot load company management</h2>
               <p>{error}</p>
             </div>
           ) : (
             (outlet ?? (
-              <div className="company-management-default-content">
+              <div className="management-default-content">
                 <h2>Company Management</h2>
                 <p>Select an option from the sidebar.</p>
               </div>

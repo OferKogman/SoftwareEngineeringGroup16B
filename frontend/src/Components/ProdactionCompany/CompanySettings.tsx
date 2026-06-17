@@ -1,19 +1,15 @@
 import { useState } from "react";
-import { useParams, useNavigate} from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import "./CSS/CompanySettings.css";
-
-const API_BASE = "http://localhost:8080";
-const REQUIRED_CONFIRMATION = "FORFEIT";
 
 export default function CompanySettings() {
   const { companyId } = useParams();
 
-  const [confirmationText, setConfirmationText] = useState("");
+  const [, setConfirmationText] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const isConfirmationValid = confirmationText === REQUIRED_CONFIRMATION;
   const navigate = useNavigate();
   async function handleForfeitOwnership() {
     setMessage("");
@@ -77,7 +73,9 @@ export default function CompanySettings() {
         </div>
       </header>
 
-      {message && <p className="settings-alert settings-alert-success">{message}</p>}
+      {message && (
+        <p className="settings-alert settings-alert-success">{message}</p>
+      )}
       {error && <p className="settings-alert settings-alert-error">{error}</p>}
 
       <section className="settings-card danger-zone">

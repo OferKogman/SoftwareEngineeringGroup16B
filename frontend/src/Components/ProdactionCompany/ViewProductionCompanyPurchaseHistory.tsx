@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import ViewOrder from "../Shared/ViewOrder";
 import "./CSS/ViewProductionCompanyPurchaseHistory.css";
 
@@ -52,6 +53,8 @@ export default function ProductionCompanyPurchaseHistory() {
   const [error, setError] = useState("");
   const [eventIdFilter, setEventIdFilter] = useState("");
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -71,15 +74,10 @@ export default function ProductionCompanyPurchaseHistory() {
       }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/sales-history`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-              Accept: "application/json",
-            },
           },
         );
 
@@ -119,7 +117,7 @@ export default function ProductionCompanyPurchaseHistory() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken]);
+  }, [companyId, sessionToken, apiFetch]);
 
   const filteredOrders = orders.filter((order) => {
     return (

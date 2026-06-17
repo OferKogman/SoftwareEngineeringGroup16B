@@ -9,7 +9,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
@@ -28,14 +27,14 @@ import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
-import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 
 
 @Service
@@ -65,6 +64,7 @@ public class OrderService {
 	}
 
     public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+		logger.info(paymentInfo.cardNumber() + "" + paymentInfo.currency());
 		Integer transactionId = null;
 		String ticket=null;
 		try {
@@ -89,6 +89,7 @@ public class OrderService {
 
 			// 4.Payment processing
 			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
+
 			transactionId = paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
 			
 			// 5. ticket generation
@@ -459,6 +460,40 @@ public class OrderService {
         String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
         return subjectID;
     }
+
+	public Result<Double> getOrderPrice(String orderId, String sTocken) {
+		try {
+			logger.info("OrderService.getOrderPrice: Attempting to get price for order {}.", orderId);
+
+			logger.info("OrderService.getOrderPrice: Verifying session token for getting order price.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+			logger.info("OrderService.getOrderPrice: Session token verified successfully.");
+
+			Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.getOrderPrice: verifying that order {} belongs to the user with the provided token for getting order price.", orderId);
+			order.verifyBelongsToSubject(subjectID);
+
+			double price = order.getTotalOrderprice();
+			int amount = order.getOrderType() == OrderType.SEAT ? order.getSeats().size() : order.getNumOfTickets();
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(order.getEventId(), price, amount);
+			
+			return Result.makeOk(priceAfterDiscountPolicy);
+		} catch (AuthException e) {
+			logger.error("OrderService.getOrderPrice: Authentication error during getting price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.getOrderPrice: Failed to get price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.getOrderPrice: Failed to get price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.getOrderPrice: Unexpected error during getting price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
 
 	//no need to care for the exception type, as it is a automatic refund, meaning that any issue here is critical and should betreated the same way
 	private void safeRefund(Integer transactionId) {

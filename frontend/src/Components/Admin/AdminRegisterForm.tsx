@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "../User/CSS/UserLoginForm.css";
 
 export type AdminRegisterData = {
@@ -24,6 +25,7 @@ export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
+  const apiFetch = useApiFetch();
 
   const navigate = useNavigate();
 
@@ -34,13 +36,12 @@ export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
   }: AdminRegisterData) {
     try {
       console.log("token:", sessionToken);
-      const response = await fetch(
+      const response = await apiFetch(
         `http://localhost:8080/api/admin/registerNewAdmin`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: sessionToken,
           },
           body: JSON.stringify({ username, password, email }),
         },

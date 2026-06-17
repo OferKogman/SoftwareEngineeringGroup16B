@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { useSession } from "../../App";
+import { useCallback, useEffect, useState } from "react";
+import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
 import ViewSaleHistory from "../ViewSaleHistory";
 
@@ -9,24 +9,17 @@ export default function AdminPurchaseHistory() {
 
   type AdminHistoryMode = "all" | "byUser" | "byCompany";
 
-  const { sessionToken } = useSession();
+  const apiFetch = useApiFetch();
+
   const [selectedMode, setSelectedMode] = useState<AdminHistoryMode>("all");
   const [idInput, setIdInput] = useState<string>("");
 
-  useEffect(() => {
-    void loadAllPurchaseHistory();
-  }, []);
-
-  async function loadAllPurchaseHistory() {
+  const loadAllPurchaseHistory = useCallback(async () => {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `http://localhost:8080/api/admin-management/viewAllPurchasesHistory`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: sessionToken,
-          },
         },
       );
 
@@ -44,7 +37,16 @@ export default function AdminPurchaseHistory() {
           : "Failed to load all purchase history.",
       );
     }
-  }
+  }, [apiFetch]);
+
+  useEffect(() => {
+    const loadPurchaseHistory = async () => {
+      await loadAllPurchaseHistory();
+    };
+
+    void loadPurchaseHistory();
+  }, [loadAllPurchaseHistory]);
+
   async function loadSelectedPurchaseHistory() {
     if (selectedMode === "all") {
       await loadAllPurchaseHistory();
@@ -60,14 +62,10 @@ export default function AdminPurchaseHistory() {
   }
   async function loadByProductionCompany() {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `http://localhost:8080/api/admin-management/viewPurchasesHistoryByCompany/${idInput}`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: sessionToken,
-          },
         },
       );
       if (!response.ok) {
@@ -88,14 +86,10 @@ export default function AdminPurchaseHistory() {
 
   async function loadByUserId() {
     try {
-      const response = await fetch(
+      const response = await apiFetch(
         `http://localhost:8080/api/admin-management/viewPurchasesHistoryByUser/${idInput}`,
         {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: sessionToken,
-          },
         },
       );
       if (!response.ok) {

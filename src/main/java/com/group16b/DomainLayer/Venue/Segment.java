@@ -1,16 +1,19 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.util.HashMap;
 import java.util.Map;
-
-import org.springframework.context.annotation.EnableAspectJAutoProxy;
 
 import jakarta.persistence.AttributeOverride;
 import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Inheritance;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.Table;
 @Entity
 @Inheritance(strategy = jakarta.persistence.InheritanceType.JOINED)
@@ -18,6 +21,15 @@ import jakarta.persistence.Table;
 abstract public class Segment {
 	@Id
     protected String segmentID;
+
+	@ElementCollection
+	@CollectionTable(
+		name = "segment_event_prices",
+		joinColumns = @JoinColumn(name = "segment_id")
+	)
+	@MapKeyColumn(name = "event_id")
+	@Column(name="price")
+	protected Map<Integer,Double> eventPrices = new HashMap<>();
 
     @Embedded
     @AttributeOverrides({
@@ -40,11 +52,41 @@ abstract public class Segment {
 		return segmentID;
 	}
 
+	public GridRectangle getArea() {
+        return area;
+    }
+
+	
+	public double getPrice(int eventID)
+	{
+		validateEventId(eventID);
+		return eventPrices.getOrDefault(eventID, 0.0);
+	}
+	public void setPrice(int eventID,double price)
+	{
+		validateEventId(eventID);
+		if(price<=0)
+			throw new IllegalArgumentException("price must be positive");
+		eventPrices.put(eventID,price);
+	}
+
+
 	public abstract void reserve(ReservationRequest request);
 	public abstract void cancelReservation(ReservationRequest request);
 
 	public abstract String getSegmentType();
-	public abstract double getPrice(int eventID);
+
 	public abstract void setStockForEvent(int eventID, int stock);
 	public abstract Map<?, ?> getMap();
+
+	
+
+
+
+	protected void validateEventId(int eventID)
+	{
+		if(eventID<=0)
+			throw new IllegalArgumentException("Invalid event id: "+eventID);
+	}
+
 }

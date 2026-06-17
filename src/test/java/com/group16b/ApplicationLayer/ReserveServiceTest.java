@@ -226,6 +226,7 @@ public class ReserveServiceTest {
                 verify(queueRepo, atLeast(2)).save(queue);
         }
 
+
         @Test
         void reserveSeats_invalidToken_returnsAuthenticationFail() {
                 int ordersBefore = orderRepo.getAll().size();

@@ -6,6 +6,9 @@ public class CompleteActiveOrderRequestDTO {
     private String userId, orderID;
     private PaymentInfo paymentInfo;  
 
+    public CompleteActiveOrderRequestDTO() {
+    }
+
     public CompleteActiveOrderRequestDTO(String userId, String orderID, PaymentInfo paymentInfo){
         this.userId = userId;
         this.orderID = orderID;

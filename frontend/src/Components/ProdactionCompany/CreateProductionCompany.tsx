@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
 
 const API_BASE = "http://localhost:8080";
 
@@ -14,7 +14,7 @@ export default function CreateProductionCompany() {
   const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { sessionToken } = useSession();
+  const apiFetch = useApiFetch();
 
   async function handleCreateCompany(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,11 +30,10 @@ export default function CreateProductionCompany() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(`${API_BASE}/production-companies`, {
+      const response = await apiFetch(`${API_BASE}/production-companies`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: sessionToken,
         },
         body: JSON.stringify({
           companyName: companyName.trim(),
