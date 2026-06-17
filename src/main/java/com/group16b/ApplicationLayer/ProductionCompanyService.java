@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyInfoDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -153,7 +154,7 @@ public class ProductionCompanyService {
         }
     }
 
-    public Result<ProductionCompanyDTO> getProductionCompany(int companyID) {
+    public Result<ProductionCompanyInfoDTO> getProductionCompany(int companyID) {
         try {
             logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",
                     companyID);
@@ -161,7 +162,7 @@ public class ProductionCompanyService {
             logger.info(
                     "ProductionCompanyService.getProductionCompany: Successfully retrieved production company with id {}",
                     companyID);
-            return Result.makeOk(new ProductionCompanyDTO(company));
+            return Result.makeOk(new ProductionCompanyInfoDTO(company));
         } catch (IllegalArgumentException e) {
             logger.warn("ProductionCompanyService.getProductionCompany: IllegalArgumentException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
