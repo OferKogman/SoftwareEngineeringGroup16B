@@ -164,7 +164,7 @@ export default function CompanyEvents() {
                 }}
               />
 
-              <span className="event-active-slider" />
+              <strong className="event-active-slider" />
             </label>
 
             <button

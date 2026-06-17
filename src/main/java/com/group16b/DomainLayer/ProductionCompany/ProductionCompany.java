@@ -15,19 +15,57 @@ import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
+@Entity
+@Table(name = "production_companies")
 public class ProductionCompany {
+
+    @Id
     private int productionCompanyID;
+
+    @Column(nullable = false)
     private double rating;
+
+    @Version
     private long version;
+
+    @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
     private String founderID;
 
-    private final HashMap<String, MembershipNode> membersNodes=new HashMap<>();
-    private final HashMap<InviteKey, MembershipNode> invites= new HashMap<>();
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "production_company_id")
+    @MapKey(name = "userID")
+    private final HashMap<String, MembershipNode> membersNodes = new HashMap<>();
+
+    @Convert(converter = InvitesConverter.class)
+    @Column(name = "invites", columnDefinition = "TEXT")
+    private final HashMap<InviteKey, MembershipNode> invites = new HashMap<>();
+
+    @Convert(converter = ChildrenByUserConverter.class)
+    @Column(name = "children_by_user", columnDefinition = "TEXT")
     private final HashMap<String, Set<String>> childrenByUser = new HashMap<>();
+
+    // TODO: purchasePolicies and discountPolicies need annotations once rewritten
+    @Transient
     private final Set<PurchasePolicy> purchasePolicies = new HashSet<>();
+    @Transient
     private final Set<DiscountPolicy> discountPolicies = new HashSet<>();
+
+    protected ProductionCompany() {}
 
     public ProductionCompany(ProductionCompany other)
     {
@@ -58,6 +96,7 @@ public class ProductionCompany {
         this.purchasePolicies.addAll(other.purchasePolicies);
         this.discountPolicies.addAll(other.discountPolicies);
     }
+
     public ProductionCompany(int id, String name, double rating, String founderID)
     {
         this.name=normalizeCompanyName(name);
@@ -81,11 +120,11 @@ public class ProductionCompany {
 
         return trimmed;
     }
+
     public static ProductionCompany createNewCompany(String name, String founderID, int id)
     {
         return new ProductionCompany(id,name,0.0,founderID);
     }
-
 
     public int getProductionCompanyID() {
         return productionCompanyID;
@@ -99,10 +138,12 @@ public class ProductionCompany {
     {
         return name;
     }
+
     public String getFounderID()
     {
         return founderID;
     }
+
     public void setName(String name)
     {
         this.name=name;
@@ -125,8 +166,6 @@ public class ProductionCompany {
     public Set<PurchasePolicy> getPurchasePolicy() {
         return new HashSet<>(purchasePolicies);
     }
-
-
 
     public boolean isFounder(String userID)
     {
@@ -152,11 +191,6 @@ public class ProductionCompany {
         return true;
     }
 
-    /*
-    adds an invite to become owner
-    assigner is set to be caller
-    PRE CONDITIONS: target is not already owner, caller is owner
-    */
     public void AssignOwner(String callerID, String targetID)
     {
         if(!isOwner(callerID))
@@ -189,7 +223,6 @@ public class ProductionCompany {
         invites.put(new InviteKey(targetID, callerID), newManagerInvite);
     }
 
-    //if invite is found then accept it and remove all invites with equivalent or lower role
     public void acceptInvite(String targetID, String assignerID) 
     {
         InviteKey key = new InviteKey(targetID, assignerID);
@@ -200,7 +233,7 @@ public class ProductionCompany {
         }
         MembershipNode curRole = membersNodes.get(targetID);
         if(curRole!=null)
-        {//remove from the child list of the parent
+        {
             String parentID = curRole.getAssignerID();
             if(parentID!=null)
                 childrenByUser.get(parentID).remove(targetID);
@@ -210,7 +243,6 @@ public class ProductionCompany {
 
         RoleType acceptedRole = invite.getRoleType();
 
-        // remove equivalent or lower roles only
         invites.entrySet().removeIf(e ->
             e.getKey().targetId.equals(targetID) &&
             e.getValue().getRoleType().isLowerOrEqual(acceptedRole)
@@ -239,7 +271,6 @@ public class ProductionCompany {
             throw new IllegalArgumentException("Founder cannot forfeit ownership in his company.");
         }
         removeMember(userID);
-
     }
 
     public void removeMemberByOwner(String ownerID, String targetID)
@@ -281,6 +312,7 @@ public class ProductionCompany {
             throw new IllegalArgumentException("user "+userID+" dont have high enough permissions in company "+this.productionCompanyID);
         }
     }
+
     public void validateUserPermissions(String userID, ManagerPermissions perm)
     {
         MembershipNode node=membersNodes.get(userID);
@@ -357,11 +389,8 @@ public class ProductionCompany {
         }
 
         childrenByUser.remove(userID);
-
-        // remove user
         membersNodes.remove(userID);
 
-        //remove all retaled invites
         invites.entrySet().removeIf(e ->
             e.getKey().targetId.equals(userID) || e.getKey().assignerId.equals(userID)
         );
@@ -383,7 +412,6 @@ public class ProductionCompany {
         }
     }
 
-
     public void adminRemoveUser(String userID)
     {
         removeMember(userID);
@@ -392,17 +420,27 @@ public class ProductionCompany {
     private void addChild(String parent, String child) {
         childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
     }
-        private static class InviteKey {
+
+    static class InviteKey {
         private final String targetId;
         private final String assignerId;
 
         public InviteKey(String targetId, String callerID) {
-                    this.targetId = targetId;
-                    this.assignerId = callerID;
+            this.targetId = targetId;
+            this.assignerId = callerID;
         }
+
         public InviteKey(InviteKey other) {
             this.targetId = other.targetId;
             this.assignerId = other.assignerId;
+        }
+
+        public String getTargetId() {
+            return targetId;
+        }
+
+        public String getAssignerId() {
+            return assignerId;
         }
 
         @Override
@@ -420,26 +458,26 @@ public class ProductionCompany {
         }
     }
 
-    //FOR TESTS PURPOSES ONLY, TO VERIFY CORRECTNESS
     public boolean hasPendingInvite(String userID) {
         return invites.keySet()
                     .stream()
                     .anyMatch(k -> k.targetId.equals(userID));
     }
+
     public boolean hasPendingInvite(String targetID,String assignerID)
     {
         return invites.containsKey(
             new InviteKey(targetID, assignerID)
         );
     }
+
     public boolean hasPendingOwnerInvite(String targetID,String assignerID) {
         MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
-
         return node != null && node.getRoleType() == RoleType.OWNER;
     }
+
     public boolean hasPendingManagerInvite(String targetID,String assignerID, Set<ManagerPermissions> perms) {
         MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
-
         return node != null && node.getRoleType() == RoleType.MANAGER && node.getPermissions().equals(perms);
     }
 

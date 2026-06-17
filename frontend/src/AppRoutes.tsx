@@ -4,6 +4,7 @@ import AdminManagement from "./Components/Admin/AdminManagement";
 import EditDiscountPolicy from "./Components/EditDiscountPolicy";
 import EditPurchasePolicy from "./Components/EditPurchasePolicy";
 import EventCreationForm from "./Components/Event/EventCreationForm";
+import EventInformation from "./Components/Event/EventInformation";
 import EventManagement from "./Components/Event/EventManagement";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
@@ -77,7 +78,8 @@ export default function AppRoutes() {
         <Route path="settings" element={<CompanySettings />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
-      <Route path="/events/:eventID" element={<ViewEvent />} />
+
+      <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>
   );
 }

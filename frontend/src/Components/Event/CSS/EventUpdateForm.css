@@ -7,26 +7,62 @@
 
 .form-label {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: 5.5rem 1fr;
+  column-gap: 20px;
   margin-bottom: 8px;
-  align-items: center;
+  align-items: left;
+}
+
+.form-label span {
+  margin-top: 6px;
+  text-align: left;
+  justify-self: start;
 }
 
 .form-label input {
   width: 100%;
-  padding: 8px;
+  padding: 6px;
   box-sizing: border-box;
   margin-left: 8px;
-  margin-top: 2px;
 }
 
-.status-toggle {
-  margin: 10px;
-  text-align: center;
+.event-active-toggle {
+  display: grid;
+  grid-template-columns: 5.5rem 1fr;
+  column-gap: 20px;
+  margin-bottom: 8px;
+  align-items: left;
 }
 
-.status-toggle button {
-  cursor: pointer;
+.event-active-toggle input {
+  display: none;
+}
+
+.event-active-toggle span {
+  display: flex;
+  align-items: center;
+  min-width: 6.5rem;
+}
+
+.event-active-slider {
+  width: 46px;
+  height: 24px;
+  border-radius: 999px;
+  background: #777;
+  position: relative;
+  transition: 0.2s;
+}
+
+.event-active-slider::before {
+  content: "";
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  transition: 0.2s;
 }
 
 .form-actions {

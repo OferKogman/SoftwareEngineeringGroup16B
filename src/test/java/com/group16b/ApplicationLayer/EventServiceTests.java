@@ -1,12 +1,5 @@
 package com.group16b.ApplicationLayer;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +8,14 @@ import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -104,7 +103,8 @@ public class EventServiceTests {
                 Map<String, Segment> segmentMap = new TreeMap<>();
                 segmentMap.put("segment1", segment1);
 
-                Venue venue1 = new Venue("Test Venue", location1, segmentMap, "venue1", new VenueGrid(10, 10), new TreeMap<>(), new TreeMap<>());
+                Venue venue1 = new Venue("Test Venue", location1, segmentMap, "venue1", new VenueGrid(10, 10),
+                                new TreeMap<>(), new TreeMap<>());
 
                 LocalDateTime startTime = LocalDateTime.now().plusDays(1);
                 LocalDateTime endTime = LocalDateTime.now().plusDays(2);
@@ -272,7 +272,7 @@ public class EventServiceTests {
         public void SearchEvents_InvalidParameterMinPrice_Failure() {
                 Map<String, List<Object>> searchParams = new TreeMap<>();
                 searchParams.put("minPrice", List.of("not_a_number"));
-                assertEquals("Invalid search parameters: Invalid type for parameter 'minPrice'. Expected: Double",
+                assertEquals("Invalid search parameters: Invalid type for parameter 'minPrice'. Expected: Number",
                                 eventService.searchEvents(searchParams).getError());
         }
 
@@ -288,7 +288,7 @@ public class EventServiceTests {
         public void SearchEvents_InvalidParameterMaxPrice_Failure() {
                 Map<String, List<Object>> searchParams = new TreeMap<>();
                 searchParams.put("maxPrice", List.of("not_a_number"));
-                assertEquals("Invalid search parameters: Invalid type for parameter 'maxPrice'. Expected: Double",
+                assertEquals("Invalid search parameters: Invalid type for parameter 'maxPrice'. Expected: Number",
                                 eventService.searchEvents(searchParams).getError());
         }
 
@@ -338,7 +338,7 @@ public class EventServiceTests {
         public void SearchEvents_InvalidParameterEventRating_Failure() {
                 Map<String, List<Object>> searchParams = new TreeMap<>();
                 searchParams.put("eventRating", List.of("not_a_double"));
-                assertEquals("Invalid search parameters: Invalid type for parameter 'eventRating'. Expected: Double",
+                assertEquals("Invalid search parameters: Invalid type for parameter 'eventRating'. Expected: Number",
                                 eventService.searchEvents(searchParams).getError());
         }
 
@@ -355,7 +355,7 @@ public class EventServiceTests {
                 Map<String, List<Object>> searchParams = new TreeMap<>();
                 searchParams.put("productionCompanyRating", List.of("not_a_double"));
                 assertEquals(
-                                "Invalid search parameters: Invalid type for parameter 'productionCompanyRating'. Expected: Double",
+                                "Invalid search parameters: Invalid type for parameter 'productionCompanyRating'. Expected: Number",
                                 eventService.searchEvents(searchParams).getError());
         }
 
