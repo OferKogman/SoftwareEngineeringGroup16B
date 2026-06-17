@@ -40,7 +40,7 @@ public class VirtualQueueTests {
     void addToQueue_usersGetPassedOneAfterAnother()
             throws InterruptedException, NoSuchFieldException, SecurityException,
             IllegalArgumentException, IllegalAccessException {
-        Field PQ = q.getClass().getDeclaredField("PASS_NUM");
+        Field PQ = q.getClass().getDeclaredField("pass_num");
         PQ.setAccessible(true);
         PQ.set(q, 1);
         Field PT = q.getClass().getDeclaredField("PASS_TIMEOUT");
