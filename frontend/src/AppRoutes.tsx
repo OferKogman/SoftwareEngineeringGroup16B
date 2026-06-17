@@ -20,11 +20,8 @@ import ChangePasswordForm from "./Components/User/ChangePasswordForm";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
-import CreateOrder from "./Components/Order/CreateOrder";
-import PaymentPage from "./Components/Order/PaymentPage";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
-import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany"
 
 export default function AppRoutes() {
   return (
@@ -46,13 +43,6 @@ export default function AppRoutes() {
       />
       <Route path="/admins/management" element={<AdminManagement />} />
       <Route path="/events/search" element={<SearchEvents />} />
-
-
-      <Route path="/events/:eventID/create-order" element={<CreateOrder />} />
-      <Route path="/companies/create" element={<CreateProdactionCompany />} />
-      <Route path="/payment" element={<PaymentPage />} />
-
-
       <Route path="/events/:eventID/management" element={<EventManagement />}>
         <Route index element={<Navigate to="show" />} />
         <Route path="show" element={<ViewEvent />} />
@@ -61,7 +51,6 @@ export default function AppRoutes() {
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
       </Route>
-
       <Route
         path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}
