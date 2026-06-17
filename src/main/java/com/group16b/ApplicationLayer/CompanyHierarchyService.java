@@ -465,26 +465,26 @@ public class CompanyHierarchyService {
 		}
 	}
 
-	    public Result<Set<ManagerPermissions>> getComapanyPermissions(int companyID)
+	public Result<Set<ManagerPermissions>> getComapanyPermissions(int companyID)
     {
         try{
-            logger.info("ProductionCompanService.getComapanyPermissions: retrieving permissions");
+            logger.info("companyHierarchyService.getComapanyPermissions: retrieving permissions");
             
             String userId=validateRoleAndGetUserId();
             ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
             
-            logger.info("ProductionCompanService.getComapanyPermissions: succesfully retrieved permissions for user {} in company {}",userId,companyID);
+            logger.info("companyHierarchyService.getComapanyPermissions: succesfully retrieved permissions for user {} in company {}",userId,companyID);
             return Result.makeOk(company.getUserPermissions(userId));
 
         } catch(AuthException e){
-            logger.warn("ProductionCompanService.getComapanyPermissions: AuthException: {}",e.getMessage());
+            logger.warn("companyHierarchyService.getComapanyPermissions: AuthException: {}",e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (IllegalArgumentException e){
-            logger.warn("ProductionCompanService.getComapanyPermissions: IllegalArgumentException: {}",e.getMessage());
+            logger.warn("companyHierarchyService.getComapanyPermissions: IllegalArgumentException: {}",e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e){
-            logger.error("ProductionCompanService.getComapanyPermissions: Unexpected Exception: ",e);
-            return Result.makeFail("An unexpected error occured, pls try again later");
+            logger.error("companyHierarchyService.getComapanyPermissions: Unexpected Exception: ",e);
+            return Result.makeFail("An unexpected error occured, pls try again later.");
         }
     }
 
@@ -506,8 +506,8 @@ public class CompanyHierarchyService {
         //if we do implement error 403 then this if will also disapear, along with the function
         if(!Role.SIGNED.equals(RequestContext.getRole()))
             throw new AuthException("Only users are allowed to perform this operation.");
-        String userId=RequestContext.getUserId();
-        return userId;
+
+        return RequestContext.getUserId();
     }
 
 }

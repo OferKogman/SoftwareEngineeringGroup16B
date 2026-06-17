@@ -60,11 +60,5 @@ public class ProductionCompanyController extends BaseController {
     {
         return executeWithReturnData(() -> productionCompanyService.getCompanyAllEvents(companyId));
     }
-
-    @GetMapping("/{companyId}/permissions")
-    public ResponseEntity<?> getCompanyPerms(@PathVariable("companyId") int companyId)
-    {
-        return executeWithReturnData(() -> productionCompanyService.getCompanyAllEvents(companyId));
-    }
     
 }
