@@ -9,59 +9,53 @@
 
 .members-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: 1fr;
   gap: 1.2rem;
 }
 
-.members-card {
+.members-grid form {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
-
-  padding: 1.2rem;
-  border-radius: 1rem;
-
-  background: rgba(12, 12, 12, 0.9);
-  border: 1px solid rgba(168, 85, 247, 0.6);
-  box-shadow: 0 0 22px rgba(168, 85, 247, 0.25);
-}
-
-.members-card h3 {
-  margin: 0 0 0.5rem 0;
-}
-
-.members-card input {
-  padding: 0.7rem;
-  border-radius: 0.6rem;
-  border: 1px solid rgba(168, 85, 247, 0.5);
-  background: #0c0c0c;
-  color: white;
-}
-
-.members-card button {
-  padding: 0.8rem;
-  border-radius: 0.7rem;
-  border: none;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.danger-button {
-  background: #b91c1c;
-  color: white;
-}
-
-.permissions-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  font-size: 0.9rem;
-}
-
-.permissions-list label {
-  display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.members-grid fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.members-grid label {
+  display: grid;
+  grid-template-columns: 140px 250px;
+  align-items: center;
+  gap: 0.75rem;
+
+  width: fit-content;
+  margin: 0 auto;
+
+  text-align: left;
+}
+
+.members-grid label input,
+.members-grid label select {
+  width: 250px;
+  padding: 6px;
+}
+
+.members-grid h2 {
+  margin-bottom: 0rem;
+}
+
+.members-grid button {
+  width: 25%;
+}
+
+.members-grid > * {
+  width: 100%;
+  padding: 1.5rem;
 }
 
 .members-success {

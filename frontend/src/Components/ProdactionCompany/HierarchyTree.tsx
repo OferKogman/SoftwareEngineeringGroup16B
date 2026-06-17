@@ -150,19 +150,6 @@ export default function HierarchyTree() {
         }
 
         setHierarchy(data);
-
-        const { flowNodes: newFlowNodes } = buildReactFlowHierarchy(hierarchy);
-        setFlowNodes(newFlowNodes);
-
-        const newFlowEdges: HierarchyFlowEdge[] = hierarchy
-          .filter((node) => node.parentID)
-          .map((node) => ({
-            id: `${node.parentID}-${node.userID}`,
-            source: node.parentID,
-            target: node.userID,
-            type: "smoothstep",
-          }));
-        setFlowEdges(newFlowEdges);
       } catch (error) {
         setError(
           error instanceof Error ? error.message : "Failed to load Hierarchy",
@@ -174,6 +161,24 @@ export default function HierarchyTree() {
 
     void loadTree();
   }, [companyId, apiFetch]);
+
+  useEffect(() => {
+    async function loadFlow() {
+      const { flowNodes: newFlowNodes } = buildReactFlowHierarchy(hierarchy);
+      setFlowNodes(newFlowNodes);
+
+      const newFlowEdges: HierarchyFlowEdge[] = hierarchy
+        .filter((node) => node.parentID)
+        .map((node) => ({
+          id: `${node.parentID}-${node.userID}`,
+          source: node.parentID,
+          target: node.userID,
+          type: "smoothstep",
+        }));
+      setFlowEdges(newFlowEdges);
+    }
+    void loadFlow();
+  }, [hierarchy]);
 
   return (
     <div>
@@ -195,7 +200,12 @@ export default function HierarchyTree() {
                 <div>No hierarchy data found</div>
               ) : (
                 <div style={{ width: "100%", height: "500px" }}>
-                  <ReactFlow nodes={flowNodes} edges={flowEdges} fitView>
+                  <ReactFlow
+                    nodes={flowNodes}
+                    edges={flowEdges}
+                    fitView
+                    proOptions={{ hideAttribution: true }}
+                  >
                     <Background />
                     <Controls />
                   </ReactFlow>

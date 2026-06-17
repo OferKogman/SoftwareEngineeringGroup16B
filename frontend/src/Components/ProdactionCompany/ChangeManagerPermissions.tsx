@@ -7,7 +7,6 @@ type ChangeManagerPermissionsProps = {
     companyID: number,
     newPermissions: Set<ManagerPermissions>,
   ) => void | Promise<void>;
-  onCancel?: () => void;
 };
 
 const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
@@ -21,12 +20,11 @@ const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
 
 export default function ChangeManagerPermissions({
   onSubmit,
-  onCancel,
 }: ChangeManagerPermissionsProps) {
   const [targetID, setTargetID] = useState("");
   const [companyID, setCompanyID] = useState("");
   const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(
-    new Set(),
+    new Set<ManagerPermissions>(),
   );
   const [permissionsError, setPermissionsError] = useState("");
   const [submitError, setSubmitError] = useState("");
@@ -35,7 +33,11 @@ export default function ChangeManagerPermissions({
   function togglePermission(perm: ManagerPermissions) {
     setPermissions((prev) => {
       const next = new Set(prev);
-      next.has(perm) ? next.delete(perm) : next.add(perm);
+      if (next.has(perm)) {
+        next.delete(perm);
+      } else {
+        next.add(perm);
+      }
       return next;
     });
   }
@@ -55,7 +57,7 @@ export default function ChangeManagerPermissions({
       await onSubmit(targetID, Number(companyID), permissions);
       setTargetID("");
       setCompanyID("");
-      setPermissions(new Set());
+      setPermissions(new Set<ManagerPermissions>());
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Failed to update permissions.",
@@ -72,31 +74,20 @@ export default function ChangeManagerPermissions({
       {submitError && <p className="form-error">{submitError}</p>}
 
       <label>
-        Target ID
+        Target User
         <input
           type="text"
           required
           value={targetID}
           onChange={(e) => setTargetID(e.target.value)}
-          placeholder="Target ID"
-        />
-      </label>
-
-      <label>
-        Company ID
-        <input
-          type="number"
-          required
-          value={companyID}
-          onChange={(e) => setCompanyID(e.target.value)}
-          placeholder="Company ID"
+          placeholder="Target User"
         />
       </label>
 
       <fieldset>
         <legend>New Permissions</legend>
         {MANAGER_PERMISSIONS.map(({ value, label }) => (
-          <label key={value}>
+          <label className="perms" key={value}>
             <input
               type="checkbox"
               checked={permissions.has(value)}
@@ -108,16 +99,9 @@ export default function ChangeManagerPermissions({
       </fieldset>
       {permissionsError && <p className="form-error">{permissionsError}</p>}
 
-      <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Update Permissions"}
-        </button>
-      </div>
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Saving..." : "Update Permissions"}
+      </button>
     </form>
   );
 }

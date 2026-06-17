@@ -47,6 +47,10 @@ export default function ViewEvent() {
           },
         );
 
+        if (!locationResponse.ok) {
+          throw new Error(await response.text());
+        }
+
         const loc: LocationDTO = await locationResponse.json();
         setLocation(locationToString(loc));
 
@@ -56,6 +60,11 @@ export default function ViewEvent() {
             method: "GET",
           },
         );
+
+        if (!companyResponse.ok) {
+          throw new Error(await response.text());
+        }
+
         const company: ProductionCompanyDTO = await companyResponse.json();
         setCompanyName(company.name);
       } catch (err) {
