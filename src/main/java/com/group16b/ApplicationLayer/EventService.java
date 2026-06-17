@@ -364,6 +364,7 @@ public class EventService {
 					if(event.getEventPrice()>newPrice)
 						throw new IllegalArgumentException("New segment price: "+newPrice+" cannot be samller than minimum event price: "+event.getEventPrice());
 					currSeg.setPrice(eventID, newPrice);
+					logger.info("@DEBUG: Updated segment price for event {}: {}", eventID, newPrice);
 				}
 				try {
 					venueRepository.save(venue);
