@@ -31,6 +31,7 @@ import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.Security.Role;
 import com.group16b.InfrastructureLayer.TicketGateway; 
 
 public class UserServiceTests {
@@ -54,10 +55,6 @@ public class UserServiceTests {
     private final String OTHER_USER_EMAIL = "noorders@test.com";
     private final String NO_COMPANY_USER_EMAIL = "no-comps@wa.com";
     private final String NON_EXISTENT_USER_EMAIL = "birds are fake";
-
-    private final String ADMIN_ROLE="Admin";
-    private final String GUEST_ROLE="Guest";
-    private final String USER_ROLE="Signed";
 
 @BeforeEach
     void setUp() {
@@ -334,35 +331,35 @@ public class UserServiceTests {
     @Test
     void isRoleAdmin_adminToken_returnTrue()
     {
-        Result<Boolean> result = userService.isRole(adminToken, ADMIN_ROLE);
+        Result<Boolean> result = userService.isRole(adminToken, Role.ADMIN);
         assertTrue(result.isSuccess());
         assertEquals(true, result.getValue());
     }
     @Test
-    void isRoleUser_adminToken_returnTrue()
+    void isRoleUser_UserToken_returnTrue()
     {
-        Result<Boolean> result = userService.isRole(sessionToken, USER_ROLE);
+        Result<Boolean> result = userService.isRole(sessionToken, Role.SIGNED);
         assertTrue(result.isSuccess());
         assertEquals(true, result.getValue());
     }
     @Test
-    void isRoleGuest_adminToken_returnTrue()
+    void isRoleGuest_GuestToken_returnTrue()
     {
-        Result<Boolean> result = userService.isRole(guestToken, GUEST_ROLE);
+        Result<Boolean> result = userService.isRole(guestToken, Role.GUEST);
         assertTrue(result.isSuccess());
         assertEquals(true, result.getValue());
     }
     @Test
     void isRole_InvalidRole_returnFalse()
     {
-        Result<Boolean> result = userService.isRole(guestToken, ADMIN_ROLE);
+        Result<Boolean> result = userService.isRole(guestToken, Role.ADMIN);
         assertTrue(result.isSuccess());
         assertEquals(false, result.getValue());
     }
     @Test
     void isRole_BadToekn_returnError()
     {
-        Result<Boolean> result = userService.isRole("chi-vap-chi-chi", GUEST_ROLE);
+        Result<Boolean> result = userService.isRole("chi-vap-chi-chi", Role.GUEST);
         assertFalse(result.isSuccess());
         assertEquals("Invalid Token", result.getError());
     }
@@ -372,7 +369,7 @@ public class UserServiceTests {
         IAuthenticationService mockAuthenticationService=mock(IAuthenticationService.class);
         doThrow(new RuntimeException("I recognize the bodies in the water...")).when(mockAuthenticationService).validateToken(anyString());
         userService=new UserService(mockAuthenticationService, null, null, userRepo, null, null, null);
-        Result<Boolean> result = userService.isRole(guestToken, GUEST_ROLE);
+        Result<Boolean> result = userService.isRole(guestToken, Role.GUEST);
         assertFalse(result.isSuccess());
         assertEquals("An unexpected error occured, pls try again later.", result.getError());
     }

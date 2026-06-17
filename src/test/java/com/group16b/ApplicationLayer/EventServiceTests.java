@@ -41,6 +41,7 @@ import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImp
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 public class EventServiceTests {
 
@@ -81,13 +82,13 @@ public class EventServiceTests {
 
                 user1 = new User("testuser1", "password");
                 when(mockTokenService.validateToken("user1")).thenReturn(true);
-                when(mockTokenService.extractRoleFromToken("user1")).thenReturn("Signed");
+                when(mockTokenService.extractRoleFromToken("user1")).thenReturn(Role.SIGNED);
                 when(mockTokenService.isUserToken("user1")).thenReturn(true);
                 when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user1.getEmail()));
 
                 user2 = new User("testuser2", "password");
                 when(mockTokenService.validateToken("user2")).thenReturn(true);
-                when(mockTokenService.extractRoleFromToken("user2")).thenReturn("Signed");
+                when(mockTokenService.extractRoleFromToken("user2")).thenReturn(Role.SIGNED);
                 when(mockTokenService.isUserToken("user2")).thenReturn(true);
                 when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getEmail()));
 

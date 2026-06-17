@@ -46,6 +46,7 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 public class VenueEventConfigServiceTests {
 
@@ -124,7 +125,7 @@ public class VenueEventConfigServiceTests {
                 VenueRecord validRecord = createValidVenueRecord();
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
@@ -159,7 +160,7 @@ public class VenueEventConfigServiceTests {
                 VenueRecord validRecord = createValidVenueRecord();
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
 
@@ -199,7 +200,7 @@ public class VenueEventConfigServiceTests {
         void configureNewLayoutAndInventory_TokenRoleIsNotUser_ReturnsFailResult() {
                 VenueRecord validRecord = createValidVenueRecord();
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("Admin"); // Wrong role
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED); // Wrong role
 
                 Result<String> result = configService.configureNewLayoutAndInventory(
                                 validToken, companyID, validRecord);
@@ -217,7 +218,7 @@ public class VenueEventConfigServiceTests {
                 VenueRecord validRecord = createValidVenueRecord();
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
 
@@ -245,7 +246,7 @@ public class VenueEventConfigServiceTests {
                 VenueRecord validRecord = createValidVenueRecord();
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
 
@@ -276,7 +277,7 @@ public class VenueEventConfigServiceTests {
         void configureNewLayoutAndInventory_EventDoesNotExist_ReturnsFailResult() {
                 VenueRecord validRecord = createValidVenueRecord();
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
                 when(mockEventRepository.findByID(String.valueOf(eventID)))
@@ -292,7 +293,7 @@ public class VenueEventConfigServiceTests {
         void configureNewLayoutAndInventory_GenericSystemException_ReturnsFailResult() {
                 VenueRecord validRecord = createValidVenueRecord();
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
 
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn("invalid_id_format");
@@ -307,7 +308,7 @@ public class VenueEventConfigServiceTests {
         @Test
         void configureNewLayoutAndInventory_NullVenueLayout_TriggersSystemException_ReturnsFailResult() {
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
-                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn("User");
+                when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userIDString);
 

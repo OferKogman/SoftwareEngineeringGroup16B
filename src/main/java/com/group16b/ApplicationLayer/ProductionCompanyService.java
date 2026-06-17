@@ -24,7 +24,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 @Service
 public class ProductionCompanyService {
@@ -195,6 +197,29 @@ public class ProductionCompanyService {
         }
     }
 
+    public Result<Set<ManagerPermissions>> getComapanyPermissions(int companyID)
+    {
+        try{
+            logger.info("ProductionCompanService.getComapanyPermissions: retrieving permissions");
+            
+            String userId=validateRoleAndGetUserId();
+            ProductionCompany company=productionRepo.findByID(String.valueOf(companyID));
+            
+            logger.info("ProductionCompanService.getComapanyPermissions: succesfully retrieved permissions for user {} in company {}",userId,companyID);
+            return Result.makeOk(company.getUserPermissions(userId));
+
+        } catch(AuthException e){
+            logger.warn("ProductionCompanService.getComapanyPermissions: AuthException: {}",e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e){
+            logger.warn("ProductionCompanService.getComapanyPermissions: IllegalArgumentException: {}",e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e){
+            logger.error("ProductionCompanService.getComapanyPermissions: Unexpected Exception: ",e);
+            return Result.makeFail("An unexpected error occured, pls try again later");
+        }
+    }
+
     // gets all orders for the company
     private Set<Integer> getCompanyEventIDs(int companyID) {
         return getCompanyEvents(companyID).stream()
@@ -261,6 +286,15 @@ public class ProductionCompanyService {
         // verify user exists in the database, i.e not a stale user
         userRepo.findByID(userID);
         return userID;
+    }
+
+    private String validateRoleAndGetUserId()
+    {
+        //if we do implement error 403 then this if will also disapear, along with the function
+        if(!Role.SIGNED.equals(RequestContext.getRole()))
+            throw new AuthException("Only users are allowed to perform this operation.");
+        String userId=RequestContext.getUserId();
+        return userId;
     }
 
 }

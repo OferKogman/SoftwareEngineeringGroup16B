@@ -49,15 +49,15 @@ public class UserController extends BaseController {
     
     @GetMapping("/role/admin")
     public ResponseEntity<?> isAdmin(@RequestHeader("Authorization") String sessionToken) {
-        return executeWithReturnData(() -> userService.isRole(sessionToken,Role.ADMIN.value()));
+        return executeWithReturnData(() -> userService.isRole(sessionToken,Role.ADMIN));
     }
     @GetMapping("/role/signed")
     public ResponseEntity<?> isSigned(@RequestHeader("Authorization") String sessionToken) {
-        return executeWithReturnData(() -> userService.isRole(sessionToken,Role.SIGNED.value()));
+        return executeWithReturnData(() -> userService.isRole(sessionToken,Role.SIGNED));
     }
     @GetMapping("/role/guest")
     public ResponseEntity<?> isAGuest(@RequestHeader("Authorization") String sessionToken) {
-        return executeWithReturnData(() -> userService.isRole(sessionToken,Role.GUEST.value()));
+        return executeWithReturnData(() -> userService.isRole(sessionToken,Role.GUEST));
     }
     @GetMapping("/me/active-order")
     public ResponseEntity<?> getUserActiveOrder(@RequestHeader("Authorization") String sessionToken) {

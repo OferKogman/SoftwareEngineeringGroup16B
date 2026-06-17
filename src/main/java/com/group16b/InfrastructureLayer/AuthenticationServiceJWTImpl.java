@@ -59,15 +59,15 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     }
 
     public String generateVisitor_GuestToken(SessionToken session) {
-        return createToken(session.getValue(), Role.GUEST.value(), userExpirationTime, userKey);
+        return createToken(session.getValue(), Role.GUEST, userExpirationTime, userKey);
     }
 
     public String generateVisitor_SignedToken(String userID) {
-        return createToken(userID, Role.SIGNED.value(), userExpirationTime, userKey);
+        return createToken(userID, Role.SIGNED, userExpirationTime, userKey);
     }
 
     public String generateAdminToken(String adminID) {
-        return createToken(String.valueOf(adminID), Role.ADMIN.value(), adminExpirationTime, adminKey);
+        return createToken(String.valueOf(adminID), Role.ADMIN, adminExpirationTime, adminKey);
     }
 
     @Override
@@ -93,7 +93,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isUserToken(String token) {
         try {
-            return this.extractRoleFromToken(token).equals(Role.SIGNED.value());
+            return this.extractRoleFromToken(token).equals(Role.SIGNED);
         } catch (Exception e) {
             return false;
         }
@@ -102,7 +102,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isGuestToken(String token) {
         try {
-            return this.extractRoleFromToken(token).equals(Role.GUEST.value());
+            return this.extractRoleFromToken(token).equals(Role.GUEST);
         } catch (Exception e) {
             return false;
         }
@@ -111,7 +111,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isAdminToken(String token) {
         try {
-            return this.extractRoleFromToken(token).equals(Role.ADMIN.value());
+            return this.extractRoleFromToken(token).equals(Role.ADMIN);
         } catch (Exception e) {
             return false;
         }
