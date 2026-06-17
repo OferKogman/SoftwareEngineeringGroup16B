@@ -4,12 +4,16 @@ import AdminManagement from "./Components/Admin/AdminManagement";
 import EditDiscountPolicy from "./Components/EditDiscountPolicy";
 import EditPurchasePolicy from "./Components/EditPurchasePolicy";
 import EventCreationForm from "./Components/Event/EventCreationForm";
+import EventInformation from "./Components/Event/EventInformation";
 import EventManagement from "./Components/Event/EventManagement";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
+import CreateOrder from "./Components/Order/CreateOrder";
+import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
+import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
@@ -43,6 +47,11 @@ export default function AppRoutes() {
       />
       <Route path="/admins/management" element={<AdminManagement />} />
       <Route path="/events/search" element={<SearchEvents />} />
+
+      <Route path="/events/:eventID/create-order" element={<CreateOrder />} />
+      <Route path="/companies/create" element={<CreateProdactionCompany />} />
+      <Route path="/payment" element={<PaymentPage />} />
+
       <Route path="/events/:eventID/management" element={<EventManagement />}>
         <Route index element={<Navigate to="show" />} />
         <Route path="show" element={<ViewEvent />} />
@@ -51,6 +60,7 @@ export default function AppRoutes() {
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
       </Route>
+
       <Route
         path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}
@@ -68,7 +78,8 @@ export default function AppRoutes() {
         <Route path="settings" element={<CompanySettings />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
-      <Route path="/events/:eventID" element={<ViewEvent />} />
+
+      <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>
   );
 }
