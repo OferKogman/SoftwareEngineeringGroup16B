@@ -3,21 +3,63 @@ package com.group16b.DomainLayer.Order;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Order {
-	private final String orderId;
-	private OrderState state;
-	private final String segmentId;
-	private List<String> seats; // seat Ids
-	private int numOfTickets;
-	private final OrderType orderType;
-	private static int idCounter = 0;
-	private  double totalOrderprice;
-	private final int eventId;
-	private final String subjectID;
-	private long version;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 
-	private Integer transactioId=null;
-	private String externalTicket=null;
+@Entity
+@Table(name = "orders")
+public class Order {
+ 
+    @Id
+    private final String orderId;
+ 
+    @Convert(converter = OrderStateConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private OrderState state;
+ 
+    @Column(nullable = false)
+    private final String segmentId;
+ 
+    @ElementCollection
+    @CollectionTable(name = "order_seats", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "seat_id")
+    private List<String> seats;
+ 
+    @Column(nullable = false)
+    private int numOfTickets;
+ 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private final OrderType orderType;
+ 
+    private static int idCounter = 0;
+ 
+    @Column(nullable = false)
+    private double totalOrderprice;
+ 
+    @Column(nullable = false)
+    private final int eventId;
+ 
+    @Column(nullable = false)
+    private final String subjectID;
+ 
+    @Version
+    private long version;
+ 
+    @Column(name = "transaction_id")
+    private Integer transactioId = null;
+ 
+    @Column(name = "external_ticket")
+    private String externalTicket = null;
 
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
@@ -57,6 +99,14 @@ public class Order {
 		this.subjectID = other.subjectID;
 		this.version = other.version;
 		
+	}
+
+	public Order(){ //default constructor for JPA
+        this.orderId = null;
+        this.segmentId = null;
+        this.orderType = null;
+        this.eventId = 0;
+        this.subjectID = null;
 	}
 	
 
