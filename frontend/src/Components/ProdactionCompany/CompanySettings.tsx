@@ -1,60 +1,54 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import "./CSS/CompanySettings.css";
 
 export default function CompanySettings() {
   const { companyId } = useParams();
 
-  const [, setConfirmationText] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const navigate = useNavigate();
-  async function handleForfeitOwnership() {
+  const apiFetch = useApiFetch();
+
+  function closePopup() {
     setMessage("");
     setError("");
+  }
+
+  async function handleForfeitOwnership() {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setMessage("");
 
     if (!companyId) {
       setError("Missing company ID.");
+      setIsSubmitting(false);
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      console.warn("=================================");
-      console.warn("MOCK FORFEIT OWNERSHIP");
-      console.warn("REMOVE MOCK WHEN API READY");
-      console.warn("=================================");
-
-      setMessage("Mock success: ownership forfeited.");
-      setConfirmationText("");
-
-      /*
-      const authToken = localStorage.getItem("authToken") || "";
-
-      const response = await fetch(
-        `${API_BASE}/production-companies/${companyId}/owners/me`,
+      const response = await apiFetch(
+        `http://localhost:8080/production-companies/${companyId}/owners/me`,
         {
           method: "DELETE",
-          headers: {
-            Authorization: authToken,
-          },
         },
       );
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Failed to forfeit ownership.");
+        const text = await response.text();
+        throw new Error(text || "Failed to forfeit ownership.");
       }
 
-      setMessage("Ownership successfully forfeited.");
-      setConfirmationText("");
-      */
-      // route user back to main page
-      navigate("/");
+      setError("");
+      setMessage("Ownership forfeited successfully.");
+
+      setTimeout(() => {
+        navigate("/");
+      }, 3000);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to forfeit ownership.",
@@ -68,35 +62,38 @@ export default function CompanySettings() {
     <main className="company-settings-page">
       <header className="settings-header">
         <div>
-          <h2>Company Settings</h2>
-          <p>Manage company-level actions and ownership settings.</p>
+          <h2>Resignation</h2>
+          <p>Say goodbye to your ownership settings!</p>
         </div>
       </header>
 
-      {message && (
-        <p className="settings-alert settings-alert-success">{message}</p>
-      )}
-      {error && <p className="settings-alert settings-alert-error">{error}</p>}
-
-      <section className="settings-card danger-zone">
-        <div className="danger-zone-header">
-          <div>
-            <h3>Forfeit Ownership</h3>
-            <p>
-              This removes your ownership role from this company. You may lose
-              access to owner-only actions.
-            </p>
-          </div>
+      <section className="settings-card">
+        <div>
+          <button
+            onClick={handleForfeitOwnership}
+            disabled={!!message || !!error || isSubmitting}
+          >
+            {isSubmitting ? "Forfeiting..." : "Forfeit Ownership"}
+          </button>
+          <p>
+            This removes your ownership role from this company.
+            <br /> You may lose access to owner-only actions.
+          </p>
         </div>
-
-        <button
-          className="danger-button"
-          type="button"
-          onClick={handleForfeitOwnership}
-        >
-          {isSubmitting ? "Forfeiting..." : "Forfeit Ownership"}
-        </button>
       </section>
+
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
     </main>
   );
 }
