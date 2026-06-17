@@ -330,7 +330,8 @@ public class EventService {
 		}
 	}
 
-	public Result<String> editStockInSegmentsForEvent(Map<String, EventSegmentConfigUpdateRecord> segmentsAndNewStock, int eventID,
+	public Result<String> editStockInSegmentsForEvent(Map<String, EventSegmentConfigUpdateRecord> segmentsAndNewStock,
+			int eventID,
 			String sessionToken) {
 		try {
 			String userID = validateAndGetUserID(sessionToken);
@@ -359,10 +360,11 @@ public class EventService {
 				for (Map.Entry<String, EventSegmentConfigUpdateRecord> entry : segmentsAndNewStock.entrySet()) {
 					Segment currSeg = venue.getSegmentByID(entry.getKey());
 					currSeg.setStockForEvent(eventID, entry.getValue().newStock());
-					
-					double newPrice=entry.getValue().newPrice();
-					if(event.getEventPrice()>newPrice)
-						throw new IllegalArgumentException("New segment price: "+newPrice+" cannot be samller than minimum event price: "+event.getEventPrice());
+
+					double newPrice = entry.getValue().newPrice();
+					if (event.getEventPrice() > newPrice)
+						throw new IllegalArgumentException("New segment price: " + newPrice
+								+ " cannot be samller than minimum event price: " + event.getEventPrice());
 					currSeg.setPrice(eventID, newPrice);
 				}
 				try {
@@ -397,7 +399,7 @@ public class EventService {
 
 	public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
 		try {
-			
+
 			logger.info("EventService.searchEvents: Attempting to search events with parameters: " + searchParams);
 			List<String> locationNames = getParam(searchParams, "location", String.class);
 			List<Location> locations = null;
@@ -417,14 +419,14 @@ public class EventService {
 					getParam(searchParams, "artist", String.class),
 					getParam(searchParams, "category", String.class),
 					getParam(searchParams, "keyword", String.class),
-					getParam(searchParams, "minPrice", Double.class),
-					getParam(searchParams, "maxPrice", Double.class),
+					getParam(searchParams, "minPrice", Number.class),
+					getParam(searchParams, "maxPrice", Number.class),
 					getParam(searchParams, "startTime", java.time.LocalDateTime.class),
 					getParam(searchParams, "endTime", java.time.LocalDateTime.class),
-					getParam(searchParams, "eventRating", Double.class),
+					getParam(searchParams, "eventRating", Number.class),
 					pcID,
 					locations,
-					getParam(searchParams, "productionCompanyRating", Double.class)).stream().map(EventDTO::new)
+					getParam(searchParams, "productionCompanyRating", Number.class)).stream().map(EventDTO::new)
 					.toList();
 
 			logger.info("EventService.searchEvents: Event search completed successfully. Found " + results.size()

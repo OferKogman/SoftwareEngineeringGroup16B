@@ -8,15 +8,14 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Repository;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
-import org.springframework.stereotype.Repository;
 
 @Repository
 public class EventRepositoryMapImpl implements IEventRepository {
 	private Map<Integer, Event> events = new TreeMap<>();
-
 
 	public EventRepositoryMapImpl() {
 	}
@@ -30,18 +29,17 @@ public class EventRepositoryMapImpl implements IEventRepository {
 		Event curr = events.get(e.getEventID());
 
 		if (curr != null) {
-			if (curr.getVersion() != e.getVersion()){
+			if (curr.getVersion() != e.getVersion()) {
 				throw new OptimisticLockingFailureException(
-                    "Event " + e.getEventID() + " version mismatch. Expected " +
-                    e.getVersion() +
-                    " but found " +
-                    curr.getVersion()
-                );
+						"Event " + e.getEventID() + " version mismatch. Expected " +
+								e.getVersion() +
+								" but found " +
+								curr.getVersion());
 			}
 			Event updated = new Event(e);
 			updated.incrementVersion();
 			events.put(updated.getEventID(), updated);
-		}else {
+		} else {
 			Event updated = new Event(e);
 			events.put(updated.getEventID(), updated);
 		}
@@ -68,42 +66,48 @@ public class EventRepositoryMapImpl implements IEventRepository {
 		throw new UnsupportedOperationException("Delete operation is not supported for EventRepositoryMapImpl");
 	}
 
-    @Override
-    public List<Event> searchEvents(List<String> name, List<String> artist, List<String> category, List<String> keyword, List<Double> minPrice, List<Double> maxPrice, List<LocalDateTime> startTime, List<LocalDateTime> endTime, List<Double> eventRating, List<Integer> productionCompanyID) {
-        if(minPrice != null && !minPrice.isEmpty() && minPrice.size() != 1) {
+	@Override
+	public List<Event> searchEvents(List<String> name, List<String> artist, List<String> category, List<String> keyword,
+			List<Number> minPrice, List<Number> maxPrice, List<LocalDateTime> startTime, List<LocalDateTime> endTime,
+			List<Number> eventRating, List<Integer> productionCompanyID) {
+		if (minPrice != null && !minPrice.isEmpty() && minPrice.size() != 1) {
 			throw new IllegalArgumentException("Min price filter must have exactly one value.");
 		}
-		if(maxPrice != null && !maxPrice.isEmpty() && maxPrice.size() != 1) {
+		if (maxPrice != null && !maxPrice.isEmpty() && maxPrice.size() != 1) {
 			throw new IllegalArgumentException("Max price filter must have exactly one value.");
 		}
-		if(startTime != null && !startTime.isEmpty() && startTime.size() != 1) {
+		if (startTime != null && !startTime.isEmpty() && startTime.size() != 1) {
 			throw new IllegalArgumentException("Start time filter must have exactly one value.");
 		}
-		if(endTime != null && !endTime.isEmpty() && endTime.size() != 1) {
+		if (endTime != null && !endTime.isEmpty() && endTime.size() != 1) {
 			throw new IllegalArgumentException("End time filter must have exactly one value.");
 		}
-		if(eventRating != null && !eventRating.isEmpty() && eventRating.size() != 1) {
+		if (eventRating != null && !eventRating.isEmpty() && eventRating.size() != 1) {
 			throw new IllegalArgumentException("Event rating filter must have exactly one value.");
 		}
-		return events.values().stream().filter(event -> (name == null || name.isEmpty() || name.contains(event.getEventName())) &&
+		return events.values().stream().filter(event -> (name == null || name.isEmpty()
+				|| name.contains(event.getEventName())) &&
 				(artist == null || artist.isEmpty() || artist.contains(event.getEventArtist())) &&
 				(category == null || category.isEmpty() || category.contains(event.getEventCategory())) &&
-				(keyword == null || keyword.isEmpty() || keyword.stream().anyMatch(k -> event.toString().contains(k))) &&
-				(minPrice == null || minPrice.isEmpty() || event.getEventPrice() >= minPrice.get(0)) &&
-				(maxPrice == null || maxPrice.isEmpty() || event.getEventPrice() <= maxPrice.get(0)) &&
+				(keyword == null || keyword.isEmpty() || keyword.stream().anyMatch(k -> event.toString().contains(k)))
+				&&
+				(minPrice == null || minPrice.isEmpty() || event.getEventPrice() >= minPrice.get(0).doubleValue()) &&
+				(maxPrice == null || maxPrice.isEmpty() || event.getEventPrice() <= maxPrice.get(0).doubleValue()) &&
 				(startTime == null || startTime.isEmpty() || !event.getEventEndTime().isBefore(startTime.get(0))) &&
 				(endTime == null || endTime.isEmpty() || !event.getEventStartTime().isAfter(endTime.get(0))) &&
-				(eventRating == null || eventRating.isEmpty() || event.getEventRating() >= eventRating.get(0)) &&
-				(productionCompanyID == null || productionCompanyID.isEmpty() || productionCompanyID.contains(event.getEventProductionCompanyID()))
-		).map(e -> new Event(e)).collect(Collectors.toCollection(ArrayList::new));
-    }
+				(eventRating == null || eventRating.isEmpty()
+						|| event.getEventRating() >= eventRating.get(0).doubleValue())
+				&&
+				(productionCompanyID == null || productionCompanyID.isEmpty()
+						|| productionCompanyID.contains(event.getEventProductionCompanyID())))
+				.map(e -> new Event(e)).collect(Collectors.toCollection(ArrayList::new));
+	}
 
-	private int parseID(String ID)
-    {
-        try {
-            return Integer.parseInt(ID);
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Invalid company ID: " + ID);
-        }
-    }
+	private int parseID(String ID) {
+		try {
+			return Integer.parseInt(ID);
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid company ID: " + ID);
+		}
+	}
 }
