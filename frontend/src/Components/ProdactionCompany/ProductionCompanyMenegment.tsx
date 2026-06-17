@@ -143,7 +143,7 @@ export default function ProductionCompanyManagement() {
           <NavLink to="venue-config">Create Venue</NavLink>
           <NavLink to="members">Members & Permissions</NavLink>
           <NavLink to="hierarchy">Hierarchy Tree</NavLink>
-          <NavLink to="settings">Company Settings</NavLink>
+          <NavLink to="settings">Resignation</NavLink>
         </aside>
 
         <main className="management-content">

@@ -1,45 +1,41 @@
 .company-settings-page {
-  width: 100%;
-  color: var(--settings-text);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .settings-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
 }
 
 .settings-header h2 {
-  margin: 0 0 0.35rem;
-  font-size: 1.75rem;
-}
-
-.settings-header p {
-  margin: 0;
-  color: var(--settings-muted);
+  font-weight: 700;
+  margin-bottom: 1rem;
 }
 
 .settings-card {
   max-width: 620px;
   padding: 1.5rem;
   border-radius: 1rem;
-  background: var(--settings-card-bg);
-  border: 1px solid var(--settings-border);
-  box-shadow: var(--settings-shadow);
 }
 
-.danger-zone {
-  border-color: var(--settings-danger-border);
+.settings-card button {
+  margin-top: 1rem;
+  padding: 0.8rem 2rem;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.danger-zone-header h3 {
-  margin: 0 0 0.5rem;
-  color: var(--settings-danger-text);
-  font-size: 1.25rem;
+.settings-card button:disabled {
+  cursor:
+    url("../../../assets/hand.png") 16 16,
+    not-allowed;
+  opacity: 0.5;
 }
 
-.danger-zone-header p {
-  margin: 0 0 1.25rem;
-  color: var(--settings-muted);
-  line-height: 1.5;
+.settings-card p {
+  font-size: 13px;
+  font-weight: 300;
 }
 
 .confirmation-field {
@@ -50,7 +46,6 @@
 .confirmation-field span {
   display: block;
   margin-bottom: 0.45rem;
-  color: var(--settings-text);
 }
 
 .confirmation-field input {
@@ -58,108 +53,54 @@
   box-sizing: border-box;
   padding: 0.8rem 0.9rem;
   border-radius: 0.7rem;
-  border: 1px solid var(--settings-input-border);
-  background: var(--settings-input-bg);
-  color: var(--settings-text);
+  border: 1px solid;
   outline: none;
 }
 
 .confirmation-field input:focus {
-  border-color: var(--settings-danger-text);
-  box-shadow: 0 0 0 3px var(--settings-danger-focus);
+  box-shadow: 0 0 0 3px;
 }
 
-.danger-button {
-  padding: 0.8rem 1rem;
-  border: none;
-  border-radius: 0.7rem;
-  background: var(--settings-danger-bg);
-  color: white;
-  cursor: pointer;
-  font-weight: 700;
-}
-
-.danger-button:hover:not(:disabled) {
-  background: var(--settings-danger-bg-hover);
-}
-
-.danger-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.dark .settings-alert {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  padding: 12px 20px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 150, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
 }
 
 .settings-alert {
-  max-width: 620px;
-  padding: 0.85rem 1rem;
-  border-radius: 0.7rem;
-  margin-bottom: 1rem;
-  font-weight: 600;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  padding: 12px 20px;
+  border-radius: 12px;
 }
 
-.settings-alert-success {
-  color: var(--settings-success-text);
-  background: var(--settings-success-bg);
-  border: 1px solid var(--settings-success-border);
+.settings-alert p {
+  margin: 0;
+  font-weight: 450;
+  margin-bottom: 8px;
 }
 
-.settings-alert-error {
-  color: var(--settings-error-text);
-  background: var(--settings-error-bg);
-  border: 1px solid var(--settings-error-border);
+.dark .settings-alert {
+  background: rgb(60, 60, 60);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 150, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
 }
 
-/* Light theme default */
-:root {
-  --settings-text: #111827;
-  --settings-muted: #6b7280;
-
-  --settings-card-bg: #ffffff;
-  --settings-border: #e5e7eb;
-  --settings-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-
-  --settings-input-bg: #ffffff;
-  --settings-input-border: #d1d5db;
-
-  --settings-danger-text: #b91c1c;
-  --settings-danger-bg: #dc2626;
-  --settings-danger-bg-hover: #b91c1c;
-  --settings-danger-border: rgba(220, 38, 38, 0.35);
-  --settings-danger-focus: rgba(220, 38, 38, 0.18);
-
-  --settings-success-text: #166534;
-  --settings-success-bg: #dcfce7;
-  --settings-success-border: #86efac;
-
-  --settings-error-text: #991b1b;
-  --settings-error-bg: #fee2e2;
-  --settings-error-border: #fca5a5;
-}
-
-/* Dark theme */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --settings-text: #f9fafb;
-    --settings-muted: #9ca3af;
-
-    --settings-card-bg: rgba(17, 24, 39, 0.85);
-    --settings-border: rgba(255, 255, 255, 0.12);
-    --settings-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
-
-    --settings-input-bg: rgba(2, 6, 23, 0.75);
-    --settings-input-border: rgba(255, 255, 255, 0.18);
-
-    --settings-danger-text: #f87171;
-    --settings-danger-bg: #b91c1c;
-    --settings-danger-bg-hover: #991b1b;
-    --settings-danger-border: rgba(248, 113, 113, 0.45);
-    --settings-danger-focus: rgba(248, 113, 113, 0.22);
-
-    --settings-success-text: #86efac;
-    --settings-success-bg: rgba(22, 101, 52, 0.22);
-    --settings-success-border: rgba(134, 239, 172, 0.35);
-
-    --settings-error-text: #fca5a5;
-    --settings-error-bg: rgba(127, 29, 29, 0.25);
-    --settings-error-border: rgba(252, 165, 165, 0.35);
-  }
+.light .settings-alert {
+  background: rgb(210, 210, 210);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 150, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
 }
