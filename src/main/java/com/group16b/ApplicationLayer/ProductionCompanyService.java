@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
+import com.group16b.ApplicationLayer.DTOs.ProductionCompanyInfoDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -23,7 +24,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 @Service
 public class ProductionCompanyService {
@@ -153,7 +156,7 @@ public class ProductionCompanyService {
         }
     }
 
-    public Result<ProductionCompanyDTO> getProductionCompany(int companyID) {
+    public Result<ProductionCompanyInfoDTO> getProductionCompany(int companyID) {
         try {
             logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",
                     companyID);
@@ -161,7 +164,7 @@ public class ProductionCompanyService {
             logger.info(
                     "ProductionCompanyService.getProductionCompany: Successfully retrieved production company with id {}",
                     companyID);
-            return Result.makeOk(new ProductionCompanyDTO(company));
+            return Result.makeOk(new ProductionCompanyInfoDTO(company));
         } catch (IllegalArgumentException e) {
             logger.warn("ProductionCompanyService.getProductionCompany: IllegalArgumentException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
@@ -193,6 +196,7 @@ public class ProductionCompanyService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+
 
     // gets all orders for the company
     private Set<Integer> getCompanyEventIDs(int companyID) {
@@ -260,6 +264,15 @@ public class ProductionCompanyService {
         // verify user exists in the database, i.e not a stale user
         userRepo.findByID(userID);
         return userID;
+    }
+
+    private String validateRoleAndGetUserId()
+    {
+        //if we do implement error 403 then this if will also disapear, along with the function
+        if(!Role.SIGNED.equals(RequestContext.getRole()))
+            throw new AuthException("Only users are allowed to perform this operation.");
+        String userId=RequestContext.getUserId();
+        return userId;
     }
 
 }

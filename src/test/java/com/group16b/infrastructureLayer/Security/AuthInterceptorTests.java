@@ -23,6 +23,7 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.AuthInterceptor;
 import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -48,7 +49,7 @@ public class AuthInterceptorTests {
     private final String BAD_TOKEN="I PLAY POKMON GO EVERYDAY";
 
     private final String GOOD_SUBJECT="Gordon ramzy";
-    private final String AVARAGE_ROLE="Signed";
+    private final String AVARAGE_ROLE=Role.SIGNED;
     private final String OLD="your mama";
 
     @BeforeEach

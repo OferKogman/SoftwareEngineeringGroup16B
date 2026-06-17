@@ -304,6 +304,14 @@ public class ProductionCompany {
         return result;
     }
 
+    public Set<ManagerPermissions> getUserPermissions(String userID)
+    {
+        MembershipNode node=membersNodes.get(userID);
+        if(node==null)
+            throw new IllegalArgumentException("User "+userID+" is not part of the company.");
+        return node.getPermissions();
+    }
+
     public void validateUserPermissions(String userID, RoleType type)
     {
         MembershipNode node=membersNodes.get(userID);

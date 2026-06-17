@@ -1,5 +1,6 @@
 package com.group16b.InfrastructureLayer;
 
+
 public class RequestContext {
 
     private static final ThreadLocal<String> userIdHolder = new ThreadLocal<>();

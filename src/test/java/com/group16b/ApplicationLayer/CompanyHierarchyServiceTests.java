@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -32,8 +33,10 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 public class CompanyHierarchyServiceTests {
         private CompanyHierarchyService CompanyHierarchyService;
@@ -2835,6 +2838,55 @@ public class CompanyHierarchyServiceTests {
         }
 
 
+        @Test
+        void getCompanyPerms_ValidUser_getPerms()
+        {
+                RequestContext.set(MANAGER2_EMAIL,Role.SIGNED);
+                Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(COMPANY1_ID);
+                assertTrue(result.isSuccess());
+                assertEquals(ALL_MANAGER_PERMISSIONS, result.getValue());
+        }
+
+        @Test
+        void getCompanyPerms_NotUserToken_AuthException()
+        {
+                RequestContext.set(MANAGER2_EMAIL,Role.ADMIN);
+                Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(COMPANY1_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Only users are allowed to perform this operation.", result.getError());
+        }
+
+        @Test
+        void getCompanyPerms_NotMemberOfCompany_IllegalArg()
+        {
+                RequestContext.set(BYSTANDER_EMAIL,Role.SIGNED);
+                Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(COMPANY1_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("User "+BYSTANDER_EMAIL+" is not part of the company.", result.getError());
+        }
+
+        @Test
+        void getCompanyPerms_CompanyNotFound_IllegalArg()
+        {
+                RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
+                Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(BAD_COMPANY_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Production company with ID "+BAD_COMPANY_ID+" is not found.", result.getError());
+        }
+
+        @Test
+        void getCompanyPerms_UnexpectedERROR_catch()
+        {
+                RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
+                IProductionCompanyRepository mockRepo=mock(IProductionCompanyRepository.class);
+                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository);
+                
+                doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
+                Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(BAD_COMPANY_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("An unexpected error occured, pls try again later.", result.getError());
+        }
+        
 
 
 
