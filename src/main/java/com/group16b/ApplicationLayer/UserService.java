@@ -7,10 +7,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import com.group16b.ApplicationLayer.DTOs.ActiveOrderDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -148,6 +150,42 @@ public class UserService {
             return Result.makeFail("Authentication failed: " + e.getMessage());
         } catch (Exception e) {
             logger.error("UserService.getUserOrderHistory: Unexpected error during user order history fetch: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public Result<ActiveOrderDTO> getUserActiveOrder(String sessionToken) {
+        try{
+            logger.info("UserService.getUserActiveOrder: Getting user's active order.");
+
+            logger.info("UserService.getUserActiveOrder: Extracting token subject and fetching User aggregate.");
+            String userId = validateAndGetUserID(sessionToken);
+
+            List<Order> orders = orderRepo.getAll();
+            Order activeOrder = orders.stream()
+                    .filter(order -> order.isBelongsToSubject(userId))
+                    .filter(order -> order.isActive())
+                    .findFirst()
+                    .orElse(null);
+            if (activeOrder == null) {
+                return Result.makeFail("No active order found for user.");
+            }
+            return Result.makeOk(new ActiveOrderDTO(activeOrder));
+        } catch (OrderExpiredException e){
+            logger.info("UserService.getUserActiveOrder: User's active order is expired: " + e.getMessage());
+            return Result.makeFail("No active order found for user.");
+        } catch (IllegalArgumentException e) {
+            logger.warn("UserService.getUserActiveOrder: IllegalArgumentException: " + e.getMessage());
+            return Result.makeFail("IllegalArgumentException: " + e.getMessage());
+        } catch (AuthException e) {
+            logger.warn("UserService.getUserActiveOrder: Authentication failed during active order fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error("UserService.getUserActiveOrder: JWT authentication error during user active order fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        }
+        catch (Exception e) {
+            logger.error("UserService.getUserActiveOrder: Unexpected error during active order fetch: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }

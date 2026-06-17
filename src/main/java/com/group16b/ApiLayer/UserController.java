@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.group16b.ApplicationLayer.UserService;
 import com.group16b.ApplicationLayer.DTOs.LoginRequestDTO;
+import com.group16b.ApplicationLayer.UserService;
 import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 @RestController
@@ -58,5 +58,8 @@ public class UserController extends BaseController {
     public ResponseEntity<?> isAGuest(@RequestHeader("Authorization") String sessionToken) {
         return executeWithReturnData(() -> userService.isRole(sessionToken,"Guest"));
     }
-
+    @GetMapping("/me/active-order")
+    public ResponseEntity<?> getUserActiveOrder(@RequestHeader("Authorization") String sessionToken) {
+        return executeWithReturnData(() -> userService.getUserActiveOrder(sessionToken));
+    }
 }
