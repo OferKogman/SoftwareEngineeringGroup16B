@@ -12,6 +12,8 @@ public class VirtualQueue {
 	private final Integer PASS_NUM = 50;
 	private final Integer PASS_TIMEOUT = 60 * 10 * 1000;
 
+	public static final int PASSED_QUEUE = -1;
+
 	public VirtualQueue(int id) {
 		queueLine = new LinkedList<>();
 		this.id = id;
@@ -72,6 +74,13 @@ public class VirtualQueue {
 		int index= queueLine.indexOf(subjectID);
 		if(index==-1)
 			throw new IllegalArgumentException("Subject "+subjectID+" is not in the queue.");
-		return index+1;
+		return index;
+	}
+
+	public int getQueueStatus(String subjectID)
+	{
+		if(isUserPassedQueue(subjectID))
+			return PASSED_QUEUE;
+		return getQueuePosition(subjectID);
 	}
 }

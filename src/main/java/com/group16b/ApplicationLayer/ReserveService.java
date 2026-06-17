@@ -25,6 +25,8 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.InfrastructureLayer.RequestContext;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 import io.jsonwebtoken.JwtException;
 
@@ -249,6 +251,26 @@ public class ReserveService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
     }
+
+    public Result<Integer> getPositionInQueueForEvent(int eventID)
+    {
+        try{
+            String subjectID=validateUserOrGuestAndGetSubjectId();
+            VirtualQueue queue=queueImp.findByID(String.valueOf(eventID));
+
+            return Result.makeOk(queue.getQueueStatus(subjectID));
+
+        } catch(AuthException e){
+            logger.warn("ReserveService.getPositionInQueueForEvent: AuthException: {}",e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e){
+             logger.warn("ReserveService.getPositionInQueueForEvent: IllegalArgumentException: {}",e.getMessage());
+             return Result.makeFail(e.getMessage());
+        } catch (Exception e){
+            logger.error("ReserveService.getPositionInQueueForEvent: an unexpected error occured: ",e);
+            return Result.makeFail("An unexpected error has occured, pls try again later.");
+        }
+    }
     
 
 
@@ -387,5 +409,14 @@ public class ReserveService {
             event.renewLotteryCode(lotteryCode);
             eventRepository.save(event);
         }
+    }
+
+    private String validateUserOrGuestAndGetSubjectId()
+    {
+        //if we do implement error 403 then this if will also disapear, along with the function
+        if(!Role.SIGNED.equals(RequestContext.getRole()) && !Role.GUEST.equals(RequestContext.getRole()))
+            throw new AuthException("Only users and guests are allowed to perform this operation.");
+
+        return RequestContext.getUserId();
     }
 }
