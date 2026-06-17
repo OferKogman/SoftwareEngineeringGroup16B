@@ -80,31 +80,11 @@ export default function EventUpdateForm() {
     setError("");
 
     try {
-      const updatedEvent: EventUpdateDetails = {
-        ...formData,
-        venueID:
-          formData.venueID?.trim() === ""
-            ? null
-            : formData.venueID?.trim() || null,
-        name:
-          formData.name?.trim() === "" ? null : formData.name?.trim() || null,
-        startDate:
-          formData.startDate?.trim() === ""
-            ? null
-            : formData.startDate?.trim() || null,
-        endDate:
-          formData.endDate?.trim() === ""
-            ? null
-            : formData.endDate?.trim() || null,
-        artist:
-          formData.artist?.trim() === ""
-            ? null
-            : formData.artist?.trim() || null,
-        category:
-          formData.category?.trim() === ""
-            ? null
-            : formData.category?.trim() || null,
-      };
+      const updatedEvent = Object.fromEntries(
+        Object.entries(formData)
+          .filter(([, value]) => value?.trim() !== "")
+          .map(([key, value]) => [key, value!.trim()]),
+      ) as Partial<EventUpdateDetails>;
 
       const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
         method: "PATCH",
