@@ -8,8 +8,11 @@ import EventManagement from "./Components/Event/EventManagement";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
+import CreateOrder from "./Components/Order/CreateOrder";
+import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
+import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
@@ -20,11 +23,8 @@ import ChangePasswordForm from "./Components/User/ChangePasswordForm";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
-import CreateOrder from "./Components/Order/CreateOrder";
-import PaymentPage from "./Components/Order/PaymentPage";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
-import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany"
 
 export default function AppRoutes() {
   return (
@@ -47,11 +47,9 @@ export default function AppRoutes() {
       <Route path="/admins/management" element={<AdminManagement />} />
       <Route path="/events/search" element={<SearchEvents />} />
 
-
       <Route path="/events/:eventID/create-order" element={<CreateOrder />} />
       <Route path="/companies/create" element={<CreateProdactionCompany />} />
       <Route path="/payment" element={<PaymentPage />} />
-
 
       <Route path="/events/:eventID/management" element={<EventManagement />}>
         <Route index element={<Navigate to="show" />} />

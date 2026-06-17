@@ -1,17 +1,14 @@
 import { useState } from "react";
+import type { ManagerPermissions } from "../../DTOs/ProductionCompanyDTO";
 
 type ChangeManagerPermissionsProps = {
-  onSubmit: (targetID: string, companyID: number, newPermissions: Set<ManagerPermissions>) => void | Promise<void>;
+  onSubmit: (
+    targetID: string,
+    companyID: number,
+    newPermissions: Set<ManagerPermissions>,
+  ) => void | Promise<void>;
   onCancel?: () => void;
 };
-
-export type ManagerPermissions =
-  | "EVENT_INVENTORY"
-  | "VENUE_CONFIGURATION"
-  | "PURCHASE_POLICY"
-  | "CUSTOMER_SUPPORT"
-  | "VIEW_PURCHASE_HISTORY"
-  | "SALES_REPORT";
 
 const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
   { value: "EVENT_INVENTORY", label: "Event Inventory" },
@@ -22,10 +19,15 @@ const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
   { value: "SALES_REPORT", label: "Sales Report" },
 ];
 
-export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeManagerPermissionsProps) {
+export default function ChangeManagerPermissions({
+  onSubmit,
+  onCancel,
+}: ChangeManagerPermissionsProps) {
   const [targetID, setTargetID] = useState("");
   const [companyID, setCompanyID] = useState("");
-  const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(new Set());
+  const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(
+    new Set(),
+  );
   const [permissionsError, setPermissionsError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,7 +57,9 @@ export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeM
       setCompanyID("");
       setPermissions(new Set());
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to update permissions.");
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to update permissions.",
+      );
     } finally {
       setIsSubmitting(false);
     }
