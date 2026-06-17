@@ -66,4 +66,12 @@ public class VirtualQueue {
 			throw new IllegalStateException("User did not pass the queue.");
 		}
 	}
+
+	public int getQueuePosition(String subjectID)
+	{
+		int index= queueLine.indexOf(subjectID);
+		if(index==-1)
+			throw new IllegalArgumentException("Subject "+subjectID+" is not in the queue.");
+		return index+1;
+	}
 }
