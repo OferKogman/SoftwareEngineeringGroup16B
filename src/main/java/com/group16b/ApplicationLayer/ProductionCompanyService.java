@@ -197,28 +197,6 @@ public class ProductionCompanyService {
         }
     }
 
-    public Result<Set<ManagerPermissions>> getComapanyPermissions(int companyID)
-    {
-        try{
-            logger.info("ProductionCompanService.getComapanyPermissions: retrieving permissions");
-            
-            String userId=validateRoleAndGetUserId();
-            ProductionCompany company=productionRepo.findByID(String.valueOf(companyID));
-            
-            logger.info("ProductionCompanService.getComapanyPermissions: succesfully retrieved permissions for user {} in company {}",userId,companyID);
-            return Result.makeOk(company.getUserPermissions(userId));
-
-        } catch(AuthException e){
-            logger.warn("ProductionCompanService.getComapanyPermissions: AuthException: {}",e.getMessage());
-            return Result.makeFail(e.getMessage());
-        } catch (IllegalArgumentException e){
-            logger.warn("ProductionCompanService.getComapanyPermissions: IllegalArgumentException: {}",e.getMessage());
-            return Result.makeFail(e.getMessage());
-        } catch (Exception e){
-            logger.error("ProductionCompanService.getComapanyPermissions: Unexpected Exception: ",e);
-            return Result.makeFail("An unexpected error occured, pls try again later");
-        }
-    }
 
     // gets all orders for the company
     private Set<Integer> getCompanyEventIDs(int companyID) {
