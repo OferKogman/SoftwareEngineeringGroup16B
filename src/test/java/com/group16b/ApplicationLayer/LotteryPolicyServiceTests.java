@@ -5,23 +5,29 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.net.Authenticator.RequestorType;
 import java.time.LocalDateTime;
-import java.time.Period;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool.ManagedBlocker;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
@@ -46,6 +52,7 @@ public class LotteryPolicyServiceTests {
     private final String PERMITED_MAIL="the all mighty gargamel";
     private final String NOT_PERMITTED_MAIL="the summer is cold";
     private final String BYSTANDER_MAIL="toph?";
+    private final String BAD_USER_MAIL="who is me?";
     private final int COMPANY_ID=1987;
 
     private Event event1;
@@ -110,6 +117,16 @@ public class LotteryPolicyServiceTests {
     }
 
     @Test
+    public void createLotteryPolicy_InvalidArgs_fail() {
+        RequestContext.set(PERMITED_MAIL,Role.SIGNED);
+        Result<Void> res = lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME,50,now.minusDays(5));
+        assertFalse(res.isSuccess());
+        assertEquals("Lottery registration due date cannot be in the past.", res.getError());
+        Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
+    }
+
+    @Test
     public void createLotteryPolicy_FailNotUserToken() {
         RequestContext.set(PERMITED_MAIL, Role.GUEST);
         Result<Void> res = lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME,50,now.plusDays(5));
@@ -158,6 +175,28 @@ public class LotteryPolicyServiceTests {
         assertEquals("Lottery registration due date cannot be in the past.", res.getError());
         Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
         assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
+    }
+
+    @Test
+    void createLotteryPolicy_UserNotFound() {
+        RequestContext.set(BAD_USER_MAIL, Role.SIGNED);
+
+        Result<Void> res = lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME, 50, now.plusDays(5));
+
+        assertFalse(res.isSuccess());
+        assertEquals("User with ID "+BAD_USER_MAIL+ " not found.",res.getError());
+    }
+
+    @Test
+    void createLotteryPolicy_EventAlreadyHasLotteryPolicy() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        assertTrue(lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME, 50, now.plusDays(5)).isSuccess());
+
+        Result<Void> res =lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 2, "another", 50, now.plusDays(5));
+
+        assertFalse(res.isSuccess());
+        assertEquals("Event already has a lottery policy.", res.getError());
     }
 
     @Test
@@ -219,6 +258,59 @@ public class LotteryPolicyServiceTests {
 
         Result<Void> errorResult = result1.get().isSuccess() ? result2.get() : result1.get();
         assertEquals("Event already has a lottery policy.", errorResult.getError());
+    }
+
+    @Test
+    void createLotteryPolicy_retryAfterOptimisticLockingFailure_succeeds() {
+        // Arrange
+        IProductionCompanyRepository companyRepo = mock(IProductionCompanyRepository.class);
+        IRepository<User> userRepo = mock(IRepository.class);
+        IEventRepository eventRepo = mock(IEventRepository.class);
+
+        LotteryPolicyService service =
+                new LotteryPolicyService(eventRepo, userRepo, companyRepo);
+
+        User user = mock(User.class);
+        ProductionCompany company = mock(ProductionCompany.class);
+
+        Event event = mock(Event.class);
+
+        when(userRepo.findByID(PERMITED_MAIL))
+                .thenReturn(user);
+
+        when(eventRepo.findByID(String.valueOf(event1.getEventID())))
+                .thenReturn(event);
+
+        when(event.getEventProductionCompanyID())
+                .thenReturn(COMPANY_ID);
+
+        when(companyRepo.findByID(String.valueOf(COMPANY_ID)))
+                .thenReturn(company);
+
+        // first save fails, second succeeds
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .doNothing()
+                .when(eventRepo)
+                .save(any(Event.class));
+
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        // Act
+        Result<Void> result = service.createLotteryPolicy(
+                event1.getEventID(),
+                1,
+                LOTTERY_NAME,
+                50,
+                now.plusDays(5));
+
+        // Assert
+        assertTrue(result.isSuccess());
+
+        verify(eventRepo, times(2)).save(any(Event.class));
+
+        verify(eventRepo, atLeast(2)).findByID(String.valueOf(event1.getEventID()));
+
+        verify(event, times(2)).setLotteryPolicy(any(LotteryPolicy.class));
     }
 
 
