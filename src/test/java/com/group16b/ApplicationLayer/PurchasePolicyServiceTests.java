@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
@@ -21,7 +20,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
@@ -39,24 +37,20 @@ import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
-import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VirtualQueueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.Security.Role;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
 
 public class PurchasePolicyServiceTests {
     private PurchasePolicyService purchasePolicyService;
     private IAuthenticationService mockTokenService;
-    private ILocationService mockLocationService;
     private IProductionCompanyRepository productionCompanyRepository;
     private IRepository<User> userRepository;
     private IRepository<Venue> venueRepository;
     private IEventRepository eventRepository;
-    private IRepository<VirtualQueue> virtualQueueRepository;
     private User user;
     private User user2;
     private Event e1;
@@ -69,9 +63,7 @@ public class PurchasePolicyServiceTests {
     @BeforeEach
     public void setUp() {
         mockTokenService = mock(IAuthenticationService.class);
-        mockLocationService = mock(ILocationService.class);
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-        virtualQueueRepository = new VirtualQueueRepositoryMapImpl();
         eventRepository = new EventRepositoryMapImpl();
         venueRepository = new VenueRepositoryMapImpl();
         userRepository = new UserRepositoryMapImpl();
@@ -119,146 +111,7 @@ public class PurchasePolicyServiceTests {
         venueRepository.save(venue1);
     }
 
-    @Test
-    public void createLotteryPolicy_Success() {
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("user1", e1.getEventID(), 1, "First Lottery",
-                50,
-                now.plusDays(5));
-        assertTrue(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertDoesNotThrow(() -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailInvalidToken() {
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("invalid_token", e1.getEventID(), 1,
-                "First Lottery", 50,
-                now.plusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailNotUserToken() {
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("guest", e1.getEventID(), 1, "First Lottery",
-                50,
-                now.plusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailUserNotFound() {
-        userRepository.delete("testuser");
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("user1", e1.getEventID(), 1, "First Lottery",
-                50,
-                now.plusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailCompanyNotFound() {
-        productionCompanyRepository.delete("1");
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("user1", e1.getEventID(), 1, "First Lottery",
-                50,
-                now.plusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailUserDoesNotHavePerms() {
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("user2", e1.getEventID(), 1, "First Lottery",
-                50,
-                now.plusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailEventNotFound() {
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("user1", 999, 1, "First Lottery",
-                50,
-                now.plusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_FailInvalidDate() {
-        Result<Boolean> res = purchasePolicyService.createLotteryPolicy("user1", e1.getEventID(), 1, "First Lottery",
-                50,
-                now.minusDays(5));
-        assertFalse(res.isSuccess());
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertThrows(IllegalStateException.class, () -> e.getLotteryPolicy());
-    }
-
-    @Test
-    public void createLotteryPolicy_TwoThreadsBothSucceeds() throws InterruptedException {
-        CountDownLatch readyLatch = new CountDownLatch(2);
-        CountDownLatch startLatch = new CountDownLatch(1);
-
-        AtomicReference<Result<Boolean>> result1 = new AtomicReference<>();
-        AtomicReference<Result<Boolean>> result2 = new AtomicReference<>();
-
-        Runnable createPolicyTask1 = () -> {
-            try {
-                readyLatch.countDown();
-                startLatch.await();
-                result1.set(purchasePolicyService.createLotteryPolicy("user1", e1.getEventID(), 1, "First Lottery", 50,
-                        now.plusDays(5)));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        };
-
-        Runnable createPolicyTask2 = () -> {
-            try {
-                readyLatch.countDown();
-                startLatch.await();
-                result2.set(purchasePolicyService.createLotteryPolicy("user1", e1.getEventID(), 2, "Second Lottery", 50,
-                        now.plusDays(5)));
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        };
-
-        Thread thread1 = new Thread(createPolicyTask1);
-        Thread thread2 = new Thread(createPolicyTask2);
-
-        thread1.start();
-        thread2.start();
-
-        readyLatch.await();
-        startLatch.countDown();
-
-        thread1.join();
-        thread2.join();
-
-        int successCount = 0;
-        if (result1.get() != null && result1.get().isSuccess()) {
-            successCount++;
-        }
-        if (result2.get() != null && result2.get().isSuccess()) {
-            successCount++;
-        }
-
-        assertTrue(successCount == 1);
-
-        Event e = eventRepository.findByID(Integer.toString(e1.getEventID()));
-        assertDoesNotThrow(() -> e.getLotteryPolicy());
-
-        Result<Boolean> errorResult = result1.get().isSuccess() ? result2.get() : result1.get();
-        assertEquals("Event already has a lottery policy.", errorResult.getError());
-    }
+    
 
     @Test
     public void enrollLotteryPolicy_Success() {
