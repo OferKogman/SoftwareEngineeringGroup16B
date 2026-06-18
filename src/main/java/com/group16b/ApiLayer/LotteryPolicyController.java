@@ -20,7 +20,7 @@ public class LotteryPolicyController extends BaseController{
         this.lotteryPolicyService=lotteryPolicyService;
     }
 
-    @PostMapping
+    @PostMapping("/policy")
     public ResponseEntity<?> createLotteryPolicy(
         @PathVariable("eventId") int eventId,
         @RequestBody CreateLotteryPolicyRequestDTO request
@@ -29,11 +29,20 @@ public class LotteryPolicyController extends BaseController{
         return executeWithNoReturnData(()-> lotteryPolicyService.createLotteryPolicy(eventId, request.lotteryID(), request.lotteryName(), request.winnerAmount(), request.lotteryRegistrationDueDate()));
     }
 
-    @PostMapping
+    @PostMapping("/enroll")
     public ResponseEntity<?> enrollInLottery(
         @PathVariable("eventId") int eventId)
     {
         return executeWithNoReturnData(()-> lotteryPolicyService.enrollInLottery(eventId));
     }
+
+    @PostMapping("/results")
+    public ResponseEntity<?> handleLotteryResults(
+            @PathVariable("eventId") int eventId) 
+    {
+        return executeWithNoReturnData(() -> lotteryPolicyService.handleLotteryResults(eventId));
+    }
+
+
     
 }
