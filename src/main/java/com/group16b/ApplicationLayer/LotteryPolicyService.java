@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -21,6 +22,7 @@ import com.group16b.InfrastructureLayer.Security.Role;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Service
 public class LotteryPolicyService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
     private final IEventRepository eventRepository;
@@ -35,8 +37,7 @@ public class LotteryPolicyService {
     }
 
     
-    public Result<Void> createLotteryPolicy(String sessionToken, int eventID, int lotteryID, String lotteryName,
-            int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
+    public Result<Void> createLotteryPolicy(int eventID, int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
         try {
             logger.info("LotteryPolicyService.createLotteryPolicy: Received request to create lottery policy for event ID: {}",eventID);
 
@@ -60,8 +61,7 @@ public class LotteryPolicyService {
                 logger.info("LotteryPolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
                 Event e = eventRepository.findByID(String.valueOf(eventID));
 
-                logger.info("LotteryPolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}",
-                        eventID);
+                logger.info("LotteryPolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}",eventID);
                 e.setLotteryPolicy(lotteryPolicy);
 
                 logger.info("LotteryPolicyService.createLotteryPolicy: saving changes to repository");
