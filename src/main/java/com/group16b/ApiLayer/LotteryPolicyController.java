@@ -26,7 +26,14 @@ public class LotteryPolicyController extends BaseController{
         @RequestBody CreateLotteryPolicyRequestDTO request
     )
     {
-        return executeWithNoReturnData(()-> lotteryPolicyService.createLotteryPolicy(eventId, 0, null, 0, null));
+        return executeWithNoReturnData(()-> lotteryPolicyService.createLotteryPolicy(eventId, request.lotteryID(), request.lotteryName(), request.winnerAmount(), request.lotteryRegistrationDueDate()));
+    }
+
+    @PostMapping
+    public ResponseEntity<?> enrollInLottery(
+        @PathVariable("eventId") int eventId)
+    {
+        return executeWithNoReturnData(()-> lotteryPolicyService.enrollInLottery(eventId));
     }
     
 }
