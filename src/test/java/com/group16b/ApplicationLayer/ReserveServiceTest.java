@@ -59,23 +59,23 @@ import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 
 
 
 public class ReserveServiceTest {
-        private OrderService orderService;
         private ReserveService reserveService;
         private IRepository<VirtualQueue> queueRepo;
         private VirtualQueue queue;
         private IAuthenticationService authService;
-        private IPaymentGateway paymentGateway;
-        private ITicketGateway ticketGateway;
+
 
         private IOrderRepository orderRepo;
         private IRepository<Venue> venueRepo;
@@ -96,8 +96,6 @@ public class ReserveServiceTest {
         @BeforeEach
         void setUp() {
                 authService = mock(IAuthenticationService.class);
-                paymentGateway = mock(IPaymentGateway.class);
-                ticketGateway = mock(ITicketGateway.class);
 
                 orderRepo = new OrderRepositoryMapImpl();
                 venueRepo = new VenueRepositoryMapImpl();
@@ -117,17 +115,6 @@ public class ReserveServiceTest {
                 queue = mock(VirtualQueue.class);
 
                 when(queueRepo.findByID(String.valueOf(testEvent.getEventID()))).thenReturn(queue);
-
-                orderService = new OrderService(
-                        authService,
-                        productionCompanyRepo,
-                        paymentGateway,
-                        venueRepo,
-                        eventRepo,
-                        userRepo,
-                        orderRepo,
-                        ticketGateway
-                );
 
                 reserveService = new ReserveService(
                         authService,
@@ -1677,6 +1664,56 @@ public class ReserveServiceTest {
                 when(authService.validateToken("user2")).thenReturn(true);
                 when(authService.extractSubjectFromToken("user2")).thenReturn(user2.getEmail());
                 when(authService.isAdminToken("user2")).thenReturn(false);
+        }
+
+        @Test
+        void givenQueuePassedUser_whenGetQueueStatus_getMinusOne()
+        {
+                RequestContext.set("Igor", Role.GUEST);
+                when(queue.getQueueStatus(anyString())).thenReturn(-1);
+                Result<Integer> result=reserveService.getPositionInQueueForEvent(testEvent.getEventID());
+                assertTrue(result.isSuccess());
+                assertEquals(-1, result.getValue());
+        }
+
+        @Test
+        void givenQueuedUser_whenGetQueueStatus_getMinusOne()
+        {
+                RequestContext.set("Igor", Role.GUEST);
+                when(queue.getQueueStatus(anyString())).thenReturn(10);
+                Result<Integer> result=reserveService.getPositionInQueueForEvent(testEvent.getEventID());
+                assertTrue(result.isSuccess());
+                assertEquals(10, result.getValue());
+        }
+
+        @Test
+        void givenAdminUser_whenGetQueueStatus_getErr()
+        {
+                RequestContext.set("Igor", Role.ADMIN);
+                when(queue.getQueueStatus(anyString())).thenReturn(10);
+                Result<Integer> result=reserveService.getPositionInQueueForEvent(testEvent.getEventID());
+                assertFalse(result.isSuccess());
+                assertEquals("Only users and guests are allowed to perform this operation.", result.getError());
+        }
+
+        @Test
+        void givenUserNotInQueue_whenGetQueueStatus_getErr()
+        {
+                RequestContext.set("Igor", Role.GUEST);
+                doThrow(new IllegalArgumentException("im illegal")).when(queue).getQueueStatus(anyString());
+                Result<Integer> result=reserveService.getPositionInQueueForEvent(testEvent.getEventID());
+                assertFalse(result.isSuccess());
+                assertEquals("im illegal", result.getError());
+        }
+
+        @Test
+        void givenBomb_whenGetQueueStatus_getErr()
+        {
+                RequestContext.set("Igor", Role.GUEST);
+                doThrow(new RuntimeException("are you illegal?")).when(queue).getQueueStatus(anyString());
+                Result<Integer> result=reserveService.getPositionInQueueForEvent(testEvent.getEventID());
+                assertFalse(result.isSuccess());
+                assertEquals("An unexpected error has occured, pls try again later.", result.getError());
         }
 
 }

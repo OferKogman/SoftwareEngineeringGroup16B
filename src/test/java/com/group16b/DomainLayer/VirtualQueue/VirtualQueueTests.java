@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
@@ -39,7 +40,7 @@ public class VirtualQueueTests {
     void addToQueue_usersGetPassedOneAfterAnother()
             throws InterruptedException, NoSuchFieldException, SecurityException,
             IllegalArgumentException, IllegalAccessException {
-        Field PQ = q.getClass().getDeclaredField("PASS_NUM");
+        Field PQ = q.getClass().getDeclaredField("pass_num");
         PQ.setAccessible(true);
         PQ.set(q, 1);
         Field PT = q.getClass().getDeclaredField("PASS_TIMEOUT");
@@ -60,5 +61,40 @@ public class VirtualQueueTests {
         assertFalse(q.isUserPassedQueue(USER1));
         q.addToQueue(USER1);
         assertTrue(q.isUserPassedQueue(USER1));
+    }
+
+    @Test
+    void getUserStatus_userPassed_getCorrectAns()
+    {
+        assertFalse(q.isUserPassedQueue(USER1));
+        q.addToQueue(USER1);
+        assertTrue(q.isUserPassedQueue(USER1));
+
+        int status=q.getQueueStatus(USER1);
+        assertEquals(-1,status);
+    }
+
+    @Test
+    void getUserStatus_userInQueue_getCorrectAns()
+    {
+        q=new VirtualQueue(1,1);
+        assertFalse(q.isUserPassedQueue(USER1));
+        q.addToQueue(USER1);
+        assertTrue(q.isUserPassedQueue(USER1));
+        assertFalse(q.isUserPassedQueue(USER2));
+        q.addToQueue(USER2);
+        assertFalse(q.isUserPassedQueue(USER2));
+
+        int status=q.getQueueStatus(USER2);
+        assertEquals(0,status);
+    }
+
+    @Test
+    void getUserStatus_userNeverApeared_Throw()
+    {
+
+
+        IllegalArgumentException reslt= assertThrows(IllegalArgumentException.class, ()->q.getQueueStatus(USER1));
+        assertEquals("Subject "+USER1+" is not in the queue.",reslt.getMessage());
     }
 }
