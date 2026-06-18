@@ -110,7 +110,7 @@ public class LotteryPolicyService {
                 Event e = eventRepository.findByID(String.valueOf(eventID));
 
                 logger.info("LotteryPolicyService.createLotteryPolicy: Enrolling in lottery");
-                e.enrollInLottery(user.getEmail());
+                e.enrollInLottery(user.getEmail());//hmm what? just how old is this function? gonna leave it here as a remenent of better times
 
                 logger.info("LotteryPolicyService.createLotteryPolicy: Saving changes to repository");
                 try {
@@ -127,10 +127,10 @@ public class LotteryPolicyService {
             logger.warn("LotteryPolicyService.enrollInLottery: AuthException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (IllegalArgumentException e) {
-            logger.error("LotteryPolicyService.enrollInLottery: " + e.getMessage());
+            logger.error("LotteryPolicyService.enrollInLottery: IllegalArgumentException:" + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (IllegalStateException e) {
-            logger.error("LotteryPolicyService.enrollInLottery: " + e.getMessage());
+            logger.error("LotteryPolicyService.enrollInLottery: IllegalStateException:" + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("An unexpected error occurred while enrolling in lottery for event ID: {}: {}", eventID,
@@ -138,6 +138,54 @@ public class LotteryPolicyService {
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
+
+    public Result<Void> handleLotteryResults(int eventID) {
+        try {
+            logger.info("LotteryPolicyService.handleLotteryResults: Received request to handle the lottery results for event ID: {}",eventID);
+            String userID = validateRoleAndGetUserId();
+
+            logger.info("LotteryPolicyService.handleLotteryResults: verifying user exists for id {}", userID);
+            User user = userRepository.findByID(userID);
+
+            logger.info("LotteryPolicyService.handleLotteryResults: Checking if user with id {} is permitted to finalize lottery",userID);
+            ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepository.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
+            company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
+
+            while (true) {
+                logger.info("LotteryPolicyService.handleLotteryResults: verifying event exists for id {}", eventID);
+                Event e = eventRepository.findByID(String.valueOf(eventID));
+
+                logger.info("LotteryPolicyService.handleLotteryResults: settling lottery");
+                e.handleLotteryResults();
+
+                logger.info("LotteryPolicyService.handleLotteryResults: Saving changes to repository");
+                try {
+                    eventRepository.save(e);
+                    break;
+                } catch (OptimisticLockingFailureException err) {
+                    logger.warn("LotteryPolicyService.handleLotteryResults: Event got edit retrying");
+                }
+            }
+
+            logger.info("User with ID: {} finalized the lottery for event ID: {} successfully", user.getEmail(), eventID);
+            return Result.makeOk(null);
+        } catch (AuthException e){ 
+            logger.warn("LotteryPolicyService.handleLotteryResults: AuthException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.error("LotteryPolicyService.handleLotteryResults: IllegalArgumentException:" + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("LotteryPolicyService.handleLotteryResults: IllegalStateException:" + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("LotteryPolicyService.handleLotteryResults: An unexpected error occurred while handling lottery results for event ID: {}: {}", eventID,
+                    e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    
 
 
     private String validateRoleAndGetUserId()

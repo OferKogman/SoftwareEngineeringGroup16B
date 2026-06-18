@@ -277,6 +277,12 @@ public class Event {
 		this.version++;
 	}
 
+	public void handleLotteryResults()
+	{
+		LotteryPolicy lp=getLotteryPolicy();
+		lp.handleLotteryResults();
+	}
+
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {
 			throw new IllegalArgumentException("Event name cannot be null or empty.");

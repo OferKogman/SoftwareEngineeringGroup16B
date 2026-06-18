@@ -81,6 +81,8 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
+        if(lotteryRegistrationDueDate.isBefore(LocalDateTime.now()))
+            throw new IllegalStateException("Cannot handle lottery results before the registration due time passed.");
         List<String> winners = new ArrayList<>(participants);
 
         Collections.shuffle(winners);
