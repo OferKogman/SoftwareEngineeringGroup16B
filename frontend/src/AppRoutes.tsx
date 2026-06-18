@@ -7,6 +7,7 @@ import EventCreationForm from "./Components/Event/EventCreationForm";
 import EventInformation from "./Components/Event/EventInformation";
 import EventManagement from "./Components/Event/EventManagement";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
+import LotteryCreationForm from "./Components/Event/LotteryCreationForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
 import CreateOrder from "./Components/Order/CreateOrder";
@@ -56,9 +57,10 @@ export default function AppRoutes() {
         <Route index element={<Navigate to="show" />} />
         <Route path="show" element={<ViewEvent />} />
         <Route path="update-info" element={<EventUpdateForm />} />
-        <Route path="inventory" element={<VenueEditor />} />
+        <Route path="create-lottery" element={<LotteryCreationForm />} />
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
+        <Route path="inventory" element={<VenueEditor />} />
       </Route>
 
       <Route
