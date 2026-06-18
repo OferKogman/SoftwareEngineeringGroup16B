@@ -6,15 +6,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.springframework.web.client.RestTemplate;
 
+import com.group16b.ApplicationLayer.DTOs.ActiveOrderDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
@@ -25,17 +25,19 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.TicketGateway;
-import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient; 
+import com.group16b.InfrastructureLayer.Security.Role;
+import com.group16b.InfrastructureLayer.TicketGateway; 
 
 public class UserServiceTests {
 
     private UserRepositoryMapImpl userRepo;
+    private OrderRepositoryMapImpl orderRepo;
     private AuthenticationServiceJWTImpl authService;
     private UserService userService;
     private String sessionToken;
@@ -54,21 +56,16 @@ public class UserServiceTests {
     private final String NO_COMPANY_USER_EMAIL = "no-comps@wa.com";
     private final String NON_EXISTENT_USER_EMAIL = "birds are fake";
 
-    private final String ADMIN_ROLE="Admin";
-    private final String GUEST_ROLE="Guest";
-    private final String USER_ROLE="Signed";
-
 @BeforeEach
     void setUp() {
         userRepo = new UserRepositoryMapImpl();
-        
+        orderRepo = new OrderRepositoryMapImpl();
 
         String userSecret = "this-is-a-very-long-and-secure-user-secret-key-123456";
         String adminSecret = "this-is-a-very-long-and-secure-admin-secret-key-654321";
         
         authService = new AuthenticationServiceJWTImpl(userSecret, adminSecret);
         
-        OrderRepositoryMapImpl orderRepo = new OrderRepositoryMapImpl();
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
         TicketGateway ticketGateway = new TicketGateway(new WsepClient(mock(RestTemplate.class)));
@@ -334,35 +331,35 @@ public class UserServiceTests {
     @Test
     void isRoleAdmin_adminToken_returnTrue()
     {
-        Result<Boolean> result = userService.isRole(adminToken, ADMIN_ROLE);
+        Result<Boolean> result = userService.isRole(adminToken, Role.ADMIN);
         assertTrue(result.isSuccess());
         assertEquals(true, result.getValue());
     }
     @Test
-    void isRoleUser_adminToken_returnTrue()
+    void isRoleUser_UserToken_returnTrue()
     {
-        Result<Boolean> result = userService.isRole(sessionToken, USER_ROLE);
+        Result<Boolean> result = userService.isRole(sessionToken, Role.SIGNED);
         assertTrue(result.isSuccess());
         assertEquals(true, result.getValue());
     }
     @Test
-    void isRoleGuest_adminToken_returnTrue()
+    void isRoleGuest_GuestToken_returnTrue()
     {
-        Result<Boolean> result = userService.isRole(guestToken, GUEST_ROLE);
+        Result<Boolean> result = userService.isRole(guestToken, Role.GUEST);
         assertTrue(result.isSuccess());
         assertEquals(true, result.getValue());
     }
     @Test
     void isRole_InvalidRole_returnFalse()
     {
-        Result<Boolean> result = userService.isRole(guestToken, ADMIN_ROLE);
+        Result<Boolean> result = userService.isRole(guestToken, Role.ADMIN);
         assertTrue(result.isSuccess());
         assertEquals(false, result.getValue());
     }
     @Test
     void isRole_BadToekn_returnError()
     {
-        Result<Boolean> result = userService.isRole("chi-vap-chi-chi", GUEST_ROLE);
+        Result<Boolean> result = userService.isRole("chi-vap-chi-chi", Role.GUEST);
         assertFalse(result.isSuccess());
         assertEquals("Invalid Token", result.getError());
     }
@@ -372,9 +369,93 @@ public class UserServiceTests {
         IAuthenticationService mockAuthenticationService=mock(IAuthenticationService.class);
         doThrow(new RuntimeException("I recognize the bodies in the water...")).when(mockAuthenticationService).validateToken(anyString());
         userService=new UserService(mockAuthenticationService, null, null, userRepo, null, null, null);
-        Result<Boolean> result = userService.isRole(guestToken, GUEST_ROLE);
+        Result<Boolean> result = userService.isRole(guestToken, Role.GUEST);
         assertFalse(result.isSuccess());
         assertEquals("An unexpected error occured, pls try again later.", result.getError());
+    }
+    @Test
+    void getUserActiveOrder_validToken_returnsActiveOrder() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(sessionToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+    }
+
+    @Test
+    void getUserActiveOrder_userWithNoActiveOrder_returnsFail() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(noCompaniesToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("No active order found for user.", result.getError());
+    }
+
+    @Test
+    void getUserActiveOrder_guestToken_returnsFail() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(guestToken);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("Authentication failed"));
+    }
+
+    @Test
+    void getUserActiveOrder_adminToken_returnsFail() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(adminToken);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("Authentication failed"));
+    }
+
+    @Test
+    void getUserActiveOrder_invalidToken_returnsFail() {
+        String invalidToken = "this-is-not-a-real-token-because-chaos";
+
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(invalidToken);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("Authentication failed"));
+    }
+
+    @Test
+    void getUserActiveOrder_nullToken_returnsFail() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(null);
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserActiveOrder_blankToken_returnsFail() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder("");
+
+        assertFalse(result.isSuccess());
+    }
+
+    @Test
+    void getUserActiveOrder_userNotFound_returnsFail() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(nonExistentUserToken);
+
+        assertFalse(result.isSuccess());
+        assertTrue(result.getError().contains("not found"));
+    }
+
+    @Test
+    void getUserActiveOrder_ignoresCompletedOrdersAndFindsOnlyActiveOrder() {
+        Result<ActiveOrderDTO> result = userService.getUserActiveOrder(sessionToken);
+
+        assertTrue(result.isSuccess());
+        assertNotNull(result.getValue());
+    }
+
+    @Test
+    void getUserActiveOrder_unexpectedError_returnsFail() {
+        IAuthenticationService faultyAuthService = mock(IAuthenticationService.class);
+        when(faultyAuthService.validateToken(anyString())).thenThrow(new RuntimeException("Database Exploded!!!!!"));
+
+        UserService faultyUserService = new UserService(faultyAuthService, null, null, userRepo, orderRepo, null, null);
+
+        Result<ActiveOrderDTO> result = faultyUserService.getUserActiveOrder(sessionToken);
+
+        assertFalse(result.isSuccess());
+        assertEquals("An unexpected error occurred: Database Exploded!!!!!", result.getError());
     }
 
 }

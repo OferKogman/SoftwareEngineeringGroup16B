@@ -96,4 +96,10 @@ public class CompanyHierarchyController extends BaseController {
         return executeWithReturnData(() -> companyHierarchyService.hierarchyTree(companyId, authToken));
     }
 
+    @GetMapping("/me/permissions")
+    public ResponseEntity<?> getCompanyPerms(@PathVariable("companyId") int companyId)
+    {
+        return executeWithReturnData(() -> companyHierarchyService.getComapanyPermissions(companyId));
+    }
+
 }

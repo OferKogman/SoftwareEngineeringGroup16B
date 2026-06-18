@@ -4,6 +4,7 @@ public class PasswordChangeDTO {
     private String oldPassword;
     private String newPassword;
 
+    //why is it in the api layer? shoudlnt it be wih all of its friends in ApplicationLayer/DTOs?
     public PasswordChangeDTO() {
     }
 

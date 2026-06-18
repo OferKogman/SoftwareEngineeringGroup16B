@@ -18,6 +18,8 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.InfrastructureLayer.RequestContext;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 import io.jsonwebtoken.JwtException;
 
@@ -463,6 +465,29 @@ public class CompanyHierarchyService {
 		}
 	}
 
+	public Result<Set<ManagerPermissions>> getComapanyPermissions(int companyID)
+    {
+        try{
+            logger.info("companyHierarchyService.getComapanyPermissions: retrieving permissions");
+            
+            String userId=validateRoleAndGetUserId();
+            ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
+            
+            logger.info("companyHierarchyService.getComapanyPermissions: succesfully retrieved permissions for user {} in company {}",userId,companyID);
+            return Result.makeOk(company.getUserPermissions(userId));
+
+        } catch(AuthException e){
+            logger.warn("companyHierarchyService.getComapanyPermissions: AuthException: {}",e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e){
+            logger.warn("companyHierarchyService.getComapanyPermissions: IllegalArgumentException: {}",e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e){
+            logger.error("companyHierarchyService.getComapanyPermissions: Unexpected Exception: ",e);
+            return Result.makeFail("An unexpected error occured, pls try again later.");
+        }
+    }
+
 	private String validateAndGetUserID(String sessionToken) {
 		if (!authenticationService.validateToken(sessionToken)) {
 			throw new AuthException("Invalid Token");
@@ -475,5 +500,14 @@ public class CompanyHierarchyService {
 		userRepository.findByID(userID);
 		return userID;
 	}
+
+	private String validateRoleAndGetUserId()
+    {
+        //if we do implement error 403 then this if will also disapear, along with the function
+        if(!Role.SIGNED.equals(RequestContext.getRole()))
+            throw new AuthException("Only users are allowed to perform this operation.");
+
+        return RequestContext.getUserId();
+    }
 
 }

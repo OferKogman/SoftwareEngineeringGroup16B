@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
+import type { ManagerPermissions } from "../../DTOs/ProductionCompanyDTO";
 import AssignMember from "./AssignNewOwnerOrManager";
-import ChangeManagerPermissions, {
-  type ManagerPermissions,
-} from "./ChangeManagerPermissions";
+import ChangeManagerPermissions from "./ChangeManagerPermissions";
 import "./CSS/MembersPermissions.css";
 
 type AssignMemberData =
@@ -21,6 +21,9 @@ export default function MembersPermissions() {
   const [removeTargetId, setRemoveTargetId] = useState("");
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [submitError, setSubmitError] = useState("");
+
+  const apiFetch = useApiFetch();
 
   async function handleAssignMember(data: AssignMemberData) {
     setMessage("");
@@ -31,22 +34,10 @@ export default function MembersPermissions() {
       return;
     }
 
-    console.warn("MOCK assign member", {
-      companyId,
-      data,
-    });
-
-    setMessage(
-      `Mock success: ${data.role === "OWNER" ? "owner" : "manager"} invite sent to ${
-        data.targetID
-      }.`,
-    );
-
-    /*
     const endpoint =
       data.role === "OWNER"
-        ? `${API_BASE}/production-companies/${companyId}/owners`
-        : `${API_BASE}/production-companies/${companyId}/managers`;
+        ? `http://localhost:8080/production-companies/${companyId}/owners`
+        : `http://localhost:8080/production-companies/${companyId}/managers`;
 
     const body =
       data.role === "OWNER"
@@ -58,25 +49,21 @@ export default function MembersPermissions() {
             permissions: Array.from(data.permissions),
           };
 
-    const response = await fetch(endpoint, {
+    const response = await apiFetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: getAuthToken(),
       },
       body: JSON.stringify(body),
     });
 
-    const result = await response.json();
-
     if (!response.ok) {
-      throw new Error(result.message || "Failed to assign member.");
+      throw new Error(await response.text());
     }
 
     setMessage(
-      `${data.role === "OWNER" ? "Owner" : "Manager"} invite sent to ${data.targetID}.`
+      `${data.role === "OWNER" ? "Owner" : "Manager"} invite sent to ${data.targetID}.`,
     );
-    */
   }
 
   async function handleChangePermissions(
@@ -92,84 +79,58 @@ export default function MembersPermissions() {
       return;
     }
 
-    console.warn("MOCK change permissions", {
-      companyId,
-      targetID,
-      newPermissions,
-    });
-
-    setMessage(`Mock success: permissions updated for ${targetID}.`);
-
-    /*
-    const response = await fetch(
-      `${API_BASE}/production-companies/${companyId}/managers/permissions`,
+    const response = await apiFetch(
+      `http://localhost:8080/production-companies/${companyId}/managers/permissions`,
       {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          Authorization: getAuthToken(),
         },
         body: JSON.stringify({
           targetID,
           newPermissions: Array.from(newPermissions),
         }),
-      }
+      },
     );
 
-    const result = await response.json();
-
     if (!response.ok) {
-      throw new Error(result.message || "Failed to change permissions.");
+      throw new Error(await response.text());
     }
 
     setMessage(`Permissions updated for ${targetID}.`);
-    */
   }
 
   async function handleRemoveMember(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+    try {
+      event.preventDefault();
 
-    setMessage("");
-    setError("");
+      setMessage("");
+      setError("");
+      setSubmitError("");
 
-    if (!companyId) {
-      setError("Missing company ID.");
-      return;
-    }
-
-    if (!removeTargetId.trim()) {
-      setError("Please enter target user ID.");
-      return;
-    }
-
-    console.warn("MOCK remove member", {
-      companyId,
-      removeTargetId,
-    });
-
-    setMessage(`Mock success: removed member ${removeTargetId}.`);
-    setRemoveTargetId("");
-
-    /*
-    const response = await fetch(
-      `${API_BASE}/production-companies/${companyId}/members/${removeTargetId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: getAuthToken(),
-        },
+      if (!companyId) {
+        setError("Missing company ID.");
+        return;
       }
-    );
 
-    const result = await response.json();
+      const response = await apiFetch(
+        `http://localhost:8080/production-companies/${companyId}/members/${removeTargetId}`,
+        {
+          method: "DELETE",
+        },
+      );
 
-    if (!response.ok) {
-      throw new Error(result.message || "Failed to remove member.");
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      setMessage(`Member ${removeTargetId} removed.`);
+      setRemoveTargetId("");
+    } catch (err) {
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to assign member.",
+      );
     }
-
-    setMessage(`Member ${removeTargetId} removed.`);
-    setRemoveTargetId("");
-    */
   }
 
   return (
@@ -180,31 +141,26 @@ export default function MembersPermissions() {
       {error && <p className="members-error">{error}</p>}
 
       <div className="members-grid">
-        <div className="members-card">
-          <AssignMember onSubmit={handleAssignMember} />
-        </div>
+        <AssignMember onSubmit={handleAssignMember} />
+        <ChangeManagerPermissions onSubmit={handleChangePermissions} />
 
-        <div className="members-card">
-          <ChangeManagerPermissions onSubmit={handleChangePermissions} />
-        </div>
-
-        <form className="members-card" onSubmit={handleRemoveMember}>
+        <form onSubmit={handleRemoveMember}>
           <h2>Remove Member</h2>
 
+          {submitError && <p className="form-error">{submitError}</p>}
+
           <label>
-            Target ID
+            Target User
             <input
-              type="text"
+              type="email"
               required
               value={removeTargetId}
               onChange={(event) => setRemoveTargetId(event.target.value)}
-              placeholder="Target ID"
+              placeholder="Target User"
             />
           </label>
 
-          <button type="submit" className="danger-button">
-            Remove Member
-          </button>
+          <button type="submit">Remove Member</button>
         </form>
       </div>
     </div>
