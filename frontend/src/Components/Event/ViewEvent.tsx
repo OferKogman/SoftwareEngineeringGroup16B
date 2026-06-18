@@ -8,6 +8,7 @@ import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import ViewDiscountPolicies from "../ViewDiscountPolicies";
 import ViewPurchasePolicies from "../ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
+import LotteryInformation from "./LotteryInformation";
 
 export default function ViewEvent() {
   const { eventID } = useParams();
@@ -125,6 +126,8 @@ export default function ViewEvent() {
           </span>
         </p>
       </div>
+
+      <LotteryInformation eventID={eventID!} />
 
       <h3>Discount Policy</h3>
       <ViewDiscountPolicies discountPolicy={eventDTO.eventDiscountPolicy} />

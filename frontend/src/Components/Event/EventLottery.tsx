@@ -55,7 +55,7 @@ export default function EventLottery({ eventID }: Props) {
       <h2>Event Lottery</h2>
 
       {lottery ? (
-        <LotteryInformation lottery={lottery} />
+        <LotteryInformation eventID={eventID} />
       ) : (
         <LotteryCreationForm />
       )}
