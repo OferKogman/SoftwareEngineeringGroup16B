@@ -31,6 +31,9 @@ public class CouponCodeDiscount implements DiscountPolicy {
     public Integer getMaxUsages() { return maxUsages; }
     public int getCurrentUsages() { return currentUsages; }
 
+    public boolean isMet(){
+        return false;
+    }
     @Override
     public double calculateDiscount(double originalPrice) {
         if (expiryDate != null && LocalDateTime.now().isAfter(expiryDate))

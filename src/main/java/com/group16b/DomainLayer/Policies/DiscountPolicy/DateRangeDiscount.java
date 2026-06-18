@@ -23,6 +23,10 @@ public class DateRangeDiscount implements DiscountPolicy {
     public LocalDateTime getEndDate() { return endDate; }
     public double getDiscountPercentage() { return discountPercentage; }
 
+    public boolean isMet(){
+        return false;
+    }
+
     @Override
     public double calculateDiscount(double originalPrice) {
         LocalDateTime now = LocalDateTime.now();

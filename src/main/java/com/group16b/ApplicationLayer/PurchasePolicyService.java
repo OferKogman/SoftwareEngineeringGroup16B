@@ -1,8 +1,10 @@
 package com.group16b.ApplicationLayer;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicyDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -252,6 +254,20 @@ public class PurchasePolicyService {
             logger.error("PurchasePolicyService.editCompanyPurchasePolicy: Unexpected error: {}", e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
+    }
+
+
+
+    public Result<Boolean> editEventPurchasePolicy(String sessionToken, int eventID, PurchasePolicy oldPolicy, PurchasePolicyRecord newRecord) {
+        return null;
+    }
+
+    public Result<List<PurchasePolicyDTO>> getEventPurchasePolicy(String sessionToken, int eventID) {
+        return null;
+    }
+
+    public Result<List<PurchasePolicyDTO>> getCompanyPurchasePolicy(String sessionToken, int companyID) {
+        return null;
     }
 
 }
