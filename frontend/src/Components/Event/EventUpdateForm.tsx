@@ -7,7 +7,7 @@ import "./CSS/EventUpdateForm.css";
 const API_BASE = "http://localhost:8080";
 
 export type EventUpdateDetails = {
-  venueID: string | null;
+  venue: string | null;
   name: string | null;
   startDate: string | null;
   endDate: string | null;
@@ -16,7 +16,7 @@ export type EventUpdateDetails = {
 };
 
 const initialFormData: EventUpdateDetails = {
-  venueID: "",
+  venue: "",
   name: "",
   startDate: "",
   endDate: "",
@@ -181,10 +181,10 @@ export default function EventUpdateForm() {
               "Venue name cannot be empty or whitespace.",
             )
           }
-          value={formData.venueID || ""}
+          value={formData.venue || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
-            updateField("venueID", event.target.value);
+            updateField("venue", event.target.value);
           }}
           placeholder={eventDTO.eventVenueID}
         />
