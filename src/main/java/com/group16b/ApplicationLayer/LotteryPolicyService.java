@@ -90,6 +90,55 @@ public class LotteryPolicyService {
         }
     }
 
+    public Result<Void> enrollInLottery(int eventID) {
+        try {
+            logger.info("LotteryPolicyService.enrollInLottery: Received request to enroll in lottery for event ID: {}",
+                    eventID);
+            String userID = validateRoleAndGetUserId();
+
+            logger.info("LotteryPolicyService.enrollInLottery: verifying user exists for id {}", userID);
+            User user = userRepository.findByID(userID);
+
+            logger.info(
+                    "LotteryPolicyService.enrollInLottery: Checking if user with id {} passed purchase policy checks",
+                    userID);
+            // TODO: implement purchase policy checks for lottery enrollment
+            //so it is not implemented yet?
+
+            while (true) {
+                logger.info("LotteryPolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
+                Event e = eventRepository.findByID(String.valueOf(eventID));
+
+                logger.info("LotteryPolicyService.createLotteryPolicy: Enrolling in lottery");
+                e.enrollInLottery(user.getEmail());
+
+                logger.info("LotteryPolicyService.createLotteryPolicy: Saving changes to repository");
+                try {
+                    eventRepository.save(e);
+                    break;
+                } catch (OptimisticLockingFailureException err) {
+                    logger.warn("Event got edit retrying");
+                }
+            }
+
+            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getEmail(), eventID);
+            return Result.makeOk(null);
+        } catch (AuthException e){ 
+            logger.warn("LotteryPolicyService.enrollInLottery: AuthException: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.error("LotteryPolicyService.enrollInLottery: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("LotteryPolicyService.enrollInLottery: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("An unexpected error occurred while enrolling in lottery for event ID: {}: {}", eventID,
+                    e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
 
     private String validateRoleAndGetUserId()
     {

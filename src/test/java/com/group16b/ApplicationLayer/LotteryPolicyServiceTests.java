@@ -313,6 +313,231 @@ public class LotteryPolicyServiceTests {
         verify(event, times(2)).setLotteryPolicy(any(LotteryPolicy.class));
     }
 
+    @Test
+    void enrollInLottery_Success() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        lotteryPolicyService.createLotteryPolicy(event1.getEventID(),1,LOTTERY_NAME,50,now.plusDays(5));
+        
+        RequestContext.set(BYSTANDER_MAIL,Role.SIGNED);
+        Result<Void> res =lotteryPolicyService.enrollInLottery(event1.getEventID());
+        assertTrue(res.isSuccess());
+
+        event1=eventRepository.findByID(String.valueOf(event1.getEventID()));
+        assertTrue(event1.getLotteryPolicy().getParticipants().contains(BYSTANDER_MAIL));
+    }
+
+    @Test
+    void enrollInLottery_FailNotUserToken() {
+        RequestContext.set(BYSTANDER_MAIL, Role.GUEST);
+
+        Result<Void> res =lotteryPolicyService.enrollInLottery(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("Only users are allowed to perform this operation.",res.getError());
+    }
+
+    @Test
+    void enrollInLottery_FailUserNotFound() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        lotteryPolicyService.createLotteryPolicy(event1.getEventID(),1,LOTTERY_NAME,50,now.plusDays(5));
+        RequestContext.set(BAD_USER_MAIL, Role.SIGNED);
+        Result<Void> res =lotteryPolicyService.enrollInLottery(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("User with ID " + BAD_USER_MAIL + " not found.",res.getError());
+
+        event1 = eventRepository.findByID(String.valueOf(event1.getEventID()));
+
+        assertFalse(event1.getLotteryPolicy().getParticipants().contains(BAD_USER_MAIL));
+    }
+
+    @Test
+    void enrollInLottery_FailEventNotFound() {
+        RequestContext.set(BYSTANDER_MAIL, Role.SIGNED);
+
+        Result<Void> res =lotteryPolicyService.enrollInLottery(BAD_EVENT_ID);
+
+        assertFalse(res.isSuccess());
+        assertEquals("Event with ID " + BAD_EVENT_ID + " not found",res.getError());
+    }
+
+    @Test
+    public void enrollLotteryPolicy_FailInactiveEvent() {
+        RequestContext.set(BYSTANDER_MAIL, Role.SIGNED);
+        Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
+        e.setLotteryPolicy(lotteryPolicy);
+        e.deactivateEvent();
+        eventRepository.save(e);
+        Result<Void> res = lotteryPolicyService.enrollInLottery(event1.getEventID());
+        assertFalse(res.isSuccess());
+        Event e2 = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        assertFalse(e2.getLotteryPolicy().getParticipants().contains("testuser"));
+    }
+
+    @Test
+    public void enrollLotteryPolicy_FailPastEnrollDate() throws InterruptedException {
+        Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusSeconds(1));
+        e.setLotteryPolicy(lotteryPolicy);
+        eventRepository.save(e);
+        Thread.sleep(1000);
+        RequestContext.set(BYSTANDER_MAIL, Role.SIGNED);
+        Result<Void> res = lotteryPolicyService.enrollInLottery(event1.getEventID());
+        assertFalse(res.isSuccess());
+        Event e2 = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        assertFalse(e2.getLotteryPolicy().getParticipants().contains("testuser"));
+    }
+
+    @Test
+    void enrollInLottery_FailAlreadyEnrolled() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        lotteryPolicyService.createLotteryPolicy(event1.getEventID(),1,LOTTERY_NAME,50,now.plusDays(5));
+
+        RequestContext.set(BYSTANDER_MAIL, Role.SIGNED);
+
+        assertTrue(lotteryPolicyService.enrollInLottery(event1.getEventID()).isSuccess());
+
+        Result<Void> res =lotteryPolicyService.enrollInLottery(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("User is already enrolled in the lottery.", res.getError());
+
+        event1 = eventRepository.findByID(String.valueOf(event1.getEventID()));
+
+        assertEquals(1,event1.getLotteryPolicy().getParticipants().stream().filter(BYSTANDER_MAIL::equals).count());
+    }
+
+    @Test
+    public void enrollLotteryPolicy_TwoThreadsBothSucceeds() throws InterruptedException {
+        Event eve = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
+        eve.setLotteryPolicy(lotteryPolicy);
+        eventRepository.save(eve);
+
+        CountDownLatch readyLatch = new CountDownLatch(2);
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        AtomicReference<Result<Void>> result1 = new AtomicReference<>();
+        AtomicReference<Result<Void>> result2 = new AtomicReference<>();
+
+        Runnable createPolicyTask1 = () -> {
+            try {
+                RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+                readyLatch.countDown();
+                startLatch.await();
+                result1.set(lotteryPolicyService.enrollInLottery(event1.getEventID()));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Runnable createPolicyTask2 = () -> {
+            try {
+                readyLatch.countDown();
+                startLatch.await();
+                RequestContext.set(NOT_PERMITTED_MAIL, Role.SIGNED);
+                result2.set(lotteryPolicyService.enrollInLottery(event1.getEventID()));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Thread thread1 = new Thread(createPolicyTask1);
+        Thread thread2 = new Thread(createPolicyTask2);
+
+        thread1.start();
+        thread2.start();
+
+        readyLatch.await();
+        startLatch.countDown();
+
+        thread1.join();
+        thread2.join();
+
+        assertTrue(result1.get().isSuccess(), result1.get().getError());
+        assertTrue(result2.get().isSuccess(), result2.get().getError());
+
+        Event e3 = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        assertTrue(e3.getLotteryPolicy().getParticipants().contains(PERMITED_MAIL));
+        assertTrue(e3.getLotteryPolicy().getParticipants().contains(NOT_PERMITTED_MAIL));
+
+        int successCount = 0;
+        if (result1.get() != null && result1.get().isSuccess()) {
+            successCount++;
+        }
+        if (result2.get() != null && result2.get().isSuccess()) {
+            successCount++;
+        }
+
+        assertEquals(2, successCount);
+
+        Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        assertDoesNotThrow(() -> e.getLotteryPolicy());
+    }
+
+    @Test
+    public void createLotteryPolicy_TwoThreadsOneSucceeds() throws InterruptedException {
+        Event eve = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
+        eve.setLotteryPolicy(lotteryPolicy);
+        eventRepository.save(eve);
+
+        CountDownLatch readyLatch = new CountDownLatch(2);
+        CountDownLatch startLatch = new CountDownLatch(1);
+
+        AtomicReference<Result<Void>> result1 = new AtomicReference<>();
+        AtomicReference<Result<Void>> result2 = new AtomicReference<>();
+
+        Runnable createPolicyTask1 = () -> {
+            try {
+                readyLatch.countDown();
+                startLatch.await();
+                RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+                result1.set(lotteryPolicyService.enrollInLottery(event1.getEventID()));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Runnable createPolicyTask2 = () -> {
+            try {
+                readyLatch.countDown();
+                startLatch.await();
+                RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+                result2.set(lotteryPolicyService.enrollInLottery(event1.getEventID()));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        };
+
+        Thread thread1 = new Thread(createPolicyTask1);
+        Thread thread2 = new Thread(createPolicyTask2);
+
+        thread1.start();
+        thread2.start();
+
+        readyLatch.await();
+        startLatch.countDown();
+
+        thread1.join();
+        thread2.join();
+
+        int successCount = 0;
+        if (result1.get() != null && result1.get().isSuccess()) {
+            successCount++;
+        }
+        if (result2.get() != null && result2.get().isSuccess()) {
+            successCount++;
+        }
+
+        assertTrue(successCount == 1);
+
+        Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
+        assertDoesNotThrow(() -> e.getLotteryPolicy());
+    }
+
 
     
 }

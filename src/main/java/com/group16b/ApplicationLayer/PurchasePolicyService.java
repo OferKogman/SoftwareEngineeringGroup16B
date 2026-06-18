@@ -5,7 +5,6 @@ import java.util.List;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicyDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -42,60 +41,6 @@ public class PurchasePolicyService {
         this.userRepository = userRepository;
     }
 
-    
-
-    public Result<Boolean> enrollInLottery(String sessionToken, int eventID) {
-        try {
-            logger.info("PurchasePolicyService.enrollInLottery: Received request to enroll in lottery for event ID: {}",
-                    eventID);
-            if (!authenticationService.validateToken(sessionToken)) {
-                logger.warn("PurchasePolicyService.enrollInLottery: Invalid or expired session token.");
-                return Result.makeFail("Authentication failed. Please log in again.");
-            }
-            if (!authenticationService.isUserToken(sessionToken)) {
-                logger.warn("PurchasePolicyService.enrollInLottery: Expected a user session token");
-                return Result.makeFail("Authentication failed. Please log in again.");
-            }
-            String userID = authenticationService.extractSubjectFromToken(sessionToken);
-
-            logger.info("PurchasePolicyService.enrollInLottery: verifying user exists for id {}", userID);
-            User user = userRepository.findByID(userID);
-
-            logger.info(
-                    "PurchasePolicyService.enrollInLottery: Checking if user with id {} passed purchase policy checks",
-                    userID);
-            // TODO: implement purchase policy checks for lottery enrollment
-
-            while (true) {
-                logger.info("PurchasePolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
-                Event e = eventRepo.findByID(String.valueOf(eventID));
-
-                logger.info("PurchasePolicyService.createLotteryPolicy: Enrolling in lottery");
-                e.enrollInLottery(user.getEmail());
-
-                logger.info("PurchasePolicyService.createLotteryPolicy: Saving changes to repository");
-                try {
-                    eventRepo.save(e);
-                    break;
-                } catch (OptimisticLockingFailureException err) {
-                    logger.warn("Event got edit retrying");
-                }
-            }
-
-            logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getEmail(), eventID);
-            return Result.makeOk(true);
-        } catch (IllegalArgumentException e) {
-            logger.error("PurchasePolicyService.enrollInLottery: " + e.getMessage());
-            return Result.makeFail(e.getMessage());
-        } catch (IllegalStateException e) {
-            logger.error("PurchasePolicyService.enrollInLottery: " + e.getMessage());
-            return Result.makeFail(e.getMessage());
-        } catch (Exception e) {
-            logger.error("An unexpected error occurred while enrolling in lottery for event ID: {}: {}", eventID,
-                    e.getMessage());
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-        }
-    }
 
     public Result<Boolean> createCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicyRecord record) {
         try {
