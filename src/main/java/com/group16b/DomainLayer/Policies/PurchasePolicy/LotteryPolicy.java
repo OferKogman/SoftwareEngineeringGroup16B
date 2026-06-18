@@ -131,4 +131,8 @@ public class LotteryPolicy implements PurchasePolicy {
     public void validatePurchase(PurchaseContext context) throws PurchasePolicyException {
     }
 
+    //FOR TESTS
+    public List<String> getWinners() {
+        return new ArrayList<>(winnersAndCodes.values());
+    }
 }

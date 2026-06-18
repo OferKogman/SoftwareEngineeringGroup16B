@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -19,6 +20,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.catalina.Manager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -607,6 +609,155 @@ public class LotteryPolicyServiceTests {
 
         verify(event, times(2))
                 .enrollInLottery(BYSTANDER_MAIL);
+    }
+
+    @Test
+    void handleLotteryResults_Success() {
+        createLotteryAndEnroll();
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(event1.getEventID());
+
+        assertTrue(res.isSuccess());
+
+        Event e = eventRepository.findByID(String.valueOf(event1.getEventID()));
+
+        assertTrue(e.getLotteryPolicy().getWinners().contains(PERMITED_MAIL));
+        assertEquals(1,e.getLotteryPolicy().getWinners().size());
+    }
+
+    @Test
+    void handleLotteryResults_noLottery_cail() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("Event does not have a lottery policy.", res.getError());
+    }
+
+    @Test
+    void handleLotteryResults_FailNotUserToken() {
+        createLotteryAndEnroll();
+        RequestContext.set(PERMITED_MAIL, Role.GUEST);
+
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("Only users are allowed to perform this operation.",res.getError());
+        
+        Event e = eventRepository.findByID(String.valueOf(event1.getEventID()));
+        assertEquals(0,e.getLotteryPolicy().getWinners().size());
+    }
+
+    @Test
+    void handleLotteryResults_FailUserNotFound() {
+        createLotteryAndEnroll();
+
+        RequestContext.set(BAD_USER_MAIL, Role.SIGNED);
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("User with ID " + BAD_USER_MAIL + " not found.", res.getError());
+
+        Event e = eventRepository.findByID(String.valueOf(event1.getEventID()));
+        assertEquals(0,e.getLotteryPolicy().getWinners().size());
+    }
+
+    @Test
+    void handleLotteryResults_FailEventNotFound() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(BAD_EVENT_ID);
+
+        assertFalse(res.isSuccess());
+        assertEquals("Event with ID " + BAD_EVENT_ID + " not found",res.getError());
+    }
+
+    @Test
+    void handleLotteryResults_FailNoPermission() {
+        createLotteryAndEnroll();
+
+        RequestContext.set(NOT_PERMITTED_MAIL, Role.SIGNED);
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(event1.getEventID());
+
+        assertFalse(res.isSuccess());
+        assertEquals("user " + NOT_PERMITTED_MAIL +" dont have correct permissions in company " + COMPANY_ID,res.getError());
+
+        Event e = eventRepository.findByID(String.valueOf(event1.getEventID()));
+        assertEquals(0,e.getLotteryPolicy().getWinners().size());
+    }
+
+    @Test
+    void HandleLottery_unexpectedError()
+    {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        IEventRepository mockEventRepository=mock(IEventRepository.class);
+        doThrow(new RuntimeException("sam gaz al abamperim")).when(mockEventRepository).findByID(anyString());
+
+        lotteryPolicyService=new LotteryPolicyService(mockEventRepository, userRepository, productionCompanyRepository);
+
+        Result<Void> res =lotteryPolicyService.handleLotteryResults(event1.getEventID());
+        assertFalse(res.isSuccess());
+        assertEquals("An unexpected error occurred: sam gaz al abamperim", res.getError());
+    }
+
+    @Test
+    void handleLotteryResults_retryAfterOptimisticLockingFailure_succeeds() {
+
+        IProductionCompanyRepository companyRepo = mock(IProductionCompanyRepository.class);
+        IRepository<User> userRepo = mock(IRepository.class);
+        IEventRepository eventRepo = mock(IEventRepository.class);
+
+        LotteryPolicyService service =
+                new LotteryPolicyService(eventRepo, userRepo, companyRepo);
+
+        User user = mock(User.class);
+        Event event = mock(Event.class);
+        ProductionCompany company = mock(ProductionCompany.class);
+
+        when(userRepo.findByID(PERMITED_MAIL))
+                .thenReturn(user);
+
+        when(user.getEmail())
+                .thenReturn(PERMITED_MAIL);
+
+        when(eventRepo.findByID(String.valueOf(event1.getEventID())))
+                .thenReturn(event);
+
+        when(event.getEventProductionCompanyID())
+                .thenReturn(COMPANY_ID);
+
+        when(companyRepo.findByID(String.valueOf(COMPANY_ID)))
+                .thenReturn(company);
+
+        doNothing().when(company)
+                .validateUserPermissions(anyString(), any(ManagerPermissions.class));
+
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .doNothing()
+                .when(eventRepo)
+                .save(any(Event.class));
+
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+
+        Result<Void> res =
+                service.handleLotteryResults(event1.getEventID());
+
+        assertTrue(res.isSuccess());
+
+        verify(eventRepo, times(2)).save(any(Event.class));
+
+        verify(event, times(2)).handleLotteryResults();
+    }
+
+    private void createLotteryAndEnroll()
+    {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        lotteryPolicyService.createLotteryPolicy(event1.getEventID(),1,LOTTERY_NAME,50,now.plusDays(5));
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        lotteryPolicyService.enrollInLottery(event1.getEventID());
+
     }
 
 
