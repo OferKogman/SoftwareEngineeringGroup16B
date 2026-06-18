@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
-  ChosenSeatingSegData,
-  EntranceData,
-  FieldSegData,
-  SeatData,
-  StageData,
-  VenueData,
+  ChosenSeatingSegDTO,
+  EntranceDTO,
+  FieldSegDTO,
+  SeatDTO,
+  StageDTO,
+  VenueDTO,
 } from "../../DTOs/VenueDTO";
 
 const fieldAreaColor = "#13c3f6";
@@ -35,32 +35,32 @@ type VenueDisplayProps = {
     gridColumn: number,
   ) => void | Promise<void>;
   handleFieldSegmentClick: (
-    segment: FieldSegData,
+    segment: FieldSegDTO,
     gridRow: number,
     gridColumn: number,
   ) => void | Promise<void>;
   handleSeatSegmentClick: (
-    segment: ChosenSeatingSegData,
+    segment: ChosenSeatingSegDTO,
     gridRow: number,
     gridColumn: number,
   ) => void | Promise<void>;
   handleSeatClick: (
-    seat: SeatData,
-    segment: ChosenSeatingSegData,
+    seat: SeatDTO,
+    segment: ChosenSeatingSegDTO,
     gridRow: number,
     gridColumn: number,
   ) => void | Promise<void>;
   handleStageClick: (
-    stage: StageData,
+    stage: StageDTO,
     gridRow: number,
     gridColumn: number,
   ) => void | Promise<void>;
   handleEntranceClick: (
-    entrance: EntranceData,
+    entrance: EntranceDTO,
     gridRow: number,
     gridColumn: number,
   ) => void | Promise<void>;
-  venue: VenueData;
+  venue: VenueDTO;
   onCancel?: () => void;
   pendingRectangle?: {
     startRow: number;
@@ -75,9 +75,8 @@ type VenueDisplayProps = {
 
   selectedFieldSegmentID?: string;
   selectedSeatSegmentID?: string;
-  selectedSeats?: SeatData[];
+  selectedSeats?: SeatDTO[];
 };
-
 
 export default function VenueDisplay({
   handleEmptyCellClick,
@@ -98,37 +97,64 @@ export default function VenueDisplay({
     column: number;
   } | null>(null);
   const [hoveredFieldSeg, setHoveredFieldSeg] = useState<{
-    segment: FieldSegData;
+    segment: FieldSegDTO;
     row: number;
     column: number;
   } | null>(null);
   const [hoveredSeatSeg, setHoveredSeatSeg] = useState<{
-    segment: ChosenSeatingSegData;
+    segment: ChosenSeatingSegDTO;
     row: number;
     column: number;
   } | null>(null);
 
   const [hoveredStage, setHoveredStage] = useState<{
-    stage: StageData;
+    stage: StageDTO;
     row: number;
     column: number;
   } | null>(null);
 
   const [hoveredEntrance, setHoveredEntrance] = useState<{
-    entrance: EntranceData;
+    entrance: EntranceDTO;
     row: number;
     column: number;
   } | null>(null);
 
   const [hoveredSeat, setHoveredSeat] = useState<{
-    seat: SeatData;
-    segment: ChosenSeatingSegData;
+    seat: SeatDTO;
+    segment: ChosenSeatingSegDTO;
     row: number;
     column: number;
   } | null>(null);
 
+  const [fieldSeg, setFieldSeg] = useState<FieldSegDTO[]>([]);
+  const [seatSeg, setSeatSeg] = useState<ChosenSeatingSegDTO[]>([]);
+  const [stages, setStages] = useState<StageDTO[]>([]);
+  const [entrances, setEntrances] = useState<EntranceDTO[]>([]);
+
+  useEffect(() => {
+    async function loadSegs() {
+      const segmentValues = Object.values(venue.segments);
+
+      setFieldSeg(
+        segmentValues.filter((segment): segment is FieldSegDTO => {
+          return "size" in segment;
+        }),
+      );
+
+      setSeatSeg(
+        segmentValues.filter((segment): segment is ChosenSeatingSegDTO => {
+          return "seats" in segment;
+        }),
+      );
+
+      setStages(Object.values(venue.stages));
+      setEntrances(Object.values(venue.entrances));
+    }
+    void loadSegs();
+  }, [venue]);
+
   function getFieldSegment(row: number, column: number) {
-    return venue.fieldSeg.find(({ area }) => {
+    return fieldSeg.find(({ area }) => {
       return (
         row >= area.startRow &&
         row < area.startRow + area.rowCount &&
@@ -138,7 +164,7 @@ export default function VenueDisplay({
     });
   }
   function getSeatSegment(row: number, column: number) {
-    return venue.seatSeg.find(({ area }) => {
+    return seatSeg.find(({ area }) => {
       return (
         row >= area.startRow &&
         row < area.startRow + area.rowCount &&
@@ -149,7 +175,7 @@ export default function VenueDisplay({
   }
 
   function getStage(row: number, column: number) {
-    return venue.stages.find(({ area }) => {
+    return stages.find(({ area }) => {
       return (
         row >= area.startRow &&
         row < area.startRow + area.rowCount &&
@@ -160,7 +186,7 @@ export default function VenueDisplay({
   }
 
   function getEntrance(row: number, column: number) {
-    return venue.entrances.find(({ area }) => {
+    return entrances.find(({ area }) => {
       return (
         row >= area.startRow &&
         row < area.startRow + area.rowCount &&
@@ -180,13 +206,13 @@ export default function VenueDisplay({
     const localRow = row - seatSegment.area.startRow + 1;
     const localColumn = column - seatSegment.area.startColumn + 1;
 
-    return seatSegment.seats.find((seat) => {
+    return Object.values(seatSegment.seats).find((seat) => {
       return seat.row === localRow && seat.column === localColumn;
     });
   }
 
   function isFieldSegmentCenterCell(
-    segment: FieldSegData,
+    segment: FieldSegDTO,
     row: number,
     column: number,
   ) {
@@ -198,7 +224,7 @@ export default function VenueDisplay({
     return row === centerRow && column === centerColumn;
   }
 
-  function isStageCenterCell(stage: StageData, row: number, column: number) {
+  function isStageCenterCell(stage: StageDTO, row: number, column: number) {
     const centerRow = stage.area.startRow + Math.floor(stage.area.rowCount / 2);
     const centerColumn =
       stage.area.startColumn + Math.floor(stage.area.columnCount / 2);
@@ -207,7 +233,7 @@ export default function VenueDisplay({
   }
 
   function isEntranceCenterCell(
-    entrance: EntranceData,
+    entrance: EntranceDTO,
     row: number,
     column: number,
   ) {
@@ -219,14 +245,14 @@ export default function VenueDisplay({
     return row === centerRow && column === centerColumn;
   }
 
-  function getSeatLabel(seat: SeatData) {
-    return `${seat.row}-${seat.column}`;
+  function getSeatLabel(seat: SeatDTO) {
+    return seat.seatId;
   }
 
   function getBackgroundColor(
-    fieldSegment: FieldSegData | undefined,
-    seatSegment: ChosenSeatingSegData | undefined,
-    seat: SeatData | undefined,
+    fieldSegment: FieldSegDTO | undefined,
+    seatSegment: ChosenSeatingSegDTO | undefined,
+    seat: SeatDTO | undefined,
     hovered: boolean,
   ) {
     if (seat) {
@@ -387,7 +413,7 @@ export default function VenueDisplay({
   function isSeatHovered(row: number, column: number) {
     return hoveredSeat?.row === row && hoveredSeat.column === column;
   }
-  function isSeatSelected(seat: SeatData | undefined) {
+  function isSeatSelected(seat: SeatDTO | undefined) {
     if (!seat) {
       return false;
     }
@@ -472,7 +498,8 @@ export default function VenueDisplay({
             const segmentHovered = isSegmentHovered(row, column);
             const seatHovered = isSeatHovered(row, column);
             const selectedSegment =
-              (fieldSegment && fieldSegment.segmentID === selectedFieldSegmentID) ||
+              (fieldSegment &&
+                fieldSegment.segmentID === selectedFieldSegmentID) ||
               (seatSegment && seatSegment.segmentID === selectedSeatSegmentID);
 
             const seatSelected = isSeatSelected(seat);
@@ -539,11 +566,11 @@ export default function VenueDisplay({
                             undefined,
                             segmentHovered,
                           ),
-                          boxShadow: selectedSegment
-                                ? "0 0 6px 2px rgba(212, 175, 55, 0.65)"
-                                : undefined,
-                              filter: selectedSegment ? "brightness(1.08)" : undefined,
-                              zIndex: selectedSegment ? 2 : 1,
+                  boxShadow: selectedSegment
+                    ? "0 0 6px 2px rgba(212, 175, 55, 0.65)"
+                    : undefined,
+                  filter: selectedSegment ? "brightness(1.08)" : undefined,
+                  zIndex: selectedSegment ? 2 : 1,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
@@ -626,7 +653,11 @@ export default function VenueDisplay({
                       width: "100%",
                       height: "100%",
                       border: seatHovered ? hoverBorder : seatBorder,
-                      backgroundColor: seatSelected ? "#d4af37" : seatHovered ? seatHoverColor : seatColor,
+                      backgroundColor: seatSelected
+                        ? "#d4af37"
+                        : seatHovered
+                          ? seatHoverColor
+                          : seatColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

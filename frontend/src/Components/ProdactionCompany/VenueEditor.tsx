@@ -2,30 +2,41 @@ import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type {
-  ChosenSeatingSegData,
-  EntranceData,
-  FieldSegData,
-  SeatData,
-  StageData,
-  VenueData,
-  VenueGridData,
+  ChosenSeatingSegDTO,
+  EntranceDTO,
+  EventScheduleDTO,
+  FieldSegDTO,
+  SeatDTO,
+  SegmentDTO,
+  StageDTO,
+  VenueGridDTO,
 } from "../../DTOs/VenueDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
 
-const initialGrid: VenueGridData = {
+const initialGrid: VenueGridDTO = {
   rows: 10,
   columns: 10,
 };
 
-const initialVenue: VenueData = {
+type VenueCreateDTO = {
+  name: string;
+  location: string;
+  segments: Record<string, SegmentDTO>;
+  events: Record<number, EventScheduleDTO>;
+  stages: Record<string, StageDTO>;
+  entrances: Record<string, EntranceDTO>;
+  grid: VenueGridDTO;
+};
+
+const initialVenue: VenueCreateDTO = {
   name: "",
   location: "",
   grid: initialGrid,
-  fieldSeg: [],
-  seatSeg: [],
-  stages: [],
-  entrances: [],
+  segments: {},
+  stages: {},
+  events: {},
+  entrances: {},
 };
 
 type SelectedCellData = {
@@ -41,32 +52,32 @@ type PendingRectangleData = {
 };
 
 type SelectedFieldSegData = {
-  segment: FieldSegData;
+  segment: FieldSegDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedSeatSegData = {
-  segment: ChosenSeatingSegData;
+  segment: ChosenSeatingSegDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedSeatData = {
-  seat: SeatData;
-  segment: ChosenSeatingSegData;
+  seat: SeatDTO;
+  segment: ChosenSeatingSegDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedStageData = {
-  stage: StageData;
+  stage: StageDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedEntranceData = {
-  entrance: EntranceData;
+  entrance: EntranceDTO;
   gridRow: number;
   gridColumn: number;
 };
@@ -74,7 +85,7 @@ type SelectedEntranceData = {
 export default function VenueEditor() {
   const { companyId } = useParams();
   const { sessionToken } = useSession();
-  const [formData, setFormData] = useState<VenueData>(initialVenue);
+  const [formData, setFormData] = useState<VenueCreateDTO>(initialVenue);
   const [venueName, setVenueName] = useState<string>(initialVenue.name);
   const [venueLocation, setVenueLocation] = useState<string>(
     initialVenue.location,
@@ -132,6 +143,29 @@ export default function VenueEditor() {
     }
 
     try {
+      const segmentValues = Object.values(formData.segments);
+
+      const newVenueLayout = {
+        name: trimmedName,
+        location: trimmedLocation,
+        fieldSeg: segmentValues.filter((segment): segment is FieldSegDTO => {
+          return "size" in segment;
+        }),
+        seatSeg: segmentValues
+          .filter((segment): segment is ChosenSeatingSegDTO => {
+            return "seats" in segment;
+          })
+          .map((segment) => ({
+            segmentID: segment.segmentID,
+            seats: Object.values(segment.seats),
+            area: segment.area,
+          })),
+        stages: Object.values(formData.stages),
+        entrances: Object.values(formData.entrances),
+        grid: formData.grid,
+        events: Object.values(formData.events),
+      };
+
       const response = await apiFetch(
         "http://localhost:8080/venues/configureNewLayoutAndInventory",
         {
@@ -141,11 +175,7 @@ export default function VenueEditor() {
           },
           body: JSON.stringify({
             companyID: Number(companyId),
-            newVenueLayout: {
-              ...formData,
-              name: trimmedName,
-              location: trimmedLocation,
-            },
+            newVenueLayout,
           }),
         },
       );
@@ -238,11 +268,8 @@ export default function VenueEditor() {
       return;
     }
 
-    const newSegment: FieldSegData = {
-      segmentID: getNextID(
-        formData.fieldSeg.map((segment) => segment.segmentID),
-        "F",
-      ),
+    const newSegment: FieldSegDTO = {
+      segmentID: getNextID(Object.keys(formData.segments), "F"),
       size: 0,
       area: {
         startRow: pendingRectangle.startRow,
@@ -251,13 +278,13 @@ export default function VenueEditor() {
         columnCount:
           pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
       },
+      stocks: {},
     };
 
     const overlapsExisting = [
-      ...formData.fieldSeg.map((segment) => segment.area),
-      ...formData.seatSeg.map((segment) => segment.area),
-      ...formData.stages.map((stage) => stage.area),
-      ...formData.entrances.map((entrance) => entrance.area),
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
     ].some((area) => rectanglesOverlap(area, newSegment.area));
 
     if (overlapsExisting) {
@@ -267,37 +294,62 @@ export default function VenueEditor() {
 
     setFormData((current) => ({
       ...current,
-      fieldSeg: [...current.fieldSeg, newSegment],
+      segments: {
+        ...current.segments,
+        [newSegment.segmentID]: newSegment,
+      },
     }));
 
     setPendingRectangle(null);
   }
 
   function handleAddSeatSegment() {
+    function createSeatsRecord(area: {
+      startRow: number;
+      startColumn: number;
+      rowCount: number;
+      columnCount: number;
+    }) {
+      const seats: Record<string, SeatDTO> = {};
+
+      for (let row = 1; row <= area.rowCount; row++) {
+        for (let column = 1; column <= area.columnCount; column++) {
+          const seatId = `${row}-${column}`;
+
+          seats[seatId] = {
+            seatId: seatId,
+            row: row,
+            column: column,
+            stock: {},
+          };
+        }
+      }
+
+      return seats;
+    }
+
     if (!pendingRectangle) {
       return;
     }
 
-    const newSegment: ChosenSeatingSegData = {
-      segmentID: getNextID(
-        formData.seatSeg.map((segment) => segment.segmentID),
-        "S",
-      ),
-      seats: [],
-      area: {
-        startRow: pendingRectangle.startRow,
-        startColumn: pendingRectangle.startColumn,
-        rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
-        columnCount:
-          pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
-      },
+    const newSegmentArea = {
+      startRow: pendingRectangle.startRow,
+      startColumn: pendingRectangle.startColumn,
+      rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
+      columnCount:
+        pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
+    };
+
+    const newSegment: ChosenSeatingSegDTO = {
+      segmentID: getNextID(Object.keys(formData.segments), "S"),
+      seats: createSeatsRecord(newSegmentArea),
+      area: newSegmentArea,
     };
 
     const overlapsExisting = [
-      ...formData.fieldSeg.map((segment) => segment.area),
-      ...formData.seatSeg.map((segment) => segment.area),
-      ...formData.stages.map((stage) => stage.area),
-      ...formData.entrances.map((entrance) => entrance.area),
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
     ].some((area) => rectanglesOverlap(area, newSegment.area));
 
     if (overlapsExisting) {
@@ -307,7 +359,10 @@ export default function VenueEditor() {
 
     setFormData((current) => ({
       ...current,
-      seatSeg: [...current.seatSeg, newSegment],
+      segments: {
+        ...current.segments,
+        [newSegment.segmentID]: newSegment,
+      },
     }));
 
     setPendingRectangle(null);
@@ -320,7 +375,7 @@ export default function VenueEditor() {
 
     const newStage = {
       stageID: getNextID(
-        formData.stages.map((stage) => stage.stageID),
+        Object.values(formData.stages).map((stage) => stage.stageID),
         "ST",
       ),
       area: {
@@ -333,20 +388,22 @@ export default function VenueEditor() {
     };
 
     const overlapsExisting = [
-      ...formData.fieldSeg.map((segment) => segment.area),
-      ...formData.seatSeg.map((segment) => segment.area),
-      ...formData.stages.map((stage) => stage.area),
-      ...formData.entrances.map((entrance) => entrance.area),
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
     ].some((area) => rectanglesOverlap(area, newStage.area));
 
     if (overlapsExisting) {
-      setError("Segments cannot overlap.");
+      setError("Stages cannot overlap.");
       return;
     }
 
     setFormData((current) => ({
       ...current,
-      stages: [...current.stages, newStage],
+      stages: {
+        ...current.stages,
+        [newStage.stageID]: newStage,
+      },
     }));
 
     setPendingRectangle(null);
@@ -359,7 +416,9 @@ export default function VenueEditor() {
 
     const newEntrance = {
       entranceID: getNextID(
-        formData.entrances.map((entrance) => entrance.entranceID),
+        Object.values(formData.entrances).map(
+          (entrance) => entrance.entranceID,
+        ),
         "EN",
       ),
       area: {
@@ -372,26 +431,28 @@ export default function VenueEditor() {
     };
 
     const overlapsExisting = [
-      ...formData.fieldSeg.map((segment) => segment.area),
-      ...formData.seatSeg.map((segment) => segment.area),
-      ...formData.stages.map((stage) => stage.area),
-      ...formData.entrances.map((entrance) => entrance.area),
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
     ].some((area) => rectanglesOverlap(area, newEntrance.area));
 
     if (overlapsExisting) {
-      setError("Segments cannot overlap.");
+      setError("Entrances cannot overlap.");
       return;
     }
 
     setFormData((current) => ({
       ...current,
-      entrances: [...current.entrances, newEntrance],
+      entrances: {
+        ...current.entrances,
+        [newEntrance.entranceID]: newEntrance,
+      },
     }));
 
     setPendingRectangle(null);
   }
   function handleFieldSegmentClick(
-    segment: FieldSegData,
+    segment: FieldSegDTO,
     gridRow: number,
     gridColumn: number,
   ) {
@@ -401,7 +462,7 @@ export default function VenueEditor() {
     setSelectedFieldSeg({ segment, gridRow, gridColumn });
   }
   function handleSeatSegmentClick(
-    segment: ChosenSeatingSegData,
+    segment: ChosenSeatingSegDTO,
     gridRow: number,
     gridColumn: number,
   ) {
@@ -410,8 +471,8 @@ export default function VenueEditor() {
     setSelectedSeatSeg({ segment, gridRow, gridColumn });
   }
   function handleSeatClick(
-    seat: SeatData,
-    segment: ChosenSeatingSegData,
+    seat: SeatDTO,
+    segment: ChosenSeatingSegDTO,
     gridRow: number,
     gridColumn: number,
   ) {
@@ -421,7 +482,7 @@ export default function VenueEditor() {
   }
 
   function handleStageClick(
-    stage: StageData,
+    stage: StageDTO,
     gridRow: number,
     gridColumn: number,
   ) {
@@ -431,7 +492,7 @@ export default function VenueEditor() {
   }
 
   function handleEntranceClick(
-    entrance: EntranceData,
+    entrance: EntranceDTO,
     gridRow: number,
     gridColumn: number,
   ) {
@@ -445,24 +506,28 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      seatSeg: current.seatSeg.map((segment) => {
-        if (segment.segmentID !== selectedSeat.segment.segmentID) {
-          return segment;
-        }
+    setFormData((current) => {
+      const segmentID = selectedSeat.segment.segmentID;
+      const currentSegment = current.segments[segmentID];
 
-        return {
-          ...segment,
-          seats: segment.seats.filter((seat) => {
-            return !(
-              seat.row === selectedSeat.seat.row &&
-              seat.column === selectedSeat.seat.column
-            );
-          }),
-        };
-      }),
-    }));
+      if (!currentSegment || !("seats" in currentSegment)) {
+        return current;
+      }
+
+      const updatedSeats = { ...currentSegment.seats };
+      delete updatedSeats[selectedSeat.seat.seatId];
+
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [segmentID]: {
+            ...currentSegment,
+            seats: updatedSeats,
+          },
+        },
+      };
+    });
 
     setSelectedSeat(null);
   }
@@ -472,12 +537,15 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      seatSeg: current.seatSeg.filter((segment) => {
-        return !(segment.segmentID === selectedSeatSeg.segment.segmentID);
-      }),
-    }));
+    setFormData((current) => {
+      const updatedSegments = { ...current.segments };
+      delete updatedSegments[selectedSeatSeg.segment.segmentID];
+
+      return {
+        ...current,
+        segments: updatedSegments,
+      };
+    });
 
     setSelectedSeatSeg(null);
   }
@@ -487,12 +555,15 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      fieldSeg: current.fieldSeg.filter((segment) => {
-        return !(segment.segmentID === selectedFieldSeg.segment.segmentID);
-      }),
-    }));
+    setFormData((current) => {
+      const updatedSegments = { ...current.segments };
+      delete updatedSegments[selectedFieldSeg.segment.segmentID];
+
+      return {
+        ...current,
+        segments: updatedSegments,
+      };
+    });
 
     setSelectedFieldSeg(null);
   }
@@ -502,12 +573,15 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      stages: current.stages.filter((stage) => {
-        return !(stage.stageID === selectedStage.stage.stageID);
-      }),
-    }));
+    setFormData((current) => {
+      const updatedStages = { ...current.stages };
+      delete updatedStages[selectedStage.stage.stageID];
+
+      return {
+        ...current,
+        stages: updatedStages,
+      };
+    });
 
     setSelectedStage(null);
   }
@@ -517,12 +591,15 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      entrances: current.entrances.filter((entrance) => {
-        return !(entrance.entranceID === selectedEntrance.entrance.entranceID);
-      }),
-    }));
+    setFormData((current) => {
+      const updatedEntrances = { ...current.entrances };
+      delete updatedEntrances[selectedEntrance.entrance.entranceID];
+
+      return {
+        ...current,
+        entrances: updatedEntrances,
+      };
+    });
 
     setSelectedEntrance(null);
   }
@@ -532,35 +609,44 @@ export default function VenueEditor() {
       return;
     }
 
-    const newSeat: SeatData = {
-      row: selectedSeatSeg.gridRow - selectedSeatSeg.segment.area.startRow + 1,
-      column:
-        selectedSeatSeg.gridColumn -
-        selectedSeatSeg.segment.area.startColumn +
-        1,
+    const row =
+      selectedSeatSeg.gridRow - selectedSeatSeg.segment.area.startRow + 1;
+    const column =
+      selectedSeatSeg.gridColumn - selectedSeatSeg.segment.area.startColumn + 1;
+
+    const newSeat: SeatDTO = {
+      seatId: `${row}-${column}`,
+      row: row,
+      column: column,
+      stock: {},
     };
 
-    setFormData((current) => ({
-      ...current,
-      seatSeg: current.seatSeg.map((segment) => {
-        if (segment.segmentID !== selectedSeatSeg.segment.segmentID) {
-          return segment;
-        }
+    setFormData((current) => {
+      const segmentID = selectedSeatSeg.segment.segmentID;
+      const currentSegment = current.segments[segmentID];
 
-        const seatExists = segment.seats.some((seat) => {
-          return seat.row === newSeat.row && seat.column === newSeat.column;
-        });
+      if (!currentSegment || !("seats" in currentSegment)) {
+        return current;
+      }
 
-        if (seatExists) {
-          return segment;
-        }
+      if (newSeat.seatId in currentSegment.seats) {
+        return current;
+      }
 
-        return {
-          ...segment,
-          seats: [...segment.seats, newSeat],
-        };
-      }),
-    }));
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [segmentID]: {
+            ...currentSegment,
+            seats: {
+              ...currentSegment.seats,
+              [newSeat.seatId]: newSeat,
+            },
+          },
+        },
+      };
+    });
 
     setSelectedSeatSeg(null);
   }
@@ -580,19 +666,24 @@ export default function VenueEditor() {
 
     const segmentID = selectedFieldSeg.segment.segmentID;
 
-    setFormData((current) => ({
-      ...current,
-      fieldSeg: current.fieldSeg.map((segment) => {
-        if (segment.segmentID !== segmentID) {
-          return segment;
-        }
+    setFormData((current) => {
+      const currentSegment = current.segments[segmentID];
 
-        return {
-          ...segment,
-          size: newSize,
-        };
-      }),
-    }));
+      if (!currentSegment || !("size" in currentSegment)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [segmentID]: {
+            ...currentSegment,
+            size: newSize,
+          },
+        },
+      };
+    });
 
     setSelectedFieldSeg((current) => {
       if (!current || current.segment.segmentID !== segmentID) {
@@ -876,7 +967,19 @@ export default function VenueEditor() {
           handleSeatClick={handleSeatClick}
           handleStageClick={handleStageClick}
           handleEntranceClick={handleEntranceClick}
-          venue={formData}
+          venue={{
+            ...formData,
+            location: {
+              name: "",
+              houseNumber: "",
+              street: "",
+              city: "",
+              state: "",
+              country: "",
+              latitude: null,
+              longitude: null,
+            },
+          }}
           pendingRectangle={pendingRectangle}
         ></VenueDisplay>
 

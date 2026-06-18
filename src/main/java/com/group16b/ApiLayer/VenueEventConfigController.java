@@ -10,9 +10,9 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.group16b.ApplicationLayer.VenueEventConfigService;
 import com.group16b.ApplicationLayer.DTOs.ConfigureLayoutAndInventoryDTO;
 import com.group16b.ApplicationLayer.DTOs.ConfigureNewLayoutAndInventoryDTO;
-import com.group16b.ApplicationLayer.VenueEventConfigService;
 
 @RestController
 @RequestMapping("/venues")
@@ -35,12 +35,6 @@ public class VenueEventConfigController extends BaseController {
             @RequestBody ConfigureLayoutAndInventoryDTO requestDTO) {
         return executeWithReturnData(() -> venueEventConfigService.configureLayoutAndInventory(sessionToken,
                 requestDTO.getCompanyID(), requestDTO.getEventID(), requestDTO.getVenueID()));
-    }
-
-    @GetMapping("/{venueID}/location")
-    public ResponseEntity<?> getVenue(@RequestHeader("Authorization") String sessionToken,
-            @PathVariable("venueID") String venueID) {
-        return executeWithReturnData(() -> venueEventConfigService.getVenue(sessionToken, venueID));
     }
 
     @GetMapping("/{venueID}")

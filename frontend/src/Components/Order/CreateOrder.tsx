@@ -8,7 +8,6 @@ import type {
   SeatData,
   VenueData,
 } from "../../DTOs/VenueDTO";
-import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
 import "./CSS/CreateOrder.css";
 
@@ -27,21 +26,9 @@ type CreatedOrderResponse = {
   amount?: number;
 };
 
-type BackendVenueDTO = {
-  name: string;
-  location: unknown;
-  grid: {
-    rows: number;
-    columns: number;
-  };
-  segments?: Record<string, any>;
-  entrances?: Record<string, any>;
-};
-
 export default function CreateOrderPage() {
   const { eventID } = useParams();
   const navigate = useNavigate();
-  const { sessionToken } = useSession();
 
   const [venueID, setVenueID] = useState("");
   const [venue, setVenue] = useState<VenueData | null>(null);
@@ -62,185 +49,27 @@ export default function CreateOrderPage() {
 
   const apiFetch = useApiFetch();
 
-  function convertSeatsToArray(seats: unknown): SeatData[] {
-    if (Array.isArray(seats)) {
-      return seats as SeatData[];
-    }
-
-    if (seats && typeof seats === "object") {
-      return Object.entries(seats as Record<string, any>).map(
-        ([seatID, seat]) => {
-          if (
-            typeof seat?.row === "number" &&
-            typeof seat?.column === "number"
-          ) {
-            return {
-              row: seat.row,
-              column: seat.column,
-            };
-          }
-
-          const [row, column] = seatID.split("-").map(Number);
-
-          return {
-            row,
-            column,
-          };
-        },
-      );
-    }
-
-    return [];
-  }
-
-  function getFallbackAreaFromSeats(seats: SeatData[]) {
-    if (seats.length === 0) {
-      return null;
-    }
-
-    const rows = seats.map((seat) => seat.row);
-    const columns = seats.map((seat) => seat.column);
-
-    const minRow = Math.min(...rows);
-    const maxRow = Math.max(...rows);
-    const minColumn = Math.min(...columns);
-    const maxColumn = Math.max(...columns);
-
-    return {
-      startRow: minRow,
-      startColumn: minColumn,
-      rowCount: maxRow - minRow + 1,
-      columnCount: maxColumn - minColumn + 1,
-    };
-  }
-
-  function convertBackendVenueToVenueData(
-    backendVenue: BackendVenueDTO,
-  ): VenueData {
-    const fieldSeg: FieldSegData[] = [];
-    const seatSeg: ChosenSeatingSegData[] = [];
-
-    Object.entries(backendVenue.segments ?? {}).forEach(
-      ([segmentID, segment]) => {
-        const segmentType = segment.segmentType ?? segment.type;
-
-        if (segmentType === "F") {
-          const area =
-            segment.area ??
-            segment.gridRectangle ??
-            segment.location ??
-            segment.rectangle ??
-            null;
-
-          console.log("Segment:", segmentID, segment);
-          console.log("Area candidates:", {
-            area: segment.area,
-            gridRectangle: segment.gridRectangle,
-            location: segment.location,
-            rectangle: segment.rectangle,
-          });
-
-          if (!area) {
-            return;
-          }
-
-          fieldSeg.push({
-            segmentID,
-            area,
-            size: segment.size ?? 0,
-          });
-        }
-
-        if (segmentType === "S") {
-          const seats = convertSeatsToArray(segment.seats);
-          const area =
-            segment.area ??
-            segment.gridRectangle ??
-            segment.location ??
-            segment.rectangle ??
-            getFallbackAreaFromSeats(seats);
-
-          console.log("Segment:", segmentID, segment);
-          console.log("Area candidates:", {
-            area: segment.area,
-            gridRectangle: segment.gridRectangle,
-            location: segment.location,
-            rectangle: segment.rectangle,
-          });
-          if (!area) {
-            return;
-          }
-
-          seatSeg.push({
-            segmentID,
-            area,
-            seats,
-          });
-        }
-      },
-    );
-
-    const entrances = Object.entries(backendVenue.entrances ?? {})
-      .map(([entranceID, entrance]) => ({
-        entranceID,
-        area:
-          entrance.area ??
-          entrance.gridRectangle ??
-          entrance.location ??
-          entrance.rectangle,
-      }))
-      .filter((entrance) => Boolean(entrance.area));
-
-    return {
-      name: backendVenue.name,
-      location:
-        typeof backendVenue.location === "string"
-          ? backendVenue.location
-          : JSON.stringify(backendVenue.location),
-      grid: backendVenue.grid,
-      fieldSeg,
-      seatSeg,
-      stages: [],
-      entrances,
-    };
-  }
   useEffect(() => {
-    if (!eventID) {
-      setError("Missing event ID.");
-      return;
-    }
-
-    if (!sessionToken) {
-      setError("Missing session token.");
-      return;
-    }
-
     let cancelled = false;
 
     async function loadVenue() {
       try {
         setError("");
+        if (!eventID) {
+          setError("Missing event ID.");
+          return;
+        }
 
         const eventResponse = await apiFetch(`${API_BASE}/events/${eventID}`, {
           method: "GET",
         });
 
-        const eventData = await eventResponse.json();
-
         if (!eventResponse.ok) {
-          throw new Error(
-            eventData?.message || eventData?.error || "Failed to load event.",
-          );
+          throw new Error(await eventResponse.text());
         }
 
-        const event = eventData as EventDTO;
-        const loadedVenueID = String(
-          (event as any).eventVenueID ?? (event as any).venueID ?? "",
-        );
-
-        if (!loadedVenueID || loadedVenueID === "undefined") {
-          throw new Error("Event loaded, but venue ID is missing.");
-        }
+        const event: EventDTO = await eventResponse.json();
+        const loadedVenueID = event.eventVenueID;
 
         const venueResponse = await apiFetch(
           `${API_BASE}/venues/${loadedVenueID}/location`,
@@ -249,29 +78,22 @@ export default function CreateOrderPage() {
           },
         );
 
-        const backendVenue = await venueResponse.json();
-        console.log("Loaded venue data:", backendVenue);
         if (!venueResponse.ok) {
-          throw new Error(
-            backendVenue?.message ||
-              backendVenue?.error ||
-              "Failed to load venue.",
-          );
+          throw new Error(await venueResponse.text());
         }
-
-        const realVenue = convertBackendVenueToVenueData(backendVenue);
+        const venue: VenueData = await venueResponse.json();
 
         if (!cancelled) {
           setVenueID(loadedVenueID);
-          setVenue(realVenue);
+          setVenue(venue);
 
           setAvailability([
-            ...realVenue.fieldSeg.map((segment) => ({
+            ...venue.fieldSeg.map((segment) => ({
               segmentID: segment.segmentID,
               taken: 0,
               total: segment.size,
             })),
-            ...realVenue.seatSeg.map((segment) => ({
+            ...venue.seatSeg.map((segment) => ({
               segmentID: segment.segmentID,
               taken: 0,
               total: segment.seats.length,
@@ -294,7 +116,7 @@ export default function CreateOrderPage() {
     return () => {
       cancelled = true;
     };
-  }, [eventID, sessionToken]);
+  }, [eventID, apiFetch]);
 
   function getAvailability(segmentID: string) {
     return availability.find((item) => item.segmentID === segmentID);
@@ -330,13 +152,6 @@ export default function CreateOrderPage() {
     return takenSeats.some(
       (takenSeat) =>
         takenSeat.row === seat.row && takenSeat.column === seat.column,
-    );
-  }
-
-  function isSelectedSeat(seat: SeatData) {
-    return selectedSeats.some(
-      (selectedSeat) =>
-        selectedSeat.row === seat.row && selectedSeat.column === seat.column,
     );
   }
 
