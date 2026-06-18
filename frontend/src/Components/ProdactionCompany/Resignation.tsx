@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
-import "./CSS/CompanySettings.css";
+import "./CSS/Resignation.css";
 
-export default function CompanySettings() {
+export default function Resignation() {
   const { companyId } = useParams();
 
   const [message, setMessage] = useState("");
@@ -59,7 +59,7 @@ export default function CompanySettings() {
   }
 
   return (
-    <main className="company-settings-page">
+    <main className="resignation-page">
       <header className="settings-header">
         <div>
           <h2>Resignation</h2>

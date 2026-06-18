@@ -1,4 +1,4 @@
-.company-settings-page {
+.resignation-page {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -27,9 +27,7 @@
 }
 
 .settings-card button:disabled {
-  cursor:
-    url("../../../assets/hand.png") 16 16,
-    not-allowed;
+  cursor: not-allowed;
   opacity: 0.5;
 }
 
@@ -59,20 +57,6 @@
 
 .confirmation-field input:focus {
   box-shadow: 0 0 0 3px;
-}
-
-.dark .settings-alert {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 1000;
-  padding: 12px 20px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
-  color: #f5f5f5;
-  border: 1px solid rgba(255, 150, 0, 0.15);
-  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
 }
 
 .settings-alert {

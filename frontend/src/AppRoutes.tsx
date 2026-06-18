@@ -12,11 +12,11 @@ import ViewEvent from "./Components/Event/ViewEvent";
 import CreateOrder from "./Components/Order/CreateOrder";
 import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
-import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
 import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
+import Resignation from "./Components/ProdactionCompany/Resignation";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import VenueEditor from "./Components/ProdactionCompany/VenueEditor";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
@@ -75,7 +75,7 @@ export default function AppRoutes() {
         <Route path="venue-config" element={<VenueEditor />} />
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
-        <Route path="settings" element={<CompanySettings />} />
+        <Route path="settings" element={<Resignation />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
 
