@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -197,6 +198,20 @@ public class LotteryPolicyServiceTests {
 
         assertFalse(res.isSuccess());
         assertEquals("Event already has a lottery policy.", res.getError());
+    }
+
+    @Test
+    void createLotteryPolicy_unexpectedError()
+    {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        IProductionCompanyRepository mockCompanyRepository=mock(IProductionCompanyRepository.class);
+        doThrow(new RuntimeException("sam gaz al abamperim")).when(mockCompanyRepository).findByID(anyString());
+
+        lotteryPolicyService=new LotteryPolicyService(eventRepository, userRepository, mockCompanyRepository);
+
+        Result<Void> res =lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 2, "another", 50, now.plusDays(5));
+        assertFalse(res.isSuccess());
+        assertEquals("An unexpected error occurred: sam gaz al abamperim", res.getError());
     }
 
     @Test
@@ -410,6 +425,20 @@ public class LotteryPolicyServiceTests {
     }
 
     @Test
+    void enrollInLottery_unexpectedError()
+    {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        IEventRepository mockEventRepository=mock(IEventRepository.class);
+        doThrow(new RuntimeException("sam gaz al abamperim")).when(mockEventRepository).findByID(anyString());
+
+        lotteryPolicyService=new LotteryPolicyService(mockEventRepository, userRepository, productionCompanyRepository);
+
+        Result<Void> res =lotteryPolicyService.enrollInLottery(event1.getEventID());
+        assertFalse(res.isSuccess());
+        assertEquals("An unexpected error occurred: sam gaz al abamperim", res.getError());
+    }
+
+    @Test
     public void enrollLotteryPolicy_TwoThreadsBothSucceeds() throws InterruptedException {
         Event eve = eventRepository.findByID(Integer.toString(event1.getEventID()));
         LotteryPolicy lotteryPolicy = new LotteryPolicy(0, "Lottery", 50, now.plusDays(5));
@@ -536,6 +565,48 @@ public class LotteryPolicyServiceTests {
 
         Event e = eventRepository.findByID(Integer.toString(event1.getEventID()));
         assertDoesNotThrow(() -> e.getLotteryPolicy());
+    }
+
+    @Test
+    void enrollInLottery_retryAfterOptimisticLockingFailure_succeeds() {
+        IRepository<User> userRepo = mock(IRepository.class);
+        IEventRepository eventRepo = mock(IEventRepository.class);
+        IProductionCompanyRepository companyRepo =
+                mock(IProductionCompanyRepository.class);
+
+        LotteryPolicyService service =
+                new LotteryPolicyService(eventRepo, userRepo, companyRepo);
+
+        User user = mock(User.class);
+        Event event = mock(Event.class);
+
+        when(userRepo.findByID(BYSTANDER_MAIL))
+                .thenReturn(user);
+
+        when(user.getEmail())
+                .thenReturn(BYSTANDER_MAIL);
+
+        when(eventRepo.findByID(
+                String.valueOf(event1.getEventID())))
+                .thenReturn(event);
+
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .doNothing()
+                .when(eventRepo)
+                .save(any(Event.class));
+
+        RequestContext.set(BYSTANDER_MAIL, Role.SIGNED);
+
+        Result<Void> result =
+                service.enrollInLottery(event1.getEventID());
+
+        assertTrue(result.isSuccess());
+
+        verify(eventRepo, times(2))
+                .save(any(Event.class));
+
+        verify(event, times(2))
+                .enrollInLottery(BYSTANDER_MAIL);
     }
 
 
