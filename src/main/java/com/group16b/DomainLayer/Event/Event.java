@@ -227,6 +227,10 @@ public class Event {
 		return lotteryPolicy;
 	}
 
+	public boolean hasLotteryPolicy(){
+		return lotteryPolicy!=null;
+	}
+
 	public void setLotteryPolicy(LotteryPolicy lotteryPolicy) {
 		if (this.lotteryPolicy != null) {
 			throw new IllegalStateException("Event already has a lottery policy.");
