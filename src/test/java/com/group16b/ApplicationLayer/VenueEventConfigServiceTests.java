@@ -25,6 +25,8 @@ import org.junit.jupiter.api.Test;
 import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
 import com.group16b.ApplicationLayer.Records.EntranceRecord;
@@ -37,6 +39,7 @@ import com.group16b.ApplicationLayer.Records.VenueRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
@@ -57,6 +60,9 @@ public class VenueEventConfigServiceTests {
         private VenueEventConfigService configService;
         private IProductionCompanyRepository mockProductionCompanyRepository;
         private ILocationService mockLocationService;
+        private IOrderRepository mockOrderRepository;
+        private IPaymentGateway mockPaymentService;
+        private ITicketGateway mockTicketGateway;
 
         // Test Data
         private final String validToken = "valid.user.token";
@@ -76,6 +82,9 @@ public class VenueEventConfigServiceTests {
                 mockAuthService = mock(IAuthenticationService.class);
                 mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
                 mockLocationService = mock(ILocationService.class);
+                mockOrderRepository = mock(IOrderRepository.class);
+                mockPaymentService = mock(IPaymentGateway.class);
+                mockTicketGateway = mock(ITicketGateway.class);
 
                 Location dummyLocation;
                 dummyLocation = new Location(
@@ -90,7 +99,9 @@ public class VenueEventConfigServiceTests {
                                 mockUserRepository,
                                 mockAuthService,
                                 mockProductionCompanyRepository,
-                                mockLocationService);
+                                mockLocationService,
+                                mockOrderRepository, mockPaymentService, mockTicketGateway
+                                );
         }
 
         private VenueRecord createValidVenueRecord() {
@@ -338,7 +349,7 @@ public class VenueEventConfigServiceTests {
 
                 Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ConcurrentHashMap<>(),
                                 targetVenueID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(),
-                                new ConcurrentHashMap<String, Entrance>());
+                                new ConcurrentHashMap<String, Entrance>(),1);
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);

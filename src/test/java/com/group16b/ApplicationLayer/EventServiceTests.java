@@ -105,7 +105,7 @@ public class EventServiceTests {
                 segmentMap.put("segment1", segment1);
 
                 Venue venue1 = new Venue("Test Venue", location1, segmentMap, "venue1", new VenueGrid(10, 10),
-                                new TreeMap<>(), new TreeMap<>());
+                                new TreeMap<>(), new TreeMap<>(),1);
 
                 LocalDateTime startTime = LocalDateTime.now().plusDays(1);
                 LocalDateTime endTime = LocalDateTime.now().plusDays(2);

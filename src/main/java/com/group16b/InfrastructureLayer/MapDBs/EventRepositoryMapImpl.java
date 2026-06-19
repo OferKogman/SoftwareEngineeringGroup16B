@@ -60,6 +60,13 @@ public class EventRepositoryMapImpl implements IEventRepository {
 	public List<Event> getAll() {
 		return events.values().stream().map(Event::new).collect(Collectors.toCollection(ArrayList::new));
 	}
+	@Override
+	public List<Event> findAllByVenueID(String venueID) {
+		return events.values().stream()
+				.filter(event -> event.getEventVenueID().equals(venueID))
+				.map(Event::new)
+				.collect(Collectors.toCollection(ArrayList::new));
+	}
 
 	@Override
 	public void delete(String eventID) {

@@ -16,7 +16,6 @@ import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
-import com.group16b.ApplicationLayer.Records.EventSegmentConfigUpdateRecord;
 import com.group16b.DomainLayer.DomainServices.EventFilteringService;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -26,7 +25,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
-import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 
@@ -330,73 +328,7 @@ public class EventService {
 		}
 	}
 
-	public Result<String> editStockInSegmentsForEvent(Map<String, EventSegmentConfigUpdateRecord> segmentsAndNewStock,
-			int eventID,
-			String sessionToken) {
-		try {
-			String userID = validateAndGetUserID(sessionToken);
-			logger.info("EventService.editStockInSegmentsForEvent: Session token verified successfully.");
-
-			logger.info("EventService.editStockInSegmentsForEvent: retrieving event for stock edition");
-			Event event = eventRepository.findByID(String.valueOf(eventID));
-
-			logger.info(
-					"EventService.editStockInSegmentsForEvent: retrieving production company for event stock edition");
-			ProductionCompany company = productionCompanyRepository
-					.findByID(String.valueOf(event.getEventProductionCompanyID()));
-
-			logger.info("EventService.editStockInSegmentsForEvent: Validating user permissions for event activation.");
-			company.validateUserPermissions(userID, RoleType.OWNER);
-			logger.info("EventService.editStockInSegmentsForEvent: User permissions validated successfully.");
-
-			Venue venue = venueRepository.findByID(event.getEventVenueID());
-
-			while (true) {
-				logger.info(
-						"EventService.editStockInSegmentsForEvent: Attempting to edit stock in segments for event with ID: "
-								+ eventID);
-				venue = venueRepository.findByID(event.getEventVenueID());
-
-				for (Map.Entry<String, EventSegmentConfigUpdateRecord> entry : segmentsAndNewStock.entrySet()) {
-					Segment currSeg = venue.getSegmentByID(entry.getKey());
-					currSeg.setStockForEvent(eventID, entry.getValue().newStock());
-
-					double newPrice = entry.getValue().newPrice();
-					if (event.getEventPrice() > newPrice)
-						throw new IllegalArgumentException("New segment price: " + newPrice
-								+ " cannot be samller than minimum event price: " + event.getEventPrice());
-					currSeg.setPrice(eventID, newPrice);
-					logger.info("@DEBUG: Updated segment price for event {}: {}", eventID, newPrice);
-				}
-				try {
-					venueRepository.save(venue);
-					break;
-				} catch (OptimisticLockingFailureException e) {
-					logger.error(
-							"EventService.editStockInSegmentsForEvent: Concurrent modification error during stock edition: "
-									+ e.getMessage());
-					return Result
-							.makeFail(
-									"Failed to edit stock in segments for event due to concurrent modification. Please try again.");
-				}
-			}
-
-			return Result.makeOk("EventService.editStockInSegmentsForEvent: Changed stocks for eventID: " + eventID);
-		} catch (IllegalArgumentException e) {
-			logger.error("EventService.editStockInSegmentsForEvent: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (AuthException e) {
-			logger.error("EventService.editStockInSegmentsForEvent: Invalid session token. " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (JwtException e) {
-			logger.error("EventService.editStockInSegmentsForEvent: JWT authentication error during stock edition: "
-					+ e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("EventService.editStockInSegmentsForEvent: Unexpected error occurred: " + e.getMessage());
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
-	}
+	
 
 	public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
 		try {

@@ -76,7 +76,6 @@ abstract public class Segment {
 
 	public abstract String getSegmentType();
 
-	public abstract void setStockForEvent(int eventID, int stock);
 	public abstract Map<?, ?> getMap();
 
 	

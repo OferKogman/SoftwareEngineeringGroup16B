@@ -11,5 +11,6 @@ public interface IEventRepository extends IRepository<Event> {
 			List<Number> minPrice,
 			List<Number> maxPrice, List<LocalDateTime> startTime, List<LocalDateTime> endTime, List<Number> eventRating,
 			List<Integer> productionCompanyID);
+	public List<Event> findAllByVenueID(String venueID);
 
 }
