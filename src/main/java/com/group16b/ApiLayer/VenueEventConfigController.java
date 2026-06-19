@@ -1,5 +1,8 @@
 package com.group16b.ApiLayer;
 
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -12,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.DTOs.ConfigureLayoutAndInventoryDTO;
 import com.group16b.ApplicationLayer.DTOs.ConfigureNewLayoutAndInventoryDTO;
+import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
+import com.group16b.ApplicationLayer.Records.FieldSegRecord;
 import com.group16b.ApplicationLayer.VenueEventConfigService;
 
 @RestController
@@ -48,5 +53,19 @@ public class VenueEventConfigController extends BaseController {
             @PathVariable("venueID") String venueID) {
         System.out.println("Received request to get venue with ID: " + venueID);
         return executeWithReturnData(() -> venueEventConfigService.getVenue(sessionToken, venueID));
+    }
+
+    
+    @GetMapping("/{venueID}/segments")
+    public ResponseEntity<?> editVenueSegments(@RequestHeader("Authorization") String sessionToken,
+                @PathVariable("venueID") String venueID,
+                @RequestBody Map<String, Integer> fieldSegmentsToEdit,
+                @RequestBody Map<String, List<String>> seatsSegmentsToEdit,
+                @RequestBody List<FieldSegRecord> newFieldSegments,
+                @RequestBody List<ChosenSeatingSegRecord> newSeatSegments,
+                @PathVariable("companyID") int companyID
+            ) {
+        System.out.println("Received request to edit venue segments for venue ID: " + venueID);
+        return executeWithReturnData(() -> venueEventConfigService.editVenueSegments(companyID, venueID,fieldSegmentsToEdit, seatsSegmentsToEdit, newFieldSegments, newSeatSegments, sessionToken));
     }
 }
