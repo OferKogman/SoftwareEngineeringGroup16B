@@ -488,6 +488,33 @@ public class CompanyHierarchyService {
         }
     }
 
+	public Result<Boolean> isOwner(int companyId)
+	{
+		try
+		{
+			logger.info("companyHierarchyService.isOwner: verifying ownership for company {}",companyId);
+			String userID= validateRoleAndGetUserId();
+			ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyId));
+			logger.info("companyHierarchyService.isOwner: verifying ownership of user {} for company {}",userID,companyId);
+			if(!company.isOwner(userID))
+			{
+				logger.info("companyHierarchyService.isOwner: user {} is not owner for company {}",userID,companyId);
+				return Result.makeOk(false);
+			}
+			logger.info("companyHierarchyService.isOwner: user {} is owner for company {}",userID,companyId);
+			return Result.makeOk(true);
+		} catch (AuthException e){
+			logger.info("companyHierarchyService.isOwner: AuthException: ",e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalArgumentException e){
+			logger.info("companyHierarchyService.isOwner: IllegalArgumentException: ",e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch(Exception e){
+			logger.error("companyHierarchyService.isOwner: Unexpected Exception: ",e);
+			return Result.makeFail("An unexpected error occured, pls try again later.");
+		}
+	}
+
 	private String validateAndGetUserID(String sessionToken) {
 		if (!authenticationService.validateToken(sessionToken)) {
 			throw new AuthException("Invalid Token");

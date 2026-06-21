@@ -102,4 +102,10 @@ public class CompanyHierarchyController extends BaseController {
         return executeWithReturnData(() -> companyHierarchyService.getComapanyPermissions(companyId));
     }
 
+    @GetMapping("/me/owner")
+    public ResponseEntity<?> isOwner(@PathVariable("companyId") int companyId)
+    {
+        return executeWithReturnData(() -> companyHierarchyService.isOwner(companyId));
+    }
+
 }
