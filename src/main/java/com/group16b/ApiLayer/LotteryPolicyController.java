@@ -11,7 +11,7 @@ import com.group16b.ApplicationLayer.LotteryPolicyService;
 import com.group16b.ApplicationLayer.DTOs.CreateLotteryPolicyRequestDTO;
 
 @Controller
-@RequestMapping("api/events/{eventId}/lottery")
+@RequestMapping("/api/events/{eventId}/lottery")
 public class LotteryPolicyController extends BaseController{
     private final LotteryPolicyService lotteryPolicyService;
 

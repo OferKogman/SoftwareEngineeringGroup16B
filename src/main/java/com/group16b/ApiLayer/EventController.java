@@ -20,7 +20,7 @@ import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 
 @RestController
-@RequestMapping("/events")
+@RequestMapping("/api/events")
 public class EventController extends BaseController {
     private final EventService eventService;
     public EventController(EventService eventService) {

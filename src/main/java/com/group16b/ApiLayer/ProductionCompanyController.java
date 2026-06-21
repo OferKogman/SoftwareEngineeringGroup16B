@@ -14,7 +14,7 @@ import com.group16b.ApplicationLayer.DTOs.CreateProductionCompanyRequestDTO;
 import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 @RestController
-@RequestMapping("/production-companies")
+@RequestMapping("/api/production-companies")
 public class ProductionCompanyController extends BaseController {
     private final ProductionCompanyService productionCompanyService;
 
