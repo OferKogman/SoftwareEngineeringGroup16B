@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import "../../CSS/Management.css";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
-import { useApiFetch } from "../../apiFetch";
 
 const API_BASE = "http://localhost:8080";
 
@@ -97,6 +97,27 @@ export default function EventManagement() {
         }
 
         setEvent(data);
+
+        const response3 = await apiFetch(
+          `${API_BASE}/production-companies/${data.eventProductionCompanyID}/me/permissions`,
+          {
+            method: "GET",
+          },
+        );
+
+        const permissionsData = await readResponseBody(response3);
+
+        if (!response3.ok) {
+          throw new Error(getApiError(permissionsData));
+        }
+
+        if (!Array.isArray(permissionsData)) {
+          throw new Error("Invalid permissions response from server");
+        }
+
+        if (!permissionsData.includes("EVENT_INVENTORY")) {
+          throw new Error("User is not authorized to perform this operation");
+        }
       } catch (error) {
         if (!cancelled) {
           setError(error instanceof Error ? error.message : "Event not found");
