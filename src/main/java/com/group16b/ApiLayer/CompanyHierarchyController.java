@@ -18,7 +18,7 @@ import com.group16b.ApplicationLayer.DTOs.ChangeManagerPermissionRequestDTO;
 import com.group16b.ApplicationLayer.DTOs.InviteHandleRequestDTO;
 
 @RestController
-@RequestMapping("/api/production-companies/{companyId}")
+@RequestMapping("/production-companies/{companyId}")
 public class CompanyHierarchyController extends BaseController {
     private final CompanyHierarchyService companyHierarchyService;
 
