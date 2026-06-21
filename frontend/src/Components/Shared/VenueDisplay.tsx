@@ -206,7 +206,6 @@ export default function VenueDisplay({
     const localRow = row - seatSegment.area.startRow + 1;
     const localColumn = column - seatSegment.area.startColumn + 1;
 
-    console.log(seatSegment.seats[`${localRow}-${localColumn}`]);
     return seatSegment.seats[`${localRow}-${localColumn}`];
   }
 
@@ -419,7 +418,7 @@ export default function VenueDisplay({
 
     return selectedSeats.some(
       (selectedSeat) =>
-        selectedSeat.row === seat.row && selectedSeat.column === seat.column,
+        selectedSeat.row === seat.row && selectedSeat.number === seat.number,
     );
   }
 

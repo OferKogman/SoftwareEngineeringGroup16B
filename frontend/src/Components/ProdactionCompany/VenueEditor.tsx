@@ -319,7 +319,7 @@ export default function VenueEditor() {
           seats[seatId] = {
             seatId: seatId,
             row: row,
-            column: column,
+            number: column,
             stock: {},
           };
         }
@@ -617,7 +617,7 @@ export default function VenueEditor() {
     const newSeat: SeatDTO = {
       seatId: `${row}-${column}`,
       row: row,
-      column: column,
+      number: column,
       stock: {},
     };
 

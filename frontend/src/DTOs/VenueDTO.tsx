@@ -50,7 +50,7 @@ export type GridRectangleDTO = {
 export type SeatDTO = {
   seatId: string;
   row: number;
-  column: number;
+  number: number;
   stock: Record<number, boolean>;
 };
 

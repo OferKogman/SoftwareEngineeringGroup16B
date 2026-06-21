@@ -100,10 +100,6 @@ export default function CreateOrderPage() {
     };
   }, [eventID, apiFetch]);
 
-  useEffect(() => {
-    console.log("venue:", venue);
-  }, [venue]);
-
   function handleFieldSegmentSelected(segment: FieldSegDTO) {
     setError("");
     setSelectedSeatSeg(null);
@@ -124,7 +120,11 @@ export default function CreateOrderPage() {
       setError("Missing Event ID");
       return;
     }
-    return (
+    if (!selectedSeatSeg) {
+      return;
+    }
+
+    return !(
       selectedSeatSeg &&
       Object.keys(selectedSeatSeg.seats).includes(seat.seatId) &&
       !seat.stock[Number(eventID)]
@@ -139,7 +139,7 @@ export default function CreateOrderPage() {
     setSelectedSeats((current) => {
       const alreadySelected = current.some(
         (selectedSeat) =>
-          selectedSeat.row === seat.row && selectedSeat.column === seat.column,
+          selectedSeat.row === seat.row && selectedSeat.number === seat.number,
       );
 
       if (alreadySelected) {
@@ -147,7 +147,7 @@ export default function CreateOrderPage() {
           (selectedSeat) =>
             !(
               selectedSeat.row === seat.row &&
-              selectedSeat.column === seat.column
+              selectedSeat.number === seat.number
             ),
         );
       }
@@ -196,7 +196,7 @@ export default function CreateOrderPage() {
     segmentID: string,
     seats: SeatDTO[],
   ) {
-    const seatIDs = seats.map((seat) => `${seat.row}-${seat.column}`);
+    const seatIDs = seats.map((seat) => `${seat.row}-${seat.number}`);
 
     const response = await apiFetch(
       `${API_BASE}/events/${eventID}/reservations/seats`,
@@ -408,8 +408,8 @@ export default function CreateOrderPage() {
 
         {selectedSeatSeg &&
           selectedSeats.map((seat) => (
-            <p key={`${seat.row}-${seat.column}`}>
-              Seat section {selectedSeatSeg.segmentID}: {seat.row}-{seat.column}
+            <p key={`${seat.row}-${seat.number}`}>
+              Seat section {selectedSeatSeg.segmentID}: {seat.row}-{seat.number}
             </p>
           ))}
       </div>
