@@ -96,10 +96,10 @@ public class AdminManagementServiceTests {
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
 
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5),
+        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5),
                 user.getEmail());
         
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0, 3.5), user.getEmail());
+        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), user.getEmail());
     }
 
     // Helper method to keep reflection injection clean
@@ -495,7 +495,7 @@ public class AdminManagementServiceTests {
         ProductionCompany company = new ProductionCompany(2, "TestCompany", 1, user.getEmail());
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
-        Event event2 = new Event(new EventRecord("venue1", "event2", LocalDateTime.now().plusDays(3), LocalDateTime.now().plusDays(4), "artist2", "category2", companyID, 10.0, 4), user.getEmail());
+        Event event2 = new Event(new EventRecord("venue1", "event2", LocalDateTime.now().plusDays(3), LocalDateTime.now().plusDays(4), "artist2", "category2", companyID, 4), user.getEmail());
         eventRepository.save(event2);
 
         Order order = new Order("segment1", 1, 1.0, event2.getEventID(), user.getEmail());

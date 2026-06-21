@@ -3,14 +3,12 @@ package com.group16b.ApplicationLayer.DTOs;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
 import com.group16b.DomainLayer.Venue.FieldSeg;
-import com.group16b.DomainLayer.Venue.GridRectangle;
 
 public class FieldSegDTO extends SegmentDTO {
 
     private final int size;
-    private final GridRectangleRecord area;
+    private final GridRectangleDTO area;
     private final ConcurrentMap<Integer, Integer> stocks;
 
     public FieldSegDTO(FieldSeg fieldSeg) {
@@ -21,21 +19,10 @@ public class FieldSegDTO extends SegmentDTO {
         this.stocks = new ConcurrentHashMap<>();
         this.stocks.putAll(fieldSeg.getMap());
 
-        GridRectangle currArea = fieldSeg.getArea();
-        this.area = new GridRectangleRecord(
-                currArea.getStartRow(),
-                currArea.getStartColumn(),
-                currArea.getRowCount(),
-                currArea.getColumnCount()
-        );
+        this.area = new GridRectangleDTO(fieldSeg.getArea());
     }
 
-    @Override
-    public String getSegmentType() {
-        return "F";
-    }
-
-    public GridRectangleRecord getArea() {
+    public GridRectangleDTO getArea() {
         return area;
     }
 

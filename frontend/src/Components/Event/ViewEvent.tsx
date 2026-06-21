@@ -3,8 +3,9 @@ import { TbStar, TbStarFilled, TbStarHalfFilled } from "react-icons/tb";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
-import { locationToString, type LocationDTO } from "../../DTOs/LocationDTO";
+import { locationToString } from "../../DTOs/LocationDTO";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import type { VenueDTO } from "../../DTOs/VenueDTO";
 import ViewDiscountPolicies from "../ViewDiscountPolicies";
 import ViewPurchasePolicies from "../ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
@@ -42,7 +43,7 @@ export default function ViewEvent() {
         setEventDTO(event);
 
         const locationResponse = await apiFetch(
-          `http://localhost:8080/venues/${event.eventVenueID}/location`,
+          `http://localhost:8080/venues/${event.eventVenueID}`,
           {
             method: "Get",
           },
@@ -52,8 +53,8 @@ export default function ViewEvent() {
           throw new Error(await response.text());
         }
 
-        const loc: LocationDTO = await locationResponse.json();
-        setLocation(locationToString(loc));
+        const ven: VenueDTO = await locationResponse.json();
+        setLocation(locationToString(ven.location));
 
         const companyResponse = await apiFetch(
           `http://localhost:8080/production-companies/${event.eventProductionCompanyID}`,
