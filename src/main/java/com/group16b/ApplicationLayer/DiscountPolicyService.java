@@ -50,11 +50,11 @@ public class DiscountPolicyService {
         return null;
     }
 
-    public Result<List<DiscountPolicyDTO>> getEventDiscountPolicy(String sessionToken, int eventID) {
+    public Result<DiscountPolicyDTO> getEventDiscountPolicy(String sessionToken, int eventID) {
         return null;
     }
 
-    public Result<List<DiscountPolicyDTO>> getCompanyDiscountPolicy(String sessionToken, int companyID) {
+    public Result<DiscountPolicyDTO> getCompanyDiscountPolicy(String sessionToken, int companyID) {
         return null;
     }
 }
