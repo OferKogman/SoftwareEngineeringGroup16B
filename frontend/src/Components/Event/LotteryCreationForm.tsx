@@ -51,7 +51,7 @@ export default function LotteryCreationForm() {
       setMessage("Lottery created successfully.");
 
       setTimeout(() => {
-        navigate(`/events/${eventID}`);
+        navigate(`/events/${eventID}/management/show`);
       }, 2000);
     } catch (err) {
       setError(
@@ -120,6 +120,42 @@ export default function LotteryCreationForm() {
         <div className="popup-alert">
           <p>{error}</p>
           <button onClick={closePopup}>OK</button>
+        </div>
+      )}
+
+      {message && (
+        <div className="popup-alert">
+          <p>{message}</p>
+          <button
+            onClick={closePopup}
+            style={{
+              padding: "0.8rem 1rem",
+              borderRadius: "0.7rem",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            OK
+          </button>
+        </div>
+      )}
+
+      {error && (
+        <div className="popup-alert">
+          <p>{error}</p>
+          <button
+            onClick={closePopup}
+            style={{
+              padding: "0.8rem 1rem",
+              borderRadius: "0.7rem",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: "bold",
+            }}
+          >
+            OK
+          </button>
         </div>
       )}
     </main>
