@@ -44,7 +44,12 @@ abstract public class Segment {
 		this.segmentID = segmentID;
 		this.area = area;
 	}
-
+	public Segment(Segment other) {
+		this.segmentID = other.segmentID;
+		this.area = other.area;
+		this.eventPrices = new HashMap<>(other.eventPrices);
+	}
+	
 	public Segment() {
 		// Default constructor for JPA
 	}

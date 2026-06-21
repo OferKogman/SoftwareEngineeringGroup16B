@@ -357,6 +357,13 @@ public class Venue {
 		}
 		return segment.getPrice(eventID);
 	}
+    public void addPriceToSegment(String segmentId, double price, int eventID) {
+        Segment segment = segments.get(segmentId);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+        segment.setPrice(eventID, price);
+    }
 	
 	public String getID(){
 		return id;

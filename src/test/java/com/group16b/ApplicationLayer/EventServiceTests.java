@@ -698,5 +698,57 @@ public class EventServiceTests {
                 assertEquals(event.getEventStatus(),
                                 eventRepository.findByID(String.valueOf(e1.getEventID())).getEventStatus());
         }
+        @Test
+        public void AddEventPrices_Success() {
+                Map<String, Double> prices = new TreeMap<>();
+                prices.put("segment1", 120.0);
+
+                Result<String> result = eventService.addEventPrices(e1.getEventID(), prices, "user1");
+
+                assertTrue(result.isSuccess());
+                assertEquals("Prices added successfully.", result.getValue());
+
+                Venue venue = venueRepository.findByID(e1.getEventVenueID());
+                assertEquals(120.0, venue.getPriceForSegment("segment1", e1.getEventID()), 0.001);
+        }
+
+        @Test
+        public void AddEventPrices_UserIsNotAuthenticated_Failure() {
+                Map<String, Double> prices = new TreeMap<>();
+                prices.put("segment1", 120.0);
+
+                assertEquals("Authentication failed: Invalid session token.",
+                                eventService.addEventPrices(e1.getEventID(), prices, "invalid_token").getError());
+        }
+
+        @Test
+        public void AddEventPrices_UserDoesNotHavePermission_Failure() {
+                Map<String, Double> prices = new TreeMap<>();
+                prices.put("segment1", 120.0);
+
+                assertEquals("user testuser2 dont have correct permissions in company 1",
+                                eventService.addEventPrices(e1.getEventID(), prices, "user2").getError());
+        }
+
+        @Test
+        public void AddEventPrices_InvalidSegment_Failure() {
+                Map<String, Double> prices = new TreeMap<>();
+                prices.put("segment_does_not_exist", 120.0);
+
+                Result<String> result = eventService.addEventPrices(e1.getEventID(), prices, "user1");
+
+                assertFalse(result.isSuccess());
+                assertEquals("Segment with ID segment_does_not_exist not found", result.getError());
+        }
+
+        @Test
+        public void AddEventPrices_NegativePrice_Failure() {
+                Map<String, Double> prices = new TreeMap<>();
+                prices.put("segment1", -10.0);
+
+                Result<String> result = eventService.addEventPrices(e1.getEventID(), prices, "user1");
+
+                assertFalse(result.isSuccess());
+        }
 
 }
