@@ -74,4 +74,14 @@ public class EventController extends BaseController {
     ) {
         return executeWithReturnData(() -> eventService.searchEvents(request));
     }
+
+    @PostMapping("/{eventID}/prices")
+    public ResponseEntity<?> addEventPrices(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID,
+        @RequestBody Map<String, Double> request
+    ) {
+        return executeWithNoReturnData(() -> eventService.addEventPrices(eventID, request, authToken));
+    }
+
 }
