@@ -26,6 +26,7 @@ import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
+import ManageEventInventory from "./Components/ProdactionCompany/ManageEventInventory";
 
 export default function AppRoutes() {
   return (
@@ -56,7 +57,7 @@ export default function AppRoutes() {
         <Route index element={<Navigate to="show" />} />
         <Route path="show" element={<ViewEvent />} />
         <Route path="update-info" element={<EventUpdateForm />} />
-        <Route path="inventory" element={<VenueEditor />} />
+        <Route path="inventory" element={<ManageEventInventory />} />
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
       </Route>
