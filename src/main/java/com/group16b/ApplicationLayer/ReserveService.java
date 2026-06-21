@@ -103,7 +103,9 @@ public class ReserveService {
             validatePurchasePolicy(eventID, seatIds.size(), sessionToken);
             
             double pricePerSeat = venue.getPriceForSegment(segmentId, eventID); // validate segment exists and is valid for the event before reserving seats
+            
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
+            logger.info("@DEBUG: pricePerSeat: {}, priceAfterDiscountPolicy: {}", pricePerSeat, priceAfterDiscountPolicy);
             
             logger.info("ReserveService.reserveSeats: Attempting to reserve seats {} in segment {} for event {} for user {}", seatIds, segmentId, eventID, subjectID);
             venue.reserveTickets(segmentId, seatIds, eventID);

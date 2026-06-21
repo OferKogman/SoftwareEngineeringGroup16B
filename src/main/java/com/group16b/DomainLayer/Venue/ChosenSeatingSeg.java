@@ -8,12 +8,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import com.group16b.ApplicationLayer.Records.SeatRecord;
 
 import jakarta.persistence.CascadeType;
-import jakarta.persistence.CollectionTable;
-import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKey;
-import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 @Entity
@@ -47,7 +44,7 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	public ChosenSeatingSeg(ChosenSeatingSeg other) {
-		super(other.segmentID, other.area);
+		super(other);
 		this.IDforSeat = other.IDforSeat;
 		this.seats = new ConcurrentHashMap<>();
 		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
@@ -108,20 +105,84 @@ public class ChosenSeatingSeg extends Segment {
 		}
 		return list;
 	}
+	public void setNewStock(List<String> newSeatsIDs) {
+		// cut so that we have the list of seats that are to be deleted. meaning exsist in the old list but not in the new one. call it refund list
+		List<String> refundSeatsIDs = new LinkedList<>();
+		for (String oldSeatID : this.seats.keySet()) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+		// cut so that we have the list of seats that are to be added. meaning exsist in the new list but not in the old one. call it add list
+		List<String> addSeatsIDs = new LinkedList<>();
+		for (String newSeatID : newSeatsIDs) {
+			if (!this.seats.keySet().contains(newSeatID)) {
+				addSeatsIDs.add(newSeatID);
+			}
+		}
+		// cheacking fromat before adding the new seats to the segment
+		for (String addSeatID : addSeatsIDs) {
+			validateSeatIDFormat(addSeatID);
+		}
+		// add the new seats to the segment
 
-	@Override
-	public void setStockForEvent(int eventID, int newStock) {
-		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
-		if (seatsInEvent.size() <= newStock) {
-			throw new IllegalArgumentException(
-					"removing too much from the segment: " + segmentID + " for event :" + eventID);
+		for (String addSeatID : addSeatsIDs) {
+			String[] parts = addSeatID.split("-");
+			
+			int row = Integer.parseInt(parts[0]);
+			int column = Integer.parseInt(parts[1]);
+			seats.put(addSeatID, new Seat(row, column));
 		}
 
-		int startIndex = newStock;// we only keep the newStock amount of seats in seg
+		for (String refundSeatID : refundSeatsIDs) {			
+			seats.remove(refundSeatID);
+		}
+	}
 
-		for (int index = startIndex; index < seatsInEvent.size(); index++) {
-			Seat seat = seatsInEvent.get(index);
-			seat.returnSeat(eventID);
+
+	public List<String> getStockRefundForEvent(int eventID, List<String> newSeatsIDs) {
+		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
+		
+		// get exsisting seats for segment
+		List<String> oldSeatsIDs = new LinkedList<>();
+		for (Seat seat : seatsInEvent) {
+			oldSeatsIDs.add(seat.getSeatId());
+		}
+		// cut so that we have the list of seats that are to be deleted. meaning exsist in the old list but not in the new one. call it refund list
+		List<String> refundSeatsIDs = new LinkedList<>();
+		for (String oldSeatID : oldSeatsIDs) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+
+		// remove refund seats from the segment
+		List<String> refundSeats = new LinkedList<>();
+		for (String refundSeatID : refundSeatsIDs) {
+				Seat seat = seats.get(refundSeatID);
+				if (seat == null) {
+					throw new IllegalArgumentException("Seat with ID " + refundSeatID + " not found for refund");
+				}
+				if (seat.isSeatReserved(eventID)) {
+					refundSeats.add(refundSeatID);
+				}
+		}
+		
+		return refundSeats;
+
+	}
+	private void validateSeatIDFormat(String seatID) {
+		String[] parts = seatID.split("-");
+
+		if (parts.length != 2) {
+			throw new IllegalArgumentException("Invalid seat ID format: " + seatID);
+		}
+
+		try {
+			Integer.parseInt(parts[0]);
+			Integer.parseInt(parts[1]);
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid seat ID format: " + seatID);
 		}
 	}
 

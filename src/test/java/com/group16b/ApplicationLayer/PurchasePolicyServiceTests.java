@@ -90,7 +90,7 @@ public class PurchasePolicyServiceTests {
         segmentMap.put("segment1", segment1);
 
         Venue venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7),
-                new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
+                new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>(),1);
 
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
@@ -132,14 +132,14 @@ public class PurchasePolicyServiceTests {
         MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
         company.addPurchasePolicy(oldPolicy);
         productionCompanyRepository.save(company);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", company.getProductionCompanyID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
         assertTrue(res.isSuccess());
     }
 
     @Test
     public void editCompanyPurchasePolicy_FailInvalidToken() {
         MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("invalid_token", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("invalid_token", company.getProductionCompanyID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
         assertFalse(res.isSuccess());
     }
 
@@ -148,14 +148,14 @@ public class PurchasePolicyServiceTests {
         MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
         company.addPurchasePolicy(oldPolicy);
         productionCompanyRepository.save(company);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user2", company.getProductionCompanyID(), oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user2", company.getProductionCompanyID(), new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
         assertFalse(res.isSuccess());
     }
 
     @Test
     public void editCompanyPurchasePolicy_FailCompanyNotFound() {
         MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", 999, oldPolicy, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
+        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", 999, new PurchasePolicyRecord("MIN_TICKETS", null, null, 2, null));
         assertFalse(res.isSuccess());
     }
 }

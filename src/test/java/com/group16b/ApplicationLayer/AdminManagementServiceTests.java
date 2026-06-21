@@ -90,7 +90,7 @@ public class AdminManagementServiceTests {
 
         Map<String, Segment> segmentMap = new TreeMap<>();
         segmentMap.put("segment1", segment1);
-        venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
+        venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>(), 1);
 
         
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);

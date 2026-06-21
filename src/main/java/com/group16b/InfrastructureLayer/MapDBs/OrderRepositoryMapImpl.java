@@ -8,6 +8,7 @@ import org.springframework.stereotype.Repository;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Order.OrderType;
 
 @Repository
 public class OrderRepositoryMapImpl implements IOrderRepository {
@@ -56,6 +57,28 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 		return this.orders.values().stream()
 				.filter(order -> order.isCompleted())
 				.filter(order -> order.getSubjectId().equals(String.valueOf(subjectId)))
+				.map(Order::new)
+				.toList();
+	}
+	@Override
+	public List<Order> getCompletedByEventIdSeatIds(int eventId, String segmentId, List<String> seatIds) {
+		return this.orders.values().stream()
+				.filter(Order::isCompleted)
+				.filter(order -> order.getEventId() == eventId)
+				.filter(order -> order.getSegmentId().equals(segmentId))
+				.filter(order -> order.getOrderType() != OrderType.FIELD)
+				.filter(order -> order.getSeats().stream().anyMatch(seatIds::contains))
+				.map(Order::new)
+				.toList();
+	}
+
+	@Override
+	public List<Order> getCompletedByEventIdField(int eventId, String segmentId) {
+		return this.orders.values().stream()
+				.filter(Order::isCompleted)
+				.filter(order -> order.getEventId() == eventId)
+				.filter(order -> order.getSegmentId().equals(segmentId))
+				.filter(order -> order.getOrderType() == OrderType.FIELD)
 				.map(Order::new)
 				.toList();
 	}

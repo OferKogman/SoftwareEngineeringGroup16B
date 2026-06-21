@@ -30,7 +30,7 @@ class VenueTests {
                         "S1", new ChosenSeatingSeg("S1", Map.of(
                                 "1-1", new Seat(1, 1),
                                 "1-2", new Seat(1, 2)), new GridRectangle(5, 6, 7, 8))),
-                "venue1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
+                "venue1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>(),1);
         start = LocalDateTime.now().plusDays(1);
         end = LocalDateTime.now().plusDays(2);
     }

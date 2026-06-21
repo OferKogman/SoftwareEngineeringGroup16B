@@ -144,7 +144,7 @@ public class VenueRepositoryMapImplTests {
     @Test
     void save_ConcurrentWritesToSameVenue_OptimisticLockPreventsOverwrites() throws InterruptedException {
         // Setup: Pre-load the map with a real venue (Version 1)
-        Venue realVenue = new Venue("venue_1", null, new ConcurrentHashMap<>(), "venueID", new VenueGrid(6, 7), new ConcurrentHashMap<>(), new ConcurrentHashMap<>());
+        Venue realVenue = new Venue("venue_1", null, new ConcurrentHashMap<>(), "venueID", new VenueGrid(6, 7), new ConcurrentHashMap<>(), new ConcurrentHashMap<>(),1);
         realVenue.setVersion(1L);
         venues.put("venue_1", realVenue);
         
