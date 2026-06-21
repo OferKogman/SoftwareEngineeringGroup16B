@@ -17,7 +17,7 @@ import com.group16b.ApplicationLayer.DTOs.ReserveSeatsWithLotteryRequestDTO;
 
 
 @RestController
-@RequestMapping("/api/events/{eventId}/reservations")
+@RequestMapping("/events/{eventId}/reservations")
 public class ReserveController extends BaseController {
     private final ReserveService reserveService;
     
