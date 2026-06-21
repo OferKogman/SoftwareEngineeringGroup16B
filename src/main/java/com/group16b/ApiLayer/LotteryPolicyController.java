@@ -1,16 +1,16 @@
 package com.group16b.ApiLayer;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.LotteryPolicyService;
 import com.group16b.ApplicationLayer.DTOs.CreateLotteryPolicyRequestDTO;
 
-@Controller
+@RestController
 @RequestMapping("api/events/{eventId}/lottery")
 public class LotteryPolicyController extends BaseController{
     private final LotteryPolicyService lotteryPolicyService;
