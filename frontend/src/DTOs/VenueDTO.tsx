@@ -1,48 +1,60 @@
-export type VenueData = {
+import type { LocationDTO } from "./LocationDTO";
+
+export type VenueDTO = {
   name: string;
-  location: string;
-  grid: VenueGridData;
-  fieldSeg: FieldSegData[];
-  seatSeg: ChosenSeatingSegData[];
-  stages: StageData[];
-  entrances: EntranceData[];
+  location: LocationDTO;
+  segments: Record<string, SegmentDTO>;
+  events: Record<number, EventScheduleDTO>;
+  stages: Record<string, StageDTO>;
+  entrances: Record<string, EntranceDTO>;
+  grid: VenueGridDTO;
 };
 
-export type VenueGridData = {
+export type SegmentDTO = FieldSegDTO | ChosenSeatingSegDTO;
+
+export type VenueGridDTO = {
   rows: number;
   columns: number;
 };
 
-export type FieldSegData = {
+export type FieldSegDTO = {
   segmentID: string;
-  area: GridRectangleData;
+  area: GridRectangleDTO;
   size: number;
+  stocks: Record<number, number>;
 };
 
-export type ChosenSeatingSegData = {
+export type ChosenSeatingSegDTO = {
   segmentID: string;
-  area: GridRectangleData;
-  seats: SeatData[];
+  seats: Record<string, SeatDTO>;
+  area: GridRectangleDTO;
 };
 
-export type StageData = {
+export type StageDTO = {
   stageID: string;
-  area: GridRectangleData;
+  area: GridRectangleDTO;
 };
 
-export type EntranceData = {
+export type EntranceDTO = {
   entranceID: string;
-  area: GridRectangleData;
+  area: GridRectangleDTO;
 };
 
-export type GridRectangleData = {
+export type GridRectangleDTO = {
   startRow: number;
   startColumn: number;
   rowCount: number;
   columnCount: number;
 };
 
-export type SeatData = {
+export type SeatDTO = {
+  seatId: string;
   row: number;
-  column: number;
+  number: number;
+  stock: Record<number, boolean>;
+};
+
+export type EventScheduleDTO = {
+  startTime: string;
+  endTime: string;
 };

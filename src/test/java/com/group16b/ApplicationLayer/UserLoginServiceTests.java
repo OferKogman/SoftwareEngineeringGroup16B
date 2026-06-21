@@ -169,8 +169,8 @@ public class UserLoginServiceTests {
 
         Result<String> result = userLoginService.logOutMember(validToken);
 
-        assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Failed to log out"));
+        assertTrue(result.isSuccess());
+        assertTrue(realTokenService.isGuestToken(result.getValue()));
     }
 
     @Test

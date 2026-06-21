@@ -4,10 +4,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
-import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
-import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
+import com.group16b.ApplicationLayer.Exceptions.WsepCommunicationException;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,15 +16,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class StartupService {
     private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
     private final IRepository<SystemAdmin> adminRepo;
-    private final IPaymentGateway paymentGateway;
-    private final ITicketGateway ticketGateway;
+    private final WsepClient wsepClient;
 
 
     //will grow as more invariants would be needed to validate
-    public StartupService(IRepository<SystemAdmin> adminRepo,IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
+    public StartupService(IRepository<SystemAdmin> adminRepo,WsepClient wsepClient) {
         this.adminRepo = adminRepo;
-        this.paymentGateway = paymentGateway;
-        this.ticketGateway = ticketGateway;
+        this.wsepClient=wsepClient;
     }
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
@@ -31,8 +30,7 @@ public class StartupService {
     public void initializeSystem() {
         logger.info("StartupService.initializeSystem: Starting system initialization...");
         validateAdmins();
-        validatePaymentGateway();
-        validateTicketGateway();
+        validateExternalDependencies();
     }
 
     //-------------------- VALIDATORS --------------------//
@@ -51,10 +49,17 @@ public class StartupService {
             throw new SystemStartupException("Failed to initialize system admins.", e); // Rethrow the exception to ensure the application fails to start if initialization fails
         }
     }
-    private void validatePaymentGateway() {
-        // Implement payment gateway validation logic here
-    }
-    private void validateTicketGateway() {
-        // Implement ticket gateway validation logic here
+    private void validateExternalDependencies()
+    {
+        try{
+            wsepClient.handshake();
+        } catch(WsepCommunicationException e){
+            logger.error("StartupService.validateExternalDependencies: WsepCommunicationException: WSEP handshake failed during startup validation. ",e);
+            throw new SystemStartupException("Failed to validate external dependencies.",e);
+        } catch(Exception e)
+        {
+            logger.error("StartupService.validateExternalDependencies: unexpected Error.",e);
+            throw new SystemStartupException("An unexpected error occured during validating external dependencies avilability.",e);
+        }
     }
 }
