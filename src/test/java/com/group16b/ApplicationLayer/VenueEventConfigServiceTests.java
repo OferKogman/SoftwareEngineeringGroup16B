@@ -433,7 +433,7 @@ public class VenueEventConfigServiceTests {
         );
 
         assertFalse(result.isSuccess());
-        assertEquals("Invalid input parameters.", result.getError());
+        assertEquals("Authentication failed: Invalid session token.", result.getError());
         verify(mockVenueRepository, never()).save(any(Venue.class));
         }
         @Test

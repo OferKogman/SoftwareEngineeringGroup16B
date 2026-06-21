@@ -222,7 +222,7 @@ public class VenueEventConfigService {
 
 	public Result<Boolean> editVenueSegments(int companyID, String venueID, Map<String, Integer> fieldSegmentsToEdit, Map<String, List<String>> seatsSegmentsToEdit,List<FieldSegRecord> newFieldSegments, List<ChosenSeatingSegRecord> newSeatSegments,String sessionToken) {
 		try {
-            if (companyID <= 0 || venueID == null || venueID.isEmpty() || fieldSegmentsToEdit == null || seatsSegmentsToEdit == null || newFieldSegments == null || newSeatSegments == null) {       
+            if (fieldSegmentsToEdit == null || seatsSegmentsToEdit == null || newFieldSegments == null || newSeatSegments == null) {       
                 logger.error("VenueEventConfigService.editVenueSegments: Invalid input parameters.");
                 return Result.makeFail("Invalid input parameters.");
             }
