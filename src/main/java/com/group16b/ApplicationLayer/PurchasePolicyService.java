@@ -1,7 +1,5 @@
 package com.group16b.ApplicationLayer;
 
-import java.util.List;
-
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicyDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -138,11 +136,11 @@ public class PurchasePolicyService {
         return null;
     }
 
-    public Result<List<PurchasePolicyDTO>> getEventPurchasePolicy(String sessionToken, int eventID) {
+    public Result<PurchasePolicyDTO> getEventPurchasePolicy(String sessionToken, int eventID) {
         return null;
     }
 
-    public Result<List<PurchasePolicyDTO>> getCompanyPurchasePolicy(String sessionToken, int companyID) {
+    public Result<PurchasePolicyDTO> getCompanyPurchasePolicy(String sessionToken, int companyID) {
         return null;
     }
 
