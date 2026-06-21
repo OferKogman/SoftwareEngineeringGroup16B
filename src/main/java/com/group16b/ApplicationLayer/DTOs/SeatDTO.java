@@ -24,6 +24,10 @@ public class SeatDTO {
         return stock;
     }
 
+    public String getSeatId() {
+        return this.seatId;
+    }
+
     public int getRow() {
         return row;
     }
