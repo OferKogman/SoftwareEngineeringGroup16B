@@ -5,6 +5,7 @@ import EditDiscountPolicy from "./Components/EditDiscountPolicy";
 import EditPurchasePolicy from "./Components/EditPurchasePolicy";
 import EventCreationForm from "./Components/Event/EventCreationForm";
 import EventInformation from "./Components/Event/EventInformation";
+import EventLottery from "./Components/Event/EventLottery";
 import EventManagement from "./Components/Event/EventManagement";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
@@ -12,11 +13,11 @@ import ViewEvent from "./Components/Event/ViewEvent";
 import CreateOrder from "./Components/Order/CreateOrder";
 import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
-import CompanySettings from "./Components/ProdactionCompany/CompanySettings";
 import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
+import Resignation from "./Components/ProdactionCompany/Resignation";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import VenueEditor from "./Components/ProdactionCompany/VenueEditor";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
@@ -56,9 +57,10 @@ export default function AppRoutes() {
         <Route index element={<Navigate to="show" />} />
         <Route path="show" element={<ViewEvent />} />
         <Route path="update-info" element={<EventUpdateForm />} />
-        <Route path="inventory" element={<VenueEditor />} />
+        <Route path="lottery" element={<EventLottery />} />
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
+        <Route path="inventory" element={<VenueEditor />} />
       </Route>
 
       <Route
@@ -75,7 +77,7 @@ export default function AppRoutes() {
         <Route path="venue-config" element={<VenueEditor />} />
         <Route path="members" element={<MembersPermissions />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
-        <Route path="settings" element={<CompanySettings />} />
+        <Route path="settings" element={<Resignation />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
 

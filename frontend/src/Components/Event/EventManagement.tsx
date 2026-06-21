@@ -134,6 +134,7 @@ export default function EventManagement() {
         <aside className="management-sidebar">
           <NavLink to="show">Information</NavLink>
           <NavLink to="update-info">Update Information</NavLink>
+          <NavLink to="lottery">Lottery</NavLink>
           <NavLink to="discount-policy">Update Discount Policies</NavLink>
           <NavLink to="purchase-policy">Update Purchase Policies</NavLink>
           <NavLink to="inventory">Inventory Management</NavLink>
