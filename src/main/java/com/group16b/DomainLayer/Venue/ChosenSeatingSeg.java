@@ -44,7 +44,7 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	public ChosenSeatingSeg(ChosenSeatingSeg other) {
-		super(other.segmentID, other.area);
+		super(other);
 		this.IDforSeat = other.IDforSeat;
 		this.seats = new ConcurrentHashMap<>();
 		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {

@@ -37,7 +37,7 @@ public class FieldSeg extends Segment {
 	}
 	
 	public FieldSeg(FieldSeg other) {
-		super(other.segmentID, other.area);
+		super(other);
 		this.size = other.size;
 		this.stock = new HashMap<>(other.stock);
 	}

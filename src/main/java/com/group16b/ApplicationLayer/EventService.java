@@ -22,6 +22,7 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
@@ -379,6 +380,47 @@ public class EventService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	// 													segmentId -> price
+	public Result<String> addEventPrices(int eventID, Map<String, Double> prices, String sessionToken) {
+		try {
+			String userID = validateAndGetUserID(sessionToken);
+			logger.info("EventService.addEventPrices: Session token verified successfully.");
+
+			Event event = eventRepository.findByID(String.valueOf(eventID));
+
+			logger.info("EventService.addEventPrices: retrieving production company for event price addition");
+			ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+
+			logger.info("EventService.addEventPrices: Validating user permissions for event price addition.");
+			company.validateUserPermissions(userID, ManagerPermissions.EVENT_INVENTORY);
+			logger.info("EventService.addEventPrices: User permissions validated successfully.");
+
+			Venue venue = venueRepository.findByID(event.getEventVenueID());
+			logger.info("EventService.addEventPrices: Attempting to add prices for event: " + event.getEventName());
+			for (Map.Entry<String, Double> entry : prices.entrySet()) {
+				String segmentId = entry.getKey();
+				Double price = entry.getValue();
+				venue.addPriceToSegment(segmentId, price, eventID);
+			}
+			venueRepository.save(venue);
+
+			logger.info("EventService.addEventPrices: Prices added successfully for event with ID: " + event.getEventID());
+			return Result.makeOk("Prices added successfully.");
+		} catch (IllegalArgumentException e) {
+			logger.error("EventService.addEventPrices: Failed to add prices: " + e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (AuthException e) {
+			logger.error("EventService.addEventPrices: Invalid session token. " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (JwtException e) {
+			logger.error(
+					"EventService.addEventPrices: JWT authentication error during price addition: " + e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (Exception e) {
+			logger.error("EventService.addEventPrices: Unexpected error during price addition: " + e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	private <T> List<T> getParam(Map<String, List<Object>> params, String key, Class<T> type) {
@@ -417,4 +459,6 @@ public class EventService {
 		userRepository.findByID(userID);
 		return userID;
 	}
+
+	
 }
