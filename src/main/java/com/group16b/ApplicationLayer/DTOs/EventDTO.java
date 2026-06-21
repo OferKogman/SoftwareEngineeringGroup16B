@@ -21,6 +21,8 @@ public class EventDTO {
 	private double price;
 	private double rating;
 
+	private LotteryDTO lotteryDTO;
+
 	public EventDTO(Event event) {
 		eventID = event.getEventID();
 		active = event.getEventStatus();
@@ -41,6 +43,8 @@ public class EventDTO {
 		}
 		price = event.getEventPrice();
 		rating = event.getEventRating();
+
+		lotteryDTO = event.hasLotteryPolicy() ? new LotteryDTO(event.getLotteryPolicy()) : null;
 	}
 
 	public int getEventID() {
@@ -93,6 +97,10 @@ public class EventDTO {
 
 	public double getEventRating() {
 		return this.rating;
+	}
+
+	public LotteryDTO getLotteryDTO() {
+		return this.lotteryDTO;
 	}
 
 	@Override

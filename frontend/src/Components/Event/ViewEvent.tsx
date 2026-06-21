@@ -127,7 +127,7 @@ export default function ViewEvent() {
         </p>
       </div>
 
-      <LotteryInformation eventID={eventID!} />
+      <LotteryInformation lottery={eventDTO.lotteryDTO} />
 
       <h3>Discount Policy</h3>
       <ViewDiscountPolicies discountPolicy={eventDTO.eventDiscountPolicy} />

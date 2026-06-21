@@ -4,7 +4,7 @@ import { useApiFetch } from "../../apiFetch";
 import "./CSS/LotteryCreationForm.css";
 
 export default function LotteryCreationForm() {
-  const { eventId } = useParams();
+  const { eventID } = useParams();
 
   const [lotteryName, setLotteryName] = useState("");
   const [winnerAmount, setWinnerAmount] = useState(1);
@@ -29,7 +29,7 @@ export default function LotteryCreationForm() {
 
     try {
       const response = await apiFetch(
-        `http://localhost:8080/events/${eventId}/create-lottery`,
+        `http://localhost:8080/api/events/${eventID}/lottery/policy`,
         {
           method: "POST",
           headers: {
@@ -51,7 +51,7 @@ export default function LotteryCreationForm() {
       setMessage("Lottery created successfully.");
 
       setTimeout(() => {
-        navigate(`/events/${eventId}`);
+        navigate(`/events/${eventID}`);
       }, 2000);
     } catch (err) {
       setError(
