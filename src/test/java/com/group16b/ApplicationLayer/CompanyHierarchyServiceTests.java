@@ -24,6 +24,8 @@ import java.util.concurrent.Future;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -2883,6 +2885,56 @@ public class CompanyHierarchyServiceTests {
                 
                 doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
                 Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(BAD_COMPANY_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("An unexpected error occured, pls try again later.", result.getError());
+        }
+
+        @Test
+        void isOwner_ValidOwner_getTrue()
+        {
+                RequestContext.set(OWNER1_EMAIL,Role.SIGNED);
+                Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);
+                assertTrue(result.isSuccess());
+                assertEquals(true,result.getValue());
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings={MANAGER1_EMAIL,BYSTANDER_EMAIL})
+        void isOwner_notOwner_getTrue(String mail)
+        {
+                RequestContext.set(mail,Role.SIGNED);
+                Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);
+                assertTrue(result.isSuccess());
+                assertEquals(false,result.getValue());
+        }
+
+        @Test
+        void isOwner_NotUserToken_AuthException()
+        {
+                RequestContext.set(MANAGER2_EMAIL,Role.ADMIN);
+                Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Only users are allowed to perform this operation.", result.getError());
+        }
+
+        @Test
+        void isOwner_CompanyNotFound_IllegalArg()
+        {
+                RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
+                Result<Boolean> result=CompanyHierarchyService.isOwner(BAD_COMPANY_ID);
+                assertFalse(result.isSuccess());
+                assertEquals("Production company with ID "+BAD_COMPANY_ID+" is not found.", result.getError());
+        }
+
+        @Test
+        void isOwner_UnexpectedERROR_catch()
+        {
+                RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
+                IProductionCompanyRepository mockRepo=mock(IProductionCompanyRepository.class);
+                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository);
+                
+                doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
+                Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);
                 assertFalse(result.isSuccess());
                 assertEquals("An unexpected error occured, pls try again later.", result.getError());
         }
