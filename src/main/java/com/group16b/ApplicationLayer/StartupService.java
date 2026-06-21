@@ -5,8 +5,6 @@ import org.slf4j.LoggerFactory;
 
 import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
 import com.group16b.ApplicationLayer.Exceptions.WsepCommunicationException;
-import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
-import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
