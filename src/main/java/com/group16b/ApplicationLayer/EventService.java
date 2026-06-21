@@ -403,6 +403,8 @@ public class EventService {
 				venue.addPriceToSegment(segmentId, price, eventID);
 			}
 			venueRepository.save(venue);
+			double minPrice = prices.values().stream().min(Double::compare).orElse(0.0);
+			event.setEventPrice(minPrice);
 
 			logger.info("EventService.addEventPrices: Prices added successfully for event with ID: " + event.getEventID());
 			return Result.makeOk("Prices added successfully.");

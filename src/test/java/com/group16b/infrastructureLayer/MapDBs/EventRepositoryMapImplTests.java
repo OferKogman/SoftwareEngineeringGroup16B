@@ -36,31 +36,42 @@ public class EventRepositoryMapImplTests {
 
 	@BeforeEach
 	void setup() {
-		matchingEvent = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 100.0, 4.0), "owner1");
+		matchingEvent = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 4.0), "owner1");
+		matchingEvent.setEventPrice(100.0);
 
-		wrongName = new Event(new EventRecord("-1", "Jazz Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 100.0, 4.0), "owner1");
+		wrongName = new Event(new EventRecord("-1", "Jazz Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 4.0), "owner1");
+		wrongName.setEventPrice(100.0);
 
-		wrongArtist = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "ABBA", "Music", 1, 100.0, 4.0), "owner1");
+		wrongArtist = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "ABBA", "Music", 1, 4.0), "owner1");
+		wrongArtist.setEventPrice(100.0);
 
-		wrongCategory = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Theater", 1, 100.0, 4.0), "owner1");
+		wrongCategory = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Theater", 1, 4.0), "owner1");
+		wrongCategory.setEventPrice(100.0);
 
-		tooCheap = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 20.0, 4.0), "owner1");
+		tooCheap = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 4.0), "owner1");
+		tooCheap.setEventPrice(20.0);
 
-		tooExpensive = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 500.0, 4.0), "owner1");
+		tooExpensive = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 4.0), "owner1");
+		tooExpensive.setEventPrice(500.0);
 
-		tooEarly = new Event(new EventRecord("-1", "Rock Night", now.minusDays(2), now, "Queen", "Music", 1, 100.0, 4.0), "owner1");
+		tooEarly = new Event(new EventRecord("-1", "Rock Night", now.minusDays(2), now, "Queen", "Music", 1, 4.0), "owner1");
+		tooEarly.setEventPrice(100.0);
 
-		tooLate = new Event(new EventRecord("-1", "Rock Night", now.plusDays(10), now.plusDays(12), "Queen", "Music", 1, 100.0, 4.0), "owner1");
+		tooLate = new Event(new EventRecord("-1", "Rock Night", now.plusDays(10), now.plusDays(12), "Queen", "Music", 1, 4.0), "owner1");
+		tooLate.setEventPrice(100.0);
 
-		lowRating = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 100.0, 2.0), "owner1");
+		lowRating = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 1, 2.0), "owner1");
+		lowRating.setEventPrice(100.0);
 
-		wrongProductionCompany = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 2, 100.0, 4.0), "owner2");
+		wrongProductionCompany = new Event(new EventRecord("-1", "Rock Night", now.plusDays(1), now.plusDays(2), "Queen", "Music", 2, 4.0), "owner2");
+		wrongProductionCompany.setEventPrice(100.0);
 
 		List<Event> allEvents = List.of(matchingEvent, wrongName, wrongArtist, wrongCategory, tooCheap, tooExpensive, tooEarly, tooLate, lowRating, wrongProductionCompany);
 		repository = new EventRepositoryMapImpl();
 		allEvents.forEach(repository::save);
 
-		testEvent = new Event(new EventRecord("-1", "Test Event", now.plusDays(3), now.plusDays(4), "Test Artist", "Test Category", 1, 150.0, 5.0), "owner1");
+		testEvent = new Event(new EventRecord("-1", "Test Event", now.plusDays(3), now.plusDays(4), "Test Artist", "Test Category", 1, 5.0), "owner1");
+		testEvent.setEventPrice(150.0);
 	}
 
 	@Test
