@@ -98,7 +98,7 @@ public class LotteryPolicyServiceTests {
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
 
-        event1 = new Event(new EventRecord("venven", "eve", startTime, endTime, "artist1", "category1", COMPANY_ID, 5.0, 3.5),FOUNDER_MAIL);
+        event1 = new Event(new EventRecord("venven", "eve", startTime, endTime, "artist1", "category1", COMPANY_ID, 3.5),FOUNDER_MAIL);
         event1.activateEvent();
         eventRepository.save(event1);
     }

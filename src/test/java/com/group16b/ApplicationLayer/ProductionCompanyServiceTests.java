@@ -237,7 +237,6 @@ public class ProductionCompanyServiceTests {
                 "Artist",
                 "Category",
                 companyId,
-                100,
                 4.5
             ),ownerId
             );
