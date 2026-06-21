@@ -3,6 +3,8 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -14,7 +16,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "field_segments")
 public class FieldSeg extends Segment {
-	private final int size;
+	private int size;
 
     @ElementCollection
     @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segmentID"))
@@ -39,7 +41,6 @@ public class FieldSeg extends Segment {
 		this.size = other.size;
 		this.stock = new HashMap<>(other.stock);
 	}
-
 	public int getFieldSize() {
 		return size;
 	}
@@ -59,12 +60,19 @@ public class FieldSeg extends Segment {
 		stock.put(eventID, currQty + quantity);
 	}
 
-	@Override
+
 	public void setStockForEvent(int eventID, int newStock) {
 		if (!this.stock.containsKey(eventID)) {
 			throw new IllegalArgumentException("cannot modify segments unrelated to event");
 		}
 		stock.put(eventID, newStock);// maybe add a maximum number?
+	}
+
+	protected void setSize(int newSize) {
+		if (newSize < 0) {
+			throw new IllegalArgumentException("Size cannot be negative");
+		}
+		this.size = newSize;
 	}
 
 	protected void removeStock(int eventID, Integer quantity) {

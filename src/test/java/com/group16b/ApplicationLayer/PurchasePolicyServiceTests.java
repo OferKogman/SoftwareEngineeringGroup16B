@@ -90,7 +90,7 @@ public class PurchasePolicyServiceTests {
         segmentMap.put("segment1", segment1);
 
         Venue venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7),
-                new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
+                new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>(),1);
 
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
