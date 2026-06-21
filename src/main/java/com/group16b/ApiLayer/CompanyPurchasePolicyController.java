@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +14,7 @@ import com.group16b.ApplicationLayer.PurchasePolicyService;
 import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
 
 @RestController
-@RequestMapping("/api/production-companies/{companyId}/purchase-policies")
+@RequestMapping("/api/production-companies/{companyId}/purchase-policy")
 public class CompanyPurchasePolicyController extends BaseController{
     private final PurchasePolicyService purchasePolicyService;
 
@@ -30,6 +31,16 @@ public class CompanyPurchasePolicyController extends BaseController{
     )
     {
         return executeWithNoReturnData(()-> purchasePolicyService.createCompanyPurchasePolicy(authToken, companyId, record));
+    }
+    
+    @PutMapping
+    public ResponseEntity<?> editCompanyPurchasePolicy(
+        @RequestHeader("Authorization") String authToken,
+        @RequestBody PurchasePolicyRecord newRecord,
+        @PathVariable("companyId") int companyId
+    )
+    {
+        return executeWithNoReturnData(()->purchasePolicyService.editCompanyPurchasePolicy(authToken, companyId, newRecord));
     }
 
     @GetMapping

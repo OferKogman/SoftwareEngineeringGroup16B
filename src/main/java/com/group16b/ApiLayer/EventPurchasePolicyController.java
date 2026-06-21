@@ -4,6 +4,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,7 +14,7 @@ import com.group16b.ApplicationLayer.PurchasePolicyService;
 import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
 
 @RestController
-@RequestMapping("/api/events/{eventId}/purchase-policies")
+@RequestMapping("/api/events/{eventId}/purchase-policy")
 public class EventPurchasePolicyController extends BaseController{
     private final PurchasePolicyService purchasePolicyService;
 
@@ -30,6 +31,16 @@ public class EventPurchasePolicyController extends BaseController{
     )
     {
         return executeWithNoReturnData(()-> purchasePolicyService.createEventPurchasePolicy(authToken, eventId, record));
+    }
+
+    @PutMapping
+    public ResponseEntity<?> editEventPurchasePolicy(
+        @RequestHeader("Authorization") String authToken,
+        @RequestBody PurchasePolicyRecord newRecord,
+        @PathVariable("eventId") int eventId
+    )
+    {
+        return executeWithNoReturnData(()->purchasePolicyService.editEventPurchasePolicy(authToken, eventId, newRecord));
     }
 
     @GetMapping

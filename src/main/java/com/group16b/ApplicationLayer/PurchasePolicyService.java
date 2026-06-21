@@ -103,7 +103,7 @@ public class PurchasePolicyService {
         }
     }
 
-    public Result<Boolean> editCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicy oldPolicy, PurchasePolicyRecord newRecord) {
+    public Result<Boolean> editCompanyPurchasePolicy(String sessionToken, int companyID, PurchasePolicyRecord newRecord) {
         try {
             logger.info("PurchasePolicyService.editCompanyPurchasePolicy: Received request for company ID: {}", companyID);
             if (!authenticationService.validateToken(sessionToken))
@@ -115,7 +115,7 @@ public class PurchasePolicyService {
 
             ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
             company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
-            company.removePurchasePolicy(oldPolicy);
+            //company.removePurchasePolicy(oldPolicy);
             company.addPurchasePolicy(buildPolicy(newRecord));
             productionCompanyRepository.save(company);
 
@@ -132,7 +132,7 @@ public class PurchasePolicyService {
 
 
 
-    public Result<Boolean> editEventPurchasePolicy(String sessionToken, int eventID, PurchasePolicy oldPolicy, PurchasePolicyRecord newRecord) {
+    public Result<Boolean> editEventPurchasePolicy(String sessionToken, int eventID, PurchasePolicyRecord newRecord) {
         return null;
     }
 
