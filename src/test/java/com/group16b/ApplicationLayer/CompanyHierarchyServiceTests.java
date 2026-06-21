@@ -2889,10 +2889,11 @@ public class CompanyHierarchyServiceTests {
                 assertEquals("An unexpected error occured, pls try again later.", result.getError());
         }
 
-        @Test
-        void isOwner_ValidOwner_getTrue()
+        @ParameterizedTest
+        @ValueSource(strings={OWNER1_EMAIL,FOUNDER_EMAIL})
+        void isOwner_ValidOwner_getTrue(String mail)
         {
-                RequestContext.set(OWNER1_EMAIL,Role.SIGNED);
+                RequestContext.set(mail,Role.SIGNED);
                 Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);
                 assertTrue(result.isSuccess());
                 assertEquals(true,result.getValue());
