@@ -153,7 +153,7 @@ public class OrderServiceTests {
                 HashMap<String, Segment> segments = new HashMap<>();
                 segments.put(seatingSeg1.getSegmentID(), seatingSeg1);
                 segments.put(fieldSeg1.getSegmentID(), fieldSeg1);
-                testVenue = new Venue("Test Venue", location, segments, "1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>());
+                testVenue = new Venue("Test Venue", location, segments, "1", new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>(),1);
 
                 venueRepo.save(testVenue);
         }

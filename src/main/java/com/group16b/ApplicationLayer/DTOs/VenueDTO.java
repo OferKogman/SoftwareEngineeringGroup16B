@@ -3,15 +3,10 @@ package com.group16b.ApplicationLayer.DTOs;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.group16b.ApplicationLayer.Records.EntranceRecord;
-import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
-import com.group16b.ApplicationLayer.Records.StageRecord;
-import com.group16b.ApplicationLayer.Records.VenueGridRecord;
 import com.group16b.DomainLayer.Venue.ChosenSeatingSeg;
 import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.EventSchedule;
 import com.group16b.DomainLayer.Venue.FieldSeg;
-import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
@@ -21,9 +16,9 @@ public class VenueDTO {
     private LocationDTO location;
     private Map<String, SegmentDTO> segments;
     private Map<Integer, EventScheduleDTO> events;
-    private Map<String, StageRecord> stages;
-    private Map<String, EntranceRecord> entrances;
-    private VenueGridRecord grid;
+    private Map<String, StageDTO> stages;
+    private Map<String, EntranceDTO> entrances;
+    private VenueGridDTO grid;
 
     public VenueDTO(Venue venue) {
         this.name = venue.getName();
@@ -45,21 +40,15 @@ public class VenueDTO {
 
         this.entrances = new ConcurrentHashMap<>();
         for (Map.Entry<String, Entrance> entry : venue.getEntrances().entrySet()) {
-            GridRectangle currArea = entry.getValue().getArea();
-            entrances.put(entry.getKey(),
-                    new EntranceRecord(entry.getKey(), new GridRectangleRecord(currArea.getStartRow(),
-                            currArea.getStartColumn(), currArea.getRowCount(), currArea.getColumnCount())));
+            entrances.put(entry.getKey(), new EntranceDTO(entry.getValue()));
         }
 
         this.stages = new ConcurrentHashMap<>();
         for (Map.Entry<String, Stage> entry : venue.getStages().entrySet()) {
-            GridRectangle currArea = entry.getValue().getArea();
-            stages.put(entry.getKey(),
-                    new StageRecord(entry.getKey(), new GridRectangleRecord(currArea.getStartRow(),
-                            currArea.getStartColumn(), currArea.getRowCount(), currArea.getColumnCount())));
+            stages.put(entry.getKey(), new StageDTO(entry.getValue()));
         }
 
-        this.grid = new VenueGridRecord(venue.getGrid().getRows(), venue.getGrid().getColumns());
+        this.grid = new VenueGridDTO(venue.getGrid());
     }
 
     public String getName() {
@@ -98,11 +87,27 @@ public class VenueDTO {
         this.events = events;
     }
 
-    public VenueGridRecord getGrid() {
+    public Map<String, StageDTO> getStages() {
+        return stages;
+    }
+
+    public void setStages(Map<String, StageDTO> stages) {
+        this.stages = stages;
+    }
+
+    public Map<String, EntranceDTO> getEntrances() {
+        return entrances;
+    }
+
+    public void setEntrances(Map<String, EntranceDTO> entrances) {
+        this.entrances = entrances;
+    }
+
+    public VenueGridDTO getGrid() {
         return grid;
     }
 
-    public void setGrid(VenueGridRecord grid) {
+    public void setGrid(VenueGridDTO grid) {
         this.grid = grid;
     }
 }

@@ -206,9 +206,8 @@ export default function VenueDisplay({
     const localRow = row - seatSegment.area.startRow + 1;
     const localColumn = column - seatSegment.area.startColumn + 1;
 
-    return Object.values(seatSegment.seats).find((seat) => {
-      return seat.row === localRow && seat.column === localColumn;
-    });
+    console.log(seatSegment.seats[`${localRow}-${localColumn}`]);
+    return seatSegment.seats[`${localRow}-${localColumn}`];
   }
 
   function isFieldSegmentCenterCell(

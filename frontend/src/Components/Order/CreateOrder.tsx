@@ -3,21 +3,22 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import type {
-  ChosenSeatingSegData,
-  FieldSegData,
-  SeatData,
-  VenueData,
+  ChosenSeatingSegDTO,
+  FieldSegDTO,
+  SeatDTO,
+  VenueDTO,
 } from "../../DTOs/VenueDTO";
 import VenueDisplay from "../Shared/VenueDisplay";
 import "./CSS/CreateOrder.css";
 
 const API_BASE = "http://localhost:8080";
-
+/*
 type SegmentAvailability = {
   segmentID: string;
   taken: number;
   total: number;
 };
+*/
 
 type CreatedOrderResponse = {
   orderId?: string;
@@ -31,20 +32,16 @@ export default function CreateOrderPage() {
   const navigate = useNavigate();
 
   const [venueID, setVenueID] = useState("");
-  const [venue, setVenue] = useState<VenueData | null>(null);
-  const [availability, setAvailability] = useState<SegmentAvailability[]>([]);
-  const [takenSeatsBySegment, setTakenSeatsBySegment] = useState<
-    Record<string, SeatData[]>
-  >({});
+  const [venue, setVenue] = useState<VenueDTO | null>(null);
 
-  const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegData | null>(
+  const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
     null,
   );
   const [selectedSeatSeg, setSelectedSeatSeg] =
-    useState<ChosenSeatingSegData | null>(null);
+    useState<ChosenSeatingSegDTO | null>(null);
 
   const [fieldTicketAmount, setFieldTicketAmount] = useState("1");
-  const [selectedSeats, setSelectedSeats] = useState<SeatData[]>([]);
+  const [selectedSeats, setSelectedSeats] = useState<SeatDTO[]>([]);
   const [error, setError] = useState("");
 
   const apiFetch = useApiFetch();
@@ -72,7 +69,7 @@ export default function CreateOrderPage() {
         const loadedVenueID = event.eventVenueID;
 
         const venueResponse = await apiFetch(
-          `${API_BASE}/venues/${loadedVenueID}/location`,
+          `${API_BASE}/venues/${loadedVenueID}`,
           {
             method: "GET",
           },
@@ -81,26 +78,11 @@ export default function CreateOrderPage() {
         if (!venueResponse.ok) {
           throw new Error(await venueResponse.text());
         }
-        const venue: VenueData = await venueResponse.json();
+        const venue: VenueDTO = await venueResponse.json();
 
         if (!cancelled) {
           setVenueID(loadedVenueID);
           setVenue(venue);
-
-          setAvailability([
-            ...venue.fieldSeg.map((segment) => ({
-              segmentID: segment.segmentID,
-              taken: 0,
-              total: segment.size,
-            })),
-            ...venue.seatSeg.map((segment) => ({
-              segmentID: segment.segmentID,
-              taken: 0,
-              total: segment.seats.length,
-            })),
-          ]);
-
-          setTakenSeatsBySegment({});
         }
       } catch (err) {
         if (!cancelled) {
@@ -118,16 +100,11 @@ export default function CreateOrderPage() {
     };
   }, [eventID, apiFetch]);
 
-  function getAvailability(segmentID: string) {
-    return availability.find((item) => item.segmentID === segmentID);
-  }
+  useEffect(() => {
+    console.log("venue:", venue);
+  }, [venue]);
 
-  function getAvailableTickets(segmentID: string) {
-    const data = getAvailability(segmentID);
-    return data ? data.total - data.taken : 0;
-  }
-
-  function handleFieldSegmentSelected(segment: FieldSegData) {
+  function handleFieldSegmentSelected(segment: FieldSegDTO) {
     setError("");
     setSelectedSeatSeg(null);
     setSelectedSeats([]);
@@ -135,27 +112,26 @@ export default function CreateOrderPage() {
     setFieldTicketAmount("1");
   }
 
-  function handleSeatSegmentSelected(segment: ChosenSeatingSegData) {
+  function handleSeatSegmentSelected(segment: ChosenSeatingSegDTO) {
     setError("");
     setSelectedFieldSeg(null);
     setSelectedSeats([]);
     setSelectedSeatSeg(segment);
   }
 
-  function isTakenSeat(seat: SeatData) {
-    if (!selectedSeatSeg) {
-      return false;
+  function isTakenSeat(seat: SeatDTO) {
+    if (!eventID) {
+      setError("Missing Event ID");
+      return;
     }
-
-    const takenSeats = takenSeatsBySegment[selectedSeatSeg.segmentID] ?? [];
-
-    return takenSeats.some(
-      (takenSeat) =>
-        takenSeat.row === seat.row && takenSeat.column === seat.column,
+    return (
+      selectedSeatSeg &&
+      Object.keys(selectedSeatSeg.seats).includes(seat.seatId) &&
+      !seat.stock[Number(eventID)]
     );
   }
 
-  function handleSeatClick(seat: SeatData) {
+  function handleSeatClick(seat: SeatDTO) {
     if (isTakenSeat(seat)) {
       return;
     }
@@ -218,7 +194,7 @@ export default function CreateOrderPage() {
     eventID: string,
     venueID: string,
     segmentID: string,
-    seats: SeatData[],
+    seats: SeatDTO[],
   ) {
     const seatIDs = seats.map((seat) => `${seat.row}-${seat.column}`);
 
@@ -284,7 +260,7 @@ export default function CreateOrderPage() {
     }
 
     const amount = Number(fieldTicketAmount);
-    const availableTickets = getAvailableTickets(selectedFieldSeg.segmentID);
+    const availableTickets = selectedFieldSeg.stocks[Number(eventID)];
 
     if (!Number.isInteger(amount) || amount <= 0) {
       setError("Please enter a valid ticket amount.");
@@ -349,10 +325,9 @@ export default function CreateOrderPage() {
       return null;
     }
 
-    const availabilityData = getAvailability(selectedFieldSeg.segmentID);
-    const taken = availabilityData?.taken ?? 0;
-    const total = availabilityData?.total ?? selectedFieldSeg.size;
-    const available = total - taken;
+    const total = selectedFieldSeg.size;
+    const available = selectedFieldSeg.stocks[Number(eventID)];
+    const taken = total - available;
 
     return (
       <div className="form-card">
@@ -384,7 +359,7 @@ export default function CreateOrderPage() {
     setError("");
   }
 
-  function handleVenueSeatClick(seat: SeatData, segment: ChosenSeatingSegData) {
+  function handleVenueSeatClick(seat: SeatDTO, segment: ChosenSeatingSegDTO) {
     setError("");
 
     if (selectedSeatSeg?.segmentID !== segment.segmentID) {

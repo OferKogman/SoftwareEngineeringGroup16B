@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.EventService;
 import com.group16b.ApplicationLayer.Records.EventRecord;
-import com.group16b.ApplicationLayer.Records.EventSegmentConfigUpdateRecord;
 import com.group16b.InfrastructureLayer.Security.PublicEndpoint;
 
 
@@ -68,15 +67,6 @@ public class EventController extends BaseController {
         return executeWithNoReturnData(() -> eventService.editEvent(request, eventID, authToken));
     }
 
-    @PatchMapping("/{eventID}/segments/stock")
-    public ResponseEntity<?> editEventStock(
-        @RequestHeader("Authorization") String authToken,
-        @PathVariable("eventID") int eventID,
-        @RequestBody Map<String, EventSegmentConfigUpdateRecord> request
-    ) {
-        return executeWithNoReturnData(() -> eventService.editStockInSegmentsForEvent(request, eventID, authToken));
-    }
-
     @PublicEndpoint
     @PostMapping("/search")
     public ResponseEntity<?> searchEvents(
@@ -84,4 +74,14 @@ public class EventController extends BaseController {
     ) {
         return executeWithReturnData(() -> eventService.searchEvents(request));
     }
+
+    @PostMapping("/{eventID}/prices")
+    public ResponseEntity<?> addEventPrices(
+        @RequestHeader("Authorization") String authToken,
+        @PathVariable("eventID") int eventID,
+        @RequestBody Map<String, Double> request
+    ) {
+        return executeWithNoReturnData(() -> eventService.addEventPrices(eventID, request, authToken));
+    }
+
 }

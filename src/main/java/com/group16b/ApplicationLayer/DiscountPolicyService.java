@@ -42,19 +42,19 @@ public class DiscountPolicyService {
         return null;
     }
 
-    public Result<Boolean> editCompanyDiscountPolicy(String sessionToken, int companyID, DiscountPolicy oldPolicy, DiscountPolicyRecord newRecord) {
+    public Result<Boolean> editCompanyDiscountPolicy(String sessionToken, int companyID, DiscountPolicyRecord newRecord) {
         return null;
     }
 
-    public Result<Boolean> editEventDiscountPolicy(String sessionToken, int eventID, DiscountPolicy oldPolicy, DiscountPolicyRecord newRecord) {
+    public Result<Boolean> editEventDiscountPolicy(String sessionToken, int eventID, DiscountPolicyRecord newRecord) {
         return null;
     }
 
-    public Result<List<DiscountPolicyDTO>> getEventDiscountPolicy(String sessionToken, int eventID) {
+    public Result<DiscountPolicyDTO> getEventDiscountPolicy(String sessionToken, int eventID) {
         return null;
     }
 
-    public Result<List<DiscountPolicyDTO>> getCompanyDiscountPolicy(String sessionToken, int companyID) {
+    public Result<DiscountPolicyDTO> getCompanyDiscountPolicy(String sessionToken, int companyID) {
         return null;
     }
 }

@@ -180,6 +180,9 @@ public class Order {
 		this.state = state.completeOrder();
 		return true;
 	}
+	public void CancelOrder() {
+		this.state = new CanceledOrder();
+	}
 
 	public double getTotalOrderprice() {
 		return totalOrderprice;

@@ -34,7 +34,7 @@ public class Venue {
 
     @Id
     private final String id;
-
+    private final int companyID;
     private volatile String name;
 
     @Version // Automatically tracks updates for safe concurrent writes
@@ -75,7 +75,7 @@ public class Venue {
     @MapKeyColumn(name = "entrance_map_key") // Stores the Map's String key
     private final Map<String, Entrance> entrances;
 
-	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances) {
+	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances, int companyID) {
         this.name = name;
         this.location = location;
         this.segments = segments;
@@ -84,9 +84,10 @@ public class Venue {
         this.stages = stages;
         this.entrances = entrances;
         this.id = id;
+        this.companyID = companyID;
     }
 
-	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg, String id, VenueGridRecord grid, List<StageRecord> stages, List<EntranceRecord> entrances) {
+	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg, String id, VenueGridRecord grid, List<StageRecord> stages, List<EntranceRecord> entrances, int companyID) {
         this.name = name;
         this.location = location;
         this.segments = new ConcurrentHashMap<>();
@@ -107,6 +108,7 @@ public class Venue {
             this.entrances.put(record.entranceID(), new Entrance(record.entranceID(), new GridRectangle(record.area())));
         }
         this.id = id;
+        this.companyID = companyID;
     }
 	protected Venue() {
 		this.location = null;
@@ -115,6 +117,7 @@ public class Venue {
 		this.entrances = null;
 		this.scheduledEvents = null;
 		this.id = null;
+        this.companyID = 0;
 	}
 	
 	public Venue(Venue other) {
@@ -130,6 +133,7 @@ public class Venue {
                 this.segments.put(entry.getKey(), new ChosenSeatingSeg(seatingSeg));
             }
         }
+        
 
         this.scheduledEvents = new ConcurrentHashMap<>();
         for (Map.Entry<Integer, EventSchedule> entry : other.getScheduledEvents().entrySet()) {
@@ -143,15 +147,36 @@ public class Venue {
         this.IDForSeg = other.getIDForSeg();
         this.version = other.getVersion();
         this.id = other.getID();
+        this.companyID = other.getCompanyID();
     }
 
 	private int getIDForSeg(){
 		return IDForSeg;
 	}
+    public int getCompanyID() {
+        return companyID;
+    }
 
 	public Map<String, Segment> getSegments(){
 		return segments;
 	}
+    public void addSeatSegment(String segmentID, Map<String, Seat> seats, GridRectangle area) {
+        if (segments.containsKey(segmentID)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " already exists in the venue!");
+        }
+        segments.put(segmentID, new ChosenSeatingSeg(segmentID, seats, area));
+    }
+    public void addFieldSegment(String segmentID, int size, GridRectangle area) {
+        if (segments.containsKey(segmentID)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " already exists in the venue!");
+        }
+        segments.put(segmentID, new FieldSeg(segmentID, size, area));
+    }
+        
+
+    public boolean hasSegment(String segmentID) {
+        return segments.containsKey(segmentID);
+    }
 
 	public Map<Integer, EventSchedule> getScheduledEvents(){
 		return scheduledEvents;
@@ -172,7 +197,44 @@ public class Venue {
 	public Segment getSegmentByID(String id) {
 		return segments.get(id);
 	}
-
+    public String getSegmentTypeByID(String segmentID) {
+        Segment segment = segments.get(segmentID);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+        return segment.getSegmentType();
+    }
+    public int getReservedStockBySegmentEventField(int eventID, String segmentID) {
+        Segment segment = segments.get(segmentID);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+        if (segment instanceof FieldSeg fieldSeg) {
+            return fieldSeg.getFieldSize() - fieldSeg.getStock(eventID); // amount already sold
+        }
+        throw new IllegalArgumentException("Segment with ID " + segmentID + " is not a field segment");
+    }
+    public void setStockForEvent(int eventID, Map.Entry<String, Integer> fieldSegments) {
+        Segment currSeg = getSegmentByID(fieldSegments.getKey());
+        if (currSeg == null) {
+            throw new IllegalArgumentException("Segment with ID: " + fieldSegments.getKey() + " not found in venue !");
+        }
+        if (!currSeg.getSegmentType().equals("F")) {
+            throw new IllegalArgumentException("Segment with ID: " + fieldSegments.getKey() + " is not a field segment !");
+        }
+        FieldSeg fieldSeg = (FieldSeg) currSeg;
+        fieldSeg.setStockForEvent(eventID, fieldSegments.getValue());
+    }
+    public List<String> getStockRefundForEvent(int eventID,String segmentID, List<String> newSeatsIDs) {
+        Segment segment = segments.get(segmentID);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+        if (segment instanceof ChosenSeatingSeg seatingSeg) {
+            return seatingSeg.getStockRefundForEvent(eventID, newSeatsIDs);
+        }
+        throw new IllegalArgumentException("Segment with ID " + segmentID + " is not a seat segment");
+    }
 	public Integer getEventIDByLocalDateTime(LocalDateTime targetDate) {
         if (targetDate == null) return null;
 
@@ -295,6 +357,13 @@ public class Venue {
 		}
 		return segment.getPrice(eventID);
 	}
+    public void addPriceToSegment(String segmentId, double price, int eventID) {
+        Segment segment = segments.get(segmentId);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+        segment.setPrice(eventID, price);
+    }
 	
 	public String getID(){
 		return id;
@@ -307,6 +376,43 @@ public class Venue {
 	public void setVersion(long version){
 		this.version = version;
 	}
+
+    public void setNewSeatingStock(String segmentId, List<String> newSeatsIDs) {
+        Segment segment = segments.get(segmentId);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+        if (segment instanceof ChosenSeatingSeg chosenSeatingSeg) {
+            chosenSeatingSeg.setNewStock(newSeatsIDs);
+        } else {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a chosen seating segment");
+        }
+    }
+
+    public void setNewFieldStock(String segmentId, int newStock) {
+        Segment segment = segments.get(segmentId);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+        if (segment instanceof FieldSeg fieldSeg) {
+            fieldSeg.setSize(newStock);
+        } else {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a field segment");
+        }
+    }
+    public void addChosenSeatingSegment(ChosenSeatingSegRecord seatSeg) {
+        // TODO: if area cut any existing segments, throw exception
+        this.segments.put(seatSeg.segmentID(), new ChosenSeatingSeg(seatSeg.segmentID(), seatSeg.seats(), new GridRectangle(seatSeg.area())));
+    }
+    public void addFieldSegment(FieldSegRecord fieldSeg) {
+        // TODO: if area cut any existing segments, throw exception 
+        this.segments.put(fieldSeg.segmentID(), new FieldSeg(fieldSeg.segmentID(), fieldSeg.size(), new GridRectangle(fieldSeg.area())));
+    }
+    public void validateCompanyID(int companyID) {
+        if (this.companyID != companyID) {
+            throw new IllegalArgumentException("Company ID mismatch: Venue does not belong to the specified company.");
+        }
+    }
 
 	public VenueGrid getGrid() { return grid; }
     public Map<String, Stage> getStages() { return stages; }

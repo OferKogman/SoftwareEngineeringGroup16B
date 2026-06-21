@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.group16b.ApplicationLayer.VenueEventConfigService;
 import com.group16b.ApplicationLayer.DTOs.ConfigureLayoutAndInventoryDTO;
 import com.group16b.ApplicationLayer.DTOs.ConfigureNewLayoutAndInventoryDTO;
+import com.group16b.ApplicationLayer.Records.EditVenueSegmentsRecord;
 
 @RestController
 @RequestMapping("/venues")
@@ -42,5 +43,23 @@ public class VenueEventConfigController extends BaseController {
             @PathVariable("venueID") String venueID) {
         System.out.println("Received request to get venue with ID: " + venueID);
         return executeWithReturnData(() -> venueEventConfigService.getVenue(sessionToken, venueID));
+    }
+
+    @PutMapping("/{companyID}/venues/{venueID}/segments")
+    public ResponseEntity<?> editVenueSegments(
+            @RequestHeader("Authorization") String sessionToken,
+            @PathVariable int companyID,
+            @PathVariable String venueID,
+            @RequestBody EditVenueSegmentsRecord request) {
+        System.out.println("Received request to edit venue segments for venue ID: " + venueID);
+
+        return executeWithReturnData(() -> venueEventConfigService.editVenueSegments(
+                companyID,
+                venueID,
+                request.fieldSegmentsToEdit(),
+                request.seatsSegmentsToEdit(),
+                request.newFieldSegments(),
+                request.newSeatSegments(),
+                sessionToken));
     }
 }
