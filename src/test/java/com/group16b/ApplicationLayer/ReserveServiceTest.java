@@ -156,7 +156,7 @@ public class ReserveServiceTest {
                 venueRepo.save(testVenue);
         }
         private void seedEvent() {
-                EventRecord eventRecord = new EventRecord(testVenue.getID(), "Test Event", LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2), "Test Artist", "Test Category", testPCompany.getProductionCompanyID(), 50.0, 4.5);
+                EventRecord eventRecord = new EventRecord(testVenue.getID(), "Test Event", LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2), "Test Artist", "Test Category", testPCompany.getProductionCompanyID(), 4.5);
                 
                 testEvent = new Event(eventRecord, "owner_1");
                 Venue venue = venueRepo.findByID(testVenue.getID());

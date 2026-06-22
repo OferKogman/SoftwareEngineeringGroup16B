@@ -9,6 +9,5 @@ public record EventRecord(String venueID,
 		String artist,
 		String category,
 		int pcID,
-		double price,
 		double rating) {
 }

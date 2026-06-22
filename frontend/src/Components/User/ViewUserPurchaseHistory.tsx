@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
-import ViewSaleHistory from "../ViewSaleHistory";
+import ViewSaleHistory from "../Shared/ViewSaleHistory";
 
 export default function UserPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);

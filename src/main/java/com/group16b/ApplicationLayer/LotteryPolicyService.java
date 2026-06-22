@@ -2,11 +2,13 @@ package com.group16b.ApplicationLayer;
 
 import java.time.LocalDateTime;
 
+import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -16,11 +18,6 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.RequestContext;
-import com.group16b.InfrastructureLayer.Security.Role;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class LotteryPolicyService {
@@ -28,40 +25,49 @@ public class LotteryPolicyService {
     private final IEventRepository eventRepository;
     private final IRepository<User> userRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
+    private final IAuthenticationService authenticationService;
 
-    public LotteryPolicyService(IEventRepository eventRepository, IRepository<User> userRepository, IProductionCompanyRepository productionCompanyRepository)
-    {
-        this.eventRepository=eventRepository;
-        this.userRepository=userRepository;
-        this.productionCompanyRepository=productionCompanyRepository;
+    public LotteryPolicyService(IEventRepository eventRepository, IRepository<User> userRepository,
+            IProductionCompanyRepository productionCompanyRepository, IAuthenticationService authenticationService) {
+        this.eventRepository = eventRepository;
+        this.userRepository = userRepository;
+        this.productionCompanyRepository = productionCompanyRepository;
+        this.authenticationService = authenticationService;
     }
 
-    
-    public Result<Void> createLotteryPolicy(int eventID, int lotteryID, String lotteryName, int winnerAmount, LocalDateTime lotteryRegistrationDueDate) {
+    public Result<Void> createLotteryPolicy(int eventID, int lotteryID, String lotteryName, int winnerAmount,
+            LocalDateTime lotteryRegistrationDueDate, String sessionToken) {
         try {
-            logger.info("LotteryPolicyService.createLotteryPolicy: Received request to create lottery policy for event ID: {}",eventID);
+            logger.info(
+                    "LotteryPolicyService.createLotteryPolicy: Received request to create lottery policy for event ID: {}",
+                    eventID);
 
-            String userID = validateRoleAndGetUserId();
+            String userID = validateRoleAndGetUserId(sessionToken);
 
             logger.info("LotteryPolicyService.createLotteryPolicy: verifying user exists for id {}", userID);
             User user = userRepository.findByID(userID);
 
-            logger.info("LotteryPolicyService.createLotteryPolicy: retrieving production company for creating a lottery policy");
-            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(eventRepository.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
+            logger.info(
+                    "LotteryPolicyService.createLotteryPolicy: retrieving production company for creating a lottery policy");
+            ProductionCompany company = productionCompanyRepository.findByID(
+                    String.valueOf(eventRepository.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
 
-            logger.info("LotteryPolicyService.createLotteryPolicy: Checking user permissions for userID: {}",user.getEmail());
+            logger.info("LotteryPolicyService.createLotteryPolicy: Checking user permissions for userID: {}",
+                    user.getEmail());
             company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
 
             logger.info(
                     "LotteryPolicyService.createLotteryPolicy: Creating lottery policy with ID: {}, Name: {}, Winner Amount: {}, Registration Due Date: {}",
                     lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
-            LotteryPolicy lotteryPolicy = new LotteryPolicy(lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(lotteryID, lotteryName, winnerAmount,
+                    lotteryRegistrationDueDate);
 
             while (true) {
                 logger.info("LotteryPolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
                 Event e = eventRepository.findByID(String.valueOf(eventID));
 
-                logger.info("LotteryPolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}",eventID);
+                logger.info("LotteryPolicyService.createLotteryPolicy: Adding lottery policy to event with ID: {}",
+                        eventID);
                 e.setLotteryPolicy(lotteryPolicy);
 
                 logger.info("LotteryPolicyService.createLotteryPolicy: saving changes to repository");
@@ -75,7 +81,7 @@ public class LotteryPolicyService {
 
             logger.info("LotteryPolicyService.createLotteryPolicy: Lottery policy added to event successfully");
             return Result.makeOk(null);
-        } catch(AuthException e){
+        } catch (AuthException e) {
             logger.warn("LotteryPolicyService.createLotteryPolicy: AuthException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -85,16 +91,18 @@ public class LotteryPolicyService {
             logger.warn("LotteryPolicyService.createLotteryPolicy: IllegalStateException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
-            logger.error("LotteryPolicyService.createLotteryPolicy: An unexpected error occurred while creating a lottery" + e.getMessage());
+            logger.error(
+                    "LotteryPolicyService.createLotteryPolicy: An unexpected error occurred while creating a lottery"
+                            + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
-    public Result<Void> enrollInLottery(int eventID) {
+    public Result<Void> enrollInLottery(int eventID, String sessionToken) {
         try {
             logger.info("LotteryPolicyService.enrollInLottery: Received request to enroll in lottery for event ID: {}",
                     eventID);
-            String userID = validateRoleAndGetUserId();
+            String userID = validateRoleAndGetUserId(sessionToken);
 
             logger.info("LotteryPolicyService.enrollInLottery: verifying user exists for id {}", userID);
             User user = userRepository.findByID(userID);
@@ -103,14 +111,15 @@ public class LotteryPolicyService {
                     "LotteryPolicyService.enrollInLottery: Checking if user with id {} passed purchase policy checks",
                     userID);
             // TODO: implement purchase policy checks for lottery enrollment
-            //so it is not implemented yet?
+            // so it is not implemented yet?
 
             while (true) {
                 logger.info("LotteryPolicyService.createLotteryPolicy: verifying event exists for id {}", eventID);
                 Event e = eventRepository.findByID(String.valueOf(eventID));
 
                 logger.info("LotteryPolicyService.createLotteryPolicy: Enrolling in lottery");
-                e.enrollInLottery(user.getEmail());//hmm what? just how old is this function? gonna leave it here as a remenent of better times
+                e.enrollInLottery(user.getEmail());// hmm what? just how old is this function? gonna leave it here as a
+                                                   // remenent of better times
 
                 logger.info("LotteryPolicyService.createLotteryPolicy: Saving changes to repository");
                 try {
@@ -123,7 +132,7 @@ public class LotteryPolicyService {
 
             logger.info("User with ID: {} enrolled in lottery for event ID: {} successfully", user.getEmail(), eventID);
             return Result.makeOk(null);
-        } catch (AuthException e){ 
+        } catch (AuthException e) {
             logger.warn("LotteryPolicyService.enrollInLottery: AuthException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -139,16 +148,21 @@ public class LotteryPolicyService {
         }
     }
 
-    public Result<Void> handleLotteryResults(int eventID) {
+    public Result<Void> handleLotteryResults(int eventID, String sessionToken) {
         try {
-            logger.info("LotteryPolicyService.handleLotteryResults: Received request to handle the lottery results for event ID: {}",eventID);
-            String userID = validateRoleAndGetUserId();
+            logger.info(
+                    "LotteryPolicyService.handleLotteryResults: Received request to handle the lottery results for event ID: {}",
+                    eventID);
+            String userID = validateRoleAndGetUserId(sessionToken);
 
             logger.info("LotteryPolicyService.handleLotteryResults: verifying user exists for id {}", userID);
             User user = userRepository.findByID(userID);
 
-            logger.info("LotteryPolicyService.handleLotteryResults: Checking if user with id {} is permitted to finalize lottery",userID);
-            ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(eventRepository.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
+            logger.info(
+                    "LotteryPolicyService.handleLotteryResults: Checking if user with id {} is permitted to finalize lottery",
+                    userID);
+            ProductionCompany company = productionCompanyRepository.findByID(
+                    String.valueOf(eventRepository.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
             company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
 
             while (true) {
@@ -167,9 +181,10 @@ public class LotteryPolicyService {
                 }
             }
 
-            logger.info("User with ID: {} finalized the lottery for event ID: {} successfully", user.getEmail(), eventID);
+            logger.info("User with ID: {} finalized the lottery for event ID: {} successfully", user.getEmail(),
+                    eventID);
             return Result.makeOk(null);
-        } catch (AuthException e){ 
+        } catch (AuthException e) {
             logger.warn("LotteryPolicyService.handleLotteryResults: AuthException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -179,22 +194,24 @@ public class LotteryPolicyService {
             logger.error("LotteryPolicyService.handleLotteryResults: IllegalStateException:" + e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
-            logger.error("LotteryPolicyService.handleLotteryResults: An unexpected error occurred while handling lottery results for event ID: {}: {}", eventID,
+            logger.error(
+                    "LotteryPolicyService.handleLotteryResults: An unexpected error occurred while handling lottery results for event ID: {}: {}",
+                    eventID,
                     e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
-    
-
-
-    private String validateRoleAndGetUserId()
-    {
-        //if we do implement error 403 then this if will also disapear, along with the function
-        if(!Role.SIGNED.equals(RequestContext.getRole()))
-            throw new AuthException("Only users are allowed to perform this operation.");
-        String userId=RequestContext.getUserId();
-        return userId;
+    private String validateRoleAndGetUserId(String sessionToken) {
+        if (!authenticationService.validateToken(sessionToken)) {
+            throw new AuthException("Invalid session token.");
+        }
+        if (!authenticationService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        String userID = (authenticationService.extractSubjectFromToken(sessionToken));
+        userRepository.findByID(userID);
+        return userID;
     }
-    
+
 }

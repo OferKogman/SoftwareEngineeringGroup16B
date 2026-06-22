@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import { NavLink, useOutlet, useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import "../../CSS/Management.css";
 import type { EventDTO } from "../../DTOs/EventDTO";
-import { useSession } from "../../GlobalContext/SessionContext";
-import { useApiFetch } from "../../apiFetch";
 
 const API_BASE = "http://localhost:8080";
 
@@ -50,7 +49,6 @@ async function readResponseBody(response: Response): Promise<unknown> {
 
 export default function EventManagement() {
   const { eventID } = useParams();
-  const { sessionToken } = useSession();
   const outlet = useOutlet();
 
   const [event, setEvent] = useState<EventDTO | null>(null);
@@ -70,10 +68,6 @@ export default function EventManagement() {
       if (!eventID) {
         setError("Missing event id");
         setLoading(false);
-        return;
-      }
-
-      if (!sessionToken) {
         return;
       }
 
@@ -97,6 +91,27 @@ export default function EventManagement() {
         }
 
         setEvent(data);
+
+        const response3 = await apiFetch(
+          `${API_BASE}/production-companies/${data.eventProductionCompanyID}/me/permissions`,
+          {
+            method: "GET",
+          },
+        );
+
+        const permissionsData = await readResponseBody(response3);
+
+        if (!response3.ok) {
+          throw new Error(getApiError(permissionsData));
+        }
+
+        if (!Array.isArray(permissionsData)) {
+          throw new Error("Invalid permissions response from server");
+        }
+
+        if (!permissionsData.includes("EVENT_INVENTORY")) {
+          throw new Error("User is not authorized to perform this operation");
+        }
       } catch (error) {
         if (!cancelled) {
           setError(error instanceof Error ? error.message : "Event not found");
@@ -113,7 +128,7 @@ export default function EventManagement() {
     return () => {
       cancelled = true;
     };
-  }, [eventID, sessionToken, apiFetch]);
+  }, [eventID, apiFetch]);
 
   return (
     <div className="management-page">
@@ -134,6 +149,7 @@ export default function EventManagement() {
         <aside className="management-sidebar">
           <NavLink to="show">Information</NavLink>
           <NavLink to="update-info">Update Information</NavLink>
+          <NavLink to="lottery">Lottery</NavLink>
           <NavLink to="discount-policy">Update Discount Policies</NavLink>
           <NavLink to="purchase-policy">Update Purchase Policies</NavLink>
           <NavLink to="inventory">Inventory Management</NavLink>

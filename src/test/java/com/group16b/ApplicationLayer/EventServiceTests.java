@@ -110,7 +110,7 @@ public class EventServiceTests {
                 LocalDateTime startTime = LocalDateTime.now().plusDays(1);
                 LocalDateTime endTime = LocalDateTime.now().plusDays(2);
 
-                e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 5.0,
+                e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1,
                                 3.5), user1.getEmail());
                 eventRepository.save(e1);
                 venue1.bookEvent(e1.getEventStartTime(), e1.getEventEndTime(), 1);
@@ -390,7 +390,7 @@ public class EventServiceTests {
                         IllegalAccessException {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "event2", now.plusDays(6), now.plusDays(7), "artist2",
-                                "category2", 1, 67.0, 4.5);
+                                "category2", 1, 4.5);
                 EventDTO e2 = new EventDTO(new Event(record, user1.getEmail()));
                 assertEquals(e2.getEventID() + 1, eventService.createEvent(record, "user1").getValue().getEventID());
         }
@@ -399,7 +399,7 @@ public class EventServiceTests {
         public void CreateEvent_UserIsNotAuthenticated_Failure() {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2",
-                                1, 67.0, 4.5);
+                                1, 4.5);
                 assertEquals("Authentication failed: Invalid session token.",
                                 eventService.createEvent(record, "invalid_token").getError());
         }
@@ -408,7 +408,7 @@ public class EventServiceTests {
         public void CreateEvent_CompanyNotFound_Failure() {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2",
-                                999, 67.0, 4.5);
+                                999, 4.5);
                 assertEquals("Production company with ID 999 is not found.",
                                 eventService.createEvent(record, "user1").getError());
         }
@@ -417,7 +417,7 @@ public class EventServiceTests {
         public void CreateEvent_UserIsNotOwner_Failure() {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2",
-                                1, 67.0, 4.5);
+                                1, 4.5);
                 assertEquals("user testuser2 dont have high enough permissions in company 1",
                                 eventService.createEvent(record, "user2").getError());
         }
@@ -426,10 +426,10 @@ public class EventServiceTests {
         public void CreateEvent_InvalidName_Failure() {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "", now, now.plusDays(1), "artist2", "category2", 1,
-                                67.0, 4.5);
+                                4.5);
                 assertEquals("Event name cannot be null or empty.",
                                 eventService.createEvent(record, "user1").getError());
-                record = new EventRecord("venue1", null, now, now.plusDays(1), "artist2", "category2", 1, 67.0, 4.5);
+                record = new EventRecord("venue1", null, now, now.plusDays(1), "artist2", "category2", 1, 4.5);
                 assertEquals("Event name cannot be null or empty.",
                                 eventService.createEvent(record, "user1").getError());
         }
@@ -438,18 +438,18 @@ public class EventServiceTests {
         public void CreateEvent_InvalidDates_Failure() {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "event2", now.minusDays(2), now.minusDays(1), "artist2",
-                                "category2", 1, 67.0, 4.5);
+                                "category2", 1,  4.5);
                 assertEquals("End time must be in the future.", eventService.createEvent(record, "user1").getError());
                 record = new EventRecord("venue1", "event2", now.plusDays(2), now.plusDays(1), "artist2", "category2",
-                                1, 67.0,
+                                1, 
                                 4.5);
                 assertEquals("Start time must be before end time.",
                                 eventService.createEvent(record, "user1").getError());
-                record = new EventRecord("venue1", "event2", null, now.plusDays(1), "artist2", "category2", 1, 67.0,
+                record = new EventRecord("venue1", "event2", null, now.plusDays(1), "artist2", "category2", 1, 
                                 4.5);
                 assertEquals("Start time and end time cannot be null.",
                                 eventService.createEvent(record, "user1").getError());
-                record = new EventRecord("venue1", "event2", now.plusDays(1), null, "artist2", "category2", 1, 67.0,
+                record = new EventRecord("venue1", "event2", now.plusDays(1), null, "artist2", "category2", 1, 
                                 4.5);
                 assertEquals("Start time and end time cannot be null.",
                                 eventService.createEvent(record, "user1").getError());
@@ -458,11 +458,11 @@ public class EventServiceTests {
         @Test
         public void CreateEvent_InvalidArtist_Failure() {
                 LocalDateTime now = LocalDateTime.now();
-                EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "", "category2", 1, 67.0,
+                EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "", "category2", 1, 
                                 4.5);
                 assertEquals("Event artist cannot be null or empty.",
                                 eventService.createEvent(record, "user1").getError());
-                record = new EventRecord("venue1", "event2", now, now.plusDays(1), null, "category2", 1, 67.0, 4.5);
+                record = new EventRecord("venue1", "event2", now, now.plusDays(1), null, "category2", 1,  4.5);
                 assertEquals("Event artist cannot be null or empty.",
                                 eventService.createEvent(record, "user1").getError());
         }
@@ -470,33 +470,25 @@ public class EventServiceTests {
         @Test
         public void CreateEvent_InvalidCategory_Failure() {
                 LocalDateTime now = LocalDateTime.now();
-                EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "", 1, 67.0,
+                EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "", 1, 
                                 4.5);
                 assertEquals("Event category cannot be null or empty.",
                                 eventService.createEvent(record, "user1").getError());
-                record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", null, 1, 67.0, 4.5);
+                record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", null, 1, 4.5);
                 assertEquals("Event category cannot be null or empty.",
                                 eventService.createEvent(record, "user1").getError());
         }
 
-        @Test
-        public void CreateEvent_InvalidPrice_Failure() {
-                LocalDateTime now = LocalDateTime.now();
-                EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2",
-                                1, -1.0,
-                                4.5);
-                assertEquals("Event price cannot be negative.", eventService.createEvent(record, "user1").getError());
-        }
 
         @Test
         public void CreateEvent_InvalidRating_Failure() {
                 LocalDateTime now = LocalDateTime.now();
                 EventRecord record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2",
-                                1, 67.0,
+                                1, 
                                 -1.0);
                 assertEquals("Event rating must be between 0 and 5.",
                                 eventService.createEvent(record, "user1").getError());
-                record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2", 1, 67.0,
+                record = new EventRecord("venue1", "event2", now, now.plusDays(1), "artist2", "category2", 1, 
                                 6.0);
                 assertEquals("Event rating must be between 0 and 5.",
                                 eventService.createEvent(record, "user1").getError());
@@ -505,7 +497,7 @@ public class EventServiceTests {
         @Test
         public void CreateEvent_VenueIsUnavailable_Failure() {
                 EventRecord record = new EventRecord("venue1", "event2", e1.getEventStartTime(), e1.getEventEndTime(),
-                                "artist2", "category2", 1, 67.0, 4.5);
+                                "artist2", "category2", 1,  4.5);
                 Result<EventDTO> result = eventService.createEvent(record, "user1");
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().startsWith("Venue is already booked during this time frame!"));

@@ -1,16 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import type { OrderDTO } from "../DTOs/OrderDTO";
+import type { OrderDTO } from "../../DTOs/OrderDTO";
 
 type ViewSaleHistoryProps = {
   orders: OrderDTO[];
 };
 
-
-
 export default function ViewSaleHistory({ orders }: ViewSaleHistoryProps) {
   const navigate = useNavigate();
 
-  
   function openEvent(eventId: number) {
     navigate(`/events/${eventId}`);
   }
@@ -20,19 +17,18 @@ export default function ViewSaleHistory({ orders }: ViewSaleHistoryProps) {
   }
 
   return (
-    <div> 
-
+    <div>
       {orders.length === 0 ? (
         <p>No orders found.</p>
       ) : (
         orders.map((order) => (
           <div key={order.orderId}>
-            
-              <h4>Order: {" "}
-                <button onClick={() => openOrder(order.orderId)}>
-                  {order.orderId}
-                </button>
-              </h4>
+            <h4>
+              Order:{" "}
+              <button onClick={() => openOrder(order.orderId)}>
+                {order.orderId}
+              </button>
+            </h4>
 
             <p>
               Event ID:{" "}

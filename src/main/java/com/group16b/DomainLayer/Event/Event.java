@@ -46,8 +46,7 @@ public class Event {
 		this.productionCompanyID = eventRecord.pcID();
 		this.discountPolicy = new HashSet<>();
 		this.purchasePolicy = new HashSet<>();
-		validatePrice(eventRecord.price());
-		this.price = eventRecord.price();
+		this.price = 0; //update only based on segment price
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;

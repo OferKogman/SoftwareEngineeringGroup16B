@@ -1,0 +1,85 @@
+.create-lottery-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.create-lottery-page header {
+  margin-bottom: 1rem;
+}
+
+.create-lottery-page h2 {
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.create-lottery-page form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 620px;
+  width: 100%;
+  padding: 1.5rem;
+  border-radius: 1rem;
+}
+
+.create-lottery-page form div {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+}
+
+.create-lottery-page label {
+  text-align: left;
+}
+
+.create-lottery-page input {
+  width: 100%;
+  padding: 6px;
+  box-sizing: border-box;
+  margin-left: 8px;
+}
+
+.create-lottery-page button {
+  margin-top: 0.5rem;
+  padding: 0.8rem 1.5rem;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.create-lottery-page button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.popup-alert {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  padding: 12px 20px;
+  border-radius: 12px;
+}
+
+.popup-alert p {
+  margin: 0;
+  margin-bottom: 8px;
+  font-weight: 450;
+}
+
+.dark .popup-alert {
+  background: rgb(60, 60, 60);
+  color: #f5f5f5;
+  border: 1px solid rgba(255, 150, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
+}
+
+.light .popup-alert {
+  background: rgb(210, 210, 210);
+  color: #222;
+  border: 1px solid rgba(255, 150, 0, 0.15);
+  box-shadow: 0 4px 20px rgba(255, 0, 255, 0.2);
+}

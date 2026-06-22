@@ -48,12 +48,20 @@ export default function ViewAdminCompanyList() {
       {companyDTOList.length === 0 ? (
         <p>No companies found</p>
       ) : (
-        <table>
+        <table
+          style={{
+            width: "75%",
+            tableLayout: "fixed",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        >
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Rating</th>
+              <th style={{ width: "20%" }}>ID</th>
+              <th style={{ width: "25%" }}>Name</th>
+              <th style={{ width: "20%" }}>Rating</th>
+              <th style={{ width: "10%" }}>Actions</th>
             </tr>
           </thead>
 
@@ -63,6 +71,9 @@ export default function ViewAdminCompanyList() {
                 <td>{company.id}</td>
                 <td>{company.name}</td>
                 <td>{company.rating}</td>
+                <td>
+                  <button onClick={() => {}}>Close Company</button>
+                </td>
               </tr>
             ))}
           </tbody>

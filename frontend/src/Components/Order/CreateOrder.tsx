@@ -51,6 +51,26 @@ export default function CreateOrderPage() {
 
     async function loadVenue() {
       try {
+        const response = await apiFetch(
+          `http://localhost:8080/events/${eventID}/reservations/status`,
+          {
+            method: "GET",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        const status = await response.json();
+        if (status != -1) {
+          navigate(`/events/${eventID}/queue`, {
+            state: {
+              initialStatus: status,
+            },
+          });
+        }
+
         setError("");
         if (!eventID) {
           setError("Missing event ID.");
