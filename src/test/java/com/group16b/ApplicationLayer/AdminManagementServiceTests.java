@@ -14,11 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
@@ -55,6 +59,8 @@ public class AdminManagementServiceTests {
     private IRepository<User> userRepository;
     private OrderRepositoryMapImpl orderRepository;
     private IProductionCompanyRepository productionCompanyRepository;
+    private IPaymentGateway mockPaymentGateway;
+    private ITicketGateway mockTicketGateway;
 
     private Location location1;
     private Segment segment1;
@@ -78,7 +84,10 @@ public class AdminManagementServiceTests {
         userRepository = new UserRepositoryMapImpl();
         orderRepository = new OrderRepositoryMapImpl(); 
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-        adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository);
+
+        mockPaymentGateway=mock(IPaymentGateway.class);
+        mockTicketGateway=mock(ITicketGateway.class);
+        adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository,mockPaymentGateway,mockTicketGateway);
             
         user = new User("testuser", "password");
         adminToken = tokenService.generateAdminToken("admin@test.com");

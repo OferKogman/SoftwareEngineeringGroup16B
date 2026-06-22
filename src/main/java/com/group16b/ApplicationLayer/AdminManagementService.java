@@ -251,11 +251,11 @@ public class AdminManagementService {
     private void deactivateEvents(List<Event> events) {
         logger.info("AdminManagementService.deactivateEvents: Deactivating {} events", events.size());
         for (Event e : events) {
-            deactivateEventAndRefundUser(e.getEventID());
+            deactivateEventAndRefundOrders(e.getEventID());
             logger.info("AdminManagementService.deactivateEvents: Deactivated event with ID {}", e.getEventID());
         }
     }
-    private void deactivateEventAndRefundUser(int eventID)
+    private void deactivateEventAndRefundOrders(int eventID)
     {
          logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivating event {}", eventID);
          try{
