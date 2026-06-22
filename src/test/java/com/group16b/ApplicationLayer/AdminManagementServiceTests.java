@@ -117,12 +117,18 @@ public class AdminManagementServiceTests {
         myActiveEvent.activateEvent();
         eventRepository.save(myActiveEvent);
 
+        ProductionCompany someRnadomCompany=new ProductionCompany(10042,"ra",2.1,"rand");
+        productionCompanyRepository.save(someRnadomCompany);
+
+        Event randomAssEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 10042, 3.5), USER2_MAIL);
+        eventRepository.save(randomAssEvent);
+
         myActiveOrder=new Order("segment1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCompletedOrder=new Order("segment2", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCompletedOrder.CompleteOrder();
         myCanceledOrder=new Order("segment3", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCanceledOrder.CancelOrder();
-        unrelatedCompletedOrder=new Order("segment2", 1, 1.0, myActiveEvent.getEventID(),USER2_MAIL);
+        unrelatedCompletedOrder=new Order("segment2", 1, 1.0, randomAssEvent.getEventID(),USER2_MAIL);
         unrelatedCompletedOrder.CompleteOrder();
         orderRepository.save(myActiveOrder);
         orderRepository.save(myCompletedOrder);
@@ -351,8 +357,8 @@ public class AdminManagementServiceTests {
         assertEquals(2, results.size());
         assertTrue(results.get(0).isSuccess());
         assertTrue(results.get(1).isSuccess());
-        assertEquals(1, results.get(0).getValue().size());
-        assertEquals(1, results.get(1).getValue().size());
+        assertEquals(2, results.get(0).getValue().size());
+        assertEquals(2, results.get(1).getValue().size());
     }
 
     @Test

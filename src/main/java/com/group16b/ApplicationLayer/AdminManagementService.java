@@ -97,13 +97,14 @@ public class AdminManagementService {
             }
 
             List<Order> orders = orderRepo.getAll();
-            for (Order order : orders) {
-                Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
-                if (event.getEventProductionCompanyID() != productionCompanyID) {
-                    orders.remove(order);
-                }
-            }
-            List<OrderDTO> orderDTOs = orders.stream()
+            List<Order> filtered = orders.stream()
+                .filter(order -> {
+                    Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
+                    return event.getEventProductionCompanyID() == productionCompanyID && order.isCompleted();
+                })
+                .toList();
+
+            List<OrderDTO> orderDTOs = filtered.stream()
                     .map(order -> new OrderDTO(order))
                     .collect(Collectors.toList());
             return Result.makeOk(orderDTOs);
