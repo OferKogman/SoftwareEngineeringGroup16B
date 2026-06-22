@@ -112,7 +112,7 @@ public class VenueEventConfigService {
 
         } catch (OptimisticLockingFailureException e) {
             logger.warn("VenueEventConfigService.configureLayoutAndInventory: Failed to save changes to repository");
-            return Result.makeFail("Failed to save changes to repository."); 
+            return Result.makeFail("Failed to save changes to repository.");
         } catch (IllegalArgumentException e) {
             logger.warn(
                     "VenueEventConfigService.configureLayoutAndInventory: Domain logic error during configuration: {}",
@@ -223,16 +223,17 @@ public class VenueEventConfigService {
         }
     }
 
-	public Result<Boolean> editVenueSegments(int companyID, String venueID, String sessionToken, VenueRecord editedVenue) {
-		try {
-            if (editedVenue == null) {       
+    public Result<Boolean> editVenueSegments(int companyID, String venueID, String sessionToken,
+            VenueRecord editedVenue) {
+        try {
+            if (editedVenue == null) {
                 logger.error("VenueEventConfigService.editVenueSegments: Invalid input parameters.");
                 return Result.makeFail("Invalid input parameters.");
             }
-			String userID = validateAndGetUserID(sessionToken);
+            String userID = validateAndGetUserID(sessionToken);
             // validate user has permission to edit venue segments
-			logger.info("VenueEventConfigService.editVenueSegments: Session token verified successfully.");
-			Venue venue = venueRepository.findByID(venueID);
+            logger.info("VenueEventConfigService.editVenueSegments: Session token verified successfully.");
+            Venue venue = venueRepository.findByID(venueID);
 
             ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
 
@@ -241,17 +242,19 @@ public class VenueEventConfigService {
             company.validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
             venue.validateCompanyID(companyID);
 
-			// future events:
+            // future events:
             logger.info("VenueEventConfigService.editVenueSegments: Checking for future events to refund.");
-			List<Integer> futureEventsToRefund = new ArrayList<>();
-			for (Event event : eventRepository.findAllByVenueID(venueID)) {
-				if (event.getEventStartTime().isAfter(java.time.LocalDateTime.now())) {
-					futureEventsToRefund.add(event.getEventID());
-				}
-			}
+            List<Integer> futureEventsToRefund = new ArrayList<>();
+            for (Event event : eventRepository.findAllByVenueID(venueID)) {
+                if (event.getEventStartTime().isAfter(java.time.LocalDateTime.now())) {
+                    futureEventsToRefund.add(event.getEventID());
+                }
+            }
 
-            List<FieldSegRecord> editedFieldRecords = editedVenue.fieldSeg() == null ? new ArrayList<>() : editedVenue.fieldSeg();
-            List<ChosenSeatingSegRecord> editedSeatRecords = editedVenue.seatSeg() == null ? new ArrayList<>() : editedVenue.seatSeg();
+            List<FieldSegRecord> editedFieldRecords = editedVenue.fieldSeg() == null ? new ArrayList<>()
+                    : editedVenue.fieldSeg();
+            List<ChosenSeatingSegRecord> editedSeatRecords = editedVenue.seatSeg() == null ? new ArrayList<>()
+                    : editedVenue.seatSeg();
             Set<String> oldSegmentIDs = new HashSet<>(venue.getSegments().keySet());
             Set<String> editedFieldIDs = editedFieldRecords.stream()
                     .map(FieldSegRecord::segmentID)
@@ -283,12 +286,11 @@ public class VenueEventConfigService {
                     .filter(segmentID -> !editedSegmentIDs.contains(segmentID))
                     .collect(Collectors.toSet());
 
-
-			// eventID -> segID -> amount of ticketsto refund
-			HashMap<Integer, HashMap<String, Integer>> fieldSegmentsToRefund = new HashMap<>();
-			//.     eventid -> segID -> list of seatIDs to refund
-			HashMap<Integer, HashMap<String, List<String>>> seatSegmentsToRefund = new HashMap<>();
-			// for each event collect tickets to refund
+            // eventID -> segID -> amount of ticketsto refund
+            HashMap<Integer, HashMap<String, Integer>> fieldSegmentsToRefund = new HashMap<>();
+            // . eventid -> segID -> list of seatIDs to refund
+            HashMap<Integer, HashMap<String, List<String>>> seatSegmentsToRefund = new HashMap<>();
+            // for each event collect tickets to refund
             logger.info("VenueEventConfigService.editVenueSegments: Collecting tickets to refund for future events.");
             for (Integer eventID : futureEventsToRefund) {
                 fieldSegmentsToRefund.put(eventID, new HashMap<>());
@@ -301,8 +303,7 @@ public class VenueEventConfigService {
                     if (currentlyReserved > editedField.size()) {
                         fieldSegmentsToRefund.get(eventID).put(
                                 segmentID,
-                                currentlyReserved - editedField.size()
-                        );
+                                currentlyReserved - editedField.size());
                     }
                 }
 
@@ -311,11 +312,10 @@ public class VenueEventConfigService {
 
                     List<String> newSeatIDs = editedSeatSeg.seats()
                             .stream()
-                            .map(seat -> seat.row() + "-" + seat.column())
+                            .map(seat -> seat.row() + "-" + seat.number())
                             .toList();
 
-                    List<String> reservedSeatsToRefund =
-                            venue.getStockRefundForEvent(eventID, segmentID, newSeatIDs);
+                    List<String> reservedSeatsToRefund = venue.getStockRefundForEvent(eventID, segmentID, newSeatIDs);
 
                     if (!reservedSeatsToRefund.isEmpty()) {
                         seatSegmentsToRefund.get(eventID).put(segmentID, reservedSeatsToRefund);
@@ -324,8 +324,7 @@ public class VenueEventConfigService {
 
                 for (String deletedSegmentID : deletedSegmentIDs) {
                     if (venue.getSegmentTypeByID(deletedSegmentID).equals("F")) {
-                        int currentlyReserved =
-                                venue.getReservedStockBySegmentEventField(eventID, deletedSegmentID);
+                        int currentlyReserved = venue.getReservedStockBySegmentEventField(eventID, deletedSegmentID);
 
                         if (currentlyReserved > 0) {
                             fieldSegmentsToRefund.get(eventID).put(deletedSegmentID, currentlyReserved);
@@ -333,8 +332,8 @@ public class VenueEventConfigService {
                     }
 
                     if (venue.getSegmentTypeByID(deletedSegmentID).equals("S")) {
-                        List<String> reservedSeatsToRefund =
-                                venue.getStockRefundForEvent(eventID, deletedSegmentID, List.of());
+                        List<String> reservedSeatsToRefund = venue.getStockRefundForEvent(eventID, deletedSegmentID,
+                                List.of());
 
                         if (!reservedSeatsToRefund.isEmpty()) {
                             seatSegmentsToRefund.get(eventID).put(deletedSegmentID, reservedSeatsToRefund);
@@ -351,7 +350,8 @@ public class VenueEventConfigService {
             }
             // adding the new segments with the new stock.
             // adding new field segments
-            logger.info("VenueEventConfigService.editVenueSegments: Adding new segments and editing existing segments.");
+            logger.info(
+                    "VenueEventConfigService.editVenueSegments: Adding new segments and editing existing segments.");
 
             for (FieldSegRecord record : newFieldSegments) {
                 venue.addFieldSegment(record);
@@ -377,12 +377,11 @@ public class VenueEventConfigService {
             logger.info("VenueEventConfigService.editVenueSegments: Editing existing seating segments with new stock.");
             for (ChosenSeatingSegRecord record : seatSegmentsToEdit) {
                 venue.setNewSeatingStock(
-                    record.segmentID(),
-                    record.seats().stream()
-                            .map(seat -> seat.row() + "-" + seat.column())
-                            .toList(),
-                    futureEventsToRefund
-            );
+                        record.segmentID(),
+                        record.seats().stream()
+                                .map(seat -> seat.row() + "-" + seat.number())
+                                .toList(),
+                        futureEventsToRefund);
             }
             // edit the stages and entrances too
             if (editedVenue.grid() != null) {
@@ -391,39 +390,47 @@ public class VenueEventConfigService {
 
             venue.replaceStages(editedVenue.stages() == null ? List.of() : editedVenue.stages());
             venue.replaceEntrances(editedVenue.entrances() == null ? List.of() : editedVenue.entrances());
-            
+
             venueRepository.save(venue);
-			// __refunding tickets__
-            // for each ticket we need to refund. we have the event and the segment. 
-            // start with seat tickets we have the seatID. so we can call ordersercive to find the transactionId that is connected to this ticket. then refund it
+            // __refunding tickets__
+            // for each ticket we need to refund. we have the event and the segment.
+            // start with seat tickets we have the seatID. so we can call ordersercive to
+            // find the transactionId that is connected to this ticket. then refund it
             logger.info("VenueEventConfigService.editVenueSegments: Refunding tickets for future events.");
             for (Map.Entry<Integer, HashMap<String, List<String>>> entry : seatSegmentsToRefund.entrySet()) {
                 int eventID = entry.getKey();
                 for (Map.Entry<String, List<String>> segmentEntry : entry.getValue().entrySet()) {
                     String segmentID = segmentEntry.getKey();
                     List<String> seatIDsToRefund = segmentEntry.getValue();
-                    // get all orders that are completed and have this eventID, segmentID and seatIDs
-                    List<Order> ordersToRefund = orderRepository.getCompletedByEventIdSeatIds(eventID, segmentID, seatIDsToRefund);
+                    // get all orders that are completed and have this eventID, segmentID and
+                    // seatIDs
+                    List<Order> ordersToRefund = orderRepository.getCompletedByEventIdSeatIds(eventID, segmentID,
+                            seatIDsToRefund);
                     // for each order we need to refund the transaction
                     for (Order order : ordersToRefund) {
                         paymentService.cancelPayment(order.getTransactionId());
-                        // how do i cancel the ticket? like if only half of the seats are refunded, i need to cancel only those tickets. but i need to call ticketService.revokeTicket cancels all tickets of order.
+                        // how do i cancel the ticket? like if only half of the seats are refunded, i
+                        // need to cancel only those tickets. but i need to call
+                        // ticketService.revokeTicket cancels all tickets of order.
                         ticketService.revokeTicket(order.getExternalTicket());
                         order.CancelOrder();
                         orderRepository.save(order);
                     }
-                } 
+                }
             }
             // for field segments
-            logger.info("VenueEventConfigService.editVenueSegments: Refunding field segment tickets for future events.");
+            logger.info(
+                    "VenueEventConfigService.editVenueSegments: Refunding field segment tickets for future events.");
             for (Map.Entry<Integer, HashMap<String, Integer>> entry : fieldSegmentsToRefund.entrySet()) {
                 int eventID = entry.getKey();
                 for (Map.Entry<String, Integer> segmentEntry : entry.getValue().entrySet()) {
                     String segmentID = segmentEntry.getKey();
                     int amountToRefund = segmentEntry.getValue();
-                    // get all orders that are completed and have this eventID, segmentID and orderType FIELD
+                    // get all orders that are completed and have this eventID, segmentID and
+                    // orderType FIELD
                     List<Order> ordersToRefund = orderRepository.getCompletedByEventIdField(eventID, segmentID);
-                    // sort the orders by the number of seats in acending order, so we refund the smallest orders first
+                    // sort the orders by the number of seats in acending order, so we refund the
+                    // smallest orders first
                     ordersToRefund.sort(Comparator.comparing(Order::getNumOfTickets));
                     // for each order we need to refund the transaction
                     for (Order order : ordersToRefund) {
@@ -436,36 +443,36 @@ public class VenueEventConfigService {
                             break;
                         }
                     }
-                } 
+                }
             }
-            
-			return Result.makeOk(true);
 
-		} catch (IllegalArgumentException e) {
-			logger.error("VenueEventConfigService.editVenueSegments: " + e.getMessage());
-			return Result.makeFail(e.getMessage());
-		} catch (AuthException e) {
-			logger.error("VenueEventConfigService.editVenueSegments: Invalid session token. " + e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (JwtException e) {
-			logger.error("VenueEventConfigService.editVenueSegments: JWT authentication error during stock edition: "
-					+ e.getMessage());
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (Exception e) {
-			logger.error("VenueEventConfigService.editVenueSegments: Unexpected error occurred: " + e.getMessage());
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
-	}
+            return Result.makeOk(true);
+
+        } catch (IllegalArgumentException e) {
+            logger.error("VenueEventConfigService.editVenueSegments: " + e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (AuthException e) {
+            logger.error("VenueEventConfigService.editVenueSegments: Invalid session token. " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error("VenueEventConfigService.editVenueSegments: JWT authentication error during stock edition: "
+                    + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("VenueEventConfigService.editVenueSegments: Unexpected error occurred: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
 
     private String validateAndGetUserID(String sessionToken) {
-		if (!authService.validateToken(sessionToken)) {
-			throw new AuthException("Invalid session token.");
-		}
-		if (!authService.isUserToken(sessionToken)) {
-			throw new AuthException("Only users are allowed to perform operation");
-		}
-		String userID = (authService.extractSubjectFromToken(sessionToken));
-		userRepository.findByID(userID);
-		return userID;
-	}
+        if (!authService.validateToken(sessionToken)) {
+            throw new AuthException("Invalid session token.");
+        }
+        if (!authService.isUserToken(sessionToken)) {
+            throw new AuthException("Only users are allowed to perform operation");
+        }
+        String userID = (authService.extractSubjectFromToken(sessionToken));
+        userRepository.findByID(userID);
+        return userID;
+    }
 }

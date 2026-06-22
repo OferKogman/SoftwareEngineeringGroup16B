@@ -1,22 +1,19 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
+import type { EventDTO } from "../../DTOs/EventDTO";
 import type {
   ChosenSeatingSegDTO,
   EntranceDTO,
   FieldSegDTO,
   SeatDTO,
-  SegmentDTO,
   StageDTO,
   VenueDTO,
 } from "../../DTOs/VenueDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
-import type { EventDTO } from "../../DTOs/EventDTO";
 
 const API_BASE = "http://localhost:8080";
-
-
 
 type SelectedCellData = {
   gridRow: number;
@@ -91,143 +88,122 @@ export default function ManageEventInventory() {
     useState<PendingRectangleData | null>(null);
 
   const apiFetch = useApiFetch();
-  function normalizeVenueSeats(venue: VenueDTO): VenueDTO {
-    const normalizedSegments: Record<string, SegmentDTO> = {};
 
-    Object.values(venue.segments).forEach((segment) => {
-      if (!("seats" in segment)) {
-        normalizedSegments[segment.segmentID] = segment;
-        return;
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadVenue() {
+      try {
+        setError("");
+        if (!eventID) {
+          setError("Missing event ID.");
+          return;
+        }
+
+        const eventResponse = await apiFetch(`${API_BASE}/events/${eventID}`, {
+          method: "GET",
+        });
+
+        if (!eventResponse.ok) {
+          throw new Error(await eventResponse.text());
+        }
+
+        const event: EventDTO = await eventResponse.json();
+        const venueID = event.eventVenueID;
+        const companyId = event.eventProductionCompanyID;
+        setCompanyID(companyId);
+        setVenueID(venueID);
+        if (!venueID) {
+          setError("Missing venue ID.");
+          return;
+        }
+
+        const venueResponse = await apiFetch(`${API_BASE}/venues/${venueID}`, {
+          method: "GET",
+        });
+
+        if (!venueResponse.ok) {
+          throw new Error(await venueResponse.text());
+        }
+        const loadedVenue: VenueDTO = await venueResponse.json();
+
+        if (!cancelled) {
+          setFormData(loadedVenue);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load venue.",
+          );
+        }
       }
+    }
 
-      const fixedSeats: Record<string, SeatDTO> = {};
+    void loadVenue();
 
-      Object.values(segment.seats).forEach((seat) => {
-        const fixedSeat: SeatDTO = {
-          ...seat,
-          number: seat.number + 1,
-          seatId: `${seat.row}-${seat.number + 1}`,
-        };
+    return () => {
+      cancelled = true;
+    };
+  }, [venueID, apiFetch]);
 
-        fixedSeats[fixedSeat.seatId] = fixedSeat;
-      });
+  function venueDtoToVenueRecord(venue: VenueDTO) {
+    const fieldSeg = Object.values(venue.segments)
+      .filter((segment): segment is FieldSegDTO => "size" in segment)
+      .map((segment) => ({
+        segmentID: segment.segmentID,
+        size: segment.size,
+        area: segment.area,
+      }));
 
-      normalizedSegments[segment.segmentID] = {
-        ...segment,
-        seats: fixedSeats,
-      };
-    });
+    const seatSeg = Object.values(venue.segments)
+      .filter((segment): segment is ChosenSeatingSegDTO => "seats" in segment)
+      .map((segment) => ({
+        segmentID: segment.segmentID,
+        seats: Object.values(segment.seats).map((seat) => ({
+          row: seat.row,
+          number: seat.number,
+        })),
+        area: segment.area,
+      }));
 
     return {
-      ...venue,
-      segments: normalizedSegments,
+      name: venue.name,
+      location: getReadableLocation(venue),
+      fieldSeg,
+      seatSeg,
+      stages: Object.values(venue.stages),
+      entrances: Object.values(venue.entrances),
+      grid: venue.grid,
+      events: [],
     };
   }
-  useEffect(() => {
-      let cancelled = false;
-  
-      async function loadVenue() {
-        try {
-          setError("");
-            if (!eventID) {
-              setError("Missing event ID.");
-              return;
-            }
-    
-            const eventResponse = await apiFetch(`${API_BASE}/events/${eventID}`, {
-              method: "GET",
-            });
-    
-            if (!eventResponse.ok) {
-              throw new Error(await eventResponse.text());
-            }
-    
-            const event: EventDTO = await eventResponse.json();
-            const venueID = event.eventVenueID;
-            const companyId = event.eventProductionCompanyID;
-            setCompanyID(companyId);
-            setVenueID(venueID);
-            if (!venueID) {
-              setError("Missing venue ID.");
-              return;
-            }
-
-            const venueResponse = await apiFetch(`${API_BASE}/venues/${venueID}`,
-              {
-                method: "GET",
-              },
-            );
-
-            if (!venueResponse.ok) {
-              throw new Error(await venueResponse.text());
-            }
-            const loadedVenue: VenueDTO = await venueResponse.json();
-
-            if (!cancelled) {
-              setFormData(normalizeVenueSeats(loadedVenue));
-            }
-
-          } catch (err) {
-            if (!cancelled) {
-              setError(
-                err instanceof Error ? err.message : "Failed to load venue.",
-              );
-            }
-          }
-      }
-  
-      void loadVenue();
-  
-      return () => {
-        cancelled = true;
-      };
-    }, [venueID, apiFetch]);
-  
-    function venueDtoToVenueRecord(venue: VenueDTO) {
-      const fieldSeg = Object.values(venue.segments)
-        .filter((segment): segment is FieldSegDTO => "size" in segment)
-        .map((segment) => ({
-          segmentID: segment.segmentID,
-          size: segment.size,
-          area: segment.area,
-        }));
-
-      const seatSeg = Object.values(venue.segments)
-        .filter((segment): segment is ChosenSeatingSegDTO => "seats" in segment)
-        .map((segment) => ({
-          segmentID: segment.segmentID,
-          seats: Object.values(segment.seats).map((seat) => ({
-            row: seat.row,
-            column: seat.number,
-          })),
-          area: segment.area,
-        }));
-
-      return {
-        name: venue.name,
-        location: getReadableLocation(venue),
-        fieldSeg,
-        seatSeg,
-        stages: Object.values(venue.stages),
-        entrances: Object.values(venue.entrances),
-        grid: venue.grid,
-        events: [],
-      };
-    }
   async function onSubmitVenue() {
     setError("");
     setSuccess("");
 
-    if (!venueID) {setError("Missing venue ID.");return;}
-    if (!companyId) {setError("Missing company ID.");return;}
-    if (!sessionToken) {setError("Missing session token.");return;}
-    if (!formData) {setError("Venue was not loaded.");return;}
+    if (!venueID) {
+      setError("Missing venue ID.");
+      return;
+    }
+    if (!companyId) {
+      setError("Missing company ID.");
+      return;
+    }
+    if (!sessionToken) {
+      setError("Missing session token.");
+      return;
+    }
+    if (!formData) {
+      setError("Venue was not loaded.");
+      return;
+    }
 
     try {
-      const response = await apiFetch(`${API_BASE}/venues/${venueID}/editVenueSegments`,
+      const response = await apiFetch(
+        `${API_BASE}/venues/${venueID}/editVenueSegments`,
         {
           method: "POST",
-          headers: {"Content-Type": "application/json",},
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             companyID: Number(companyId),
             newVenueLayout: venueDtoToVenueRecord(formData),
@@ -342,7 +318,9 @@ export default function ManageEventInventory() {
       return;
     }
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       return {
         ...current,
         segments: {
@@ -393,7 +371,6 @@ export default function ManageEventInventory() {
     };
 
     const newSegment: ChosenSeatingSegDTO = {
-      
       segmentID: getNextID(Object.keys(formData.segments), "S"),
       seats: createSeatsRecord(newSegmentArea),
       area: newSegmentArea,
@@ -411,13 +388,16 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       return {
         ...current,
         segments: {
           ...current.segments,
           [newSegment.segmentID]: newSegment,
-        },};
+        },
+      };
     });
 
     setPendingRectangle(null);
@@ -454,8 +434,10 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-    if (!current) {return current;}
-    return {
+      if (!current) {
+        return current;
+      }
+      return {
         ...current,
         stages: {
           ...current.stages,
@@ -500,13 +482,16 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       return {
         ...current,
         entrances: {
           ...current.entrances,
           [newEntrance.entranceID]: newEntrance,
-        },};
+        },
+      };
     });
 
     setPendingRectangle(null);
@@ -567,7 +552,9 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const segmentID = selectedSeat.segment.segmentID;
       const currentSegment = current.segments[segmentID];
 
@@ -599,7 +586,9 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const updatedSegments = { ...current.segments };
       delete updatedSegments[selectedSeatSeg.segment.segmentID];
 
@@ -618,7 +607,9 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const updatedSegments = { ...current.segments };
       delete updatedSegments[selectedFieldSeg.segment.segmentID];
 
@@ -637,7 +628,9 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const updatedStages = { ...current.stages };
       delete updatedStages[selectedStage.stage.stageID];
 
@@ -656,7 +649,9 @@ export default function ManageEventInventory() {
     }
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const updatedEntrances = { ...current.entrances };
       delete updatedEntrances[selectedEntrance.entrance.entranceID];
 
@@ -687,7 +682,9 @@ export default function ManageEventInventory() {
     };
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const segmentID = selectedSeatSeg.segment.segmentID;
       const currentSegment = current.segments[segmentID];
 
@@ -733,7 +730,9 @@ export default function ManageEventInventory() {
     const segmentID = selectedFieldSeg.segment.segmentID;
 
     setFormData((current) => {
-      if (!current) {return current;}
+      if (!current) {
+        return current;
+      }
       const currentSegment = current.segments[segmentID];
 
       if (!currentSegment || !("size" in currentSegment)) {
@@ -768,32 +767,35 @@ export default function ManageEventInventory() {
   }
 
   function handleAddRow() {
-      setFormData((current) => {
-        if (!current) {
-          return current;
-        }
+    setFormData((current) => {
+      if (!current) {
+        return current;
+      }
 
-        return {
-          ...current,
-          grid: {
-            ...current.grid,
-            rows: current.grid.rows + 1,
-          },
-        };
-      });
-    }
+      return {
+        ...current,
+        grid: {
+          ...current.grid,
+          rows: current.grid.rows + 1,
+        },
+      };
+    });
+  }
 
   function handleAddColumn() {
-      setFormData((current) => {
-        if (!current) {return current;}
-        return {
+    setFormData((current) => {
+      if (!current) {
+        return current;
+      }
+      return {
         ...current,
         grid: {
           ...current.grid,
           columns: current.grid.columns + 1,
         },
-      }});
-    }
+      };
+    });
+  }
 
   function renderPopup(): ReactNode {
     if (pendingRectangle) {

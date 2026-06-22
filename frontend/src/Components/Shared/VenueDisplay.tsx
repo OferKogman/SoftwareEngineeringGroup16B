@@ -17,6 +17,7 @@ const seatSegAreaBorder = "2px solid #70a026";
 const seatSegHoverColor = "#cde47a";
 
 const hoverBorder = "2px solid #ff9800";
+const selectedSegmentBorder = "4px solid #ffcc00";
 const emptyHoverColor = "#ffe0b2";
 
 const seatBorder = "2px solid #5f6f00";
@@ -411,8 +412,15 @@ export default function VenueDisplay({
   function isSeatHovered(row: number, column: number) {
     return hoveredSeat?.row === row && hoveredSeat.column === column;
   }
-  function isSeatSelected(seat: SeatDTO | undefined) {
-    if (!seat) {
+  function isSeatSelected(
+    seat: SeatDTO | undefined,
+    seatSegment: ChosenSeatingSegDTO | undefined,
+  ) {
+    if (!seat || !seatSegment) {
+      return false;
+    }
+
+    if (seatSegment.segmentID !== selectedSeatSegmentID) {
       return false;
     }
 
@@ -495,12 +503,14 @@ export default function VenueDisplay({
             const entrance = getEntrance(row, column);
             const segmentHovered = isSegmentHovered(row, column);
             const seatHovered = isSeatHovered(row, column);
-            const selectedSegment =
-              (fieldSegment &&
-                fieldSegment.segmentID === selectedFieldSegmentID) ||
-              (seatSegment && seatSegment.segmentID === selectedSeatSegmentID);
+            const selectedSegmentArea =
+              fieldSegment && fieldSegment.segmentID === selectedFieldSegmentID
+                ? fieldSegment.area
+                : seatSegment && seatSegment.segmentID === selectedSeatSegmentID
+                  ? seatSegment.area
+                  : undefined;
 
-            const seatSelected = isSeatSelected(seat);
+            const seatSelected = isSeatSelected(seat, seatSegment);
             const activeRectangle = pendingRectangle
               ? pendingRectangle
               : selectionStartCell && hoveredCell
@@ -551,6 +561,32 @@ export default function VenueDisplay({
                   width: "40px",
                   height: "40px",
                   ...getBorders(row, column, segmentHovered),
+                  ...(selectedSegmentArea
+                    ? {
+                        borderTop:
+                          row === selectedSegmentArea.startRow
+                            ? selectedSegmentBorder
+                            : undefined,
+                        borderRight:
+                          column ===
+                          selectedSegmentArea.startColumn +
+                            selectedSegmentArea.columnCount -
+                            1
+                            ? selectedSegmentBorder
+                            : undefined,
+                        borderBottom:
+                          row ===
+                          selectedSegmentArea.startRow +
+                            selectedSegmentArea.rowCount -
+                            1
+                            ? selectedSegmentBorder
+                            : undefined,
+                        borderLeft:
+                          column === selectedSegmentArea.startColumn
+                            ? selectedSegmentBorder
+                            : undefined,
+                      }
+                    : {}),
                   boxSizing: "border-box",
                   backgroundColor: rectangleHovered
                     ? "#88bbff"
@@ -564,11 +600,9 @@ export default function VenueDisplay({
                             undefined,
                             segmentHovered,
                           ),
-                  boxShadow: selectedSegment
-                    ? "0 0 6px 2px rgba(212, 175, 55, 0.65)"
-                    : undefined,
-                  filter: selectedSegment ? "brightness(1.08)" : undefined,
-                  zIndex: selectedSegment ? 2 : 1,
+                  boxShadow: undefined,
+                  filter: undefined,
+                  zIndex: selectedSegmentArea ? 2 : 1,
                   display: "flex",
                   flexDirection: "column",
                   alignItems: "center",
