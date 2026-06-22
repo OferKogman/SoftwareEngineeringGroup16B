@@ -1,9 +1,11 @@
 package com.group16b.ApplicationLayer;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -295,8 +297,9 @@ public class ReserveService {
 
             double priceAfterDiscountPolicy = pricePerSeat * amount;
 
+            DiscountContext dc = new DiscountContext(10, amount, LocalDateTime.now(), null);
             for (DiscountPolicy dp : allPolicies) {
-                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy, dc);
             }
             return priceAfterDiscountPolicy;
     }

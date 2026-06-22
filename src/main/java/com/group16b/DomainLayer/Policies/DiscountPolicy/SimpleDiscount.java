@@ -9,15 +9,12 @@ public class SimpleDiscount implements DiscountPolicy{
         this.discountPercentage = discountPercentage;
     }
 
-    public double getDiscountPercentage() {
-        return discountPercentage;
+
+    public boolean isMet(DiscountContext dc){
+        return true; //discount is NOT conditional, unnecessary to check.
     }
 
-    public void setDiscountPercentage(double discountPercentage) {
-        this.discountPercentage = discountPercentage;
-    }
-
-    public double calculateDiscount(double originalPrice){
+    public double calculateDiscount(double originalPrice, DiscountContext dc){
         return originalPrice * (1-this.discountPercentage/100);
     }
 }

@@ -25,22 +25,16 @@ public class CouponCodeDiscount implements DiscountPolicy {
         this.currentUsages = 0;
     }
 
-    public double getDiscountPercentage() { return discountPercentage; }
-    public String getCode() { return code; }
-    public LocalDateTime getExpiryDate() { return expiryDate; }
-    public Integer getMaxUsages() { return maxUsages; }
+
     public int getCurrentUsages() { return currentUsages; }
 
-    public boolean isMet(){
-        return false;
+    public boolean isMet(DiscountContext dc){
+        return dc.couponCode() != null && dc.couponCode().equals(code) && (expiryDate == null ||(expiryDate != null && !(LocalDateTime.now().isAfter(expiryDate)))) && !(maxUsages != null && currentUsages >= maxUsages);
     }
     @Override
-    public double calculateDiscount(double originalPrice) {
-        if (expiryDate != null && LocalDateTime.now().isAfter(expiryDate))
-            return originalPrice;
-        if (maxUsages != null && currentUsages >= maxUsages)
-            return originalPrice;
-        currentUsages++;
-        return originalPrice * (1 - discountPercentage / 100);
+    public double calculateDiscount(double originalPrice, DiscountContext dc) {
+        boolean valid = isMet(dc);
+        if(valid) currentUsages++; //made this one a bit longer because we have to update on successful uses.
+        return valid ? originalPrice * (1 - discountPercentage / 100) : originalPrice;
     }
 }

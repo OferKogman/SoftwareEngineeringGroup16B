@@ -14,11 +14,18 @@ public class SumDiscount implements DiscountPolicy {
 
     public List<DiscountPolicy> getPolicies() { return policies; }
 
-    @Override
-    public double calculateDiscount(double originalPrice) {
-        double price = originalPrice;
+    public boolean isMet(DiscountContext dc){
         for (DiscountPolicy policy : policies) {
-            price = Math.max(policy.calculateDiscount(price), 0);
+            if(policy.isMet(dc)) return true;
+        }
+        return false;
+    }
+    @Override
+    public double calculateDiscount(double originalPrice, DiscountContext dc) {
+        double price = originalPrice;
+        DiscountContext context = dc;
+        for (DiscountPolicy policy : policies) {
+            price = Math.max(policy.calculateDiscount(price,context), 0);
         }
         return Math.max(price,0);
     }

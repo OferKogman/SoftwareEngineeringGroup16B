@@ -15,6 +15,8 @@ import java.util.concurrent.Future;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -92,7 +94,7 @@ public class ReserveServiceTest {
         private ProductionCompany testPCompany;
         private Order seatOrder;
         private Order fieldOrder;
-        
+        private DiscountContext dc1 = new DiscountContext(10, 3, null, "SAVE10");
         @BeforeEach
         void setUp() {
                 authService = mock(IAuthenticationService.class);
@@ -539,7 +541,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble()))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
                         .thenThrow(new IllegalArgumentException("Event discount policy failed"));
 
                 IEventRepository mockedEventRepo = mock(IEventRepository.class);
@@ -583,7 +585,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble()))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
                         .thenThrow(new IllegalArgumentException("Company discount policy failed"));
 
                 IProductionCompanyRepository mockedCompanyRepo = mock(IProductionCompanyRepository.class);
@@ -1033,7 +1035,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble()))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
                         .thenThrow(new IllegalArgumentException("Event discount policy failed"));
 
                 IEventRepository mockedEventRepo = mock(IEventRepository.class);
@@ -1068,7 +1070,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble()))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
                         .thenThrow(new IllegalArgumentException("Company discount policy failed"));
 
                 IProductionCompanyRepository mockedCompanyRepo = mock(IProductionCompanyRepository.class);

@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class DateRangeDiscountTests {
-
+    private DiscountContext dc1 = new DiscountContext(10, 3, LocalDateTime.now().plusHours(6), "SAVE10");
     // Positive tests
     @Test
     public void testStartAndEndRangeQualifies() {
@@ -14,7 +14,7 @@ public class DateRangeDiscountTests {
                 LocalDateTime.now().plusDays(1),
                 10
         );
-        assertEquals(90.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(90.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     @Test
@@ -24,7 +24,7 @@ public class DateRangeDiscountTests {
                 null,
                 20
         );
-        assertEquals(80.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(80.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     @Test
@@ -34,7 +34,7 @@ public class DateRangeDiscountTests {
                 LocalDateTime.now().plusDays(1),
                 15
         );
-        assertEquals(85.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(85.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     @Test
@@ -44,7 +44,7 @@ public class DateRangeDiscountTests {
                 LocalDateTime.now().plusDays(1),
                 0
         );
-        assertEquals(100.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(100.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     @Test
@@ -54,7 +54,7 @@ public class DateRangeDiscountTests {
                 LocalDateTime.now().plusDays(1),
                 100
         );
-        assertEquals(0.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(0.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     // Condition not met — returns original price
@@ -65,7 +65,7 @@ public class DateRangeDiscountTests {
                 LocalDateTime.now().plusDays(5),
                 20
         );
-        assertEquals(100.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(100.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     @Test
@@ -75,7 +75,7 @@ public class DateRangeDiscountTests {
                 LocalDateTime.now().minusDays(1),
                 20
         );
-        assertEquals(100.0, discount.calculateDiscount(100.0), 0.001);
+        assertEquals(100.0, discount.calculateDiscount(100.0, dc1), 0.001);
     }
 
     // Negative tests
