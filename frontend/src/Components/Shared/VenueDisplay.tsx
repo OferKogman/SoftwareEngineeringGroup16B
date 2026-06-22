@@ -77,7 +77,7 @@ type VenueDisplayProps = {
   selectedFieldSegmentID?: string;
   selectedSeatSegmentID?: string;
   selectedSeats?: SeatDTO[];
-  segmentPrices?: Record<string, number>;
+  eventID?: string | number;
 };
 
 export default function VenueDisplay({
@@ -93,7 +93,7 @@ export default function VenueDisplay({
   selectedFieldSegmentID,
   selectedSeatSegmentID,
   selectedSeats = [],
-  segmentPrices = {},
+  eventID,
 }: VenueDisplayProps) {
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
@@ -155,6 +155,22 @@ export default function VenueDisplay({
     }
     void loadSegs();
   }, [venue]);
+
+  function getSegmentPrice(
+    segment: FieldSegDTO | ChosenSeatingSegDTO,
+  ): number | undefined {
+    if (eventID === undefined || eventID === null || eventID === "") {
+      return undefined;
+    }
+
+    const eventIDNumber = Number(eventID);
+
+    if (Number.isNaN(eventIDNumber)) {
+      return undefined;
+    }
+
+    return segment.eventPrices?.[eventIDNumber];
+  }
 
   function getFieldSegment(row: number, column: number) {
     return fieldSeg.find(({ area }) => {
@@ -641,16 +657,18 @@ export default function VenueDisplay({
                       >
                         {fieldSegment.size}
                       </div>
-                      <div
-                        style={{
-                          color: "#0b6c97",
-                          fontSize: "12px",
-                          lineHeight: "12px",
-                          margin: 0,
-                        }}
-                      >
-                        ${segmentPrices[fieldSegment.segmentID] ?? 0}
-                      </div>
+                      {getSegmentPrice(fieldSegment) !== undefined && (
+                        <div
+                          style={{
+                            color: "#0b6c97",
+                            fontSize: "12px",
+                            lineHeight: "12px",
+                            margin: 0,
+                          }}
+                        >
+                          ${getSegmentPrice(fieldSegment)}
+                        </div>
+                      )}
                     </>
                   )}
                 {seatSegment &&
@@ -672,16 +690,18 @@ export default function VenueDisplay({
                       >
                         {seatSegment.segmentID}
                       </div>
-                      <div
-                        style={{
-                          color: "#314000",
-                          fontSize: "12px",
-                          lineHeight: "12px",
-                          margin: 0,
-                        }}
-                      >
-                        ${segmentPrices[seatSegment.segmentID] ?? 0}
-                      </div>
+                      {getSegmentPrice(seatSegment) !== undefined && (
+                        <div
+                          style={{
+                            color: "#314000",
+                            fontSize: "12px",
+                            lineHeight: "12px",
+                            margin: 0,
+                          }}
+                        >
+                          ${getSegmentPrice(seatSegment)}
+                        </div>
+                      )}
                     </>
                   )}
                 {stage && isStageCenterCell(stage, row, column) && (

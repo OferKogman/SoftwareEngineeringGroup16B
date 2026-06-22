@@ -83,7 +83,7 @@ export default function EventPricing() {
     setSelectedSeatSeg({ segment, gridRow, gridColumn });
   }
   function handleSeatClick(
-    seat: SeatDTO,
+    _seat: SeatDTO,
     segment: ChosenSeatingSegDTO,
     gridRow: number,
     gridColumn: number,
@@ -271,7 +271,7 @@ export default function EventPricing() {
             handleStageClick={() => {}}
             handleEntranceClick={() => {}}
             venue={venue}
-            segmentPrices={prices}
+            eventID={eventID}
           ></VenueDisplay>
         )}
         {renderPopup()}

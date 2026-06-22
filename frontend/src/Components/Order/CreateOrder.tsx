@@ -365,6 +365,12 @@ export default function CreateOrderPage() {
           value={fieldTicketAmount}
           onChange={(event) => setFieldTicketAmount(event.currentTarget.value)}
         />
+        <h3>
+          Subtotal:{" "}
+          {selectedFieldSeg.eventPrices[Number(eventID)] *
+            Number(fieldTicketAmount)}
+          $
+        </h3>
 
         <button type="button" onClick={handleFieldOrder}>
           Order Field Tickets
@@ -398,11 +404,19 @@ export default function CreateOrderPage() {
       return null;
     }
 
+    if (!eventID) {
+      return null;
+    }
+
     return (
       <div className="form-card">
         <h3>Seat Section {selectedSeatSeg.segmentID}</h3>
         <p>Click seats inside the selected section to add/remove them.</p>
         <p>Selected seats: {selectedSeats.length}</p>
+        <h3>
+          Subtotal:{" "}
+          {selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length}$
+        </h3>
 
         <button type="button" onClick={handleSeatOrder}>
           Order Selected Seats
@@ -465,6 +479,7 @@ export default function CreateOrderPage() {
           handleSeatClick={handleVenueSeatClick}
           handleFieldSegmentClick={handleFieldSegmentSelected}
           handleSeatSegmentClick={handleSeatSegmentSelected}
+          eventID={eventID}
         />
 
         <div className="create-order-side-panel">
