@@ -153,6 +153,7 @@ export default function EventManagement() {
           <NavLink to="discount-policy">Update Discount Policies</NavLink>
           <NavLink to="purchase-policy">Update Purchase Policies</NavLink>
           <NavLink to="inventory">Inventory Management</NavLink>
+          <NavLink to="pricing">Pricing Management</NavLink>
         </aside>
 
         <main className="management-content">

@@ -77,6 +77,7 @@ type VenueDisplayProps = {
   selectedFieldSegmentID?: string;
   selectedSeatSegmentID?: string;
   selectedSeats?: SeatDTO[];
+  eventID?: string | number;
 };
 
 export default function VenueDisplay({
@@ -92,6 +93,7 @@ export default function VenueDisplay({
   selectedFieldSegmentID,
   selectedSeatSegmentID,
   selectedSeats = [],
+  eventID,
 }: VenueDisplayProps) {
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
@@ -153,6 +155,22 @@ export default function VenueDisplay({
     }
     void loadSegs();
   }, [venue]);
+
+  function getSegmentPrice(
+    segment: FieldSegDTO | ChosenSeatingSegDTO,
+  ): number | undefined {
+    if (eventID === undefined || eventID === null || eventID === "") {
+      return undefined;
+    }
+
+    const eventIDNumber = Number(eventID);
+
+    if (Number.isNaN(eventIDNumber)) {
+      return undefined;
+    }
+
+    return segment.eventPrices?.[eventIDNumber];
+  }
 
   function getFieldSegment(row: number, column: number) {
     return fieldSeg.find(({ area }) => {
@@ -639,6 +657,51 @@ export default function VenueDisplay({
                       >
                         {fieldSegment.size}
                       </div>
+                      {getSegmentPrice(fieldSegment) !== undefined && (
+                        <div
+                          style={{
+                            color: "#0b6c97",
+                            fontSize: "12px",
+                            lineHeight: "12px",
+                            margin: 0,
+                          }}
+                        >
+                          ${getSegmentPrice(fieldSegment)}
+                        </div>
+                      )}
+                    </>
+                  )}
+                {seatSegment &&
+                  !seat &&
+                  row ===
+                    seatSegment.area.startRow +
+                      Math.floor(seatSegment.area.rowCount / 2) &&
+                  column ===
+                    seatSegment.area.startColumn +
+                      Math.floor(seatSegment.area.columnCount / 2) && (
+                    <>
+                      <div
+                        style={{
+                          color: "#314000",
+                          fontSize: "16px",
+                          lineHeight: "16px",
+                          margin: 0,
+                        }}
+                      >
+                        {seatSegment.segmentID}
+                      </div>
+                      {getSegmentPrice(seatSegment) !== undefined && (
+                        <div
+                          style={{
+                            color: "#314000",
+                            fontSize: "12px",
+                            lineHeight: "12px",
+                            margin: 0,
+                          }}
+                        >
+                          ${getSegmentPrice(seatSegment)}
+                        </div>
+                      )}
                     </>
                   )}
                 {stage && isStageCenterCell(stage, row, column) && (

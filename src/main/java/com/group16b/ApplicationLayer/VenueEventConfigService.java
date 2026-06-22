@@ -446,6 +446,15 @@ public class VenueEventConfigService {
                 }
             }
 
+            logger.info(
+                    "VenueEventConfigService.editVenueSegments: Deactivating future events affected by venue edit.");
+            for (Integer eventID : futureEventsToRefund) {
+                Event eventToDeactivate = eventRepository.findByID(String.valueOf(eventID));
+                eventToDeactivate.deactivateEvent();
+                eventToDeactivate.setEventPrice(0);
+                eventRepository.save(eventToDeactivate);
+            }
+
             return Result.makeOk(true);
 
         } catch (IllegalArgumentException e) {
