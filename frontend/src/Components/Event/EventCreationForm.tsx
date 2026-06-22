@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
+import { useApiFetch } from "../../apiFetch";
+import "./CSS/EventCreationForm.css";
 
 export type EventCreationData = {
   venueID: string;
@@ -10,7 +12,6 @@ export type EventCreationData = {
   artist: string;
   category: string;
   pcID: number;
-  price: number;
   rating: number;
 };
 
@@ -32,13 +33,16 @@ export default function EventCreationForm({
     artist: "",
     category: "",
     pcID: Number(companyId),
-    price: 0.0,
     rating: 0.0,
   };
+
   const [formData, setFormData] = useState<EventCreationData>(initialFormData);
+
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { sessionToken } = useSession();
+  const apiFetch = useApiFetch();
 
   function updateField<K extends keyof EventCreationData>(
     field: K,
@@ -62,18 +66,15 @@ export default function EventCreationForm({
     if (!companyId) {
       throw new Error("Missing company ID.");
     }
+
     if (!sessionToken) {
       throw new Error("Missing session token.");
     }
 
-    console.log("companyId from route:", companyId);
-    console.log("eventData:", eventData);
-
-    const response = await fetch(`http://localhost:8080/events`, {
+    const response = await apiFetch(`http://localhost:8080/events`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: sessionToken,
       },
       body: JSON.stringify(eventData),
     });
@@ -82,11 +83,13 @@ export default function EventCreationForm({
       const message = await response.text();
       throw new Error(message || "Failed to create event.");
     }
-    navigate(`/companies/${companyId}/venue-config`);
+
+    navigate(`/companies/${companyId}/events`);
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     setIsSubmitting(true);
     setError("");
 
@@ -119,11 +122,6 @@ export default function EventCreationForm({
       pcID: Number(companyId),
       rating: 0.0,
     };
-    if (!Number.isInteger(eventData.pcID) || eventData.pcID <= 0) {
-      setError("Invalid company ID.");
-      setIsSubmitting(false);
-      return;
-    }
 
     try {
       await createEvent(eventData);
@@ -137,167 +135,88 @@ export default function EventCreationForm({
   }
 
   return (
-    <form className="event-creation-form" onSubmit={handleSubmit}>
-      <h2>Create Event</h2>
+    <main className="create-event-page">
+      <form className="create-event-form" onSubmit={handleSubmit}>
+        <h2>Create Event</h2>
 
-      {error && <p className="form-error">{error}</p>}
+        {error && <p className="create-event-error">{error}</p>}
 
-      <label>
-        Venue ID
-        <input
-          type="text"
-          required
-          pattern=".*\S.*"
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "venue ID name cannot be empty or whitespace.",
-            )
-          }
-          value={formData.venueID}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("venueID", event.target.value);
-          }}
-          placeholder="Venue ID"
-        />
-      </label>
+        <div className="create-event-field">
+          <label>Venue ID</label>
+          <input
+            type="text"
+            required
+            value={formData.venueID}
+            onChange={(e) => updateField("venueID", e.target.value)}
+            placeholder="Venue ID"
+          />
+        </div>
 
-      <label>
-        Event name
-        <input
-          type="text"
-          required
-          pattern=".*\S.*"
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Event name cannot be empty or whitespace.",
-            )
-          }
-          value={formData.name}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("name", event.target.value);
-          }}
-          placeholder="Event name"
-        />
-      </label>
+        <div className="create-event-field">
+          <label>Event Name</label>
+          <input
+            type="text"
+            required
+            value={formData.name}
+            onChange={(e) => updateField("name", e.target.value)}
+            placeholder="Event name"
+          />
+        </div>
 
-      <label>
-        Start date
-        <input
-          type="datetime-local"
-          required
-          min="1000-01-01T00:00"
-          max="9999-12-31T23:59"
-          value={formData.startTime}
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Please enter a valid start date and time.",
-            )
-          }
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("startTime", event.target.value);
-          }}
-          placeholder="Start date"
-        />
-      </label>
+        <div className="create-event-field">
+          <label>Start Date</label>
+          <input
+            type="datetime-local"
+            required
+            value={formData.startTime}
+            onChange={(e) => updateField("startTime", e.target.value)}
+          />
+        </div>
 
-      <label>
-        End date
-        <input
-          type="datetime-local"
-          required
-          max="9999-12-31T23:59"
-          min={getMinimumEndDateTime(formData.startTime)}
-          value={formData.endTime}
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Please enter a valid end date and time.\nMust be after now and start time.",
-            )
-          }
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("endTime", event.target.value);
-          }}
-          placeholder="End date"
-        />
-      </label>
+        <div className="create-event-field">
+          <label>End Date</label>
+          <input
+            type="datetime-local"
+            required
+            value={formData.endTime}
+            onChange={(e) => updateField("endTime", e.target.value)}
+          />
+        </div>
 
-      <label>
-        Artist
-        <input
-          type="text"
-          required
-          pattern=".*\S.*"
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Artist name cannot be empty or whitespace.",
-            )
-          }
-          value={formData.artist}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("artist", event.target.value);
-          }}
-          placeholder="Artist"
-        />
-      </label>
+        <div className="create-event-field">
+          <label>Artist</label>
+          <input
+            type="text"
+            required
+            value={formData.artist}
+            onChange={(e) => updateField("artist", e.target.value)}
+            placeholder="Artist"
+          />
+        </div>
 
-      <label>
-        Category
-        <input
-          type="text"
-          required
-          pattern=".*\S.*"
-          onInvalid={(event) =>
-            event.currentTarget.setCustomValidity(
-              "Category cannot be empty or whitespace.",
-            )
-          }
-          value={formData.category}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("category", event.target.value);
-          }}
-          placeholder="Category"
-        />
-      </label>
+        <div className="create-event-field">
+          <label>Category</label>
+          <input
+            type="text"
+            required
+            value={formData.category}
+            onChange={(e) => updateField("category", e.target.value)}
+            placeholder="Category"
+          />
+        </div>
 
-      <label>
-        Price
-        <input
-          type="number"
-          min="0"
-          value={formData.price}
-          onChange={(event) => {
-            event.currentTarget.setCustomValidity("");
-            updateField("price", Number(event.target.value));
-          }}
-        />
-      </label>
+        <div className="create-event-actions">
+          {onCancel && (
+            <button type="button" onClick={onCancel} disabled={isSubmitting}>
+              Cancel
+            </button>
+          )}
 
-      <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
+          <button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Creating..." : "Create Event"}
           </button>
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Creating..." : "Create event"}
-        </button>
-      </div>
-    </form>
+        </div>
+      </form>
+    </main>
   );
-}
-
-function getMinimumEndDateTime(startDate: string): string {
-  const now = new Date();
-
-  const offset = now.getTimezoneOffset();
-  const localDate = new Date(now.getTime() - offset * 60 * 1000);
-
-  return startDate > localDate.toISOString().slice(0, 16)
-    ? startDate
-    : localDate.toISOString().slice(0, 16);
 }

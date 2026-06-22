@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { useLoggedIn, useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
+import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/UserLoginForm.css";
 
 export type UserLoginData = {
@@ -22,20 +24,24 @@ export default function UserLoginForm({ title }: UserLoginFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
-  const { loggedIn, setLoggedIn } = useLoggedIn();
+  const { setLoggedIn } = useLoggedIn();
 
   const navigate = useNavigate();
+  const apiFetch = useApiFetch();
 
   async function onUserLogin({ email, password }: UserLoginData) {
     try {
+      if (!sessionToken) {
+        setError("Missing session token.");
+        return;
+      }
       console.log("token:", sessionToken);
-      const response = await fetch(
+      const response = await apiFetch(
         `http://localhost:8080/api/user/login/member`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: sessionToken,
           },
           body: JSON.stringify({ email, password }),
         },

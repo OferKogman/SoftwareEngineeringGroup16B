@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { useSession } from "../../App";
+import { useSession } from "../../GlobalContext/SessionContext";
+import { useApiFetch } from "../../apiFetch";
 
 export type ChangePasswordData = {
   oldPassword: string;
@@ -28,6 +29,8 @@ export default function ChangePasswordForm({
 
   const { sessionToken } = useSession();
 
+  const apiFetch = useApiFetch();
+
   function updateField<K extends keyof ChangePasswordData>(
     field: K,
     value: ChangePasswordData[K],
@@ -51,13 +54,16 @@ export default function ChangePasswordForm({
     setIsSubmitting(true);
 
     try {
-      const response = await fetch(
+      if (!sessionToken) {
+        setError("Missing session token.");
+        return;
+      }
+      const response = await apiFetch(
         "http://localhost:8080/api/user/updateUserPassword",
         {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
-            Authorization: sessionToken,
           },
           body: JSON.stringify({
             oldPassword: formData.oldPassword,

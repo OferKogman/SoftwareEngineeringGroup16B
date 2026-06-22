@@ -7,17 +7,35 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.Records.SeatRecord;
 
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "chosen_seating_segments")
 public class ChosenSeatingSeg extends Segment {
-	protected final Map<String, Seat> seats;
 	private int IDforSeat = 0;
 
-	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats) {
-		super(segmentID);
+	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+	@JoinColumn(name = "segment_id") // Creates a foreign key column in the seats table linking back here
+	@MapKey(name = "seatId") // Tells Hibernate to use the seatId property from Seat as the Map Key
+	protected final Map<String, Seat> seats;
+
+	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
+		super(segmentID, area);
 		this.seats = seats;
 	}
 
-	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats) {
-		super(segmentID);
+	public ChosenSeatingSeg() {
+		// Default constructor for JPA
+		this.seats = new ConcurrentHashMap<>();
+	}
+
+	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats, GridRectangle area) {
+		super(segmentID, area);
 		this.seats = new ConcurrentHashMap<>();
 		for (SeatRecord sr : seats) {
 			String seatId = sr.row() + "-" + sr.number();
@@ -26,7 +44,7 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	public ChosenSeatingSeg(ChosenSeatingSeg other) {
-		super(other.segmentID);
+		super(other);
 		this.IDforSeat = other.IDforSeat;
 		this.seats = new ConcurrentHashMap<>();
 		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
@@ -47,11 +65,6 @@ public class ChosenSeatingSeg extends Segment {
 	@Override
 	public void cancelReservation(ReservationRequest request) {
 		returnSeats(request.getSeatIds(), request.getEventID());
-	}
-
-	@Override
-	public double getPrice(int eventID) {
-		return 0.0;
 	}
 
 	void reserveSeats(List<String> seatIds, int eventID) {
@@ -93,19 +106,122 @@ public class ChosenSeatingSeg extends Segment {
 		return list;
 	}
 
-	@Override
-	public void setStockForEvent(int eventID, int newStock) {
-		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
-		if (seatsInEvent.size() <= newStock) {
-			throw new IllegalArgumentException(
-					"removing too much from the segment: " + segmentID + " for event :" + eventID);
+	public void setNewStock(List<String> newSeatsIDs, List<Integer> eventIDsToInitialize) {
+		List<String> refundSeatsIDs = new LinkedList<>();
+
+		for (String oldSeatID : this.seats.keySet()) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
 		}
 
-		int startIndex = newStock;// we only keep the newStock amount of seats in seg
+		List<String> addSeatsIDs = new LinkedList<>();
+		for (String newSeatID : newSeatsIDs) {
+			if (!this.seats.keySet().contains(newSeatID)) {
+				addSeatsIDs.add(newSeatID);
+			}
+		}
+		for (String addSeatID : addSeatsIDs) {
+			validateSeatIDFormat(addSeatID);
+		}
+		for (String addSeatID : addSeatsIDs) {
+			String[] parts = addSeatID.split("-");
+			int row = Integer.parseInt(parts[0]);
+			int column = Integer.parseInt(parts[1]);
+			Seat newSeat = new Seat(row, column);
 
-		for (int index = startIndex; index < seatsInEvent.size(); index++) {
-			Seat seat = seatsInEvent.get(index);
-			seat.returnSeat(eventID);
+			for (Integer eventID : eventIDsToInitialize) {
+				newSeat.addEvent(eventID);
+			}
+			seats.put(addSeatID, newSeat);
+		}
+
+		for (String refundSeatID : refundSeatsIDs) {
+			seats.remove(refundSeatID);
+		}
+	}
+
+	public void setNewStock(List<String> newSeatsIDs) {
+		// cut so that we have the list of seats that are to be deleted. meaning exsist
+		// in the old list but not in the new one. call it refund list
+		List<String> refundSeatsIDs = new LinkedList<>();
+		for (String oldSeatID : this.seats.keySet()) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+		// cut so that we have the list of seats that are to be added. meaning exsist in
+		// the new list but not in the old one. call it add list
+		List<String> addSeatsIDs = new LinkedList<>();
+		for (String newSeatID : newSeatsIDs) {
+			if (!this.seats.keySet().contains(newSeatID)) {
+				addSeatsIDs.add(newSeatID);
+			}
+		}
+		// cheacking fromat before adding the new seats to the segment
+		for (String addSeatID : addSeatsIDs) {
+			validateSeatIDFormat(addSeatID);
+		}
+		// add the new seats to the segment
+
+		for (String addSeatID : addSeatsIDs) {
+			String[] parts = addSeatID.split("-");
+
+			int row = Integer.parseInt(parts[0]);
+			int column = Integer.parseInt(parts[1]);
+			seats.put(addSeatID, new Seat(row, column));
+		}
+
+		for (String refundSeatID : refundSeatsIDs) {
+			seats.remove(refundSeatID);
+		}
+	}
+
+	public List<String> getStockRefundForEvent(int eventID, List<String> newSeatsIDs) {
+		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
+
+		// get exsisting seats for segment
+		List<String> oldSeatsIDs = new LinkedList<>();
+		for (Seat seat : seatsInEvent) {
+			oldSeatsIDs.add(seat.getSeatId());
+		}
+		// cut so that we have the list of seats that are to be deleted. meaning exsist
+		// in the old list but not in the new one. call it refund list
+		List<String> refundSeatsIDs = new LinkedList<>();
+		for (String oldSeatID : oldSeatsIDs) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+
+		// remove refund seats from the segment
+		List<String> refundSeats = new LinkedList<>();
+		for (String refundSeatID : refundSeatsIDs) {
+			Seat seat = seats.get(refundSeatID);
+			if (seat == null) {
+				throw new IllegalArgumentException("Seat with ID " + refundSeatID + " not found for refund");
+			}
+			if (seat.isSeatReserved(eventID)) {
+				refundSeats.add(refundSeatID);
+			}
+		}
+
+		return refundSeats;
+
+	}
+
+	private void validateSeatIDFormat(String seatID) {
+		String[] parts = seatID.split("-");
+
+		if (parts.length != 2) {
+			throw new IllegalArgumentException("Invalid seat ID format: " + seatID);
+		}
+
+		try {
+			Integer.parseInt(parts[0]);
+			Integer.parseInt(parts[1]);
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid seat ID format: " + seatID);
 		}
 	}
 

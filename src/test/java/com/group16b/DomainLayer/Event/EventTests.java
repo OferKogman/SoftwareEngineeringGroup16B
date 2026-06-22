@@ -23,7 +23,7 @@ public class EventTests {
 	public void SuccessefulEventCreation() {
 		assertDoesNotThrow(() -> {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 		});
 	}
 
@@ -31,7 +31,7 @@ public class EventTests {
 	public void FailedEventCreationNullName() {
 		try {
 			new Event(new EventRecord("1", null, LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event name cannot be null or empty.", e.getMessage());
@@ -42,7 +42,7 @@ public class EventTests {
 	public void FailedEventCreationEmptyName() {
 		try {
 			new Event(new EventRecord("1", "", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event name cannot be null or empty.", e.getMessage());
@@ -53,7 +53,7 @@ public class EventTests {
 	public void FailedEventCreationNullStartTime() {
 		try {
 			new Event(new EventRecord("1", "name", null, LocalDateTime.parse("2027-10-10T12:00:00"), "Artist",
-					"Category", 1, 0, 0), "0");
+					"Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Start time and end time cannot be null.", e.getMessage());
@@ -64,7 +64,7 @@ public class EventTests {
 	public void FailedEventCreationNullEndTime() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"), null, "Artist",
-					"Category", 1, 0, 0), "0");
+					"Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Start time and end time cannot be null.", e.getMessage());
@@ -75,7 +75,7 @@ public class EventTests {
 	public void FailedEventCreationEndTimeBeforeStartTime() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T12:00:00"),
-					LocalDateTime.parse("2027-10-10T10:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T10:00:00"), "Artist", "Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Start time must be before end time.", e.getMessage());
@@ -86,7 +86,7 @@ public class EventTests {
 	public void FailedEventCreationEndTimeInPast() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2025-10-10T10:00:00"),
-					LocalDateTime.parse("2025-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2025-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("End time must be in the future.", e.getMessage());
@@ -97,7 +97,7 @@ public class EventTests {
 	public void FailedEventCreationNullArtist() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), null, "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), null, "Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event artist cannot be null or empty.", e.getMessage());
@@ -108,7 +108,7 @@ public class EventTests {
 	public void FailedEventCreationEmptyArtist() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "", "Category", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event artist cannot be null or empty.", e.getMessage());
@@ -119,7 +119,7 @@ public class EventTests {
 	public void FailedEventCreationNullCategory() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", null, 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", null, 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event category cannot be null or empty.", e.getMessage());
@@ -130,7 +130,7 @@ public class EventTests {
 	public void FailedEventCreationEmptyCategory() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "", 1, 0), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event category cannot be null or empty.", e.getMessage());
@@ -140,8 +140,9 @@ public class EventTests {
 	@Test
 	public void FailedEventCreationNegativePrice() {
 		try {
-			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category",1, -1, 0), "0");
+			Event newEvent = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 1), "0");
+			newEvent.setEventPrice(-10.0);
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event price cannot be negative.", e.getMessage());
@@ -152,7 +153,7 @@ public class EventTests {
 	public void FailedEventCreationInvalidRating() {
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 6), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 6), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event rating must be between 0 and 5.", e.getMessage());
@@ -160,7 +161,7 @@ public class EventTests {
 
 		try {
 			new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1,0, -1), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, -1), "0");
 			throw new Exception("Expected exception was not thrown.");
 		} catch (Exception e) {
 			assertEquals("Event rating must be between 0 and 5.", e.getMessage());
@@ -170,7 +171,7 @@ public class EventTests {
 	@Test
 	public void SuccessfulEventCreationFromOther() {
 		Event otherEvent = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-				LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+				LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 		Event newEvent = new Event(otherEvent);
 		assertAll(
 			() -> assertEquals(otherEvent.getEventID(), newEvent.getEventID()),
@@ -195,7 +196,7 @@ public class EventTests {
 	public void SuccessfulEventActivation() {
 		assertDoesNotThrow(() -> {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			event.activateEvent();
 		});
 	}
@@ -204,7 +205,7 @@ public class EventTests {
 	public void FailedEventActivationAlreadyActive() {
 		try {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			event.activateEvent();
 			event.activateEvent();
 		} catch (Exception e) {
@@ -216,7 +217,7 @@ public class EventTests {
 	public void SuccessfulEventDeactivation() {
 		assertDoesNotThrow(() -> {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1,0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			event.activateEvent();
 			event.deactivateEvent();
 		});
@@ -226,7 +227,7 @@ public class EventTests {
 	public void FailedEventDeactivationAlreadyInactive() {
 		try {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			event.deactivateEvent();
 		} catch (Exception e) {
 			assertEquals("Event is already inactive.", e.getMessage());
@@ -237,11 +238,11 @@ public class EventTests {
 	public void SuccedssfulLotteryEnrollment() {
 		assertDoesNotThrow(() -> {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			event.activateEvent();
 			LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 			doNothing().when(lotteryPolicy).enrollInLottery(anyInt(), anyString());
-			event.addEventPurchasePolicy(lotteryPolicy);
+			event.setLotteryPolicy(lotteryPolicy);
 			event.enrollInLottery("user1");
 		});
 	}
@@ -250,10 +251,10 @@ public class EventTests {
 	public void FailedLotteryEnrollmentInactiveEvent() {
 		try {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 			doNothing().when(lotteryPolicy).enrollInLottery(anyInt(), anyString());
-			event.addEventPurchasePolicy(lotteryPolicy);
+			event.setLotteryPolicy(lotteryPolicy);
 			event.enrollInLottery("user1");
 		} catch (Exception e) {
 			assertEquals("Can't enroll in lottery for an inactive event", e.getMessage());
@@ -264,7 +265,7 @@ public class EventTests {
 	public void FailedLotteryEnrollmentNoLotteryPolicy() {
 		try {
 			Event event = new Event(new EventRecord("1", "name", LocalDateTime.parse("2027-10-10T10:00:00"),
-					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0, 0), "0");
+					LocalDateTime.parse("2027-10-10T12:00:00"), "Artist", "Category", 1, 0), "0");
 			event.activateEvent();
 			event.enrollInLottery("user1");
 		} catch (Exception e) {
@@ -281,7 +282,6 @@ public class EventTests {
 				"Artist",
 				"Category",
 				1,
-				0,
 				0
 		), "0");
 	}
@@ -292,7 +292,7 @@ public class EventTests {
 
 		doNothing().when(lotteryPolicy).validateLotteryCode("code123");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.validateLotteryCode("code123"));
 		verify(lotteryPolicy, times(1)).validateLotteryCode("code123");
@@ -317,7 +317,7 @@ public class EventTests {
 		doThrow(new IllegalStateException("Invalid lottery code."))
 				.when(lotteryPolicy).validateLotteryCode("badCode");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		try {
 			event.validateLotteryCode("badCode");
@@ -333,7 +333,7 @@ public class EventTests {
 
 		doNothing().when(lotteryPolicy).renewLotteryCode("code123");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.renewLotteryCode("code123"));
 		verify(lotteryPolicy, times(1)).renewLotteryCode("code123");
@@ -354,7 +354,7 @@ public class EventTests {
 		doThrow(new IllegalStateException("Code exploded."))
 				.when(lotteryPolicy).renewLotteryCode("badCode");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.renewLotteryCode("badCode"));
 		verify(lotteryPolicy, times(1)).renewLotteryCode("badCode");
@@ -367,7 +367,7 @@ public class EventTests {
 
 		doNothing().when(lotteryPolicy).useCode("code123");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		assertDoesNotThrow(() -> event.lotteryUseCode("code123"));
 		verify(lotteryPolicy, times(1)).useCode("code123");
@@ -392,7 +392,7 @@ public class EventTests {
 		doThrow(new IllegalStateException("Lottery code already used."))
 				.when(lotteryPolicy).useCode("usedCode");
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		try {
 			event.lotteryUseCode("usedCode");
@@ -413,7 +413,7 @@ public class EventTests {
 		Event event = createValidEvent();
 		LotteryPolicy lotteryPolicy = mock(LotteryPolicy.class);
 
-		event.addEventPurchasePolicy(lotteryPolicy);
+		event.setLotteryPolicy(lotteryPolicy);
 
 		try {
 			event.verifyDoesNotHaveLotteryPolicy();

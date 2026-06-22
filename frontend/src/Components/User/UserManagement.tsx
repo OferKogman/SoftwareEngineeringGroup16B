@@ -1,62 +1,48 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import ChangePasswordForm from "./ChangePasswordForm";
-import ViewUserCompanyList from "./ViewUserCompanyList";
-import ViewUserPurchaseHistory from "./ViewUserPurchaseHistory";
+import { NavLink, useOutlet } from "react-router-dom";
+import "../../CSS/Management.css";
+import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
 
 export default function UserManagement() {
-  const navigate = useNavigate();
+  const outlet = useOutlet();
+  const isLoggedIn = useLoggedIn();
 
-  const [showChangePassword, setShowChangePassword] = useState(false);
-  const [showPurchaseHistory, setShowPurchaseHistory] = useState(false);
-  const [showCompanies, setShowCompanies] = useState(false);
+  if (!isLoggedIn.loggedIn) {
+    return (
+      <div className="management-page">
+        <div className="management-header">
+          <h1>User Management</h1>
+        </div>
+        <div className="management-body">
+          <div className="management-content">
+            <h2>Access Denied</h2>
+            <p>You must be logged in to access this page.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div>
-      <h1>User Management</h1>
-
-      <div>
-        <button onClick={() => setShowChangePassword(!showChangePassword)}>
-          Change Password
-        </button>
+    <div className="management-page">
+      <div className="management-header">
+        <h1>User Management</h1>
       </div>
 
-      {showChangePassword && <ChangePasswordForm title="Change Password" />}
+      <div className="management-body">
+        <aside className="management-sidebar">
+          <NavLink to="change-password">Change Password</NavLink>
+          <NavLink to="purchase-history">Purchase History</NavLink>
+          <NavLink to="companies">My Production Companies</NavLink>
+        </aside>
 
-      {/* Purchase History */}
-      <div>
-        <button onClick={() => setShowPurchaseHistory(!showPurchaseHistory)}>
-          {showPurchaseHistory ? "▼" : "▶"} Purchase History
-        </button>
-
-        {showPurchaseHistory && (
-          <div>
-            <ViewUserPurchaseHistory />
-          </div>
-        )}
-      </div>
-
-      {/* Companies */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-        }}
-      >
-        <button onClick={() => setShowCompanies(!showCompanies)}>
-          {showCompanies ? "▼" : "▶"} My Production Companies
-        </button>
-
-        {showCompanies && (
-          <div style={{ marginTop: "10px" }}>
-            <button onClick={() => navigate("/companies/create")}>
-              Create Company
-            </button>
-
-            <ViewUserCompanyList />
-          </div>
-        )}
+        <main className="management-content">
+          {outlet ?? (
+            <div className="management-default-content">
+              <h2>User Management</h2>
+              <p>Select an option from the sidebar.</p>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

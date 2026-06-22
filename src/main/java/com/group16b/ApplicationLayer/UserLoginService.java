@@ -23,9 +23,12 @@ public class UserLoginService {
         this.tokenService = tokenService;
     }
 
-    public Result<String> createGuestSession() {
+    public Result<String> ensureGuestSession(String SessionToken) {
         logger.info("UserLoginService.createGuestSession: Attempting to create a new guest session.");
         try {
+            if(SessionToken!=null && tokenService.validateToken(SessionToken))
+                return Result.makeOk(SessionToken);
+
             SessionToken newSession = new SessionToken();
             String token = tokenService.generateVisitor_GuestToken(newSession);
             
@@ -89,9 +92,8 @@ public class UserLoginService {
             String recievedID = tokenService.extractSubjectFromToken(sessionToken);
             
             userRepository.findByID(recievedID); 
-
-            Result<String> res = this.createGuestSession();
-
+            Result<String> res = this.ensureGuestSession(null);
+            
             if (res.isSuccess()) {
                 logger.info("UserLoginService.logOutMember: User ID {} successfully logged out.", recievedID);                
             }
@@ -99,10 +101,16 @@ public class UserLoginService {
             
         } catch (IllegalArgumentException e) {
             logger.warn("UserLoginService.logOutMember: Invalid token data or user not found - {}", e.getMessage());
-            return Result.makeFail("Failed to log out: " + e.getMessage());
+            return Result.makeOk(safeGenerateGusetToken());
         } catch (Exception e) {
             logger.error("UserLoginService.logOutMember: Unexpected error - {}", e.getMessage(), e);
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+            return Result.makeOk(safeGenerateGusetToken());
         }   
+    }
+
+    private String safeGenerateGusetToken()
+    {
+        SessionToken newSession = new SessionToken();
+        return tokenService.generateVisitor_GuestToken(newSession);
     }
 }

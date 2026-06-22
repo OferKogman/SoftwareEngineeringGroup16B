@@ -2,11 +2,15 @@ import { useState } from "react";
 
 type AssignMemberData =
   | { role: "OWNER"; callerID: string; targetID: string }
-  | { role: "MANAGER"; callerID: string; targetID: string; permissions: Set<ManagerPermissions> };
+  | {
+      role: "MANAGER";
+      callerID: string;
+      targetID: string;
+      permissions: Set<ManagerPermissions>;
+    };
 
 type AssignMemberProps = {
   onSubmit: (data: AssignMemberData) => void | Promise<void>;
-  onCancel?: () => void;
 };
 
 type ManagerPermissions =
@@ -28,10 +32,12 @@ const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
 
 const initialFields = { callerID: "", targetID: "" };
 
-export default function AssignMember({ onSubmit, onCancel }: AssignMemberProps) {
+export default function AssignMember({ onSubmit }: AssignMemberProps) {
   const [role, setRole] = useState<"OWNER" | "MANAGER">("OWNER");
   const [fields, setFields] = useState(initialFields);
-  const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(new Set());
+  const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(
+    new Set(),
+  );
   const [permissionsError, setPermissionsError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,7 +45,11 @@ export default function AssignMember({ onSubmit, onCancel }: AssignMemberProps) 
   function togglePermission(perm: ManagerPermissions) {
     setPermissions((prev) => {
       const next = new Set(prev);
-      next.has(perm) ? next.delete(perm) : next.add(perm);
+      if (next.has(perm)) {
+        next.delete(perm);
+      } else {
+        next.add(perm);
+      }
       return next;
     });
   }
@@ -64,7 +74,9 @@ export default function AssignMember({ onSubmit, onCancel }: AssignMemberProps) 
       setFields(initialFields);
       setPermissions(new Set());
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to assign member.");
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to assign member.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -93,13 +105,15 @@ export default function AssignMember({ onSubmit, onCancel }: AssignMemberProps) 
       </label>
 
       <label>
-        Target ID
+        Target User
         <input
           type="text"
           required
           value={fields.targetID}
-          onChange={(e) => setFields((f) => ({ ...f, targetID: e.target.value }))}
-          placeholder="Target ID"
+          onChange={(e) =>
+            setFields((f) => ({ ...f, targetID: e.target.value }))
+          }
+          placeholder="Target User"
         />
       </label>
 
@@ -120,16 +134,11 @@ export default function AssignMember({ onSubmit, onCancel }: AssignMemberProps) 
       )}
       {permissionsError && <p className="form-error">{permissionsError}</p>}
 
-      <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : `Assign ${role === "OWNER" ? "Owner" : "Manager"}`}
-        </button>
-      </div>
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting
+          ? "Saving..."
+          : `Assign ${role === "OWNER" ? "Owner" : "Manager"}`}
+      </button>
     </form>
   );
 }

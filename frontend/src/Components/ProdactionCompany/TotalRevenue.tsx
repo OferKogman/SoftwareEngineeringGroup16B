@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { useSession } from "../../App";
+import { useApiFetch } from "../../apiFetch";
+import { useSession } from "../../GlobalContext/SessionContext";
 import "./CSS/TotalRevenue.css";
 
 const API_BASE = "http://localhost:8080";
@@ -69,6 +70,8 @@ export default function TotalRevenue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const apiFetch = useApiFetch();
+
   useEffect(() => {
     let cancelled = false;
 
@@ -88,13 +91,10 @@ export default function TotalRevenue() {
       }
 
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/total-revenue`,
           {
             method: "GET",
-            headers: {
-              Authorization: sessionToken,
-            },
           },
         );
 
@@ -129,7 +129,7 @@ export default function TotalRevenue() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken]);
+  }, [companyId, sessionToken, apiFetch]);
 
   return (
     <div className="total-revenue-page">

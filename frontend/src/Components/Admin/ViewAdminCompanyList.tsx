@@ -1,25 +1,22 @@
 import { useEffect, useState } from "react";
-import { useSession } from "../../App";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useApiFetch } from "../../apiFetch";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
   const [companyDTOList, setCompanyDTOList] = useState<
     ProductionCompanyDTO[] | null
   >(null);
-  const { sessionToken } = useSession();
+
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     async function loadCompanies() {
       try {
-        const response = await fetch(
+        const response = await apiFetch(
           `http://localhost:8080/api/admin-management/companies`,
           {
             method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: sessionToken,
-            },
           },
         );
 
@@ -38,7 +35,7 @@ export default function ViewAdminCompanyList() {
     }
 
     void loadCompanies();
-  }, [sessionToken]);
+  }, [apiFetch]);
 
   if (!companyDTOList) {
     return <div>No companies found</div>;
@@ -51,12 +48,20 @@ export default function ViewAdminCompanyList() {
       {companyDTOList.length === 0 ? (
         <p>No companies found</p>
       ) : (
-        <table>
+        <table
+          style={{
+            width: "75%",
+            tableLayout: "fixed",
+            marginLeft: "auto",
+            marginRight: "auto",
+          }}
+        >
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Name</th>
-              <th>Rating</th>
+              <th style={{ width: "20%" }}>ID</th>
+              <th style={{ width: "25%" }}>Name</th>
+              <th style={{ width: "20%" }}>Rating</th>
+              <th style={{ width: "10%" }}>Actions</th>
             </tr>
           </thead>
 
@@ -66,6 +71,9 @@ export default function ViewAdminCompanyList() {
                 <td>{company.id}</td>
                 <td>{company.name}</td>
                 <td>{company.rating}</td>
+                <td>
+                  <button onClick={() => {}}>Close Company</button>
+                </td>
               </tr>
             ))}
           </tbody>

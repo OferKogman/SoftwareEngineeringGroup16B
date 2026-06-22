@@ -24,6 +24,7 @@ public class Event {
 	private final int productionCompanyID;
 	private final Set<DiscountPolicy> discountPolicy;
 	private final Set<PurchasePolicy> purchasePolicy;
+	private LotteryPolicy lotteryPolicy;
 	private double price;
 	private double rating;
 	private final String ownerId;
@@ -45,12 +46,12 @@ public class Event {
 		this.productionCompanyID = eventRecord.pcID();
 		this.discountPolicy = new HashSet<>();
 		this.purchasePolicy = new HashSet<>();
-		validatePrice(eventRecord.price());
-		this.price = eventRecord.price();
+		this.price = 0; //update only based on segment price
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;
 		this.version = 0;
+		lotteryPolicy = null;
 	}
 
 	public Event(Event other) {
@@ -63,12 +64,35 @@ public class Event {
 		this.artist = other.getEventArtist();
 		this.category = other.getEventCategory();
 		this.productionCompanyID = other.getEventProductionCompanyID();
-		this.discountPolicy = new HashSet<>(other.getEventDiscountPolicy());
-		this.purchasePolicy = new HashSet<>(other.getEventPurchasePolicy());
+		this.discountPolicy = copyDiscountPolicies(other.getEventDiscountPolicy());
+		this.purchasePolicy = copyPurchasePolicies(other.getEventPurchasePolicy());
 		this.price = other.getEventPrice();
 		this.rating = other.getEventRating();
 		this.ownerId = other.getOwnerId();
 		this.version = other.getVersion();
+		lotteryPolicy = other.lotteryPolicy == null ? null : new LotteryPolicy(other.getLotteryPolicy());
+	}
+
+	private Set<DiscountPolicy> copyDiscountPolicies(Set<DiscountPolicy> policies) {
+		Set<DiscountPolicy> copiedPolicies = new HashSet<>();
+		for (DiscountPolicy policy : policies) {
+			// fix constructor for discount policies
+			copiedPolicies.add(policy);
+		}
+		return copiedPolicies;
+	}
+
+	private Set<PurchasePolicy> copyPurchasePolicies(Set<PurchasePolicy> policies) {
+		Set<PurchasePolicy> copiedPolicies = new HashSet<>();
+		for (PurchasePolicy policy : policies) {
+			if (policy instanceof LotteryPolicy lotteryPolicy) {
+				copiedPolicies.add(new LotteryPolicy(lotteryPolicy));
+			} else {
+				// fix constructor for purchase policies
+				copiedPolicies.add(policy);
+			}
+		}
+		return copiedPolicies;
 	}
 
 	public int getEventID() {
@@ -85,6 +109,7 @@ public class Event {
 		}
 		active = true;
 	}
+
 	public void validateEventIsActive() {
 		if (!active) {
 			throw new IllegalStateException("Event is inactive.");
@@ -164,7 +189,7 @@ public class Event {
 	}
 
 	public Set<PurchasePolicy> getEventPurchasePolicy() {
-        return new HashSet<>(purchasePolicy);
+		return new HashSet<>(purchasePolicy);
 	}
 
 	public void addEventPurchasePolicy(PurchasePolicy pp) {
@@ -176,7 +201,7 @@ public class Event {
 	}
 
 	public double getEventPrice() {
-		return price; //update when disocunt policies are implemented
+		return price; // update when disocunt policies are implemented
 	}
 
 	public void setEventPrice(double price) {
@@ -192,27 +217,39 @@ public class Event {
 		validateRating(rating);
 		this.rating = rating;
 	}
+
 	// lottery
-	private LotteryPolicy getLotteryPolicy() throws IllegalStateException {
-		LotteryPolicy lp = purchasePolicy.stream().filter(pp -> pp instanceof LotteryPolicy).findFirst().map(pp -> ((LotteryPolicy) pp)).orElse(null);
-		if (lp == null) {
+	public LotteryPolicy getLotteryPolicy() throws IllegalStateException {
+		if (lotteryPolicy == null) {
 			throw new IllegalStateException("Event does not have a lottery policy.");
 		}
-		return lp;
+		return lotteryPolicy;
 	}
+
+	public boolean hasLotteryPolicy(){
+		return lotteryPolicy!=null;
+	}
+
+	public void setLotteryPolicy(LotteryPolicy lotteryPolicy) {
+		if (this.lotteryPolicy != null) {
+			throw new IllegalStateException("Event already has a lottery policy.");
+		}
+		this.lotteryPolicy = lotteryPolicy;
+	}
+
 	public void validateLotteryCode(String lotteryCode) throws IllegalStateException {
 		LotteryPolicy lp = getLotteryPolicy();
 		lp.validateLotteryCode(lotteryCode);
 	}
-	
+
 	public void renewLotteryCode(String lotteryCode) {
-		try{
+		try {
 			LotteryPolicy lp = getLotteryPolicy();
 			lp.renewLotteryCode(lotteryCode);
+		} catch (Exception e) {
 		}
-		catch (Exception e) {}
 	}
-	
+
 	public void lotteryUseCode(String lotteryCode) throws IllegalStateException {
 		LotteryPolicy lp = getLotteryPolicy();
 		lp.useCode(lotteryCode);
@@ -220,11 +257,12 @@ public class Event {
 
 	public void verifyDoesNotHaveLotteryPolicy() throws IllegalStateException {
 		LotteryPolicy lp;
-		try{
+		try {
 			lp = getLotteryPolicy();
-			
+
+		} catch (Exception e) {
+			return;
 		}
-		catch (Exception e) {return;}
 		throw new IllegalStateException("Event has a lottery purchase policy.");
 
 	}
@@ -242,6 +280,11 @@ public class Event {
 		this.version++;
 	}
 
+	public void handleLotteryResults()
+	{
+		LotteryPolicy lp=getLotteryPolicy();
+		lp.handleLotteryResults();
+	}
 
 	private void validateName(String name) {
 		if (name == null || name.trim().isEmpty()) {
@@ -302,38 +345,37 @@ public class Event {
 
 	@Override
 	public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+		if (this == o)
+			return true;
+		if (o == null || getClass() != o.getClass())
+			return false;
 
-        Event event = (Event) o;
+		Event event = (Event) o;
 
-        return eventID == event.eventID &&
-                active == event.active &&
-                productionCompanyID == event.productionCompanyID &&
-                Objects.equals(venueID, event.venueID) &&
-                Objects.equals(name, event.name) &&
-                Objects.equals(startTime, event.startTime) &&
-                Objects.equals(endTime, event.endTime) &&
-                Objects.equals(artist, event.artist) &&
-                Objects.equals(category, event.category);
-    }
-
+		return eventID == event.eventID &&
+				active == event.active &&
+				productionCompanyID == event.productionCompanyID &&
+				Objects.equals(venueID, event.venueID) &&
+				Objects.equals(name, event.name) &&
+				Objects.equals(startTime, event.startTime) &&
+				Objects.equals(endTime, event.endTime) &&
+				Objects.equals(artist, event.artist) &&
+				Objects.equals(category, event.category);
+	}
 
 	@Override
-    public int hashCode() {
-        return Objects.hash(
-                eventID,
-                active,
-                venueID,
-                name,
-                startTime,
-                endTime,
-                artist,
-                category,
-                productionCompanyID
-        );
-    }
-
+	public int hashCode() {
+		return Objects.hash(
+				eventID,
+				active,
+				venueID,
+				name,
+				startTime,
+				endTime,
+				artist,
+				category,
+				productionCompanyID);
+	}
 
 	public void enrollInLottery(String userID) {
 		if (!this.getEventStatus()) {
@@ -341,4 +383,17 @@ public class Event {
 		}
 		this.getLotteryPolicy().enrollInLottery(this.eventID, userID);
 	}
+
+	public void validateEventIsNotEnded() {
+		LocalDateTime currentTime = LocalDateTime.now();
+		if (endTime.isBefore(currentTime)) {
+			throw new IllegalStateException("Event has already ended.");
+		}
+	}
+
+    public void validateEventPriceIsSet() {
+		if (price <= 0) {
+			throw new IllegalStateException("Event price must be set and greater than zero.");
+		}
+    }
 }

@@ -1,22 +1,22 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
+import "./CSS/EventUpdateForm.css";
+
+const API_BASE = "http://localhost:8080";
 
 export type EventUpdateDetails = {
-  venueID: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  artist: string;
-  category: string;
-};
-
-type EventUpdateFormProps = {
-  onCancel?: () => void;
+  venue: string | null;
+  name: string | null;
+  startDate: string | null;
+  endDate: string | null;
+  artist: string | null;
+  category: string | null;
 };
 
 const initialFormData: EventUpdateDetails = {
-  venueID: "",
+  venue: "",
   name: "",
   startDate: "",
   endDate: "",
@@ -24,15 +24,17 @@ const initialFormData: EventUpdateDetails = {
   category: "",
 };
 
-export default function EventUpdateForm({
-  onCancel,
-}: EventUpdateFormProps) {
+export default function EventUpdateForm() {
   const { eventID } = useParams();
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
 
   const [formData, setFormData] = useState<EventUpdateDetails>(initialFormData);
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [isToggling, setIsToggling] = useState(false);
+
+  const apiFetch = useApiFetch();
 
   useEffect(() => {
     if (!eventID) {
@@ -41,38 +43,19 @@ export default function EventUpdateForm({
 
     async function loadEvent() {
       try {
-        //const response = await fetch(`/api/events/${id}`);
-
-        //if (!response.ok) {
-        //  throw new Error("Failed to load event.");
-        //}
-
-        //const event: EventDTO = await response.json();
-
-        const event: EventDTO = {
-          eventID: 0,
-          active: true,
-          venueID: "Live Park",
-          name: "Last Tour Ever",
-          startTime: "2026-06-22T14:30",
-          endTime: "2026-06-22T18:30",
-          artist: "Queen",
-          category: "Rock",
-          productionCompanyID: 0,
-          discountPolicy: null,
-          purchasePolicy: null,
-          price: 100000,
-          rating: 5,
-        };
-        setEventDTO(event);
-        setFormData({
-          venueID: "",
-          name: "",
-          startDate: "",
-          endDate: "",
-          artist: "",
-          category: "",
+        const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
+
+        if (!response.ok) {
+          throw new Error("Failed to load event.");
+        }
+
+        const event: EventDTO = await response.json();
+        setEventDTO(event);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }
@@ -97,37 +80,67 @@ export default function EventUpdateForm({
     setError("");
 
     try {
-      const updatedEvent: EventUpdateDetails = {
-          ...formData,
-          venueID: formData.venueID.trim(),
-          name: formData.name.trim(),
-          startDate: formData.startDate.trim(),
-          endDate: formData.endDate.trim(),
-          artist: formData.artist.trim(),
-          category: formData.category.trim(),
-        };
+      const updatedEvent = Object.fromEntries(
+        Object.entries(formData)
+          .filter(([, value]) => value?.trim() !== "")
+          .map(([key, value]) => [key, value!.trim()]),
+      ) as Partial<EventUpdateDetails>;
 
-        const response = await fetch(`/api/events/${eventID}`, {
-          method: "PUT",
+      const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updatedEvent),
+      });
+
+      if (!response.ok) {
+        const message = await response.text();
+        throw new Error(message || "Failed to update event.");
+      }
+
+      setFormData(initialFormData);
+      alert("Event updated successfully.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update event.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function handleEventActiveChange(shouldActivate: boolean) {
+    if (!eventID || !eventDTO || isToggling) return;
+
+    setIsToggling(true);
+    setError("");
+
+    try {
+      const endpoint = shouldActivate ? "activate" : "deactivate";
+
+      const response = await apiFetch(
+        `${API_BASE}/events/${eventID}/${endpoint}`,
+        {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify(updatedEvent),
-        });
+        },
+      );
 
-        if (!response.ok) {
-          const message = await response.text();
-          throw new Error(message || "Failed to update event.");
-        }
-
-        setFormData(initialFormData);
-        alert("Event updated successfully.");
-      }catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to update event.");
-      } finally {
-          setIsSubmitting(false);
+      if (!response.ok) {
+        const msg = await response.text();
+        throw new Error(msg || `Failed to ${endpoint} event`);
       }
-}
+
+      setEventDTO((prev) =>
+        prev ? { ...prev, eventStatus: shouldActivate } : prev,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update status");
+    } finally {
+      setIsToggling(false);
+    }
+  }
 
   if (!eventID) {
     return <p>Missing event ID.</p>;
@@ -143,27 +156,42 @@ export default function EventUpdateForm({
 
       {error && <p className="form-error">{error}</p>}
 
-      <label>
-        Venue ID
+      <label className="event-active-toggle">
+        <span>{eventDTO.eventStatus ? "Active" : "Inactive"}</span>
+
+        <input
+          type="checkbox"
+          checked={Boolean(eventDTO.eventStatus)}
+          disabled={isToggling}
+          onChange={(e) => {
+            void handleEventActiveChange(e.currentTarget.checked);
+          }}
+        />
+
+        <strong className="event-active-slider" />
+      </label>
+
+      <label className="form-label">
+        <span>Venue ID</span>
         <input
           type="text"
           pattern=".*\S.*"
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
-              "Venue Name name cannot be empty or whitespace.",
+              "Venue name cannot be empty or whitespace.",
             )
           }
-          value={formData.venueID}
+          value={formData.venue || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
-            updateField("venueID", event.target.value);
+            updateField("venue", event.target.value);
           }}
-          placeholder={eventDTO.venueID}
+          placeholder={eventDTO.eventVenueID}
         />
       </label>
 
-      <label>
-        Event name
+      <label className="form-label">
+        <span>Event name</span>
         <input
           type="text"
           pattern=".*\S.*"
@@ -172,21 +200,21 @@ export default function EventUpdateForm({
               "Event name cannot be empty or whitespace.",
             )
           }
-          value={formData.name}
+          value={formData.name || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("name", event.target.value);
           }}
-          placeholder={eventDTO.name}
+          placeholder={eventDTO.eventName}
         />
       </label>
 
-      <label>
-        Start date
+      <label className="form-label">
+        <span>Start date</span>
         <input
           type="datetime-local"
-          required={formData.endDate.trim() !== ""}
-          value={formData.startDate}
+          required={formData.endDate?.trim() !== ""}
+          value={formData.startDate || ""}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
               "Please enter a valid start date and time.",
@@ -196,17 +224,17 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("startDate", event.target.value);
           }}
-          placeholder={eventDTO.startTime}
+          placeholder={eventDTO.eventStartTime}
         />
       </label>
 
-      <label>
-        End date
+      <label className="form-label">
+        <span>End date</span>
         <input
           type="datetime-local"
-          required={formData.startDate.trim() !== ""}
-          min={getMinimumEndDateTime(formData.startDate)}
-          value={formData.endDate}
+          required={formData.startDate?.trim() !== ""}
+          min={getMinimumEndDateTime(formData.startDate || "")}
+          value={formData.endDate || ""}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
               "Please enter a valid end date and time.\nMust be after now and start time.",
@@ -216,12 +244,12 @@ export default function EventUpdateForm({
             event.currentTarget.setCustomValidity("");
             updateField("endDate", event.target.value);
           }}
-          placeholder={eventDTO.endTime}
+          placeholder={eventDTO.eventEndTime}
         />
       </label>
 
-      <label>
-        Artist
+      <label className="form-label">
+        <span>Artist</span>
         <input
           type="text"
           pattern=".*\S.*"
@@ -230,17 +258,17 @@ export default function EventUpdateForm({
               "Artist name cannot be empty or whitespace.",
             )
           }
-          value={formData.artist}
+          value={formData.artist || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("artist", event.target.value);
           }}
-          placeholder={eventDTO.artist}
+          placeholder={eventDTO.eventArtist}
         />
       </label>
 
-      <label>
-        Category
+      <label className="form-label">
+        <span>Category</span>
         <input
           type="text"
           pattern=".*\S.*"
@@ -249,21 +277,16 @@ export default function EventUpdateForm({
               "Category cannot be empty or whitespace.",
             )
           }
-          value={formData.category}
+          value={formData.category || ""}
           onChange={(event) => {
             event.currentTarget.setCustomValidity("");
             updateField("category", event.target.value);
           }}
-          placeholder={eventDTO.category}
+          placeholder={eventDTO.eventCategory}
         />
       </label>
 
       <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
         <button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Updating..." : "Update event"}
         </button>

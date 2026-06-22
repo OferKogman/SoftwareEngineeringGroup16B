@@ -3,18 +3,63 @@ package com.group16b.DomainLayer.Order;
 import java.util.ArrayList;
 import java.util.List;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+@Entity
+@Table(name = "orders")
 public class Order {
-	private final String orderId;
-	private OrderState state;
-	private final String segmentId;
-	private List<String> seats; // seat Ids
-	private int numOfTickets;
-	private final OrderType orderType;
-	private static int idCounter = 0;
-	private  double totalOrderprice;
-	private final int eventId;
-	private final String subjectID;
-	private long version;
+ 
+    @Id
+    private final String orderId;
+ 
+    @Convert(converter = OrderStateConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private OrderState state;
+ 
+    @Column(nullable = false)
+    private final String segmentId;
+ 
+    @ElementCollection
+    @CollectionTable(name = "order_seats", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "seat_id")
+    private List<String> seats;
+ 
+    @Column(nullable = false)
+    private int numOfTickets;
+ 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private final OrderType orderType;
+ 
+    private static int idCounter = 0;
+ 
+    @Column(nullable = false)
+    private double totalOrderprice;
+ 
+    @Column(nullable = false)
+    private final int eventId;
+ 
+    @Column(nullable = false)
+    private final String subjectID;
+ 
+    @Version
+    private long version;
+ 
+    @Column(name = "transaction_id")
+    private Integer transactioId = null;
+ 
+    @Column(name = "external_ticket")
+    private String externalTicket = null;
 
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
@@ -53,7 +98,17 @@ public class Order {
 		this.eventId = other.eventId;
 		this.subjectID = other.subjectID;
 		this.version = other.version;
+		this.transactioId=other.transactioId;
+		this.externalTicket=other.externalTicket;
 		
+	}
+
+	public Order(){ //default constructor for JPA
+        this.orderId = null;
+        this.segmentId = null;
+        this.orderType = null;
+        this.eventId = 0;
+        this.subjectID = null;
 	}
 	
 
@@ -92,6 +147,26 @@ public class Order {
 		return orderType;
 	}
 
+	public Integer getTransactionId()
+	{
+		return transactioId;
+	}
+
+	public String getExternalTicket()
+	{
+		return externalTicket;
+	}
+
+	public void setTransactionId(int transactionId)
+	{
+		this.transactioId=transactionId;
+	}
+
+	public void setExternalTicket(String ticket)
+	{
+		this.externalTicket=ticket;
+	}
+
 	public void verifyTypeSeats(){
 		if (orderType != OrderType.SEAT) {
 			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
@@ -106,6 +181,9 @@ public class Order {
 	public boolean CompleteOrder() {
 		this.state = state.completeOrder();
 		return true;
+	}
+	public void CancelOrder() {
+		this.state = new CanceledOrder();
 	}
 
 	public double getTotalOrderprice() {

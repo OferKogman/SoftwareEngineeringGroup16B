@@ -1,41 +1,44 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
+import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import "./CSS/SearchEvents.css";
 import ViewEventsList from "./ViewEventsList";
 
 type SearchEventsFilters = {
-  names?: string[];
-  artists?: string[];
-  categories?: string[];
-  keywords?: string[];
+  name?: string[];
+  artist?: string[];
+  category?: string[];
+  keyword?: string[];
 
   minPrice?: [number];
   maxPrice?: [number];
 
-  startDate?: [string];
-  endDate?: [string];
+  startTime?: [string];
+  endTime?: [string];
 
-  minRating?: [number];
+  eventRating?: [number];
 
   productionCompany?: [string];
 
-  locations?: string[];
+  location?: string[];
 
-  productionCompaniesRating?: [number];
+  productionCompanyRating?: [number];
 };
 
 export default function SearchEvents() {
   const [filters, setFilters] = useState<SearchEventsFilters>({
-    names: [],
-    artists: [],
-    categories: [],
-    keywords: [],
-    locations: [],
+    name: [],
+    artist: [],
+    category: [],
+    keyword: [],
+    location: [],
   });
 
   const [events, setEvents] = useState<EventDTO[] | null>(null);
   const [error, setError] = useState("");
+
+  const apiFetch = useApiFetch();
 
   function updateField<K extends keyof SearchEventsFilters>(
     field: K,
@@ -53,15 +56,21 @@ export default function SearchEvents() {
 
       const filteredData = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => {
-          if (value === undefined || value === null) return false;
-          if (Array.isArray(value) && value.length === 0) return false;
+          if (value === undefined || value === null) {
+            return false;
+          }
+
+          if (Array.isArray(value) && value.length === 0) {
+            return false;
+          }
+
           return true;
         }),
       );
 
       console.log(filteredData);
 
-      const response = await fetch("http://localhost:8080/events/search", {
+      const response = await apiFetch("http://localhost:8080/events/search", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -89,11 +98,11 @@ export default function SearchEvents() {
           <div>Names</div>
           <input
             type="text"
-            value={filters.names?.join(", ") ?? ""}
+            value={filters.name?.join(", ") ?? ""}
             placeholder="Names (comma separated)"
             onChange={(e) =>
               updateField(
-                "names",
+                "name",
                 e.target.value
                   .split(",")
                   .map((s) => s.trim())
@@ -107,11 +116,11 @@ export default function SearchEvents() {
           <div>Artists</div>
           <input
             type="text"
-            value={filters.artists?.join(", ") ?? ""}
+            value={filters.artist?.join(", ") ?? ""}
             placeholder="Artists (comma separated)"
             onChange={(e) =>
               updateField(
-                "artists",
+                "artist",
                 e.target.value
                   .split(",")
                   .map((s) => s.trim())
@@ -125,11 +134,11 @@ export default function SearchEvents() {
           <div>Categories</div>
           <input
             type="text"
-            value={filters.categories?.join(", ") ?? ""}
+            value={filters.category?.join(", ") ?? ""}
             placeholder="Categories (comma separated)"
             onChange={(e) =>
               updateField(
-                "categories",
+                "category",
                 e.target.value
                   .split(",")
                   .map((s) => s.trim())
@@ -143,11 +152,11 @@ export default function SearchEvents() {
           <div>Keywords</div>
           <input
             type="text"
-            value={filters.keywords?.join(", ") ?? ""}
+            value={filters.keyword?.join(", ") ?? ""}
             placeholder="Keywords (comma separated)"
             onChange={(e) =>
               updateField(
-                "keywords",
+                "keyword",
                 e.target.value
                   .split(",")
                   .map((s) => s.trim())
@@ -191,10 +200,10 @@ export default function SearchEvents() {
           <div>Start Date</div>
           <input
             type="datetime-local"
-            value={filters.startDate?.[0] ?? ""}
+            value={filters.startTime?.[0] ?? ""}
             onChange={(e) =>
               updateField(
-                "startDate",
+                "startTime",
                 e.target.value === "" ? undefined : [e.target.value],
               )
             }
@@ -205,10 +214,10 @@ export default function SearchEvents() {
           <div>End Date</div>
           <input
             type="datetime-local"
-            value={filters.endDate?.[0] ?? ""}
+            value={filters.endTime?.[0] ?? ""}
             onChange={(e) =>
               updateField(
-                "endDate",
+                "endTime",
                 e.target.value === "" ? undefined : [e.target.value],
               )
             }
@@ -219,11 +228,11 @@ export default function SearchEvents() {
           <div>Minimum Rating</div>
           <input
             type="number"
-            value={filters.minRating?.[0] ?? ""}
+            value={filters.eventRating?.[0] ?? ""}
             placeholder="Minimum rating"
             onChange={(e) =>
               updateField(
-                "minRating",
+                "eventRating",
                 e.target.value === "" ? undefined : [Number(e.target.value)],
               )
             }
@@ -249,11 +258,11 @@ export default function SearchEvents() {
           <div>Locations</div>
           <input
             type="text"
-            value={filters.locations?.join(", ") ?? ""}
+            value={filters.location?.join(", ") ?? ""}
             placeholder="Locations (comma separated)"
             onChange={(e) =>
               updateField(
-                "locations",
+                "location",
                 e.target.value
                   .split(",")
                   .map((s) => s.trim())
@@ -267,11 +276,11 @@ export default function SearchEvents() {
           <div>Production Company Rating</div>
           <input
             type="number"
-            value={filters.productionCompaniesRating?.[0] ?? ""}
+            value={filters.productionCompanyRating?.[0] ?? ""}
             placeholder="Production Company Rating"
             onChange={(e) =>
               updateField(
-                "productionCompaniesRating",
+                "productionCompanyRating",
                 e.target.value === "" ? undefined : [Number(e.target.value)],
               )
             }

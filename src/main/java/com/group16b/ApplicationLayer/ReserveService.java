@@ -1,10 +1,12 @@
 package com.group16b.ApplicationLayer;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
@@ -15,11 +17,16 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
-import com.group16b.DomainLayer.Venue.Segment;
+import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.InfrastructureLayer.RequestContext;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 import io.jsonwebtoken.JwtException;
 
@@ -33,372 +40,370 @@ public class ReserveService {
     private final IEventRepository eventRepository;
     private final IProductionCompanyRepository productionCompanyRepo;
     private final IAuthenticationService authenticationService;
+    private final IRepository<User> userRepo;
 
-    public ReserveService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp, IRepository<Venue> venueRepo, IEventRepository eventRepository, IRepository<Order> orderRepo) {
+    public ReserveService(IAuthenticationService authenticationService,
+            IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp,
+            IRepository<Venue> venueRepo, IEventRepository eventRepository, IRepository<Order> orderRepo,
+            IRepository<User> userRepo) {
         this.authenticationService = authenticationService;
-        this.productionCompanyRepo=productionCompanyRepo;
+        this.productionCompanyRepo = productionCompanyRepo;
         this.venueRepo = venueRepo;
         this.queueImp = queueImp;
         this.eventRepository = eventRepository;
         this.orderRepo = orderRepo;
+        this.userRepo = userRepo;
     }
 
-    public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId, String sessionToken) {
+    public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId,
+            String sessionToken) {
+        return this.reserveSeatsWithLottery(segmentId, seatIds, eventID, venueId, "", sessionToken);
+    }
+
+    public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId,
+            String sessionToken) {
+        return this.reserveFieldSeatsWithLottery(segmentId, amount, eventID, venueId, "", sessionToken);
+    }
+
+    public Result<String> reserveSeatsWithLottery(String segmentId, List<String> seatIds, int eventID, String venueId,
+            String lotteryCode, String sessionToken) {
         VirtualQueue q = null;
         String subjectID = null;
+        Venue venue = null;
+        boolean seatsReserved = false;
+        Event event = null;
+        boolean lotteryCodeUsed = false;
         try {
-            logger.info("ReserveService.reserveSeats: Verifying session token for reservation.");
-			subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+            logger.info(
+                    "ApplicationLayer.ReserveService.reserveSeats: Starting seat reservation process for eventID {} and user session {}",
+                    eventID, sessionToken);
+            if (seatIds == null || seatIds.isEmpty() || segmentId == null || segmentId.isEmpty() || venueId == null
+                    || venueId.isEmpty()) {
+                logger.warn(
+                        "ApplicationLayer.ReserveService.reserveSeats: Invalid input parameters for seat reservation. segmentId: {}, seatIds: {}, venueId: {}",
+                        segmentId, seatIds, venueId);
+                return Result.makeFail("Invalid input parameters for seat reservation");
+            }
 
-			logger.info("ReserveService.reserveSeats: Session token verified successfully.");
-            logger.info("ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
-            
+            logger.info("ReserveService.reserveSeats: Verifying session token for reservation.");
+            subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+
             logger.info("Checking event is active");
-            Event event = eventRepository.findByID(String.valueOf(eventID));
+            event = eventRepository.findByID(String.valueOf(eventID));
             event.validateEventIsActive();
 
-            //2. System - validates the event does NOT have a lottery policy.
+            // 2. System - validates the event does NOT have a lottery policy.
 
             logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            event.verifyDoesNotHaveLotteryPolicy();
-
+            validateLottery(event, lotteryCode);
 
             logger.info("ReserveService.reserveSeats: Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.save(q);
             logger.info("ReserveService.reserveSeats: Checking if user passed queue");
 
             q.validateUserPassedQueue(subjectID);
 
-            logger.info("ReserveService.reserveSeats: {} is passed the queue");
-            //3. System - validates selected seats exist.
-            //4. System - validates selected seats are available.
-            //5. System - removes selected seats from stock.
-            Venue venue = venueRepo.findByID(venueId);
-            venue.reserveTickets(segmentId, seatIds, eventID);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for {}", subjectID);
+            logger.info("ReserveService.reserveSeats: {} is passed the queue", subjectID);
+            // 3. System - validates selected seats exist.
+            // 4. System - validates selected seats are available.
+            // 5. System - removes selected seats from stock.
+            venue = venueRepo.findByID(venueId);
 
-            Segment segment = venue.getSegmentByID(segmentId);
-            double pricePerSeat = segment.getPrice(eventID);
-            
+            validatePurchasePolicy(eventID, seatIds.size(), sessionToken);
 
-            validatePurchasePolicy(eventID);
+            double pricePerSeat = venue.getPriceForSegment(segmentId, eventID); // validate segment exists and is valid
+                                                                                // for the event before reserving seats
 
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
+            logger.info("@DEBUG: pricePerSeat: {}, priceAfterDiscountPolicy: {}", pricePerSeat,
+                    priceAfterDiscountPolicy);
 
-            //6. System - creates an active order for the user with the selected tickets.
+            logger.info(
+                    "ReserveService.reserveSeats: Attempting to reserve seats {} in segment {} for event {} for user {}",
+                    seatIds, segmentId, eventID, subjectID);
+            venue.reserveTickets(segmentId, seatIds, eventID);
+            seatsReserved = true;
+            venueRepo.save(venue);
+
+            // 6. System - creates an active order for the user with the selected tickets.
+            useLotteryCodeIfNeeded(event, lotteryCode);
+            lotteryCodeUsed = hasLotteryCode(lotteryCode);
             Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
             orderRepo.save(order);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
-            q.removePassed(subjectID);
+
+            logger.info(
+                    "ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}",
+                    order.getOrderId(), subjectID);
+            queueRemovePassed(q, subjectID);
             return Result.makeOk("new OrderId: " + order.getOrderId());
-        }
-        catch (IllegalArgumentException e) {
-            logger.error("ApplicationLayer.ReserveService.reserveSeats: Failed to reserve seats for user: {}", e.getMessage());
-            if (q != null && subjectID != null) {
-                q.removePassed(subjectID);
+        } catch (IllegalArgumentException e) {
+            logger.error("ApplicationLayer.ReserveService.reserveSeats: Failed to reserve seats for user: {}",
+                    e.getMessage());
+            queueRemovePassed(q, subjectID);
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
             }
-            return Result.makeFail(e.getMessage());
-        }
-        catch (JwtException e) {
-			logger.error("ReserveService.reserveSeats: JWT authentication error during event creation: " + e.getMessage());
+            return Result.makeFail("Illegal argument: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error(
+                    "ReserveService.reserveSeats: JWT authentication error during event creation: " + e.getMessage());
             queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
         } catch (AuthException e) {
-			logger.error("ReserveService.reserveSeats: Authentication error during retrieving orders: " + e.getMessage());
+            logger.error(
+                    "ReserveService.reserveSeats: Authentication error during retrieving orders: " + e.getMessage());
             queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (IllegalStateException e) { 
-			logger.error("ReserveService.reserveSeats: Illegal state encountered for order {} for user {}: {}", eventID, subjectID, e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (OptimisticLockingFailureException e) {
+            logger.error("ReserveService.reserveSeats: Concurrent modification detected for order {} for user {}: {}",
+                    eventID, subjectID, e.getMessage());
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
             queueRemovePassed(q, subjectID);
-			return Result.makeFail(e.getMessage());
-		}catch (Exception e) {
-            logger.error("ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Optimistic locking failure: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("ReserveService.reserveSeats: Illegal state encountered for order {} for user {}: {}", eventID,
+                    subjectID, e.getMessage());
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
             queueRemovePassed(q, subjectID);
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Illegal state encountered: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error(
+                    "ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}",
+                    e.getMessage());
+            queueRemovePassed(q, subjectID);
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
-    
-    public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId, String sessionToken) {
+
+    public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId,
+            String lotteryCode, String sessionToken) {
         String subjectID = null;
         VirtualQueue q = null;
+        Venue venue = null;
+        boolean seatsReserved = false;
+        Event event = null;
+        boolean lotteryCodeUsed = false;
         try {
+            logger.info(
+                    "ReserveService.reserveFieldSeats: Starting field seat reservation process for eventID {} and user session {}",
+                    eventID, sessionToken);
+            if (amount <= 0 || segmentId == null || segmentId.isEmpty() || venueId == null || venueId.isEmpty()) {
+                logger.warn(
+                        "ReserveService.reserveFieldSeats: Invalid input parameters for field seat reservation. segmentId: {}, amount: {}, venueId: {}",
+                        segmentId, amount, venueId);
+                return Result.makeFail("Invalid input parameters for field reservation");
+            }
             logger.info("ReserveService.reserveFieldSeats: Verifying session token for reservation.");
-			
-			subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
-			logger.info("ReserveService.reserveFieldSeats: Session token verified successfully.");
+            subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
 
-            logger.info("ReserveService.reserveFieldSeats: Attempting to reserve seats for {}", subjectID);
-            
             logger.info("ReserveService.reserveFieldSeats: Checking event is active");
-            Event event = eventRepository.findByID(String.valueOf(eventID));
+            event = eventRepository.findByID(String.valueOf(eventID));
             event.validateEventIsActive();
 
-            //2. System - validates the event does NOT have a lottery policy.
             logger.info("ReserveService.reserveFieldSeats: Validating lottery for {}", subjectID);
-            event.verifyDoesNotHaveLotteryPolicy();
-            //1. System - Checks user passed the queue.
+            validateLottery(event, lotteryCode);
+
             logger.info("ReserveService.reserveFieldSeats: Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.save(q);
             logger.info("ReserveService.reserveFieldSeats: Checking if user passed queue");
             q.validateUserPassedQueue(subjectID);
             logger.info("ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
 
-            
-            //3. System - validates selected seats exist.
-            //4. System - validates selected seats are available.
-            //5. System - removes selected seats from stock.
-            Venue venue = venueRepo.findByID(venueId);
-            venue.reserveTickets(segmentId, amount, eventID);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
+            validatePurchasePolicy(eventID, amount, sessionToken);
 
-            // 5.5 calculate price of the order
-            
-            validatePurchasePolicy(eventID);
+            venue = venueRepo.findByID(venueId);
 
-            Segment segment = venue.getSegmentByID(segmentId);
-            double pricePerSeat = segment.getPrice(eventID);
+            double pricePerSeat = venue.getPriceForSegment(segmentId, eventID);
             double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, amount);
 
+            venue.reserveTickets(segmentId, amount, eventID);
+            seatsReserved = true;
+            venueRepo.save(venue);
+            logger.info("ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
 
-            //6. System - creates an active order for the user with the selected tickets.
+            // 6. System - creates an active order for the user with the selected tickets.
+            useLotteryCodeIfNeeded(event, lotteryCode);
+            lotteryCodeUsed = hasLotteryCode(lotteryCode);
+
             Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
             orderRepo.save(order);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
-            q.removePassed(subjectID);
+            logger.info("ReserveService.reserveFieldSeats: Active order {} created successfully for {}",
+                    order.getOrderId(), subjectID);
+
+            queueRemovePassed(q, subjectID);
+
             return Result.makeOk("new OrderId: " + order.getOrderId());
-        }
-        catch (IllegalArgumentException e) {
-            logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: Failed to reserve seats for user: {}", e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.error("ReserveService.reserveFieldSeats: Failed to reserve seats for user: {}", e.getMessage());
             queueRemovePassed(q, subjectID);
-            return Result.makeFail(e.getMessage());
-        }
-        catch (JwtException e) {
-			logger.error("ReserveService.reserveSeats: JWT authentication error during event creation: " + e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-        } catch (AuthException e) {
-			logger.error("ReserveService.reserveSeats: Authentication error during retrieving orders: " + e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (IllegalStateException e) { 
-			logger.error("ReserveService.reserveSeats: Illegal state encountered for order {} for user {}: {}", eventID, subjectID, e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail(e.getMessage());
-		}catch (Exception e) {
-            logger.error("ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-		}
-    }
-    
-    public Result<String> reserveSeatsWithLottery(String segmentId, List<String> seatIds, int eventID, String venueId, String lotteryCode, String sessionToken) {
-        // 0. log everything
-        String subjectID = null;
-        VirtualQueue q = null;
-        try {
-            logger.info("Verifying session token for reservation.");
-			
-			subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
-			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
-
-            
-            Event event = eventRepository.findByID(String.valueOf(eventID));
-            logger.info("Checking event is active");
-
-            event.validateEventIsActive();
-            
-            
-            //2. System - validates the event does NOT have a lottery policy.
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            event.validateLotteryCode(lotteryCode);
-            
-
-
-            logger.info("Moving queue forward");
-            q = queueImp.findByID(Integer.toString(eventID));
-            q.addToQueue(subjectID);
-            queueImp.save(q);
-            logger.info("check if user passed queue");
-            q.validateUserPassedQueue(subjectID);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: {} is passed the queue");
-
-
-            //3. System - validates selected seats exist.
-            //4. System - validates selected seats are available.
-            //5. System - removes selected seats from stock.
-            Venue venue = venueRepo.findByID(venueId);
-            venue.reserveTickets(segmentId, seatIds, eventID);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Seats reserved seccessfully for {}", subjectID);
-
-            // 5.5 calculate price of the order
-            Segment segment = venue.getSegmentByID(segmentId);
-            double pricePerSeat = segment.getPrice(eventID);
-
-            validatePurchasePolicy(eventID);
-
-            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
-
-
-            //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
-            orderRepo.save(order);
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}", order.getOrderId(), subjectID);
-            q.removePassed(subjectID);
-            event.lotteryUseCode(lotteryCode);
-            return Result.makeOk("new OrderId: " + order.getOrderId());
-        }
-        catch (JwtException e) {
-			logger.error("ReserveService.reserveSeats: JWT authentication error during event creation: " + e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-        } catch (AuthException e) {
-			logger.error("ReserveService.reserveSeats: Authentication error during retrieving orders: " + e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (IllegalStateException e) { 
-			logger.error("ReserveService.reserveSeats: Illegal state encountered for order {} for user {}: {}", eventID, subjectID, e.getMessage());
-            queueRemovePassed(q, subjectID);
-			return Result.makeFail(e.getMessage());
-		}catch (Exception e) {
-            logger.error("ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
-            queueRemovePassed(q, subjectID);
-            Event event = eventRepository.findByID(String.valueOf(eventID));
-            event.renewLotteryCode(lotteryCode);
-            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
-        }
-    }
-
-    public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId, String lotteryCode, String sessionToken) {
-           // 0. log everything
-            String subjectID = null;
-            VirtualQueue q = null;
-        try {
-            logger.info("Verifying session token for reservation.");
-			
-			subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
-			logger.info("Session token verified successfully.");
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Attempting to reserve seats for {}", subjectID);
-            
-            logger.info("Checking event is active");
-            Event event = eventRepository.findByID(String.valueOf(eventID));
-            if (event == null) {
-                logger.error("Event with ID {} not found", eventID);
-                return Result.makeFail("Event not found");
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
             }
-            event.validateEventIsActive();
-
-            Segment segment = venueRepo.findByID(venueId).getSegmentByID(segmentId);      
-
-            //2. System - validates the event does NOT have a lottery policy.
-            logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
-            event.validateLotteryCode(lotteryCode);
-
-            //1. System - Checks user passed the queue.
-            logger.info("Moving queue forward");
-            q = queueImp.findByID(Integer.toString(eventID));
-            q.addToQueue(subjectID);
-            queueImp.save(q);
-            logger.info("check if user passed queue");
-            q.validateUserPassedQueue(subjectID);
-
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
-            Venue venue = venueRepo.findByID(venueId);
-            venue.reserveTickets(segmentId, amount, eventID);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
-
-            double pricePerSeat = segment.getPrice(eventID);
-
-            validatePurchasePolicy(eventID);
-
-            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, amount);
-
-            //6. System - creates an active order for the user with the selected tickets.
-            Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
-            orderRepo.save(order);
-            logger.info("ApplicationLayer.ReserveService.reserveFieldSeats: Active order {} created successfully for {}", order.getOrderId(), subjectID);
-            q.removePassed(subjectID);
-            event.lotteryUseCode(lotteryCode);
-            return Result.makeOk("new OrderId: " + order.getOrderId());
-        }
-        catch (JwtException e) {
-			logger.error("ReserveService.reserveSeats: JWT authentication error during event creation: " + e.getMessage());
+            return Result.makeFail("Illegal argument: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error("ReserveService.reserveFieldSeats: JWT authentication error during event creation: "
+                    + e.getMessage());
             queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
         } catch (AuthException e) {
-			logger.error("ReserveService.reserveSeats: Authentication error during retrieving orders: " + e.getMessage());
+            logger.error("ReserveService.reserveFieldSeats: Authentication error during retrieving orders: "
+                    + e.getMessage());
             queueRemovePassed(q, subjectID);
-			return Result.makeFail("Authentication failed: " + e.getMessage());
-		} catch (IllegalStateException e) { 
-			logger.error("ReserveService.reserveSeats: Illegal state encountered for order {} for user {}: {}", eventID, subjectID, e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (OptimisticLockingFailureException e) {
+            logger.error(
+                    "ReserveService.reserveFieldSeats: Optimistic locking failure occurred while reserving seats for user: {}",
+                    e.getMessage());
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
             queueRemovePassed(q, subjectID);
-			return Result.makeFail(e.getMessage());
-		}catch (Exception e) {
-            logger.error("ApplicationLayer.ReserveService.reserveFieldSeats: An unexpected error occurred while reserving seats for user: {}", e.getMessage());
-            Event event = eventRepository.findByID(String.valueOf(eventID));
-            event.renewLotteryCode(lotteryCode);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Optimistic locking failure: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("ReserveService.reserveFieldSeats: Illegal state encountered for order {} for user {}: {}",
+                    eventID, subjectID, e.getMessage());
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
             queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Illegal state encountered: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error(
+                    "ReserveService.reserveFieldSeats: An unexpected error occurred while reserving seats for user: {}",
+                    e.getMessage());
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
+            queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 
+    public Result<Integer> getPositionInQueueForEvent(int eventID) {
+        try {
+            String subjectID = validateUserOrGuestAndGetSubjectId();
+            VirtualQueue queue = queueImp.findByID(String.valueOf(eventID));
+
+            int status = queue.getQueueStatus(subjectID);
+
+            queueImp.save(queue);
+
+            logger.info("ReserveService.getPositionInQueueForEvent: placement in queue is: " + status);
+
+            return Result.makeOk(status);
+
+        } catch (AuthException e) {
+            logger.warn("ReserveService.getPositionInQueueForEvent: AuthException: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warn("ReserveService.getPositionInQueueForEvent: IllegalArgumentException: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("ReserveService.getPositionInQueueForEvent: an unexpected error occured: ", e);
+            return Result.makeFail("An unexpected error has occured, pls try again later.");
+        }
+    }
 
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
         Event event = eventRepository.findByID(String.valueOf(eventID));
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> allPolicies = new HashSet<>();
 
-            if (discountPolicy == null) {
-                logger.error("No discount policy found for event {}", eventID);
-                throw new IllegalArgumentException("No discount policy found for this event");
-            }
-            if (companyDiscountPolicy == null) {
-                logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
-                throw new IllegalArgumentException("No discount policy found for this event's production company");}
-            discountPolicy.addAll(companyDiscountPolicy);
+        if (discountPolicy != null) {
+            allPolicies.addAll(discountPolicy);
+        } else {
+            logger.error("No discount policy found for event {}", eventID);
+        }
+        if (companyDiscountPolicy != null) {
+            allPolicies.addAll(companyDiscountPolicy);
+        } else {
+            logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+        }
 
-            double priceAfterDiscountPolicy = pricePerSeat * amount;
-            for (DiscountPolicy dp : discountPolicy) {
-                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
-            }
-            return priceAfterDiscountPolicy;
+        double priceAfterDiscountPolicy = pricePerSeat * amount;
+
+        for (DiscountPolicy dp : allPolicies) {
+            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+        }
+        return priceAfterDiscountPolicy;
     }
-    private void validatePurchasePolicy(int eventID) {
+
+    private void validatePurchasePolicy(int eventID, int ticketsAmount, String sessionToken) {
+
+        int userAge = 0;
+        if (authenticationService.isUserToken(sessionToken)) {
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            User user = userRepo.findByID(userID);
+            // userAge = user.getAge(); TODO: add age to user and uncomment?
+        }
+
+        Set<PurchasePolicy> allPolicies = new HashSet<>();
+
         Event event = eventRepository.findByID(String.valueOf(eventID));
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
-        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
+        if (purchasePolicy != null) {
+            allPolicies.addAll(purchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for event {}", eventID);
+        }
 
-            if (purchasePolicy == null) {
-                logger.error("No purchase policy found for event {}", eventID);
-                throw new IllegalArgumentException("No purchase policy found for this event");
-            }
-            if (companyPurchasePolicy == null) {
-                logger.error("No purchase policy found for production company {}", event.getEventProductionCompanyID());
-                throw new IllegalArgumentException("No purchase policy found for this event's production company");
-            }
+        if (companyPurchasePolicy != null) {
+            allPolicies.addAll(companyPurchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for production company {}", event.getEventProductionCompanyID());
+        }
 
-            purchasePolicy.addAll(companyPurchasePolicy);
-            for (PurchasePolicy pp : purchasePolicy) {
-                if (!pp.validatePurchase()) {
-                    logger.error("User did not meet purchase policy requirements");
-                    throw new IllegalArgumentException("User did not meet purchase policy requirements");
+        for (PurchasePolicy pp : allPolicies) {
+            try {
+                if (pp instanceof LotteryPolicy) {
+                    continue;
                 }
+                pp.validatePurchase(new PurchaseContext(userAge, ticketsAmount));
+            } catch (PurchasePolicyException e) {
+                logger.error("User did not meet purchase policy requirements");
+                throw new IllegalArgumentException("User did not meet purchase policy requirements");
             }
-    }
-
-    private void queueRemovePassed(VirtualQueue q, String subjectID) {
-        if (q != null && subjectID != null) {
-            q.removePassed(subjectID);
         }
     }
 
-    private String validateAssureNotAdminGetSubjectID(String sessionToken)
-    {
-        if (!authenticationService.validateToken(sessionToken)  ) {
+    private void queueRemovePassed(VirtualQueue q, String subjectID) {
+        if (q == null || subjectID == null) {
+            return;
+        }
+
+        try {
+            q.removePassed(subjectID);
+            queueImp.save(q);
+        } catch (RuntimeException e) {
+            logger.warn(
+                    "ReserveService.queueRemovePassed: Failed to remove user {} from passed queue: {}",
+                    subjectID,
+                    e.getMessage());
+        }
+    }
+    private String validateAssureNotAdminGetSubjectID(String sessionToken) {
+        if (!authenticationService.validateToken(sessionToken)) {
             throw new AuthException("Invalid Token");
         }
         if (authenticationService.isAdminToken(sessionToken)) {
@@ -407,5 +412,67 @@ public class ReserveService {
         String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
         return subjectID;
     }
-    
+
+    private void rollbackSeatReservationIfNeeded(Venue venue, boolean seatsReserved, String segmentId,
+            List<String> seatIds, int eventID) {
+        if (venue != null && seatsReserved) {
+            try {
+                venue.cancelSeatReservation(segmentId, seatIds, eventID);
+                venueRepo.save(venue);
+            } catch (Exception rollbackException) {
+                logger.error(
+                        "ReserveService.rollbackSeatReservationIfNeeded: Failed to rollback seat reservation for event {} segment {} seats {}: {}",
+                        eventID, segmentId, seatIds, rollbackException.getMessage());
+            }
+        }
+    }
+
+    private void rollbackFieldReservationIfNeeded(Venue venue, boolean seatsReserved, String segmentId, int amount,
+            int eventID) {
+        if (venue != null && seatsReserved) {
+            try {
+                venue.cancelFieldReservation(segmentId, amount, eventID);
+                venueRepo.save(venue);
+            } catch (Exception rollbackException) {
+                logger.error(
+                        "ReserveService.rollbackFieldReservationIfNeeded: Failed to rollback field reservation for event {} segment {} amount {}: {}",
+                        eventID, segmentId, amount, rollbackException.getMessage());
+            }
+        }
+    }
+
+    private boolean hasLotteryCode(String lotteryCode) {
+        return lotteryCode != null && !lotteryCode.isEmpty();
+    }
+
+    private void validateLottery(Event event, String lotteryCode) {
+        if (hasLotteryCode(lotteryCode)) {
+            event.validateLotteryCode(lotteryCode);
+        } else {
+            event.verifyDoesNotHaveLotteryPolicy();
+        }
+    }
+
+    private void useLotteryCodeIfNeeded(Event event, String lotteryCode) {
+        if (hasLotteryCode(lotteryCode)) {
+            event.lotteryUseCode(lotteryCode);
+            eventRepository.save(event);
+        }
+    }
+
+    private void renewLotteryCodeIfNeeded(Event event, String lotteryCode) {
+        if (event != null && hasLotteryCode(lotteryCode)) {
+            event.renewLotteryCode(lotteryCode);
+            eventRepository.save(event);
+        }
+    }
+
+    private String validateUserOrGuestAndGetSubjectId() {
+        // if we do implement error 403 then this if will also disapear, along with the
+        // function
+        if (!Role.SIGNED.equals(RequestContext.getRole()) && !Role.GUEST.equals(RequestContext.getRole()))
+            throw new AuthException("Only users and guests are allowed to perform this operation.");
+
+        return RequestContext.getUserId();
+    }
 }

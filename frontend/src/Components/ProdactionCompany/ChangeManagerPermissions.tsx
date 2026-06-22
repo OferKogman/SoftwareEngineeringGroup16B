@@ -1,17 +1,13 @@
 import { useState } from "react";
+import type { ManagerPermissions } from "../../DTOs/ProductionCompanyDTO";
 
 type ChangeManagerPermissionsProps = {
-  onSubmit: (targetID: string, companyID: number, newPermissions: Set<ManagerPermissions>) => void | Promise<void>;
-  onCancel?: () => void;
+  onSubmit: (
+    targetID: string,
+    companyID: number,
+    newPermissions: Set<ManagerPermissions>,
+  ) => void | Promise<void>;
 };
-
-export type ManagerPermissions =
-  | "EVENT_INVENTORY"
-  | "VENUE_CONFIGURATION"
-  | "PURCHASE_POLICY"
-  | "CUSTOMER_SUPPORT"
-  | "VIEW_PURCHASE_HISTORY"
-  | "SALES_REPORT";
 
 const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
   { value: "EVENT_INVENTORY", label: "Event Inventory" },
@@ -22,10 +18,14 @@ const MANAGER_PERMISSIONS: { value: ManagerPermissions; label: string }[] = [
   { value: "SALES_REPORT", label: "Sales Report" },
 ];
 
-export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeManagerPermissionsProps) {
+export default function ChangeManagerPermissions({
+  onSubmit,
+}: ChangeManagerPermissionsProps) {
   const [targetID, setTargetID] = useState("");
   const [companyID, setCompanyID] = useState("");
-  const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(new Set());
+  const [permissions, setPermissions] = useState<Set<ManagerPermissions>>(
+    new Set<ManagerPermissions>(),
+  );
   const [permissionsError, setPermissionsError] = useState("");
   const [submitError, setSubmitError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -33,7 +33,11 @@ export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeM
   function togglePermission(perm: ManagerPermissions) {
     setPermissions((prev) => {
       const next = new Set(prev);
-      next.has(perm) ? next.delete(perm) : next.add(perm);
+      if (next.has(perm)) {
+        next.delete(perm);
+      } else {
+        next.add(perm);
+      }
       return next;
     });
   }
@@ -53,9 +57,11 @@ export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeM
       await onSubmit(targetID, Number(companyID), permissions);
       setTargetID("");
       setCompanyID("");
-      setPermissions(new Set());
+      setPermissions(new Set<ManagerPermissions>());
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to update permissions.");
+      setSubmitError(
+        err instanceof Error ? err.message : "Failed to update permissions.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -68,31 +74,20 @@ export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeM
       {submitError && <p className="form-error">{submitError}</p>}
 
       <label>
-        Target ID
+        Target User
         <input
           type="text"
           required
           value={targetID}
           onChange={(e) => setTargetID(e.target.value)}
-          placeholder="Target ID"
-        />
-      </label>
-
-      <label>
-        Company ID
-        <input
-          type="number"
-          required
-          value={companyID}
-          onChange={(e) => setCompanyID(e.target.value)}
-          placeholder="Company ID"
+          placeholder="Target User"
         />
       </label>
 
       <fieldset>
         <legend>New Permissions</legend>
         {MANAGER_PERMISSIONS.map(({ value, label }) => (
-          <label key={value}>
+          <label className="perms" key={value}>
             <input
               type="checkbox"
               checked={permissions.has(value)}
@@ -104,16 +99,9 @@ export default function ChangeManagerPermissions({ onSubmit, onCancel }: ChangeM
       </fieldset>
       {permissionsError && <p className="form-error">{permissionsError}</p>}
 
-      <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Update Permissions"}
-        </button>
-      </div>
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Saving..." : "Update Permissions"}
+      </button>
     </form>
   );
 }

@@ -1,6 +1,7 @@
 package com.group16b.ApiLayer;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -59,6 +60,12 @@ public class ReserveController extends BaseController {
     ) {
         return executeWithReturnData(() -> reserveService.reserveFieldSeatsWithLottery(request.getSegmentId(), request.getAmount(), eventId, request.getVenueId(), request.getLotteryCode(), authToken));
     }  
+
+    @GetMapping("/status")
+    public ResponseEntity<?> getSubjectStatusInQueue(@PathVariable("eventId") int eventId)
+    {
+        return executeWithReturnData(()-> reserveService.getPositionInQueueForEvent(eventId));
+    }
 
 
     

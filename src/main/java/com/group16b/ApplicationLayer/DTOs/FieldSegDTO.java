@@ -5,31 +5,32 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.group16b.DomainLayer.Venue.FieldSeg;
 
-public class FieldSegDTO extends SegmentDTO{
+public class FieldSegDTO extends SegmentDTO {
 
     private final int size;
+    private final GridRectangleDTO area;
+    private final ConcurrentMap<Integer, Integer> stocks;
 
-	private ConcurrentMap<Integer, Integer> stocks;
-
-    public FieldSegDTO(FieldSeg fieldSeg){
+    public FieldSegDTO(FieldSeg fieldSeg) {
         super(fieldSeg);
+
         this.size = fieldSeg.getFieldSize();
 
-        stocks = new ConcurrentHashMap<>();
-
+        this.stocks = new ConcurrentHashMap<>();
         this.stocks.putAll(fieldSeg.getMap());
-    } 
-    
-    @Override
-    public String getSegmentType(){
-        return "F";
+
+        this.area = new GridRectangleDTO(fieldSeg.getArea());
     }
 
-    public int getSize(){
+    public GridRectangleDTO getArea() {
+        return area;
+    }
+
+    public int getSize() {
         return size;
     }
 
-    public ConcurrentMap<Integer, Integer> getStocks(){
+    public ConcurrentMap<Integer, Integer> getStocks() {
         return stocks;
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.DomainLayer.User.SessionToken;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
@@ -58,15 +59,15 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     }
 
     public String generateVisitor_GuestToken(SessionToken session) {
-        return createToken(session.getValue(), "Guest", userExpirationTime, userKey);
+        return createToken(session.getValue(), Role.GUEST, userExpirationTime, userKey);
     }
 
     public String generateVisitor_SignedToken(String userID) {
-        return createToken(userID, "Signed", userExpirationTime, userKey);
+        return createToken(userID, Role.SIGNED, userExpirationTime, userKey);
     }
 
     public String generateAdminToken(String adminID) {
-        return createToken(String.valueOf(adminID), "Admin", adminExpirationTime, adminKey);
+        return createToken(String.valueOf(adminID), Role.ADMIN, adminExpirationTime, adminKey);
     }
 
     @Override
@@ -92,7 +93,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isUserToken(String token) {
         try {
-            return this.extractRoleFromToken(token).equals("Signed");
+            return this.extractRoleFromToken(token).equals(Role.SIGNED);
         } catch (Exception e) {
             return false;
         }
@@ -101,7 +102,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isGuestToken(String token) {
         try {
-            return this.extractRoleFromToken(token).equals("Guest");
+            return this.extractRoleFromToken(token).equals(Role.GUEST);
         } catch (Exception e) {
             return false;
         }
@@ -110,7 +111,7 @@ public class AuthenticationServiceJWTImpl implements IAuthenticationService {
     @Override
     public boolean isAdminToken(String token) {
         try {
-            return this.extractRoleFromToken(token).equals("Admin");
+            return this.extractRoleFromToken(token).equals(Role.ADMIN);
         } catch (Exception e) {
             return false;
         }

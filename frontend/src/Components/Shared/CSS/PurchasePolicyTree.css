@@ -1,0 +1,35 @@
+.policy-node {
+  min-width: 140px;
+
+  padding: 10px 14px;
+
+  border-radius: 12px;
+
+  text-align: center;
+
+  font-weight: 600;
+}
+
+.and-node {
+  background: #6d2aa7;
+
+  color: white;
+
+  border: 2px solid #b07aff;
+}
+
+.or-node {
+  background: #2f5fb3;
+
+  color: white;
+
+  border: 2px solid #89b4ff;
+}
+
+.leaf-node {
+  background: #2d2d2d;
+
+  color: white;
+
+  border: 2px solid #666;
+}

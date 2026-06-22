@@ -1,119 +1,62 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import type { EventDTO } from "../DTOs/EventDTO";
+import { useApiFetch } from "../apiFetch";
+import PurchasePolicyTree from "./Shared/PurchasePolicyTree";
 
-type PolicyType = "AGE_LIMIT" | "TICKET_LIMIT";
-type TicketLimitType = "MAXIMUM" | "MINIMUM";
+export default function EditPurchasePolicy() {
+  const { eventID } = useParams();
 
-export type EditPurchasePolicyData =
-  | { policyType: "AGE_LIMIT"; age: number }
-  | { policyType: "TICKET_LIMIT"; limitType: TicketLimitType; limit: number };
+  const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
+  const [error, setError] = useState("");
 
-type EditPurchasePolicyProps = {
-  onSubmit: (data: EditPurchasePolicyData) => void | Promise<void>;
-  onCancel?: () => void;
-};
+  const apiFetch = useApiFetch();
 
-export default function EditPurchasePolicy({ onSubmit, onCancel }: EditPurchasePolicyProps) {
-  const [policyType, setPolicyType] = useState<PolicyType>("AGE_LIMIT");
-  const [age, setAge] = useState("");
-  const [limit, setLimit] = useState("");
-  const [limitType, setLimitType] = useState<TicketLimitType>("MAXIMUM");
-  const [submitError, setSubmitError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  useEffect(() => {
+    async function loadEvent() {
+      if (!eventID) {
+        setError("Missing event ID");
+        return;
+      }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitError("");
-    setIsSubmitting(true);
+      try {
+        const response = await apiFetch(
+          `http://localhost:8080/events/${eventID}`,
+          {
+            method: "GET",
+          },
+        );
 
-    try {
-      const payload: EditPurchasePolicyData =
-        policyType === "AGE_LIMIT"
-          ? { policyType: "AGE_LIMIT", age: Number(age) }
-          : { policyType: "TICKET_LIMIT", limitType, limit: Number(limit) };
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
 
-      await onSubmit(payload);
-      setAge("");
-      setLimit("");
-    } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : "Failed to update purchase policy.");
-    } finally {
-      setIsSubmitting(false);
+        const data: EventDTO = await response.json();
+
+        setEventDTO(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load event");
+      }
     }
+
+    void loadEvent();
+  }, [eventID, apiFetch]);
+
+  if (error) {
+    return <p>{error}</p>;
   }
 
-  const isAgeLimit = policyType === "AGE_LIMIT";
+  if (!eventDTO) {
+    return <p>Loading...</p>;
+  }
 
   return (
-    <form className="event-creation-form" onSubmit={handleSubmit}>
+    <main>
       <h2>Edit Purchase Policy</h2>
 
-      {submitError && <p className="form-error">{submitError}</p>}
+      <PurchasePolicyTree policy={eventDTO.eventPurchasePolicy} />
 
-      <label>
-        Policy Type
-        <select
-          value={policyType}
-          onChange={(e) => {
-            setPolicyType(e.target.value as PolicyType);
-            setSubmitError("");
-          }}
-        >
-          <option value="AGE_LIMIT">Age Limit</option>
-          <option value="TICKET_LIMIT">Ticket Limit</option>
-        </select>
-      </label>
-
-      {isAgeLimit && (
-        <label>
-          Minimum Age
-          <input
-            type="number"
-            required
-            min="0"
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            placeholder="Minimum Age"
-          />
-        </label>
-      )}
-
-      {!isAgeLimit && (
-        <>
-          <label>
-            Limit Type
-            <select
-              value={limitType}
-              onChange={(e) => setLimitType(e.target.value as TicketLimitType)}
-            >
-              <option value="MAXIMUM">Maximum</option>
-              <option value="MINIMUM">Minimum</option>
-            </select>
-          </label>
-
-          <label>
-            Ticket Limit
-            <input
-              type="number"
-              required
-              min="0"
-              value={limit}
-              onChange={(e) => setLimit(e.target.value)}
-              placeholder="Ticket Limit"
-            />
-          </label>
-        </>
-      )}
-
-      <div className="form-actions">
-        {onCancel && (
-          <button type="button" onClick={onCancel} disabled={isSubmitting}>
-            Cancel
-          </button>
-        )}
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Update Policy"}
-        </button>
-      </div>
-    </form>
+      {/* your edit controls here */}
+    </main>
   );
 }

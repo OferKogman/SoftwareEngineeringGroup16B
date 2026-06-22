@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.User.SessionToken;
@@ -47,7 +49,7 @@ public class UserLoginServiceTests {
 
     @Test
     void createGuestSession_Success_ReturnsOkResult() {
-        Result<String> result = userLoginService.createGuestSession();
+        Result<String> result = userLoginService.ensureGuestSession(null);
 
         assertTrue(result.isSuccess());
         assertNotNull(result.getValue());
@@ -58,10 +60,35 @@ public class UserLoginServiceTests {
     void createGuestSession_ServiceThrowsException_ReturnsFailResult() {
         UserLoginService brokenService = new UserLoginService(realUserRepository, null);
         
-        Result<String> result = brokenService.createGuestSession();
+        Result<String> result = brokenService.ensureGuestSession(null);
 
         assertFalse(result.isSuccess());
         assertTrue(result.getError().contains("An unexpected error occurred")); 
+    }
+
+    @Test
+    void givenValidMemberToken_whenEnsureGuestSession_returnSameToken()
+    {
+        Result<String> result= userLoginService.ensureGuestSession(validToken);
+        assertTrue(result.isSuccess());
+        assertEquals(validToken, result.getValue());
+    }
+
+    //technicly redundent with current impl, but technicly its accaptance tests and thats another flow
+    @Test
+    void givenValidGuestToken_whenEnsureGuestSession_returnSameToken()
+    {
+        Result<String> result= userLoginService.ensureGuestSession(guestToken);
+        assertTrue(result.isSuccess());
+        assertEquals(guestToken, result.getValue());
+    }
+    
+    @Test
+    void givenInvalidToken_whenEnsureGuestSession_returnSameToken()
+    {
+        Result<String> result= userLoginService.ensureGuestSession("FORTNITE ILI PUBG?");
+        assertTrue(result.isSuccess());
+        assertTrue(realTokenService.isGuestToken(result.getValue()));
     }
 
     @Test
@@ -142,8 +169,8 @@ public class UserLoginServiceTests {
 
         Result<String> result = userLoginService.logOutMember(validToken);
 
-        assertFalse(result.isSuccess());
-        assertTrue(result.getError().contains("Failed to log out"));
+        assertTrue(result.isSuccess());
+        assertTrue(realTokenService.isGuestToken(result.getValue()));
     }
 
     @Test
