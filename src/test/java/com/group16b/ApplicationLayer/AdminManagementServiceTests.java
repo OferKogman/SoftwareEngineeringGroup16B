@@ -66,6 +66,10 @@ public class AdminManagementServiceTests {
     private Segment segment1;
     private Venue venue1;
     private Event e1;
+    private Order activeOrder;
+    private Order completedOrder;
+    private Order canceledOrder;
+    private Order unrelatedCompletedOrder;
     private User user;
     private String sessionToken;
     private String adminToken;
@@ -105,10 +109,20 @@ public class AdminManagementServiceTests {
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
 
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5),
-                user.getEmail());
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), user.getEmail());
+        
+        activeOrder=new Order("segment1", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
+        completedOrder=new Order("segment2", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
+        completedOrder.CompleteOrder();
+        canceledOrder=new Order("segment3", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
+        canceledOrder.CancelOrder();
+        unrelatedCompletedOrder=new Order("segment2", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
+        unrelatedCompletedOrder.CompleteOrder();
+        orderRepository.save(activeOrder);
+        orderRepository.save(completedOrder);
+        orderRepository.save(canceledOrder);
+        orderRepository.save(unrelatedCompletedOrder);
     }
 
     // Helper method to keep reflection injection clean
