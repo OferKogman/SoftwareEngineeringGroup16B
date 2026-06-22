@@ -91,6 +91,7 @@ public class AdminManagementServiceTests {
     private String adminSecret;
 
     private final int TRANS_ID=12345;
+    private final int REFUNDLESS_COMPANY_ID=10034;
     private final String EXTERNAL_TICKET="when one door closes, another door always opens, its the last time i buy a closet frim ikea...";
 
     @BeforeEach
@@ -132,10 +133,10 @@ public class AdminManagementServiceTests {
         myActiveEvent.activateEvent();
         eventRepository.save(myActiveEvent);
 
-        ProductionCompany someRnadomCompany=new ProductionCompany(10042,"ra",2.1,"rand");
+        ProductionCompany someRnadomCompany=new ProductionCompany(REFUNDLESS_COMPANY_ID,"ra",2.1,"rand");
         productionCompanyRepository.save(someRnadomCompany);
 
-        Event randomAssEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 10042, 3.5), USER2_MAIL);
+        Event randomAssEvent=new Event(new EventRecord("venue1", "event1", LocalDateTime.now().minusDays(1), endTime, "artist1", "category1", REFUNDLESS_COMPANY_ID, 3.5), USER2_MAIL);
         eventRepository.save(randomAssEvent);
 
         myActiveOrder=new Order("my ACTIVE 1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
@@ -149,6 +150,8 @@ public class AdminManagementServiceTests {
         myCanceledOrder.setTransactionId(TRANS_ID);
         unrelatedCompletedOrder=new Order("segment2", 1, 1.0, randomAssEvent.getEventID(),USER2_MAIL);
         unrelatedCompletedOrder.CompleteOrder();
+        unrelatedCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
+        unrelatedCompletedOrder.setTransactionId(TRANS_ID);
         orderRepository.save(myActiveOrder);
         orderRepository.save(myCompletedOrder);
         orderRepository.save(myCanceledOrder);
@@ -254,6 +257,17 @@ public class AdminManagementServiceTests {
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
         verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+
+    @Test
+    public void testCloseProductionCompany_onlyPassedEvents_SuccessAndNoRefunds() throws Exception {
+
+        
+        Result<String> result = adminManagementService.closeProductionCompany(REFUNDLESS_COMPANY_ID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
     
     @Test
