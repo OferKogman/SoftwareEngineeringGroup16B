@@ -6,6 +6,7 @@ import "./CSS/App.css";
 
 import NotificationsContainer from "./Components/Notification/NotificationContainer";
 import { NotificationProvider } from "./Components/Notification/NotificationContext";
+import { AdminLoggedInProvider } from "./GlobalContext/AdminLoggedInProvider";
 import { LoggedInProvider } from "./GlobalContext/LoggedInProvider";
 import { SessionProvider } from "./GlobalContext/SessionProvider";
 
@@ -20,13 +21,15 @@ function App() {
     <BrowserRouter>
       <SessionProvider>
         <LoggedInProvider>
-          <NotificationProvider>
-            <div className={`app ${theme}`}>
-              <NotificationsContainer />
-              <Header theme={theme} setTheme={setTheme} />
-              <AppRoutes />
-            </div>
-          </NotificationProvider>
+          <AdminLoggedInProvider>
+            <NotificationProvider>
+              <div className={`app ${theme}`}>
+                <NotificationsContainer />
+                <Header theme={theme} setTheme={setTheme} />
+                <AppRoutes />
+              </div>
+            </NotificationProvider>
+          </AdminLoggedInProvider>
         </LoggedInProvider>
       </SessionProvider>
     </BrowserRouter>
