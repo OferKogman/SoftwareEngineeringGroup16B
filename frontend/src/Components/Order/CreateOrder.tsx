@@ -101,6 +101,7 @@ export default function CreateOrderPage() {
         const venue: VenueDTO = await venueResponse.json();
 
         if (!cancelled) {
+          console.log(venue);
           setVenueID(loadedVenueID);
           setVenue(venue);
         }
@@ -118,7 +119,7 @@ export default function CreateOrderPage() {
     return () => {
       cancelled = true;
     };
-  }, [eventID, apiFetch]);
+  }, [eventID, navigate, apiFetch]);
 
   function handleFieldSegmentSelected(segment: FieldSegDTO) {
     setError("");
