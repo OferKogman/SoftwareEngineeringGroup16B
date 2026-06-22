@@ -2,11 +2,11 @@ import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useState } from "react";
 import type { PurchasePolicyTypes } from "../../DTOs/PurchasePolicyDTO";
+import "./CSS/PolicyNode.css";
 
 type PolicyNodeData = {
   label: string;
   type: PurchasePolicyTypes;
-  onClick: (type: PurchasePolicyTypes) => void;
 };
 
 export type PolicyNode = Node<PolicyNodeData>;
@@ -61,20 +61,16 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
     <div className="policy-node-wrapper">
       <div
         className="policy-node"
-        onClick={() => {
-          props.data.onClick(props.data.type);
-          setShowPopup(true);
-        }}
+        onClick={() => setShowPopup((prev) => !prev)}
       >
         <label>{props.data.label}</label>
 
         <Handle type="target" position={Position.Top} />
-
         <Handle type="source" position={Position.Bottom} />
       </div>
 
       {showPopup && (
-        <div className="policy-node-popup">
+        <div className="policy-node-popup" onClick={(e) => e.stopPropagation()}>
           {renderActions()}
 
           <button onClick={() => setShowPopup(false)}>Close</button>

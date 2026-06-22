@@ -18,8 +18,8 @@ type Props = {
 
 type PolicyEdge = Edge;
 
-const HORIZONTAL_GAP = 320;
-const VERTICAL_GAP = 170;
+const HORIZONTAL_GAP = 550;
+const VERTICAL_GAP = 220;
 
 function getSubtreeWidth(policy: PurchasePolicyDTO): number {
   if (!policy) {
@@ -60,16 +60,6 @@ function buildTree(
       data: {
         label: policy.type,
         type: policy.type,
-        onClick: (type) =>
-          onNodeClick({
-            id,
-            position: { x: centerX, y },
-            data: {
-              label: policy.type,
-              type,
-              onClick: () => {},
-            },
-          }),
       },
     });
 
@@ -149,16 +139,6 @@ function buildTree(
     data: {
       label,
       type: policy?.type || "NONE",
-      onClick: (type) =>
-        onNodeClick({
-          id,
-          position: { x: centerX, y },
-          data: {
-            label,
-            type,
-            onClick: () => {},
-          },
-        }),
     },
   });
 
