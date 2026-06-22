@@ -130,6 +130,7 @@ public class AdminManagementService {
             List<Order> orders = orderRepo.getAll();
             orders = orders.stream()
                     .filter(order -> order.isBelongsToSubject(userId + ""))
+                    .filter(order -> order.isCompleted())
                     .collect(Collectors.toList());
             List<OrderDTO> orderDTOs = orders.stream()
                     .map(order -> new OrderDTO(order))

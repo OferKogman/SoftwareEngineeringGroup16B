@@ -66,11 +66,13 @@ public class AdminManagementServiceTests {
     private Segment segment1;
     private Venue venue1;
     private Event e1;
-    private Order activeOrder;
-    private Order completedOrder;
-    private Order canceledOrder;
+    private Order myActiveOrder;
+    private Order myCompletedOrder;
+    private Order myCanceledOrder;
     private Order unrelatedCompletedOrder;
+    private Event myActiveEvent;
     private User user;
+    private String USER2_MAIL="miki mahus";
     private String sessionToken;
     private String adminToken;
     private String invalidToken;
@@ -111,18 +113,22 @@ public class AdminManagementServiceTests {
 
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), user.getEmail());
-        
-        activeOrder=new Order("segment1", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
-        completedOrder=new Order("segment2", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
-        completedOrder.CompleteOrder();
-        canceledOrder=new Order("segment3", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
-        canceledOrder.CancelOrder();
-        unrelatedCompletedOrder=new Order("segment2", 1, 1.0, e1.getEventID(), String.valueOf(user.getEmail()));
+        myActiveEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), USER2_MAIL);
+        myActiveEvent.activateEvent();
+        eventRepository.save(myActiveEvent);
+
+        myActiveOrder=new Order("segment1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCompletedOrder=new Order("segment2", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCompletedOrder.CompleteOrder();
+        myCanceledOrder=new Order("segment3", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCanceledOrder.CancelOrder();
+        unrelatedCompletedOrder=new Order("segment2", 1, 1.0, myActiveEvent.getEventID(),USER2_MAIL);
         unrelatedCompletedOrder.CompleteOrder();
-        orderRepository.save(activeOrder);
-        orderRepository.save(completedOrder);
-        orderRepository.save(canceledOrder);
+        orderRepository.save(myActiveOrder);
+        orderRepository.save(myCompletedOrder);
+        orderRepository.save(myCanceledOrder);
         orderRepository.save(unrelatedCompletedOrder);
+
     }
 
     // Helper method to keep reflection injection clean
