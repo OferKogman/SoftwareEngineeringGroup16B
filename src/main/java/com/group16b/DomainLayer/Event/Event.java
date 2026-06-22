@@ -383,4 +383,17 @@ public class Event {
 		}
 		this.getLotteryPolicy().enrollInLottery(this.eventID, userID);
 	}
+
+	public void validateEventIsNotEnded() {
+		LocalDateTime currentTime = LocalDateTime.now();
+		if (endTime.isBefore(currentTime)) {
+			throw new IllegalStateException("Event has already ended.");
+		}
+	}
+
+    public void validateEventPriceIsSet() {
+		if (price <= 0) {
+			throw new IllegalStateException("Event price must be set and greater than zero.");
+		}
+    }
 }
