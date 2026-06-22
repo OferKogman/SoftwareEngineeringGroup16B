@@ -88,7 +88,6 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 	public List<Order> getByEventId(int eventId)
 	{
 		return this.orders.values().stream()
-				.filter(Order::isCompleted)
 				.filter(order -> order.getEventId() == eventId)
 				.map(Order::new)
 				.toList();

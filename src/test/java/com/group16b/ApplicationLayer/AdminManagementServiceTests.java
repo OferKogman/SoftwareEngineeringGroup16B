@@ -81,6 +81,7 @@ public class AdminManagementServiceTests {
     private Order myCanceledOrder;
     private Order unrelatedCompletedOrder;
     private Event myActiveEvent;
+    private Event myInactiveEvent;
     private User user;
     private String USER2_MAIL="miki mahus";
     private String sessionToken;
@@ -127,6 +128,7 @@ public class AdminManagementServiceTests {
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), user.getEmail());
         myActiveEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), USER2_MAIL);
+        myInactiveEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), USER2_MAIL);
         myActiveEvent.activateEvent();
         eventRepository.save(myActiveEvent);
 
