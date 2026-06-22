@@ -2,13 +2,13 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type {
-  ChosenSeatingSegData,
-  EntranceData,
-  FieldSegData,
-  SeatData,
-  StageData,
-  VenueData,
-  VenueGridData,
+  ChosenSeatingSegDTO,
+  EntranceDTO,
+  FieldSegDTO,
+  SeatDTO,
+  SegmentDTO,
+  StageDTO,
+  VenueDTO,
 } from "../../DTOs/VenueDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
@@ -17,31 +17,6 @@ import type { EventDTO } from "../../DTOs/EventDTO";
 const API_BASE = "http://localhost:8080";
 
 
-const initialGrid: VenueGridData = {
-  rows: 10,
-  columns: 10,
-};
-
-type BackendVenueDTO = {
-  name: string;
-  location: unknown;
-  grid: {
-    rows: number;
-    columns: number;
-  };
-  segments?: Record<string, any>;
-  entrances?: Record<string, any>;
-};
-
-const initialVenue: VenueData = {
-  name: "",
-  location: "",
-  grid: initialGrid,
-  fieldSeg: [],
-  seatSeg: [],
-  stages: [],
-  entrances: [],
-};
 
 type SelectedCellData = {
   gridRow: number;
@@ -56,62 +31,48 @@ type PendingRectangleData = {
 };
 
 type SelectedFieldSegData = {
-  segment: FieldSegData;
+  segment: FieldSegDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedSeatSegData = {
-  segment: ChosenSeatingSegData;
+  segment: ChosenSeatingSegDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedSeatData = {
-  seat: SeatData;
-  segment: ChosenSeatingSegData;
+  seat: SeatDTO;
+  segment: ChosenSeatingSegDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedStageData = {
-  stage: StageData;
+  stage: StageDTO;
   gridRow: number;
   gridColumn: number;
 };
 
 type SelectedEntranceData = {
-  entrance: EntranceData;
+  entrance: EntranceDTO;
   gridRow: number;
   gridColumn: number;
 };
-type SegmentAvailability = {
-  segmentID: string;
-  taken: number;
-  total: number;
-};
 
 export default function ManageEventInventory() {
-    const { eventID } = useParams();
-    const { companyId } = useParams();
-    const [venueID, setVenueID] = useState("");
-    const [venue, setVenue] = useState<VenueData | null>(null);
-    const [availability, setAvailability] = useState<SegmentAvailability[]>([]);
-    const [takenSeatsBySegment, setTakenSeatsBySegment] = useState<Record<string, SeatData[]>>({});
+  const { eventID } = useParams();
+  const { sessionToken } = useSession();
+  const [formData, setFormData] = useState<VenueDTO | null>(null);
+  const [error, setError] = useState<string>("");
+  const [success, setSuccess] = useState<string>("");
+  const [venueID, setVenueID] = useState<string | null>(null);
+  const [companyId, setCompanyID] = useState<number | null>(null);
 
-
-    const { sessionToken } = useSession();
-    const [formData, setFormData] = useState<VenueData>(initialVenue);
-    const [venueName, setVenueName] = useState<string>(initialVenue.name);
-    const [venueLocation, setVenueLocation] = useState<string>(
-        initialVenue.location,
-    );
-    const [error, setError] = useState<string>("");
-    const [success, setSuccess] = useState<string>("");
-
-    const [selectedCell, setSelectedCell] = useState<SelectedCellData | null>(
-        null,
-    );
+  const [selectedCell, setSelectedCell] = useState<SelectedCellData | null>(
+    null,
+  );
   const [selectedFieldSeg, setSelectedFieldSeg] =
     useState<SelectedFieldSegData | null>(null);
   const [selectedSeatSeg, setSelectedSeatSeg] =
@@ -123,186 +84,187 @@ export default function ManageEventInventory() {
     null,
   );
 
-    const [selectedEntrance, setSelectedEntrance] =
-        useState<SelectedEntranceData | null>(null);
-    const [fieldSizeInput, setFieldSizeInput] = useState<string>("");
-    const [pendingRectangle, setPendingRectangle] =
-        useState<PendingRectangleData | null>(null);
+  const [selectedEntrance, setSelectedEntrance] =
+    useState<SelectedEntranceData | null>(null);
+  const [fieldSizeInput, setFieldSizeInput] = useState<string>("");
+  const [pendingRectangle, setPendingRectangle] =
+    useState<PendingRectangleData | null>(null);
 
-    const apiFetch = useApiFetch();
+  const apiFetch = useApiFetch();
+  function normalizeVenueSeats(venue: VenueDTO): VenueDTO {
+    const normalizedSegments: Record<string, SegmentDTO> = {};
 
-    function convertBackendVenueToVenueData(
-          backendVenue: BackendVenueDTO,
-        ): VenueData {
-          const fieldSeg: FieldSegData[] = [];
-          const seatSeg: ChosenSeatingSegData[] = [];
-      
-          Object.entries(backendVenue.segments ?? {}).forEach(
-            ([segmentID, segment]) => {
-              const segmentType = segment.segmentType ?? segment.type;
-      
-              if (segmentType === "F") {
-                const area =
-                  segment.area ??
-                  segment.gridRectangle ??
-                  segment.location ??
-                  segment.rectangle ??
-                  null;
-      
-                console.log("Segment:", segmentID, segment);
-                console.log("Area candidates:", {
-                  area: segment.area,
-                  gridRectangle: segment.gridRectangle,
-                  location: segment.location,
-                  rectangle: segment.rectangle,
-                });
-      
-                if (!area) {
-                  return;
-                }
-      
-                fieldSeg.push({
-                  segmentID,
-                  area,
-                  size: segment.size ?? 0,
-                });
-              }
-      
-              if (segmentType === "S") {
-                const seats = convertSeatsToArray(segment.seats);
-                const area =
-                  segment.area ??
-                  segment.gridRectangle ??
-                  segment.location ??
-                  segment.rectangle ??
-                  getFallbackAreaFromSeats(seats);
-      
-                console.log("Segment:", segmentID, segment);
-                console.log("Area candidates:", {
-                  area: segment.area,
-                  gridRectangle: segment.gridRectangle,
-                  location: segment.location,
-                  rectangle: segment.rectangle,
-                });
-                if (!area) {
-                  return;
-                }
-      
-                seatSeg.push({
-                  segmentID,
-                  area,
-                  seats,
-                });
-              }
-            },
-          );
-      
-          const entrances = Object.entries(backendVenue.entrances ?? {})
-            .map(([entranceID, entrance]) => ({
-              entranceID,
-              area:
-                entrance.area ??
-                entrance.gridRectangle ??
-                entrance.location ??
-                entrance.rectangle,
-            }))
-            .filter((entrance) => Boolean(entrance.area));
-      
-          return {
-            name: backendVenue.name,
-            location:
-              typeof backendVenue.location === "string"
-                ? backendVenue.location
-                : JSON.stringify(backendVenue.location),
-            grid: backendVenue.grid,
-            fieldSeg,
-            seatSeg,
-            stages: [],
-            entrances,
-          };
-        }
+    Object.values(venue.segments).forEach((segment) => {
+      if (!("seats" in segment)) {
+        normalizedSegments[segment.segmentID] = segment;
+        return;
+      }
 
-    async function onSubmitVenue() {
+      const fixedSeats: Record<string, SeatDTO> = {};
+
+      Object.values(segment.seats).forEach((seat) => {
+        const fixedSeat: SeatDTO = {
+          ...seat,
+          number: seat.number + 1,
+          seatId: `${seat.row}-${seat.number + 1}`,
+        };
+
+        fixedSeats[fixedSeat.seatId] = fixedSeat;
+      });
+
+      normalizedSegments[segment.segmentID] = {
+        ...segment,
+        seats: fixedSeats,
+      };
+    });
+
+    return {
+      ...venue,
+      segments: normalizedSegments,
+    };
+  }
+  useEffect(() => {
+      let cancelled = false;
+  
+      async function loadVenue() {
+        try {
+          setError("");
+            if (!eventID) {
+              setError("Missing event ID.");
+              return;
+            }
+    
+            const eventResponse = await apiFetch(`${API_BASE}/events/${eventID}`, {
+              method: "GET",
+            });
+    
+            if (!eventResponse.ok) {
+              throw new Error(await eventResponse.text());
+            }
+    
+            const event: EventDTO = await eventResponse.json();
+            const venueID = event.eventVenueID;
+            const companyId = event.eventProductionCompanyID;
+            setCompanyID(companyId);
+            setVenueID(venueID);
+            if (!venueID) {
+              setError("Missing venue ID.");
+              return;
+            }
+
+            const venueResponse = await apiFetch(`${API_BASE}/venues/${venueID}`,
+              {
+                method: "GET",
+              },
+            );
+
+            if (!venueResponse.ok) {
+              throw new Error(await venueResponse.text());
+            }
+            const loadedVenue: VenueDTO = await venueResponse.json();
+
+            if (!cancelled) {
+              setFormData(normalizeVenueSeats(loadedVenue));
+            }
+
+          } catch (err) {
+            if (!cancelled) {
+              setError(
+                err instanceof Error ? err.message : "Failed to load venue.",
+              );
+            }
+          }
+      }
+  
+      void loadVenue();
+  
+      return () => {
+        cancelled = true;
+      };
+    }, [venueID, apiFetch]);
+  
+    function venueDtoToVenueRecord(venue: VenueDTO) {
+      const fieldSeg = Object.values(venue.segments)
+        .filter((segment): segment is FieldSegDTO => "size" in segment)
+        .map((segment) => ({
+          segmentID: segment.segmentID,
+          size: segment.size,
+          area: segment.area,
+        }));
+
+      const seatSeg = Object.values(venue.segments)
+        .filter((segment): segment is ChosenSeatingSegDTO => "seats" in segment)
+        .map((segment) => ({
+          segmentID: segment.segmentID,
+          seats: Object.values(segment.seats).map((seat) => ({
+            row: seat.row,
+            column: seat.number,
+          })),
+          area: segment.area,
+        }));
+
+      return {
+        name: venue.name,
+        location: getReadableLocation(venue),
+        fieldSeg,
+        seatSeg,
+        stages: Object.values(venue.stages),
+        entrances: Object.values(venue.entrances),
+        grid: venue.grid,
+        events: [],
+      };
+    }
+  async function onSubmitVenue() {
     setError("");
     setSuccess("");
 
-    if (!companyId) {
-      setError("Missing company ID or event ID.");
-      return;
-    }
-
-    const trimmedName = venueName.trim();
-    const trimmedLocation = venueLocation.trim();
-
-    if (!sessionToken) {
-      setError("Missing session token.");
-      return;
-    }
-
-    if (trimmedName === "") {
-      setError("Venue name cannot be empty.");
-      return;
-    }
-
-    if (trimmedLocation === "") {
-      setError("Venue location cannot be empty.");
-      return;
-    }
+    if (!venueID) {setError("Missing venue ID.");return;}
+    if (!companyId) {setError("Missing company ID.");return;}
+    if (!sessionToken) {setError("Missing session token.");return;}
+    if (!formData) {setError("Venue was not loaded.");return;}
 
     try {
-      const response = await apiFetch(
-        "http://localhost:8080/venues/configureNewLayoutAndInventory",
+      const response = await apiFetch(`${API_BASE}/venues/${venueID}/editVenueSegments`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: {"Content-Type": "application/json",},
           body: JSON.stringify({
             companyID: Number(companyId),
-            newVenueLayout: {
-              ...formData,
-              name: trimmedName,
-              location: trimmedLocation,
-            },
+            newVenueLayout: venueDtoToVenueRecord(formData),
           }),
         },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Failed to configure venue layout.");
+        throw new Error(errorText || "Failed to update venue segments.");
       }
 
-      setSuccess("Venue created successfully.");
-      setVenueName("");
-      setVenueLocation("");
-      setFormData(initialVenue);
+      setSuccess("Venue updated successfully.");
       clearSelections();
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to configure venue layout.",
+        err instanceof Error ? err.message : "Failed to update venue segments.",
       );
     }
-    }
+  }
 
-    function clearSelections() {
-        setSelectedCell(null);
-        setSelectedFieldSeg(null);
-        setSelectedSeatSeg(null);
-        setSelectedSeat(null);
-        setPendingRectangle(null);
-        setSelectedStage(null);
-        setSelectedEntrance(null);
-    }
+  function clearSelections() {
+    setSelectedCell(null);
+    setSelectedFieldSeg(null);
+    setSelectedSeatSeg(null);
+    setSelectedSeat(null);
+    setPendingRectangle(null);
+    setSelectedStage(null);
+    setSelectedEntrance(null);
+  }
 
-    function handleEmptyCellClick(gridRow: number, gridColumn: number) {
-        setError("");
-        if (!selectedCell) {
-        clearSelections();
-        setSelectedCell({ gridRow, gridColumn });
-        return;
+  function handleEmptyCellClick(gridRow: number, gridColumn: number) {
+    setError("");
+    if (!selectedCell) {
+      clearSelections();
+      setSelectedCell({ gridRow, gridColumn });
+      return;
     }
 
     const startRow = Math.min(selectedCell.gridRow, gridRow);
@@ -318,375 +280,447 @@ export default function ManageEventInventory() {
     });
 
     setSelectedCell(null);
+  }
+
+  function rectanglesOverlap(
+    first: {
+      startRow: number;
+      startColumn: number;
+      rowCount: number;
+      columnCount: number;
+    },
+    second: {
+      startRow: number;
+      startColumn: number;
+      rowCount: number;
+      columnCount: number;
+    },
+  ) {
+    return !(
+      first.startRow + first.rowCount - 1 < second.startRow ||
+      second.startRow + second.rowCount - 1 < first.startRow ||
+      first.startColumn + first.columnCount - 1 < second.startColumn ||
+      second.startColumn + second.columnCount - 1 < first.startColumn
+    );
+  }
+
+  function getNextID(existingIDs: string[], prefix: string) {
+    let nextNumber = 1;
+
+    while (existingIDs.includes(`${prefix}${nextNumber}`)) {
+      nextNumber++;
     }
 
-    function rectanglesOverlap(
-        first: {
-        startRow: number;
-        startColumn: number;
-        rowCount: number;
-        columnCount: number;
+    return `${prefix}${nextNumber}`;
+  }
+  function handleAddFieldSegment() {
+    if (!formData || !pendingRectangle) {
+      return;
+    }
+
+    const newSegment: FieldSegDTO = {
+      segmentID: getNextID(Object.keys(formData.segments), "F"),
+      size: 0,
+      area: {
+        startRow: pendingRectangle.startRow,
+        startColumn: pendingRectangle.startColumn,
+        rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
+        columnCount:
+          pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
+      },
+      stocks: {},
+    };
+
+    const overlapsExisting = [
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
+    ].some((area) => rectanglesOverlap(area, newSegment.area));
+
+    if (overlapsExisting) {
+      setError("Segments cannot overlap.");
+      return;
+    }
+    setFormData((current) => {
+      if (!current) {return current;}
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [newSegment.segmentID]: newSegment,
         },
-        second: {
-        startRow: number;
-        startColumn: number;
-        rowCount: number;
-        columnCount: number;
+      };
+    });
+
+    setPendingRectangle(null);
+  }
+
+  function handleAddSeatSegment() {
+    function createSeatsRecord(area: {
+      startRow: number;
+      startColumn: number;
+      rowCount: number;
+      columnCount: number;
+    }) {
+      const seats: Record<string, SeatDTO> = {};
+
+      for (let row = 1; row <= area.rowCount; row++) {
+        for (let column = 1; column <= area.columnCount; column++) {
+          const seatId = `${row}-${column}`;
+
+          seats[seatId] = {
+            seatId: seatId,
+            row: row,
+            number: column,
+            stock: {},
+          };
+        }
+      }
+
+      return seats;
+    }
+
+    if (!formData || !pendingRectangle) {
+      return;
+    }
+
+    const newSegmentArea = {
+      startRow: pendingRectangle.startRow,
+      startColumn: pendingRectangle.startColumn,
+      rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
+      columnCount:
+        pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
+    };
+
+    const newSegment: ChosenSeatingSegDTO = {
+      
+      segmentID: getNextID(Object.keys(formData.segments), "S"),
+      seats: createSeatsRecord(newSegmentArea),
+      area: newSegmentArea,
+    };
+
+    const overlapsExisting = [
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
+    ].some((area) => rectanglesOverlap(area, newSegment.area));
+
+    if (overlapsExisting) {
+      setError("Segments cannot overlap.");
+      return;
+    }
+
+    setFormData((current) => {
+      if (!current) {return current;}
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [newSegment.segmentID]: newSegment,
+        },};
+    });
+
+    setPendingRectangle(null);
+  }
+
+  function handleAddStage() {
+    if (!formData || !pendingRectangle) {
+      return;
+    }
+
+    const newStage = {
+      stageID: getNextID(
+        Object.values(formData.stages).map((stage) => stage.stageID),
+        "ST",
+      ),
+      area: {
+        startRow: pendingRectangle.startRow,
+        startColumn: pendingRectangle.startColumn,
+        rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
+        columnCount:
+          pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
+      },
+    };
+
+    const overlapsExisting = [
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
+    ].some((area) => rectanglesOverlap(area, newStage.area));
+
+    if (overlapsExisting) {
+      setError("Stages cannot overlap.");
+      return;
+    }
+
+    setFormData((current) => {
+    if (!current) {return current;}
+    return {
+        ...current,
+        stages: {
+          ...current.stages,
+          [newStage.stageID]: newStage,
         },
-    ) {
-        return !(
-        first.startRow + first.rowCount - 1 < second.startRow ||
-        second.startRow + second.rowCount - 1 < first.startRow ||
-        first.startColumn + first.columnCount - 1 < second.startColumn ||
-        second.startColumn + second.columnCount - 1 < first.startColumn
-        );
+      };
+    });
+
+    setPendingRectangle(null);
+  }
+
+  function handleAddEntrance() {
+    if (!formData || !pendingRectangle) {
+      return;
     }
 
-    function getNextID(existingIDs: string[], prefix: string) {
-        let nextNumber = 1;
-
-        while (existingIDs.includes(`${prefix}${nextNumber}`)) {
-        nextNumber++;
-        }
-
-        return `${prefix}${nextNumber}`;
-    }
-    function handleAddFieldSegment() {
-        if (!pendingRectangle) {
-        return;
-        }
-
-        const newSegment: FieldSegData = {
-        segmentID: getNextID(
-            formData.fieldSeg.map((segment) => segment.segmentID),
-            "F",
+    const newEntrance = {
+      entranceID: getNextID(
+        Object.values(formData.entrances).map(
+          (entrance) => entrance.entranceID,
         ),
-        size: 0,
-        area: {
-            startRow: pendingRectangle.startRow,
-            startColumn: pendingRectangle.startColumn,
-            rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
-            columnCount:
-            pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
+        "EN",
+      ),
+      area: {
+        startRow: pendingRectangle.startRow,
+        startColumn: pendingRectangle.startColumn,
+        rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
+        columnCount:
+          pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
+      },
+    };
+
+    const overlapsExisting = [
+      ...Object.values(formData.segments).map((segment) => segment.area),
+      ...Object.values(formData.stages).map((stage) => stage.area),
+      ...Object.values(formData.entrances).map((entrance) => entrance.area),
+    ].some((area) => rectanglesOverlap(area, newEntrance.area));
+
+    if (overlapsExisting) {
+      setError("Entrances cannot overlap.");
+      return;
+    }
+
+    setFormData((current) => {
+      if (!current) {return current;}
+      return {
+        ...current,
+        entrances: {
+          ...current.entrances,
+          [newEntrance.entranceID]: newEntrance,
+        },};
+    });
+
+    setPendingRectangle(null);
+  }
+  function handleFieldSegmentClick(
+    segment: FieldSegDTO,
+    gridRow: number,
+    gridColumn: number,
+  ) {
+    setError("");
+    clearSelections();
+    setFieldSizeInput(segment.size.toString());
+    setSelectedFieldSeg({ segment, gridRow, gridColumn });
+  }
+  function handleSeatSegmentClick(
+    segment: ChosenSeatingSegDTO,
+    gridRow: number,
+    gridColumn: number,
+  ) {
+    setError("");
+    clearSelections();
+    setSelectedSeatSeg({ segment, gridRow, gridColumn });
+  }
+  function handleSeatClick(
+    seat: SeatDTO,
+    segment: ChosenSeatingSegDTO,
+    gridRow: number,
+    gridColumn: number,
+  ) {
+    setError("");
+    clearSelections();
+    setSelectedSeat({ seat, segment, gridRow, gridColumn });
+  }
+
+  function handleStageClick(
+    stage: StageDTO,
+    gridRow: number,
+    gridColumn: number,
+  ) {
+    setError("");
+    clearSelections();
+    setSelectedStage({ stage, gridRow, gridColumn });
+  }
+
+  function handleEntranceClick(
+    entrance: EntranceDTO,
+    gridRow: number,
+    gridColumn: number,
+  ) {
+    setError("");
+    clearSelections();
+    setSelectedEntrance({ entrance, gridRow, gridColumn });
+  }
+
+  function handleDeleteSeat() {
+    if (!selectedSeat) {
+      return;
+    }
+
+    setFormData((current) => {
+      if (!current) {return current;}
+      const segmentID = selectedSeat.segment.segmentID;
+      const currentSegment = current.segments[segmentID];
+
+      if (!currentSegment || !("seats" in currentSegment)) {
+        return current;
+      }
+
+      const updatedSeats = { ...currentSegment.seats };
+      delete updatedSeats[selectedSeat.seat.seatId];
+
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [segmentID]: {
+            ...currentSegment,
+            seats: updatedSeats,
+          },
         },
-        };
+      };
+    });
 
-        const overlapsExisting = [
-        ...formData.fieldSeg.map((segment) => segment.area),
-        ...formData.seatSeg.map((segment) => segment.area),
-        ...formData.stages.map((stage) => stage.area),
-        ...formData.entrances.map((entrance) => entrance.area),
-        ].some((area) => rectanglesOverlap(area, newSegment.area));
+    setSelectedSeat(null);
+  }
 
-        if (overlapsExisting) {
-        setError("Segments cannot overlap.");
-        return;
-        }
+  function handleDeleteSeatSegment() {
+    if (!selectedSeatSeg) {
+      return;
+    }
 
-        setFormData((current) => ({
+    setFormData((current) => {
+      if (!current) {return current;}
+      const updatedSegments = { ...current.segments };
+      delete updatedSegments[selectedSeatSeg.segment.segmentID];
+
+      return {
         ...current,
-        fieldSeg: [...current.fieldSeg, newSegment],
-        }));
+        segments: updatedSegments,
+      };
+    });
 
-        setPendingRectangle(null);
+    setSelectedSeatSeg(null);
+  }
+
+  function handleDeleteFieldSegment() {
+    if (!selectedFieldSeg) {
+      return;
     }
 
-    function handleAddSeatSegment() {
-        if (!pendingRectangle) {
-        return;
-        }
+    setFormData((current) => {
+      if (!current) {return current;}
+      const updatedSegments = { ...current.segments };
+      delete updatedSegments[selectedFieldSeg.segment.segmentID];
 
-        const newSegment: ChosenSeatingSegData = {
-        segmentID: getNextID(
-            formData.seatSeg.map((segment) => segment.segmentID),
-            "S",
-        ),
-        seats: [],
-        area: {
-            startRow: pendingRectangle.startRow,
-            startColumn: pendingRectangle.startColumn,
-            rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
-            columnCount:
-            pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
-        },
-        };
-
-        const overlapsExisting = [
-        ...formData.fieldSeg.map((segment) => segment.area),
-        ...formData.seatSeg.map((segment) => segment.area),
-        ...formData.stages.map((stage) => stage.area),
-        ...formData.entrances.map((entrance) => entrance.area),
-        ].some((area) => rectanglesOverlap(area, newSegment.area));
-
-        if (overlapsExisting) {
-        setError("Segments cannot overlap.");
-        return;
-        }
-
-        setFormData((current) => ({
+      return {
         ...current,
-        seatSeg: [...current.seatSeg, newSegment],
-        }));
-
-        setPendingRectangle(null);
-    }
-
-    function handleAddStage() {
-        if (!pendingRectangle) {
-        return;
-        }
-
-        const newStage = {
-        stageID: getNextID(
-            formData.stages.map((stage) => stage.stageID),
-            "ST",
-        ),
-        area: {
-            startRow: pendingRectangle.startRow,
-            startColumn: pendingRectangle.startColumn,
-            rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
-            columnCount:
-            pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
-        },
-        };
-
-        const overlapsExisting = [
-        ...formData.fieldSeg.map((segment) => segment.area),
-        ...formData.seatSeg.map((segment) => segment.area),
-        ...formData.stages.map((stage) => stage.area),
-        ...formData.entrances.map((entrance) => entrance.area),
-        ].some((area) => rectanglesOverlap(area, newStage.area));
-
-        if (overlapsExisting) {
-        setError("Segments cannot overlap.");
-        return;
-        }
-
-        setFormData((current) => ({
-        ...current,
-        stages: [...current.stages, newStage],
-        }));
-
-        setPendingRectangle(null);
-    }
-
-    function handleAddEntrance() {
-        if (!pendingRectangle) {
-        return;
-        }
-
-        const newEntrance = {
-        entranceID: getNextID(
-            formData.entrances.map((entrance) => entrance.entranceID),
-            "EN",
-        ),
-        area: {
-            startRow: pendingRectangle.startRow,
-            startColumn: pendingRectangle.startColumn,
-            rowCount: pendingRectangle.endRow - pendingRectangle.startRow + 1,
-            columnCount:
-            pendingRectangle.endColumn - pendingRectangle.startColumn + 1,
-        },
-        };
-
-        const overlapsExisting = [
-        ...formData.fieldSeg.map((segment) => segment.area),
-        ...formData.seatSeg.map((segment) => segment.area),
-        ...formData.stages.map((stage) => stage.area),
-        ...formData.entrances.map((entrance) => entrance.area),
-        ].some((area) => rectanglesOverlap(area, newEntrance.area));
-
-        if (overlapsExisting) {
-        setError("Segments cannot overlap.");
-        return;
-        }
-
-        setFormData((current) => ({
-        ...current,
-        entrances: [...current.entrances, newEntrance],
-        }));
-
-        setPendingRectangle(null);
-    }
-    function handleFieldSegmentClick(
-        segment: FieldSegData,
-        gridRow: number,
-        gridColumn: number,
-    ) {
-        setError("");
-        clearSelections();
-        setFieldSizeInput(segment.size.toString());
-        setSelectedFieldSeg({ segment, gridRow, gridColumn });
-    }
-    function handleSeatSegmentClick(
-        segment: ChosenSeatingSegData,
-        gridRow: number,
-        gridColumn: number,
-    ) {
-        setError("");
-        clearSelections();
-        setSelectedSeatSeg({ segment, gridRow, gridColumn });
-    }
-    function handleSeatClick(
-        seat: SeatData,
-        segment: ChosenSeatingSegData,
-        gridRow: number,
-        gridColumn: number,
-    ) {
-        setError("");
-        clearSelections();
-        setSelectedSeat({ seat, segment, gridRow, gridColumn });
-    }
-
-    function handleStageClick(
-        stage: StageData,
-        gridRow: number,
-        gridColumn: number,
-    ) {
-        setError("");
-        clearSelections();
-        setSelectedStage({ stage, gridRow, gridColumn });
-    }
-
-    function handleEntranceClick(
-        entrance: EntranceData,
-        gridRow: number,
-        gridColumn: number,
-    ) {
-        setError("");
-        clearSelections();
-        setSelectedEntrance({ entrance, gridRow, gridColumn });
-    }
-
-    function handleDeleteSeat() {
-        if (!selectedSeat) {
-        return;
-        }
-
-        setFormData((current) => ({
-        ...current,
-        seatSeg: current.seatSeg.map((segment) => {
-            if (segment.segmentID !== selectedSeat.segment.segmentID) {
-            return segment;
-            }
-
-            return {
-            ...segment,
-            seats: segment.seats.filter((seat) => {
-                return !(
-                seat.row === selectedSeat.seat.row &&
-                seat.column === selectedSeat.seat.column
-                );
-            }),
-            };
-        }),
-        }));
-
-        setSelectedSeat(null);
-    }
-
-    function handleDeleteSeatSegment() {
-        if (!selectedSeatSeg) {
-        return;
-        }
-
-        setFormData((current) => ({
-        ...current,
-        seatSeg: current.seatSeg.filter((segment) => {
-            return !(segment.segmentID === selectedSeatSeg.segment.segmentID);
-        }),
-        }));
-
-        setSelectedSeatSeg(null);
-    }
-
-    function handleDeleteFieldSegment() {
-        if (!selectedFieldSeg) {
-        return;
-        }
-
-    setFormData((current) => ({
-      ...current,
-      fieldSeg: current.fieldSeg.filter((segment) => {
-        return !(segment.segmentID === selectedFieldSeg.segment.segmentID);
-      }),
-    }));
+        segments: updatedSegments,
+      };
+    });
 
     setSelectedFieldSeg(null);
-    } 
+  }
 
-    function handleDeleteStage() {
-        if (!selectedStage) {
-        return;
-        }
-
-        setFormData((current) => ({
-        ...current,
-        stages: current.stages.filter((stage) => {
-            return !(stage.stageID === selectedStage.stage.stageID);
-        }),
-        }));
-
-        setSelectedStage(null);
+  function handleDeleteStage() {
+    if (!selectedStage) {
+      return;
     }
 
-    function handleDeleteEntrance() {
-        if (!selectedEntrance) {
-        return;
-        }
+    setFormData((current) => {
+      if (!current) {return current;}
+      const updatedStages = { ...current.stages };
+      delete updatedStages[selectedStage.stage.stageID];
 
-        setFormData((current) => ({
+      return {
         ...current,
-        entrances: current.entrances.filter((entrance) => {
-            return !(entrance.entranceID === selectedEntrance.entrance.entranceID);
-        }),
-        }));
+        stages: updatedStages,
+      };
+    });
 
-        setSelectedEntrance(null);
+    setSelectedStage(null);
+  }
+
+  function handleDeleteEntrance() {
+    if (!selectedEntrance) {
+      return;
     }
 
-    function handleAddSeat() {
-        if (!selectedSeatSeg) {
-        return;
-        }
+    setFormData((current) => {
+      if (!current) {return current;}
+      const updatedEntrances = { ...current.entrances };
+      delete updatedEntrances[selectedEntrance.entrance.entranceID];
 
-        const newSeat: SeatData = {
-        row: selectedSeatSeg.gridRow - selectedSeatSeg.segment.area.startRow + 1,
-        column:
-            selectedSeatSeg.gridColumn -
-            selectedSeatSeg.segment.area.startColumn +
-            1,
-        };
-
-        setFormData((current) => ({
+      return {
         ...current,
-        seatSeg: current.seatSeg.map((segment) => {
-            if (segment.segmentID !== selectedSeatSeg.segment.segmentID) {
-            return segment;
-            }
+        entrances: updatedEntrances,
+      };
+    });
 
-            const seatExists = segment.seats.some((seat) => {
-            return seat.row === newSeat.row && seat.column === newSeat.column;
-            });
+    setSelectedEntrance(null);
+  }
 
-            if (seatExists) {
-            return segment;
-            }
-
-            return {
-            ...segment,
-            seats: [...segment.seats, newSeat],
-            };
-        }),
-        }));
-
-        setSelectedSeatSeg(null);
+  function handleAddSeat() {
+    if (!selectedSeatSeg) {
+      return;
     }
 
-    function handleChangeSize() {
-        if (!selectedFieldSeg) {
-        return;
-        }
+    const row =
+      selectedSeatSeg.gridRow - selectedSeatSeg.segment.area.startRow + 1;
+    const column =
+      selectedSeatSeg.gridColumn - selectedSeatSeg.segment.area.startColumn + 1;
+
+    const newSeat: SeatDTO = {
+      seatId: `${row}-${column}`,
+      row: row,
+      number: column,
+      stock: {},
+    };
+
+    setFormData((current) => {
+      if (!current) {return current;}
+      const segmentID = selectedSeatSeg.segment.segmentID;
+      const currentSegment = current.segments[segmentID];
+
+      if (!currentSegment || !("seats" in currentSegment)) {
+        return current;
+      }
+
+      if (newSeat.seatId in currentSegment.seats) {
+        return current;
+      }
+
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [segmentID]: {
+            ...currentSegment,
+            seats: {
+              ...currentSegment.seats,
+              [newSeat.seatId]: newSeat,
+            },
+          },
+        },
+      };
+    });
+
+    setSelectedSeatSeg(null);
+  }
+
+  function handleChangeSize() {
+    if (!selectedFieldSeg) {
+      return;
+    }
 
     const trimmedValue = fieldSizeInput.trim();
     const newSize = Number(trimmedValue);
@@ -698,19 +732,25 @@ export default function ManageEventInventory() {
 
     const segmentID = selectedFieldSeg.segment.segmentID;
 
-    setFormData((current) => ({
-      ...current,
-      fieldSeg: current.fieldSeg.map((segment) => {
-        if (segment.segmentID !== segmentID) {
-          return segment;
-        }
+    setFormData((current) => {
+      if (!current) {return current;}
+      const currentSegment = current.segments[segmentID];
 
-        return {
-          ...segment,
-          size: newSize,
-        };
-      }),
-    }));
+      if (!currentSegment || !("size" in currentSegment)) {
+        return current;
+      }
+
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [segmentID]: {
+            ...currentSegment,
+            size: newSize,
+          },
+        },
+      };
+    });
 
     setSelectedFieldSeg((current) => {
       if (!current || current.segment.segmentID !== segmentID) {
@@ -725,308 +765,238 @@ export default function ManageEventInventory() {
         },
       };
     });
-    }
+  }
 
-    function handleAddRow() {
-        setFormData((current) => ({
-        ...current,
-        grid: {
+  function handleAddRow() {
+      setFormData((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          grid: {
             ...current.grid,
             rows: current.grid.rows + 1,
-        },
-        }));
+          },
+        };
+      });
     }
 
-    function handleAddColumn() {
-        setFormData((current) => ({
+  function handleAddColumn() {
+      setFormData((current) => {
+        if (!current) {return current;}
+        return {
         ...current,
         grid: {
-            ...current.grid,
-            columns: current.grid.columns + 1,
+          ...current.grid,
+          columns: current.grid.columns + 1,
         },
-        }));
+      }});
     }
 
-    function renderPopup(): ReactNode {
-        if (pendingRectangle) {
-        return (
-            <div
-            style={{
-                position: "absolute",
-                top: `${pendingRectangle.startRow * 40 + 8}px`,
-                left: `${pendingRectangle.startColumn * 40 + 8}px`,
-                zIndex: 10,
-                backgroundColor: "white",
-                border: "1px solid #555",
-                borderRadius: "4px",
-                padding: "6px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-                whiteSpace: "nowrap",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-            }}
-            onClick={(event) => event.stopPropagation()}
-            >
-            <button type="button" onClick={handleAddFieldSegment}>
-                Add Field Segment
-            </button>
+  function renderPopup(): ReactNode {
+    if (pendingRectangle) {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: `${pendingRectangle.startRow * 40 + 8}px`,
+            left: `${pendingRectangle.startColumn * 40 + 8}px`,
+            zIndex: 10,
+            backgroundColor: "white",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "6px",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={handleAddFieldSegment}>
+            Add Field Segment
+          </button>
 
-            <button type="button" onClick={handleAddSeatSegment}>
-                Add Seating Segment
-            </button>
+          <button type="button" onClick={handleAddSeatSegment}>
+            Add Seating Segment
+          </button>
 
-            <button type="button" onClick={handleAddStage}>
-                Add Stage
-            </button>
+          <button type="button" onClick={handleAddStage}>
+            Add Stage
+          </button>
 
-            <button type="button" onClick={handleAddEntrance}>
-                Add Entrance
-            </button>
-            </div>
-        );
-        }
-        if (selectedStage) {
-        return (
-            <div
-            style={{
-                position: "absolute",
-                top: `${selectedStage.gridRow * 40 + 8}px`,
-                left: `${selectedStage.gridColumn * 40 + 8}px`,
-                zIndex: 10,
-                backgroundColor: "white",
-                border: "1px solid #555",
-                borderRadius: "4px",
-                padding: "6px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-                whiteSpace: "nowrap",
-            }}
-            onClick={(event) => event.stopPropagation()}
-            >
-            <button type="button" onClick={handleDeleteStage}>
-                Delete Stage
-            </button>
-            </div>
-        );
-        }
-
-        if (selectedEntrance) {
-        return (
-            <div
-            style={{
-                position: "absolute",
-                top: `${selectedEntrance.gridRow * 40 + 8}px`,
-                left: `${selectedEntrance.gridColumn * 40 + 8}px`,
-                zIndex: 10,
-                backgroundColor: "white",
-                border: "1px solid #555",
-                borderRadius: "4px",
-                padding: "6px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-                whiteSpace: "nowrap",
-            }}
-            onClick={(event) => event.stopPropagation()}
-            >
-            <button type="button" onClick={handleDeleteEntrance}>
-                Delete Entrance
-            </button>
-            </div>
-        );
-        }
-        if (selectedSeat) {
-        return (
-            <div
-            style={{
-                position: "absolute",
-                top: `${selectedSeat.gridRow * 40 + 8}px`,
-                left: `${selectedSeat.gridColumn * 40 + 8}px`,
-                zIndex: 10,
-                backgroundColor: "white",
-                border: "1px solid #555",
-                borderRadius: "4px",
-                padding: "6px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-                whiteSpace: "nowrap",
-            }}
-            onClick={(event) => event.stopPropagation()}
-            >
-            <button type="button" onClick={handleDeleteSeat}>
-                Delete seat
-            </button>
-            </div>
-        );
-        }
-
-        if (selectedSeatSeg) {
-        return (
-            <div
-            style={{
-                position: "absolute",
-                top: `${selectedSeatSeg.gridRow * 40 + 8}px`,
-                left: `${selectedSeatSeg.gridColumn * 40 + 8}px`,
-                zIndex: 10,
-                backgroundColor: "white",
-                border: "1px solid #555",
-                borderRadius: "4px",
-                padding: "6px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-                whiteSpace: "nowrap",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-            }}
-            onClick={(event) => event.stopPropagation()}
-            >
-            <button type="button" onClick={handleAddSeat}>
-                Add Seat
-            </button>
-
-            <button type="button" onClick={handleDeleteSeatSegment}>
-                Delete Segment
-            </button>
-            </div>
-        );
-        }
-
-        if (selectedFieldSeg) {
-        return (
-            <div
-            style={{
-                position: "absolute",
-                top: `${selectedFieldSeg.gridRow * 40 + 8}px`,
-                left: `${selectedFieldSeg.gridColumn * 40 + 8}px`,
-                zIndex: 10,
-                backgroundColor: "white",
-                border: "1px solid #555",
-                borderRadius: "4px",
-                padding: "6px",
-                boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
-                whiteSpace: "nowrap",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px",
-            }}
-            onClick={(event) => event.stopPropagation()}
-            >
-            <input
-                type="number"
-                min="0"
-                value={fieldSizeInput}
-                onChange={(event) => {
-                setFieldSizeInput(event.currentTarget.value);
-                }}
-                placeholder="Segment size"
-                style={{ width: "120px" }}
-            />
-
-            <button type="button" onClick={handleChangeSize}>
-                Change Size
-            </button>
-
-            <button type="button" onClick={handleDeleteFieldSegment}>
-                Delete Segment
-            </button>
-            </div>
-        );
-        }
-
-        return null;
+          <button type="button" onClick={handleAddEntrance}>
+            Add Entrance
+          </button>
+        </div>
+      );
     }
-    useEffect(() => {
-            if (!eventID) {
-            setError("Missing event ID.");
-            return;
-            }
-    
-            if (!sessionToken) {
-            setError("Missing session token.");
-            return;
-            }
-    
-        let cancelled = false;
-    
-        async function loadVenue() {
-          try {
-            setError("");
-    
-            const eventResponse = await apiFetch(`${API_BASE}/events/${eventID}`, {
-              method: "GET",
-            });
-    
-            const eventData = await eventResponse.json();
-    
-            if (!eventResponse.ok) {
-              throw new Error(
-                eventData?.message || eventData?.error || "Failed to load event.",
-              );
-            }
-    
-            const event = eventData as EventDTO;
-            const loadedVenueID = String(
-              (event as any).venueID,
-            );
-    
-            if (!loadedVenueID || loadedVenueID === "undefined") {
-              throw new Error("Event loaded, but venue ID is missing.");
-            }
-    
-            const venueResponse = await apiFetch(
-              `${API_BASE}/venues/${loadedVenueID}/location`,
-              {
-                method: "GET",
-              },
-            );
-    
-            const backendVenue = await venueResponse.json();
-            console.log("Loaded venue data:", backendVenue);
-            if (!venueResponse.ok) {
-              throw new Error(
-                backendVenue?.message ||
-                  backendVenue?.error ||
-                  "Failed to load venue.",
-              );
-            }
-    
-            const realVenue = convertBackendVenueToVenueData(backendVenue);
-    
-            if (!cancelled) {
-                setVenueID(loadedVenueID);
-                setVenue(realVenue);
-                
-                setFormData(realVenue);
-                setVenueName(realVenue.name);
-                setVenueLocation(realVenue.location);
+    if (selectedStage) {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: `${selectedStage.gridRow * 40 + 8}px`,
+            left: `${selectedStage.gridColumn * 40 + 8}px`,
+            zIndex: 10,
+            backgroundColor: "white",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "6px",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+            whiteSpace: "nowrap",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={handleDeleteStage}>
+            Delete Stage
+          </button>
+        </div>
+      );
+    }
 
-                setAvailability([
-                    ...realVenue.fieldSeg.map((segment) => ({
-                    segmentID: segment.segmentID,
-                    taken: 0,
-                    total: segment.size,
-                    })),
-                    ...realVenue.seatSeg.map((segment) => ({
-                  segmentID: segment.segmentID,
-                  taken: 0,
-                  total: segment.seats.length,
-                })),
-              ]);
-    
-              setTakenSeatsBySegment({});
-            }
-          } catch (err) {
-            if (!cancelled) {
-              setError(
-                err instanceof Error ? err.message : "Failed to load venue.",
-              );
-            }
-          }
-        }
-    
-        void loadVenue();
-    
-        return () => {
-          cancelled = true;
-        };
-      }, [eventID, sessionToken]);
+    if (selectedEntrance) {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: `${selectedEntrance.gridRow * 40 + 8}px`,
+            left: `${selectedEntrance.gridColumn * 40 + 8}px`,
+            zIndex: 10,
+            backgroundColor: "white",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "6px",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+            whiteSpace: "nowrap",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={handleDeleteEntrance}>
+            Delete Entrance
+          </button>
+        </div>
+      );
+    }
+    if (selectedSeat) {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: `${selectedSeat.gridRow * 40 + 8}px`,
+            left: `${selectedSeat.gridColumn * 40 + 8}px`,
+            zIndex: 10,
+            backgroundColor: "white",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "6px",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+            whiteSpace: "nowrap",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={handleDeleteSeat}>
+            Delete seat
+          </button>
+        </div>
+      );
+    }
+
+    if (selectedSeatSeg) {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: `${selectedSeatSeg.gridRow * 40 + 8}px`,
+            left: `${selectedSeatSeg.gridColumn * 40 + 8}px`,
+            zIndex: 10,
+            backgroundColor: "white",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "6px",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <button type="button" onClick={handleAddSeat}>
+            Add Seat
+          </button>
+
+          <button type="button" onClick={handleDeleteSeatSegment}>
+            Delete Segment
+          </button>
+        </div>
+      );
+    }
+
+    if (selectedFieldSeg) {
+      return (
+        <div
+          style={{
+            position: "absolute",
+            top: `${selectedFieldSeg.gridRow * 40 + 8}px`,
+            left: `${selectedFieldSeg.gridColumn * 40 + 8}px`,
+            zIndex: 10,
+            backgroundColor: "white",
+            border: "1px solid #555",
+            borderRadius: "4px",
+            padding: "6px",
+            boxShadow: "0 2px 8px rgba(0, 0, 0, 0.25)",
+            whiteSpace: "nowrap",
+            display: "flex",
+            flexDirection: "column",
+            gap: "4px",
+          }}
+          onClick={(event) => event.stopPropagation()}
+        >
+          <input
+            type="number"
+            min="0"
+            value={fieldSizeInput}
+            onChange={(event) => {
+              setFieldSizeInput(event.currentTarget.value);
+            }}
+            placeholder="Segment size"
+            style={{ width: "120px" }}
+          />
+
+          <button type="button" onClick={handleChangeSize}>
+            Change Size
+          </button>
+
+          <button type="button" onClick={handleDeleteFieldSegment}>
+            Delete Segment
+          </button>
+        </div>
+      );
+    }
+
+    return null;
+  }
+  function getReadableLocation(venue: VenueDTO) {
+    const location = venue.location;
+
+    return [
+      location.name,
+      location.houseNumber,
+      location.street,
+      location.city,
+      location.state,
+      location.country,
+    ]
+      .filter((part) => part !== null && part !== undefined && part !== "")
+      .join(", ");
+  }
+  if (!formData) {
+    return <p>Loading venue...</p>;
+  }
   return (
     <div
       style={{
@@ -1037,25 +1007,30 @@ export default function ManageEventInventory() {
         alignItems: "center",
       }}
     >
-      <h2>Manage Venue</h2>
+      <h2>Venue Editor</h2>
       {error && <p className="form-error">{error}</p>}
       {success && <p className="form-success">{success}</p>}
 
-    <div
+      <div
         style={{
-        display: "flex",
-        flexDirection: "column",
-        gap: "8px",
-        marginBottom: "12px",
-        width: "260px",
-        }}>
-    <p>
-        <strong>Venue Name:</strong> {formData.name}
-    </p>
-    <p>
-        <strong>Venue Location:</strong> {formData.location}
-    </p>
-    </div>
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          marginBottom: "12px",
+          width: "260px",
+        }}
+      >
+        <label>
+          Venue Name
+          <p>{formData.name}</p>
+        </label>
+
+        <label>
+          Venue Location
+          <p>{getReadableLocation(formData)}</p>
+        </label>
+      </div>
+
       <div
         style={{
           position: "relative",
@@ -1071,9 +1046,7 @@ export default function ManageEventInventory() {
           handleEntranceClick={handleEntranceClick}
           venue={formData}
           pendingRectangle={pendingRectangle}
-        ></VenueDisplay>
-
-       
+        />
 
         {renderPopup()}
       </div>
@@ -1086,26 +1059,26 @@ export default function ManageEventInventory() {
         }}
       >
         <button type="button" onClick={handleAddRow}>
-            Add Row
+          Add Row
         </button>
 
         <button type="button" onClick={handleAddColumn}>
-            Add Column
-            </button>
-        </div>
+          Add Column
+        </button>
+      </div>
 
-        {
+      {
         <div className="form-actions">
-            <button
+          <button
             type="button"
             onClick={() => {
-                void onSubmitVenue();
-                }}
-            >
-                {"Save Changes"}
-            </button>
-            </div>
-        }
+              void onSubmitVenue();
+            }}
+          >
+            {"Save Changes"}
+          </button>
         </div>
-    );
+      }
+    </div>
+  );
 }

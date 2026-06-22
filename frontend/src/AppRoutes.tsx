@@ -61,7 +61,6 @@ export default function AppRoutes() {
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
       </Route>
-
       <Route
         path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}

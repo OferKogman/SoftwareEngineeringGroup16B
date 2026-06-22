@@ -87,9 +87,7 @@ export default function VenueEditor() {
   const { sessionToken } = useSession();
   const [formData, setFormData] = useState<VenueCreateDTO>(initialVenue);
   const [venueName, setVenueName] = useState<string>(initialVenue.name);
-  const [venueLocation, setVenueLocation] = useState<string>(
-    initialVenue.location,
-  );
+  const [venueLocation, setVenueLocation] = useState<string>(initialVenue.location,);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
 

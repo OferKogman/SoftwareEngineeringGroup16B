@@ -105,6 +105,40 @@ public class ChosenSeatingSeg extends Segment {
 		}
 		return list;
 	}
+	public void setNewStock(List<String> newSeatsIDs, List<Integer> eventIDsToInitialize) {
+		List<String> refundSeatsIDs = new LinkedList<>();
+
+		for (String oldSeatID : this.seats.keySet()) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+
+		List<String> addSeatsIDs = new LinkedList<>();
+		for (String newSeatID : newSeatsIDs) {
+			if (!this.seats.keySet().contains(newSeatID)) {
+				addSeatsIDs.add(newSeatID);
+			}
+		}
+		for (String addSeatID : addSeatsIDs) {
+			validateSeatIDFormat(addSeatID);
+		}
+		for (String addSeatID : addSeatsIDs) {
+			String[] parts = addSeatID.split("-");
+			int row = Integer.parseInt(parts[0]);
+			int column = Integer.parseInt(parts[1]);
+			Seat newSeat = new Seat(row, column);
+
+			for (Integer eventID : eventIDsToInitialize) {
+				newSeat.addEvent(eventID);
+			}
+			seats.put(addSeatID, newSeat);
+		}
+
+		for (String refundSeatID : refundSeatsIDs) {
+			seats.remove(refundSeatID);
+		}
+	}
 	public void setNewStock(List<String> newSeatsIDs) {
 		// cut so that we have the list of seats that are to be deleted. meaning exsist in the old list but not in the new one. call it refund list
 		List<String> refundSeatsIDs = new LinkedList<>();
