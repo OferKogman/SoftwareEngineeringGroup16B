@@ -100,7 +100,6 @@ public class ReserveService {
             logger.info("ReserveService.reserveSeats: Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.save(q);
             logger.info("ReserveService.reserveSeats: Checking if user passed queue");
 
             q.validateUserPassedQueue(subjectID);
@@ -219,7 +218,6 @@ public class ReserveService {
             logger.info("ReserveService.reserveFieldSeats: Moving queue forward");
             q = queueImp.findByID(Integer.toString(eventID));
             q.addToQueue(subjectID);
-            queueImp.save(q);
             logger.info("ReserveService.reserveFieldSeats: Checking if user passed queue");
             q.validateUserPassedQueue(subjectID);
             logger.info("ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
@@ -397,14 +395,13 @@ public class ReserveService {
         try {
             q.removePassed(subjectID);
             queueImp.save(q);
-        } catch (IllegalStateException e) {
+        } catch (RuntimeException e) {
             logger.warn(
                     "ReserveService.queueRemovePassed: Failed to remove user {} from passed queue: {}",
                     subjectID,
                     e.getMessage());
         }
     }
-
     private String validateAssureNotAdminGetSubjectID(String sessionToken) {
         if (!authenticationService.validateToken(sessionToken)) {
             throw new AuthException("Invalid Token");
