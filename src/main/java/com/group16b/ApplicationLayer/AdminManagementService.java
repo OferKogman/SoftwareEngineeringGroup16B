@@ -1,4 +1,5 @@
 package com.group16b.ApplicationLayer;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -278,16 +279,29 @@ public class AdminManagementService {
             }
 
             logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivated event {}", eventID);
+            
             List<Order> orders=orderRepo.getByEventId(eventID);
+            List<RefundResult> refundResults=new ArrayList<>();
+            int successCount=0, failCount=0;
             for(Order order : orders)
             {
-                if(cancelOrder(order.getOrderId()))
-                    refundOrder(order.getOrderId());
+                if(cancelOrder(order.getOrderId())){
+                    RefundResult res=refundOrder(order.getOrderId());
+                    if(res.status()==RefundStatus.SUCCESS)
+                        successCount++;
+                    else
+                        failCount++;
+                    refundResults.add(res);
+                }
             }
+
+            logger.info("AdminManagementService.deactivateEventAndRefundUser: finished refunding, successes: {}, failures: {}.",successCount,failCount);
+            if(failCount!=0)
+                logger.warn("AdminManagementService.deactivateEventAndRefundUser: SOME REFUNDS FAILED FOR EVENT {}, manuall reconsaliation is needed! Also don't forget to brushyour teeth!",eventID);
 
 
          } catch(Exception e){
-            
+            logger.error("AdminManagementService.deactivateEventAndRefundUser: An unexpected exception: ",e);
          }
     }
 
