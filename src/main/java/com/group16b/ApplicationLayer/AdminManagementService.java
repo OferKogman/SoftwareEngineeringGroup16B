@@ -12,6 +12,8 @@ import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -33,14 +35,18 @@ public class AdminManagementService {
     private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
     private IRepository<SystemAdmin> systemAdminRepo;
+    private final IPaymentGateway paymentGateway;
+    private final ITicketGateway ticketGateway;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo, IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
         this.orderRepo = orderRepo;
         this.eventRepo = eventRepo;
         this.userRepository = userRepository;
         this.systemAdminRepo = systemAdminRepo;
+        this.paymentGateway=paymentGateway;
+        this.ticketGateway=ticketGateway;
     }
 
 
@@ -238,10 +244,86 @@ public class AdminManagementService {
     private void deactivateEvents(List<Event> events) {
         logger.info("AdminManagementService.deactivateEvents: Deactivating {} events", events.size());
         for (Event e : events) {
-            e.deactivateEvent();
+            deactivateEventAndRefundUser(e.getEventID());
             logger.info("AdminManagementService.deactivateEvents: Deactivated event with ID {}", e.getEventID());
         }
     }
+    private void deactivateEventAndRefundUser(int eventID)
+    {
+         logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivating event {}", eventID);
+         try{
+            while(true){
+                try{
+                    Event event=eventRepo.findByID(String.valueOf(eventID));
+                    event.deactivateEvent();
+                    eventRepo.save(event);
+                    break;
+                } catch(OptimisticLockingFailureException e){
+                    logger.warn("AdminManagementService.deactivateEventAndRefundUser: optimistic lock exception when saving event {}",eventID);
+                    continue;
+
+                } catch (IllegalArgumentException e){
+                    logger.warn("AdminManagementService.deactivateEventAndRefundUser: IllegalArgumentException: {}",e.getMessage());
+                    return;
+                } catch (IllegalStateException e){
+                    logger.warn("AdminManagementService.deactivateEventAndRefundUser: IllegalStateException: {}",e.getMessage());
+                    break;
+                }
+            }
+             logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivated event {}", eventID);
+            List<Order> orders=orderRepo.getByEventId(eventID);
+            for(Order order : orders)
+            {
+                if(cancelOrder(order.getOrderId()))
+                    refundOrder(order.getOrderId());
+            }
+
+
+         } catch(Exception e){
+            
+         }
+    }
+
+    private boolean cancelOrder(String orderID)
+    {
+        logger.info("AdminManagementService.cancelOrder: canceling order: {}", orderID);
+        while(true)
+        {   
+            try{
+                Order order= orderRepo.findByID(orderID);
+                boolean toRefund=false;
+
+                if(order.isActive()){ //only cancel
+                    order.CancelOrder();
+                }
+                else if(order.isCompleted())
+                { //refund
+                    order.CancelOrder();
+                    toRefund=true;
+                }
+                else{ //already canceled
+                    logger.info("AdminManagementService.cancelOrder: order {} was already canceled", orderID);
+                    return false;
+                }
+                orderRepo.save(order);
+                return toRefund;
+
+            } catch(OptimisticLockingFailureException e){
+                logger.warn("AdminManagementService.cancelOrder: concurency issue while canceling order: {}", orderID);
+                continue;
+            } catch(IllegalArgumentException e){
+                logger.warn("AdminManagementService.cancelOrder: IllegalArgumentException: {}", e.getMessage());
+                return false;
+            }
+        }
+    } 
+    
+
+    private void refundOrder(String orderID)
+    {
+        logger.info("AdminManagementService.refundOrder: refunding order: {}", orderID);
+
+    } 
 
     public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try{

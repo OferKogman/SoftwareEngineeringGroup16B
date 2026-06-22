@@ -84,6 +84,16 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 	}
 
 	@Override
+	public List<Order> getByEventId(int eventId)
+	{
+		return this.orders.values().stream()
+				.filter(Order::isCompleted)
+				.filter(order -> order.getEventId() == eventId)
+				.map(Order::new)
+				.toList();
+	}
+
+	@Override
 	public synchronized void delete(String orderId) {
 		if (this.orders.containsKey(orderId)) {
 			Order current = this.orders.get(orderId);
