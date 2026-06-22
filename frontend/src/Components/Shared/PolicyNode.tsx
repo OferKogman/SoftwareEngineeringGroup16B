@@ -7,7 +7,11 @@ import "./CSS/PolicyNode.css";
 type PolicyNodeData = {
   label: string;
   type: PurchasePolicyTypes;
+  path: PolicyPath;
+  onSwap: (path: PolicyPath) => void;
 };
+
+export type PolicyPath = ("left" | "right")[];
 
 export type PolicyNode = Node<PolicyNodeData>;
 
@@ -20,11 +24,14 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
       case "OR":
         return (
           <>
-            <button>
+            <button
+              onClick={() => {
+                props.data.onSwap(props.data.path);
+                setShowPopup(false);
+              }}
+            >
               Change {props.data.type === "AND" ? "to OR" : "to AND"}
             </button>
-
-            <button>Replace policy tree</button>
           </>
         );
 
@@ -34,8 +41,6 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
           <>
             <button>Change age</button>
 
-            <button>Create policy</button>
-
             <button>Replace policy</button>
           </>
         );
@@ -44,9 +49,7 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
       case "MAX_TICKETS":
         return (
           <>
-            <button>Change tickets amount</button>
-
-            <button>Create policy</button>
+            <button>Change amount</button>
 
             <button>Replace policy</button>
           </>

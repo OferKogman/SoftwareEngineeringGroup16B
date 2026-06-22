@@ -51,5 +51,6 @@ export type PurchasePolicyDTO =
   | MinAgeDTO
   | MaxAgeDTO
   | MinTicketsDTO
-  | MaxTicketsDTO
-  | null;
+  | MaxTicketsDTO;
+
+export type NullablePurchasePolicyDTO = PurchasePolicyDTO | null;
