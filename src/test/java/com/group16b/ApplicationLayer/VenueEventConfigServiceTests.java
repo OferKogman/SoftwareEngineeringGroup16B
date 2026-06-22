@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -12,12 +13,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import java.util.Map;
-import java.util.Arrays;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -48,6 +50,7 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.Location;
+import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
@@ -102,8 +105,7 @@ public class VenueEventConfigServiceTests {
                                 mockAuthService,
                                 mockProductionCompanyRepository,
                                 mockLocationService,
-                                mockOrderRepository, mockPaymentService, mockTicketGateway
-                                );
+                                mockOrderRepository, mockPaymentService, mockTicketGateway);
         }
 
         private VenueRecord createValidVenueRecord() {
@@ -351,7 +353,7 @@ public class VenueEventConfigServiceTests {
 
                 Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ConcurrentHashMap<>(),
                                 targetVenueID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(),
-                                new ConcurrentHashMap<String, Entrance>(),1);
+                                new ConcurrentHashMap<String, Entrance>(), 1);
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
@@ -406,6 +408,7 @@ public class VenueEventConfigServiceTests {
                 assertFalse(result.isSuccess());
                 assertEquals("An unexpected system error occurred", result.getError());
         }
+
         private void mockValidAuthAndPermission(Venue venue, ProductionCompany company) {
                 User mockUser = mock(User.class);
 
@@ -420,161 +423,190 @@ public class VenueEventConfigServiceTests {
                 doNothing().when(company).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
                 doNothing().when(venue).validateCompanyID(companyID);
         }
-        @Test
-        void editVenueSegments_InvalidInput_ReturnsFail() {
-        Result<Boolean> result = configService.editVenueSegments(
-                0,
-                "venue-123",
-                Map.of(),
-                Map.of(),
-                List.of(),
-                List.of(),
-                validToken
-        );
 
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Invalid session token.", result.getError());
-        verify(mockVenueRepository, never()).save(any(Venue.class));
+        private FieldSegRecord fieldRecord(String segmentID, int size) {
+                return new FieldSegRecord(
+                                segmentID,
+                                size,
+                                new GridRectangleRecord(0, 0, 1, 1));
         }
+
+        private ChosenSeatingSegRecord seatRecord(String segmentID, SeatRecord... seats) {
+                return new ChosenSeatingSegRecord(
+                                segmentID,
+                                List.of(seats),
+                                new GridRectangleRecord(0, 0, 1, seats.length));
+        }
+
+        private VenueRecord editVenueRecord(
+                        List<FieldSegRecord> fieldSeg,
+                        List<ChosenSeatingSegRecord> seatSeg) {
+                return new VenueRecord(
+                                venueName,
+                                "Madison Square Garden",
+                                fieldSeg,
+                                seatSeg,
+                                List.of(),
+                                List.of(),
+                                new VenueGridRecord(6, 7),
+                                List.of());
+        }
+
+        private void mockExistingSegments(Venue venue, String... segmentIDs) {
+                Map<String, Segment> segments = new ConcurrentHashMap<>();
+
+                for (String segmentID : segmentIDs) {
+                        segments.put(segmentID, mock(Segment.class));
+                }
+
+                when(venue.getSegments()).thenReturn(segments);
+        }
+
+        @Test
+        void editVenueSegments_NullEditedVenue_ReturnsFail() {
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                null);
+
+                assertFalse(result.isSuccess());
+                assertEquals("Invalid input parameters.", result.getError());
+                verify(mockVenueRepository, never()).save(any(Venue.class));
+        }
+
         @Test
         void editVenueSegments_InvalidToken_ReturnsFail() {
-        when(mockAuthService.validateToken(validToken)).thenReturn(false);
+                when(mockAuthService.validateToken(validToken)).thenReturn(false);
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of(),
-                Map.of(),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
-        assertFalse(result.isSuccess());
-        assertEquals("Authentication failed: Invalid session token.", result.getError());
-        verify(mockVenueRepository, never()).findByID(anyString());
+                assertFalse(result.isSuccess());
+                assertEquals("Authentication failed: Invalid session token.", result.getError());
+                verify(mockVenueRepository, never()).findByID(anyString());
         }
+
         @Test
         void editVenueSegments_UserWithoutPermission_ReturnsFail() {
-        Venue venue = mock(Venue.class);
-        ProductionCompany company = mock(ProductionCompany.class);
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
 
-        mockValidAuthAndPermission(venue, company);
+                mockValidAuthAndPermission(venue, company);
 
-        doThrow(new IllegalArgumentException("Permission denied."))
-                .when(company)
-                .validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
+                doThrow(new IllegalArgumentException("Permission denied."))
+                                .when(company)
+                                .validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of(),
-                Map.of(),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
-        assertFalse(result.isSuccess());
-        assertEquals("Permission denied.", result.getError());
-        verify(mockVenueRepository, never()).save(any(Venue.class));
+                assertFalse(result.isSuccess());
+                assertEquals("Permission denied.", result.getError());
+                verify(mockVenueRepository, never()).save(any(Venue.class));
         }
+
         @Test
         void editVenueSegments_VenueBelongsToDifferentCompany_ReturnsFail() {
-        Venue venue = mock(Venue.class);
-        ProductionCompany company = mock(ProductionCompany.class);
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
 
-        mockValidAuthAndPermission(venue, company);
+                mockValidAuthAndPermission(venue, company);
 
-        doThrow(new IllegalArgumentException("Venue does not belong to this company."))
-                .when(venue)
-                .validateCompanyID(companyID);
+                doThrow(new IllegalArgumentException("Venue does not belong to this company."))
+                                .when(venue)
+                                .validateCompanyID(companyID);
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of(),
-                Map.of(),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
-        assertFalse(result.isSuccess());
-        assertEquals("Venue does not belong to this company.", result.getError());
-        verify(mockVenueRepository, never()).save(any(Venue.class));
+                assertFalse(result.isSuccess());
+                assertEquals("Venue does not belong to this company.", result.getError());
+                verify(mockVenueRepository, never()).save(any(Venue.class));
         }
+
         @Test
         void editVenueSegments_NoFutureEvents_EditsVenueAndSaves_NoRefunds() {
-        Venue venue = mock(Venue.class);
-        ProductionCompany company = mock(ProductionCompany.class);
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
 
-        mockValidAuthAndPermission(venue, company);
+                mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "field-a", "seat-a");
 
-        when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
+                when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of("field-a", 50),
-                Map.of("seat-a", List.of("A1", "A2")),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 50)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1),
+                                                                new SeatRecord(1, 2)))));
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
 
-        verify(venue).setNewFieldStock("field-a", 50);
-        verify(venue).setNewSeatingStock("seat-a", List.of("A1", "A2"));
-        verify(mockVenueRepository).save(venue);
+                verify(venue).setNewFieldStock("field-a", 50);
+                verify(venue).setNewSeatingStock("seat-a", List.of("1-1", "1-2"), List.of());
+                verify(mockVenueRepository).save(venue);
 
-        verify(mockOrderRepository, never()).getCompletedByEventIdSeatIds(any(Integer.class), anyString(), any());
-        verify(mockOrderRepository, never()).getCompletedByEventIdField(any(Integer.class), anyString());
+                verify(mockOrderRepository, never()).getCompletedByEventIdSeatIds(anyInt(), anyString(), any());
+                verify(mockOrderRepository, never()).getCompletedByEventIdField(anyInt(), anyString());
         }
+
         @Test
         void editVenueSegments_SeatingRefund_CancelsPaymentRevokesTicketCancelsOrderAndSavesOrder() throws Exception {
-        Venue venue = mock(Venue.class);
-        ProductionCompany company = mock(ProductionCompany.class);
-        Event futureEvent = mock(Event.class);
-        Order order = mock(Order.class);
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
+                Event futureEvent = mock(Event.class);
+                Order order = mock(Order.class);
 
-        mockValidAuthAndPermission(venue, company);
+                mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "seat-a");
 
-        when(futureEvent.getEventID()).thenReturn(eventID);
-        when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
-        when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(futureEvent.getEventID()).thenReturn(eventID);
+                when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
+                when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
-        when(venue.getStockRefundForEvent(eventID, "seat-a", List.of("A1")))
-                .thenReturn(List.of("A1"));
+                when(venue.getStockRefundForEvent(eventID, "seat-a", List.of("1-1")))
+                                .thenReturn(List.of("1-2"));
 
-        when(mockOrderRepository.getCompletedByEventIdSeatIds(eventID, "seat-a", List.of("A1")))
-                .thenReturn(List.of(order));
+                when(mockOrderRepository.getCompletedByEventIdSeatIds(eventID, "seat-a", List.of("1-2")))
+                                .thenReturn(List.of(order));
 
-        when(order.getTransactionId()).thenReturn(11);
-        when(order.getExternalTicket()).thenReturn("ticket-1");
+                when(order.getTransactionId()).thenReturn(11);
+                when(order.getExternalTicket()).thenReturn("ticket-1");
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of(),
-                Map.of("seat-a", List.of("A1")),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))));
 
-        assertTrue(result.isSuccess());
+                assertTrue(result.isSuccess());
 
-        verify(mockVenueRepository).save(venue);
-        verify(mockPaymentService).cancelPayment(11);
-        verify(mockTicketGateway).revokeTicket("ticket-1");
-        verify(order).CancelOrder();
-        verify(mockOrderRepository).save(order);
+                verify(mockVenueRepository).save(venue);
+                verify(mockPaymentService).cancelPayment(11);
+                verify(mockTicketGateway).revokeTicket("ticket-1");
+                verify(order).CancelOrder();
+                verify(mockOrderRepository).save(order);
         }
+
         @Test
-                void editVenueSegments_FieldRefund_RefundsSmallestOrdersUntilAmountCovered() throws Exception {
+        void editVenueSegments_FieldRefund_RefundsSmallestOrdersUntilAmountCovered() throws Exception {
                 Venue venue = mock(Venue.class);
                 ProductionCompany company = mock(ProductionCompany.class);
                 Event futureEvent = mock(Event.class);
@@ -583,10 +615,12 @@ public class VenueEventConfigServiceTests {
                 Order bigOrder = mock(Order.class);
 
                 mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "field-a");
 
                 when(futureEvent.getEventID()).thenReturn(eventID);
                 when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
                 when(venue.getReservedStockBySegmentEventField(eventID, "field-a")).thenReturn(5);
 
@@ -600,17 +634,15 @@ public class VenueEventConfigServiceTests {
                 when(bigOrder.getExternalTicket()).thenReturn("ticket-big");
 
                 when(mockOrderRepository.getCompletedByEventIdField(eventID, "field-a"))
-                        .thenReturn(new ArrayList<>(Arrays.asList(bigOrder, smallOrder)));
+                                .thenReturn(new ArrayList<>(Arrays.asList(bigOrder, smallOrder)));
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        Map.of("field-a", 3),
-                        Map.of(),
-                        List.of(),
-                        List.of(),
-                        validToken
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 3)),
+                                                List.of()));
 
                 assertTrue(result.isSuccess());
 
@@ -623,141 +655,214 @@ public class VenueEventConfigServiceTests {
                 verify(mockTicketGateway, never()).revokeTicket("ticket-big");
                 verify(bigOrder, never()).CancelOrder();
         }
+
         @Test
-                void editVenueSegments_FutureEventNoRefundNeeded_EditsAndSavesSuccessfully() {
+        void editVenueSegments_FutureEventNoRefundNeeded_EditsAndSavesSuccessfully() {
                 Venue venue = mock(Venue.class);
                 ProductionCompany company = mock(ProductionCompany.class);
                 Event futureEvent = mock(Event.class);
 
                 mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "field-a", "seat-a");
 
                 when(futureEvent.getEventID()).thenReturn(eventID);
                 when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
                 when(venue.getReservedStockBySegmentEventField(eventID, "field-a")).thenReturn(3);
-                when(venue.getStockRefundForEvent(eventID, "seat-a", List.of("A1", "A2")))
-                        .thenReturn(List.of());
+                when(venue.getStockRefundForEvent(eventID, "seat-a", List.of("1-1", "1-2")))
+                                .thenReturn(List.of());
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        Map.of("field-a", 5),
-                        Map.of("seat-a", List.of("A1", "A2")),
-                        List.of(),
-                        List.of(),
-                        validToken
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 5)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1),
+                                                                new SeatRecord(1, 2)))));
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
 
                 verify(venue).setNewFieldStock("field-a", 5);
-                verify(venue).setNewSeatingStock("seat-a", List.of("A1", "A2"));
+                verify(venue).setNewSeatingStock("seat-a", List.of("1-1", "1-2"), List.of(eventID));
                 verify(mockVenueRepository).save(venue);
 
-                verify(mockOrderRepository, never()).getCompletedByEventIdField(any(Integer.class), anyString());
-                verify(mockOrderRepository, never()).getCompletedByEventIdSeatIds(any(Integer.class), anyString(), any());
-                }
+                verify(mockOrderRepository, never()).getCompletedByEventIdField(anyInt(), anyString());
+                verify(mockOrderRepository, never()).getCompletedByEventIdSeatIds(anyInt(), anyString(), any());
+        }
+
         @Test
-                void editVenueSegments_PastEventIgnored_NoRefundsButEditsVenue() {
+        void editVenueSegments_PastEventIgnored_NoRefundsButEditsVenue() {
                 Venue venue = mock(Venue.class);
                 ProductionCompany company = mock(ProductionCompany.class);
                 Event pastEvent = mock(Event.class);
 
                 mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "field-a", "seat-a");
 
                 when(pastEvent.getEventID()).thenReturn(eventID);
                 when(pastEvent.getEventStartTime()).thenReturn(LocalDateTime.now().minusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(pastEvent));
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        Map.of("field-a", 10),
-                        Map.of("seat-a", List.of("A1")),
-                        List.of(),
-                        List.of(),
-                        validToken
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 10)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))));
 
                 assertTrue(result.isSuccess());
 
                 verify(venue).setNewFieldStock("field-a", 10);
-                verify(venue).setNewSeatingStock("seat-a", List.of("A1"));
+                verify(venue).setNewSeatingStock("seat-a", List.of("1-1"), List.of());
                 verify(mockVenueRepository).save(venue);
 
-                verify(venue, never()).getReservedStockBySegmentEventField(any(Integer.class), anyString());
-                verify(venue, never()).getStockRefundForEvent(any(Integer.class), anyString(), any());
-                
+                verify(venue, never()).getReservedStockBySegmentEventField(anyInt(), anyString());
+                verify(venue, never()).getStockRefundForEvent(anyInt(), anyString(), any());
         }
+
         @Test
-        void editVenueSegments_EmptyChanges_StillSavesSuccessfully() {
-        Venue venue = mock(Venue.class);
-        ProductionCompany company = mock(ProductionCompany.class);
+        void editVenueSegments_EmptyEditedVenue_DeletesExistingSegmentsAndSaves() {
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
 
-        mockValidAuthAndPermission(venue, company);
+                mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "field-a", "seat-a");
 
-        when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
+                when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of(),
-                Map.of(),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
 
-        verify(mockVenueRepository).save(venue);
-        verify(venue, never()).setNewFieldStock(anyString(), any(Integer.class));
-        verify(venue, never()).setNewSeatingStock(anyString(), any());
+                verify(venue).removeSegment("field-a");
+                verify(venue).removeSegment("seat-a");
+                verify(mockVenueRepository).save(venue);
         }
+
         @Test
         void editVenueSegments_MultipleFutureEvents_ChecksRefundsForAllAndSucceeds() {
-        Venue venue = mock(Venue.class);
-        ProductionCompany company = mock(ProductionCompany.class);
-        Event event1 = mock(Event.class);
-        Event event2 = mock(Event.class);
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
+                Event event1 = mock(Event.class);
+                Event event2 = mock(Event.class);
 
-        mockValidAuthAndPermission(venue, company);
+                mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue, "field-a", "seat-a");
 
-        when(event1.getEventID()).thenReturn(101);
-        when(event1.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(1));
+                when(event1.getEventID()).thenReturn(101);
+                when(event1.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(1));
 
-        when(event2.getEventID()).thenReturn(102);
-        when(event2.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(3));
+                when(event2.getEventID()).thenReturn(102);
+                when(event2.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(3));
 
-        when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(event1, event2));
+                when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(event1, event2));
+                when(mockEventRepository.findByID(Integer.toString(101))).thenReturn(event1);
+                when(mockEventRepository.findByID(Integer.toString(102))).thenReturn(event2);
 
-        when(venue.getReservedStockBySegmentEventField(101, "field-a")).thenReturn(2);
-        when(venue.getReservedStockBySegmentEventField(102, "field-a")).thenReturn(4);
+                when(venue.getReservedStockBySegmentEventField(101, "field-a")).thenReturn(2);
+                when(venue.getReservedStockBySegmentEventField(102, "field-a")).thenReturn(4);
 
-        when(venue.getStockRefundForEvent(101, "seat-a", List.of("A1"))).thenReturn(List.of());
-        when(venue.getStockRefundForEvent(102, "seat-a", List.of("A1"))).thenReturn(List.of());
+                when(venue.getStockRefundForEvent(101, "seat-a", List.of("1-1"))).thenReturn(List.of());
+                when(venue.getStockRefundForEvent(102, "seat-a", List.of("1-1"))).thenReturn(List.of());
 
-        Result<Boolean> result = configService.editVenueSegments(
-                companyID,
-                "venue-123",
-                Map.of("field-a", 10),
-                Map.of("seat-a", List.of("A1")),
-                List.of(),
-                List.of(),
-                validToken
-        );
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 10)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))));
 
-        assertTrue(result.isSuccess());
+                assertTrue(result.isSuccess());
 
-        verify(venue).getReservedStockBySegmentEventField(101, "field-a");
-        verify(venue).getReservedStockBySegmentEventField(102, "field-a");
+                verify(venue).getReservedStockBySegmentEventField(101, "field-a");
+                verify(venue).getReservedStockBySegmentEventField(102, "field-a");
 
-        verify(venue).getStockRefundForEvent(101, "seat-a", List.of("A1"));
-        verify(venue).getStockRefundForEvent(102, "seat-a", List.of("A1"));
+                verify(venue).getStockRefundForEvent(101, "seat-a", List.of("1-1"));
+                verify(venue).getStockRefundForEvent(102, "seat-a", List.of("1-1"));
 
-        verify(mockVenueRepository).save(venue);
+                verify(mockVenueRepository).save(venue);
+        }
+
+        @Test
+        void editVenueSegments_NewSegments_AddsAndInitializesForFutureEvents() {
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
+                Event futureEvent = mock(Event.class);
+
+                mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue);
+
+                when(futureEvent.getEventID()).thenReturn(eventID);
+                when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
+                when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
+
+                FieldSegRecord newField = fieldRecord("field-new", 20);
+                ChosenSeatingSegRecord newSeat = seatRecord("seat-new", new SeatRecord(1, 1));
+
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(newField), List.of(newSeat)));
+
+                assertTrue(result.isSuccess());
+
+                verify(venue).addFieldSegment(newField);
+                verify(venue).initializeSegmentForEvent("field-new", eventID);
+
+                verify(venue).addChosenSeatingSegment(newSeat);
+                verify(venue).initializeSegmentForEvent("seat-new", eventID);
+
+                verify(mockVenueRepository).save(venue);
+        }
+
+        @Test
+        void editVenueSegments_UpdatesGridStagesAndEntrances() {
+                Venue venue = mock(Venue.class);
+                ProductionCompany company = mock(ProductionCompany.class);
+
+                mockValidAuthAndPermission(venue, company);
+                mockExistingSegments(venue);
+
+                when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
+
+                VenueGridRecord grid = new VenueGridRecord(20, 30);
+                StageRecord stage = new StageRecord("ST1", new GridRectangleRecord(1, 1, 2, 2));
+                EntranceRecord entrance = new EntranceRecord("EN1", new GridRectangleRecord(3, 3, 1, 1));
+
+                VenueRecord editedVenue = new VenueRecord(
+                                venueName,
+                                "Madison Square Garden",
+                                List.of(),
+                                List.of(),
+                                List.of(stage),
+                                List.of(entrance),
+                                grid,
+                                List.of());
+
+                Result<Boolean> result = configService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editedVenue);
+
+                assertTrue(result.isSuccess());
+
+                verify(venue).replaceGrid(grid);
+                verify(venue).replaceStages(List.of(stage));
+                verify(venue).replaceEntrances(List.of(entrance));
+                verify(mockVenueRepository).save(venue);
         }
 }

@@ -12,6 +12,31 @@ export default function ViewUsers({ users }: UsersListProps) {
 
   const apiFetch = useApiFetch();
 
+  async function handleCancelSubscription(userID: string) {
+    try {
+      if (users !== undefined && users !== null) {
+        setUserDTOList(users);
+        return;
+      }
+
+      const response = await apiFetch(
+        `http://localhost:8080/api/admin-management/removeUser/${userID}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      setUserDTOList((prev) =>
+        prev.filter((user) => user.userEmail !== userID),
+      );
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete users.");
+    }
+  }
+
   useEffect(() => {
     async function loadUsers() {
       try {
@@ -27,14 +52,14 @@ export default function ViewUsers({ users }: UsersListProps) {
           },
         );
         if (!response.ok) {
-          throw new Error("Failed to load users.");
+          throw new Error(await response.text());
         }
 
         const usersFromServer: UserDTO[] = await response.json();
 
         setUserDTOList(usersFromServer);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load users.");
+        setError(err instanceof Error ? err.message : "Failed to load user.");
       }
     }
 
@@ -49,11 +74,18 @@ export default function ViewUsers({ users }: UsersListProps) {
     <div>
       {error && <p className="form-error">{error}</p>}
 
-      <table>
+      <table
+        style={{
+          width: "75%",
+          tableLayout: "fixed",
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
         <thead>
           <tr>
-            <th>ID</th>
-            <th>Actions</th>
+            <th style={{ width: "60%" }}>ID</th>
+            <th style={{ width: "15%" }}>Actions</th>
           </tr>
         </thead>
 
@@ -63,8 +95,13 @@ export default function ViewUsers({ users }: UsersListProps) {
               <td>{user.userEmail}</td>
 
               <td>
-                {/* Remove user from platform */}
-                <button onClick={() => {}}>Cancel Subscription</button>
+                <button
+                  onClick={() => {
+                    handleCancelSubscription(user.userEmail);
+                  }}
+                >
+                  Cancel Subscription
+                </button>
               </td>
             </tr>
           ))}

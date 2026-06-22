@@ -1,6 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +116,9 @@ public class EventService {
 			logger.info("EventService.activateEvent: Session token verified successfully.");
 
 			Event event = eventRepository.findByID(String.valueOf(eventID));
+
+			event.validateEventIsNotEnded();	//	validae that event has a price set, that it hasnt ended so it can be activated, will throw IllegalStateException if not valid
+			event.validateEventPriceIsSet();	//
 
 			while (true) {
 				logger.info("EventService.activateEvent: retrieving event for activation");
@@ -329,8 +333,6 @@ public class EventService {
 		}
 	}
 
-	
-
 	public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
 		try {
 
@@ -380,7 +382,8 @@ public class EventService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-	// 													segmentId -> price
+
+	// segmentId -> price
 	public Result<String> addEventPrices(int eventID, Map<String, Double> prices, String sessionToken) {
 		try {
 			String userID = validateAndGetUserID(sessionToken);
@@ -389,7 +392,8 @@ public class EventService {
 			Event event = eventRepository.findByID(String.valueOf(eventID));
 
 			logger.info("EventService.addEventPrices: retrieving production company for event price addition");
-			ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(event.getEventProductionCompanyID()));
+			ProductionCompany company = productionCompanyRepository
+					.findByID(String.valueOf(event.getEventProductionCompanyID()));
 
 			logger.info("EventService.addEventPrices: Validating user permissions for event price addition.");
 			company.validateUserPermissions(userID, ManagerPermissions.EVENT_INVENTORY);
@@ -405,8 +409,10 @@ public class EventService {
 			venueRepository.save(venue);
 			double minPrice = prices.values().stream().min(Double::compare).orElse(0.0);
 			event.setEventPrice(minPrice);
+			eventRepository.save(event);
 
-			logger.info("EventService.addEventPrices: Prices added successfully for event with ID: " + event.getEventID());
+			logger.info(
+					"EventService.addEventPrices: Prices added successfully for event with ID: " + event.getEventID());
 			return Result.makeOk("Prices added successfully.");
 		} catch (IllegalArgumentException e) {
 			logger.error("EventService.addEventPrices: Failed to add prices: " + e.getMessage());
@@ -462,5 +468,4 @@ public class EventService {
 		return userID;
 	}
 
-	
 }

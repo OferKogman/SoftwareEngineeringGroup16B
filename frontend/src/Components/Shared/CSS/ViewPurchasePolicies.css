@@ -1,0 +1,45 @@
+.policy-box {
+  border: 2px solid rgba(216, 180, 255, 0.3);
+  border-radius: 12px;
+
+  padding: 1rem;
+  margin: 0.75rem 0;
+
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.policy-box-title {
+  text-align: center;
+
+  font-weight: 700;
+  font-size: 1.05rem;
+
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+
+  border-bottom: 1px solid rgba(216, 180, 255, 0.2);
+}
+
+.policy-box-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.policy-leaf {
+  padding: 0.75rem;
+
+  border-radius: 8px;
+
+  background: rgba(255, 255, 255, 0.05);
+
+  border: 1px solid rgba(216, 180, 255, 0.15);
+}
+
+.light .policy-box-title {
+  color: rgba(115, 63, 162, 0.9);
+}
+
+.dark .policy-box-title {
+  color: rgba(255, 183, 0, 0.9);
+}

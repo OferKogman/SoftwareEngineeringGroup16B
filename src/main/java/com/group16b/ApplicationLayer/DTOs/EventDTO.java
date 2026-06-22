@@ -4,6 +4,13 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.AndDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxAgeDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxTicketsDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MinAgeDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MinTicketsDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.OrDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.PurchasePolicyDTO;
 import com.group16b.DomainLayer.Event.Event;
 
 public class EventDTO {
@@ -17,7 +24,7 @@ public class EventDTO {
 	private String category;
 	private final int productionCompanyID;
 	private final Set<DiscountPolicyDTO> discountPolicy;
-	private final Set<PurchasePolicyDTO> purchasePolicy;
+	private final PurchasePolicyDTO purchasePolicy;
 	private double price;
 	private double rating;
 
@@ -37,10 +44,9 @@ public class EventDTO {
 		for (var policy : event.getEventDiscountPolicy()) {
 			discountPolicy.add(new DiscountPolicyDTO(policy));
 		}
-		purchasePolicy = new HashSet<>();
-		for (var policy : event.getEventPurchasePolicy()) {
-			purchasePolicy.add(new PurchasePolicyDTO(policy));
-		}
+		purchasePolicy = new AndDTO(new OrDTO(new AndDTO(new MinAgeDTO(
+				55), new MaxTicketsDTO(5)), new MaxAgeDTO(18)),
+				new OrDTO(new MinTicketsDTO(10), new MaxTicketsDTO(2)));
 		price = event.getEventPrice();
 		rating = event.getEventRating();
 
@@ -87,7 +93,7 @@ public class EventDTO {
 		return this.discountPolicy;
 	}
 
-	public Set<PurchasePolicyDTO> getEventPurchasePolicy() {
+	public PurchasePolicyDTO getEventPurchasePolicy() {
 		return this.purchasePolicy;
 	}
 

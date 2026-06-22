@@ -14,6 +14,34 @@ export default function EventInformation() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  async function handleCreateOrder() {
+    try {
+      const response = await apiFetch(
+        `http://localhost:8080/events/${eventID}/reservations/status`,
+        {
+          method: "GET",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const status = await response.json();
+      if (status === -1) {
+        navigate("create-order");
+      } else {
+        navigate(`/events/${eventID}/queue`, {
+          state: {
+            initialStatus: status,
+          },
+        });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to enroll.");
+    }
+  }
+
   useEffect(() => {
     async function loadEvent() {
       if (!eventID) return;
@@ -73,7 +101,7 @@ export default function EventInformation() {
       ) : (
         <button
           className="order-tickets-button"
-          onClick={() => navigate("create-order")}
+          onClick={() => handleCreateOrder()}
         >
           Order Tickets
         </button>

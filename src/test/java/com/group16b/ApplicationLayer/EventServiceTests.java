@@ -112,6 +112,7 @@ public class EventServiceTests {
 
                 e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1,
                                 3.5), user1.getEmail());
+                e1.setEventPrice(10.0);
                 eventRepository.save(e1);
                 venue1.bookEvent(e1.getEventStartTime(), e1.getEventEndTime(), 1);
                 venueRepository.save(venue1);

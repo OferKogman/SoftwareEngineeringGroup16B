@@ -270,6 +270,7 @@ export default function VenueEditor() {
 
     const newSegment: FieldSegDTO = {
       segmentID: getNextID(Object.keys(formData.segments), "F"),
+      eventPrices: {},
       size: 0,
       area: {
         startRow: pendingRectangle.startRow,
@@ -342,6 +343,7 @@ export default function VenueEditor() {
 
     const newSegment: ChosenSeatingSegDTO = {
       segmentID: getNextID(Object.keys(formData.segments), "S"),
+      eventPrices: {},
       seats: createSeatsRecord(newSegmentArea),
       area: newSegmentArea,
     };
@@ -364,6 +366,7 @@ export default function VenueEditor() {
         [newSegment.segmentID]: newSegment,
       },
     }));
+    console.log(formData);
 
     setPendingRectangle(null);
   }

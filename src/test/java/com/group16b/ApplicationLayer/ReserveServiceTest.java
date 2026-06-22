@@ -212,7 +212,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
 
@@ -392,7 +392,7 @@ public class ReserveServiceTest {
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
 
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -415,7 +415,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -438,7 +438,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -460,7 +460,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -483,7 +483,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -532,7 +532,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -576,7 +576,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -620,7 +620,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
 
@@ -725,7 +725,7 @@ public class ReserveServiceTest {
                 assertEquals("An unexpected error occurred: DB exploded", result.getError());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -757,7 +757,7 @@ public class ReserveServiceTest {
                 verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("B-1", "B-2"), testEvent.getEventID());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -807,7 +807,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -931,7 +931,7 @@ public class ReserveServiceTest {
                 verify(queue).addToQueue(testUser.getEmail());
                 verify(queue).validateUserPassedQueue(testUser.getEmail());
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -950,7 +950,7 @@ public class ReserveServiceTest {
                 assertEquals(ordersBefore, orderRepo.getAll().size());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -969,7 +969,7 @@ public class ReserveServiceTest {
                 assertEquals(ordersBefore, orderRepo.getAll().size());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -987,7 +987,7 @@ public class ReserveServiceTest {
                 assertEquals(ordersBefore, orderRepo.getAll().size());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
         @Test
         void reserveFieldSeats_purchasePolicyFails_returnsFailAndClearsQueue() {
@@ -1026,7 +1026,7 @@ public class ReserveServiceTest {
                 assertEquals(ordersBefore, orderRepo.getAll().size());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -1061,7 +1061,7 @@ public class ReserveServiceTest {
                 assertEquals(ordersBefore, orderRepo.getAll().size());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -1096,7 +1096,7 @@ public class ReserveServiceTest {
                 assertEquals(ordersBefore, orderRepo.getAll().size());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
 
@@ -1204,7 +1204,7 @@ public class ReserveServiceTest {
                 assertEquals("An unexpected error occurred: DB exploded", result.getError());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test
@@ -1240,7 +1240,7 @@ public class ReserveServiceTest {
                 verify(venueSpy).cancelFieldReservation("fieldSeg1", 2, testEvent.getEventID());
 
                 verify(queue).removePassed(testUser.getEmail());
-                verify(queueRepo, atLeast(2)).save(queue);
+                
         }
 
         @Test

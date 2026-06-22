@@ -1,50 +1,56 @@
-export interface DefaultPurchasePolicyDTO {
-  type: string;
+export type PurchasePolicyTypes =
+  | "AND"
+  | "OR"
+  | "MIN_AGE"
+  | "MAX_AGE"
+  | "MIN_TICKETS"
+  | "MAX_TICKETS"
+  | "NONE";
+
+export interface IPurchasePolicyDTO {
+  type: PurchasePolicyTypes;
 }
 
-export type CompositePurchasePolicyDTO = DefaultPurchasePolicyDTO & {
-  type: "Composite";
+export type OrDTO = IPurchasePolicyDTO & {
+  type: "OR";
 
-  leftPolicy?: PurchasePolicyDTO;
-  rightPolicy?: PurchasePolicyDTO;
-
-  operator: "AND" | "OR";
+  left: PurchasePolicyDTO;
+  right: PurchasePolicyDTO;
 };
 
-export type MinAgePurchasePolicyDTO = DefaultPurchasePolicyDTO & {
-  type: "Minimum Age";
+export type AndDTO = IPurchasePolicyDTO & {
+  type: "AND";
+
+  left: PurchasePolicyDTO;
+  right: PurchasePolicyDTO;
+};
+
+export type MinAgeDTO = IPurchasePolicyDTO & {
+  type: "MIN_AGE";
   minAge: number;
 };
 
-export type MaxAgePurchasePolicyDTO = DefaultPurchasePolicyDTO & {
-  type: "Maximum Age";
+export type MaxAgeDTO = IPurchasePolicyDTO & {
+  type: "MAX_AGE";
   maxAge: number;
 };
 
-export type MinTicketsPerCustomerPurchasePolicyDTO =
-  DefaultPurchasePolicyDTO & {
-    type: "Minimum Tickets Per Customer";
-    minTickets: number;
-  };
+export type MinTicketsDTO = IPurchasePolicyDTO & {
+  type: "MIN_TICKETS";
+  minTickets: number;
+};
 
-export type MaxTicketsPerCustomerPurchasePolicyDTO =
-  DefaultPurchasePolicyDTO & {
-    type: "Maximum Tickets Per Customer";
-    maxTickets: number;
-  };
-
-export type LotteryPurchasePolicyDTO = DefaultPurchasePolicyDTO & {
-  type: "Lottery";
-  lotteryName: string;
-  lotteryWinnerCount: number;
-  lotteryRegistrationDueDate: string;
+export type MaxTicketsDTO = IPurchasePolicyDTO & {
+  type: "MAX_TICKETS";
+  maxTickets: number;
 };
 
 export type PurchasePolicyDTO =
-  | CompositePurchasePolicyDTO
-  | MinAgePurchasePolicyDTO
-  | MaxAgePurchasePolicyDTO
-  | MinTicketsPerCustomerPurchasePolicyDTO
-  | MaxTicketsPerCustomerPurchasePolicyDTO
-  | LotteryPurchasePolicyDTO
-  | null;
+  | OrDTO
+  | AndDTO
+  | MinAgeDTO
+  | MaxAgeDTO
+  | MinTicketsDTO
+  | MaxTicketsDTO;
+
+export type NullablePurchasePolicyDTO = PurchasePolicyDTO | null;

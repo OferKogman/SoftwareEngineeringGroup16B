@@ -6,8 +6,8 @@ import type { EventDTO } from "../../DTOs/EventDTO";
 import { locationToString } from "../../DTOs/LocationDTO";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import type { VenueDTO } from "../../DTOs/VenueDTO";
-import ViewDiscountPolicies from "../ViewDiscountPolicies";
-import ViewPurchasePolicies from "../ViewPurchasePolicies";
+import ViewDiscountPolicies from "../Shared/ViewDiscountPolicies";
+import ViewPurchasePolicies from "../Shared/ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
 import LotteryInformation from "./LotteryInformation";
 
