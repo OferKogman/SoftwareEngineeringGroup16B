@@ -169,7 +169,7 @@ export default function VenueDisplay({
       return undefined;
     }
 
-    return segment.eventPrices?.[eventIDNumber];
+    return segment.eventPrices?.[eventIDNumber] ?? 0;
   }
 
   function getFieldSegment(row: number, column: number) {

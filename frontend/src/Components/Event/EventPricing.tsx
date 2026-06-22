@@ -205,11 +205,39 @@ export default function EventPricing() {
               }
 
               const value = event.currentTarget.value;
+              const numericValue = value === "" ? 0 : Number(value);
 
               setPrices((previousPrices) => ({
                 ...previousPrices,
-                [selectedSegmentID]: value === "" ? 0 : Number(value),
+                [selectedSegmentID]: numericValue,
               }));
+
+              setVenue((previousVenue) => {
+                if (!previousVenue || !eventID) {
+                  return previousVenue;
+                }
+
+                const currentSegment =
+                  previousVenue.segments[selectedSegmentID];
+
+                if (!currentSegment) {
+                  return previousVenue;
+                }
+
+                return {
+                  ...previousVenue,
+                  segments: {
+                    ...previousVenue.segments,
+                    [selectedSegmentID]: {
+                      ...currentSegment,
+                      eventPrices: {
+                        ...(currentSegment.eventPrices ?? {}),
+                        [Number(eventID)]: numericValue,
+                      },
+                    },
+                  },
+                };
+              });
             }}
             placeholder="Segment price"
             style={{ width: "120px" }}
