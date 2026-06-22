@@ -1,4 +1,6 @@
 package com.group16b.ApplicationLayer;
+import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -261,9 +263,10 @@ public class AdminManagementService {
     {
          logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivating event {}", eventID);
          try{
+            Event event=null;
             while(true){
                 try{
-                    Event event=eventRepo.findByID(String.valueOf(eventID));
+                    event=eventRepo.findByID(String.valueOf(eventID));
                     event.deactivateEvent();
                     eventRepo.save(event);
                     break;
@@ -281,7 +284,11 @@ public class AdminManagementService {
             }
 
             logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivated event {}", eventID);
-            
+            if(!event.getEventStartTime().isAfter(LocalDateTime.now()))
+            {
+                logger.info("AdminManagementService.deactivateEventAndRefundUser: event {} has already passed, no need for refunds", eventID);
+                return;
+            }
             List<Order> orders=orderRepo.getByEventId(eventID);
             List<RefundResult> refundResults=new ArrayList<>();
             int successCount=0, failCount=0;
