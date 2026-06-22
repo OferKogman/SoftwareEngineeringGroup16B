@@ -541,7 +541,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), any(DiscountContext.class)))
                         .thenThrow(new IllegalArgumentException("Event discount policy failed"));
 
                 IEventRepository mockedEventRepo = mock(IEventRepository.class);
@@ -585,7 +585,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(),any(DiscountContext.class)))
                         .thenThrow(new IllegalArgumentException("Company discount policy failed"));
 
                 IProductionCompanyRepository mockedCompanyRepo = mock(IProductionCompanyRepository.class);
@@ -1035,7 +1035,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), any(DiscountContext.class)))
                         .thenThrow(new IllegalArgumentException("Event discount policy failed"));
 
                 IEventRepository mockedEventRepo = mock(IEventRepository.class);
@@ -1070,7 +1070,7 @@ public class ReserveServiceTest {
 
                 DiscountPolicy failingDiscountPolicy = mock(DiscountPolicy.class);
 
-                when(failingDiscountPolicy.calculateDiscount(anyDouble(), dc1))
+                when(failingDiscountPolicy.calculateDiscount(anyDouble(), any(DiscountContext.class)))
                         .thenThrow(new IllegalArgumentException("Company discount policy failed"));
 
                 IProductionCompanyRepository mockedCompanyRepo = mock(IProductionCompanyRepository.class);
