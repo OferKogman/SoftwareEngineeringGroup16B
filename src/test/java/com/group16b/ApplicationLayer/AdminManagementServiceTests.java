@@ -14,7 +14,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +82,9 @@ public class AdminManagementServiceTests {
     private String userSecret;
     private String adminSecret;
 
+    private final int TRANS_ID=12345;
+    private final String EXTERNAL_TICKET="when one door closes, another door always opens, its the last time i buy a closet frim ikea...";
+
     @BeforeEach
     void setUp() throws Exception {
         systemAdminRepository = new SystemAdminRepositoryMapImpl();
@@ -123,11 +129,15 @@ public class AdminManagementServiceTests {
         Event randomAssEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 10042, 3.5), USER2_MAIL);
         eventRepository.save(randomAssEvent);
 
-        myActiveOrder=new Order("segment1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
-        myCompletedOrder=new Order("segment2", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myActiveOrder=new Order("my ACTIVE 1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCompletedOrder=new Order("my COMPLETED", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCompletedOrder.CompleteOrder();
-        myCanceledOrder=new Order("segment3", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
+        myCompletedOrder.setTransactionId(TRANS_ID);
+        myCanceledOrder=new Order("my CANCEL", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCanceledOrder.CancelOrder();
+        myCanceledOrder.setExternalTicket(EXTERNAL_TICKET);
+        myCanceledOrder.setTransactionId(TRANS_ID);
         unrelatedCompletedOrder=new Order("segment2", 1, 1.0, randomAssEvent.getEventID(),USER2_MAIL);
         unrelatedCompletedOrder.CompleteOrder();
         orderRepository.save(myActiveOrder);
@@ -198,6 +208,8 @@ public class AdminManagementServiceTests {
         Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(EXTERNAL_TICKET);
     }
 
     @Test
