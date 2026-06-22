@@ -15,7 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -23,6 +26,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
+import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
@@ -195,24 +202,6 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanySuccess() throws Exception {
-        int companyID = 1;
-
-        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
-        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
-        productionCompanyRepository.save(testCompany);
-
-        policyField.setAccessible(true);
-        policyField.set(adminManagementService, productionCompanyRepository);
-        
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
-
-        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
-        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
-        verify(mockTicketGateway,times(1)).revokeTicket(EXTERNAL_TICKET);
-    }
-
-    @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(adminToken,
@@ -248,10 +237,104 @@ public class AdminManagementServiceTests {
     }
 
     @Test
+    public void testCloseProductionCompanySuccess() throws Exception {
+        int companyID = 1;
+
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+    
+    @Test
+    public void testCloseProductionCompany_paymentServiceDown() throws Exception {
+        int companyID = 1;
+
+        doThrow(new RefundStatusUnknownException("kaboom rico")).when(mockPaymentGateway).cancelPayment(anyInt());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
+    }
+    @Test
+    public void testCloseProductionCompany_paymentServiceRefuse() throws Exception {
+        int companyID = 1;
+
+        doThrow(new RefundFailedException("kaboom rico")).when(mockPaymentGateway).cancelPayment(anyInt());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
+    }
+
+    @Test
+    public void testCloseProductionCompany_ticketServiceDown() throws Exception {
+        int companyID = 1;
+
+        doThrow(new TicketRevokeUnknownStatusException("kaboom rico")).when(mockTicketGateway).revokeTicket(anyString());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+    @Test
+    public void testCloseProductionCompany_ticketServiceReject() throws Exception {
+        int companyID = 1;
+
+        doThrow(new RevokeTicketFailureException("kaboom rico")).when(mockTicketGateway).revokeTicket(anyString());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+
+    @Test
     public void testCloseProductionCompanyUnauthorized() {
 
         Result<String> result = adminManagementService.closeProductionCompany(1, sessionToken);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
@@ -441,6 +524,8 @@ public class AdminManagementServiceTests {
         assertEquals(2, results.size());
         long successCount = results.stream().filter(Result::isSuccess).count();
         assertEquals(1, successCount, "Exactly one closure should succeed");
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
     }
     @Test
     public void testRegisterNewAdminNullToken() {
@@ -484,18 +569,24 @@ public class AdminManagementServiceTests {
     public void testCloseProductionCompanyInvalidToken() {
         Result<String> result = adminManagementService.closeProductionCompany(1, invalidToken);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
     public void testCloseProductionCompanyNullToken() {
         Result<String> result = adminManagementService.closeProductionCompany(1, null);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
     public void testCloseNonExistentProductionCompany() {
         Result<String> result = adminManagementService.closeProductionCompany(99999, adminToken);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
@@ -620,6 +711,9 @@ public class AdminManagementServiceTests {
 
         assertTrue(first.isSuccess());
         assertFalse(second.isSuccess());
+        //company 2, some random ass company with no orders
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
