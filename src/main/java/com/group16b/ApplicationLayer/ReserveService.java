@@ -395,8 +395,9 @@ public class ReserveService {
         }
 
         try {
-            q.removePassed(subjectID);
-            queueImp.save(q);
+            VirtualQueue lockedQueue = queueImp.findByID(String.valueOf(q.getId()));
+            lockedQueue.removePassed(subjectID);
+            queueImp.save(lockedQueue);
         } catch (IllegalStateException e) {
             logger.warn(
                     "ReserveService.queueRemovePassed: Failed to remove user {} from passed queue: {}",
