@@ -3,8 +3,11 @@ package com.group16b.ApplicationLayer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -220,9 +223,9 @@ public class VenueEventConfigService {
         }
     }
 
-	public Result<Boolean> editVenueSegments(int companyID, String venueID, Map<String, Integer> fieldSegmentsToEdit, Map<String, List<String>> seatsSegmentsToEdit,List<FieldSegRecord> newFieldSegments, List<ChosenSeatingSegRecord> newSeatSegments,String sessionToken) {
+	public Result<Boolean> editVenueSegments(int companyID, String venueID, String sessionToken, VenueRecord editedVenue) {
 		try {
-            if (fieldSegmentsToEdit == null || seatsSegmentsToEdit == null || newFieldSegments == null || newSeatSegments == null) {       
+            if (editedVenue == null) {       
                 logger.error("VenueEventConfigService.editVenueSegments: Invalid input parameters.");
                 return Result.makeFail("Invalid input parameters.");
             }
@@ -246,56 +249,148 @@ public class VenueEventConfigService {
 					futureEventsToRefund.add(event.getEventID());
 				}
 			}
+
+            List<FieldSegRecord> editedFieldRecords = editedVenue.fieldSeg() == null ? new ArrayList<>() : editedVenue.fieldSeg();
+            List<ChosenSeatingSegRecord> editedSeatRecords = editedVenue.seatSeg() == null ? new ArrayList<>() : editedVenue.seatSeg();
+            Set<String> oldSegmentIDs = new HashSet<>(venue.getSegments().keySet());
+            Set<String> editedFieldIDs = editedFieldRecords.stream()
+                    .map(FieldSegRecord::segmentID)
+                    .collect(Collectors.toSet());
+            Set<String> editedSeatIDs = editedSeatRecords.stream()
+                    .map(ChosenSeatingSegRecord::segmentID)
+                    .collect(Collectors.toSet());
+            Set<String> editedSegmentIDs = new HashSet<>();
+            editedSegmentIDs.addAll(editedFieldIDs);
+            editedSegmentIDs.addAll(editedSeatIDs);
+
+            List<FieldSegRecord> newFieldSegments = editedFieldRecords.stream()
+                    .filter(record -> !oldSegmentIDs.contains(record.segmentID()))
+                    .toList();
+
+            List<FieldSegRecord> fieldSegmentsToEdit = editedFieldRecords.stream()
+                    .filter(record -> oldSegmentIDs.contains(record.segmentID()))
+                    .toList();
+
+            List<ChosenSeatingSegRecord> newSeatSegments = editedSeatRecords.stream()
+                    .filter(record -> !oldSegmentIDs.contains(record.segmentID()))
+                    .toList();
+
+            List<ChosenSeatingSegRecord> seatSegmentsToEdit = editedSeatRecords.stream()
+                    .filter(record -> oldSegmentIDs.contains(record.segmentID()))
+                    .toList();
+
+            Set<String> deletedSegmentIDs = oldSegmentIDs.stream()
+                    .filter(segmentID -> !editedSegmentIDs.contains(segmentID))
+                    .collect(Collectors.toSet());
+
+
 			// eventID -> segID -> amount of ticketsto refund
 			HashMap<Integer, HashMap<String, Integer>> fieldSegmentsToRefund = new HashMap<>();
 			//.     eventid -> segID -> list of seatIDs to refund
 			HashMap<Integer, HashMap<String, List<String>>> seatSegmentsToRefund = new HashMap<>();
 			// for each event collect tickets to refund
             logger.info("VenueEventConfigService.editVenueSegments: Collecting tickets to refund for future events.");
-			for (Integer eventID : futureEventsToRefund) {
-				
-				// edit field
-				// if reserved stock for this event is bigger then new stock, we need to refund the difference to customers
-				fieldSegmentsToRefund.put(eventID, new HashMap<>());
-				for (Map.Entry<String, Integer> entry : fieldSegmentsToEdit.entrySet()) {
-					// the reserved stock for this event in this segment
-					int currntlyReserved = venue.getReservedStockBySegmentEventField(eventID, entry.getKey());
-					if (currntlyReserved > entry.getValue()) {
-						fieldSegmentsToRefund.get(eventID).put(entry.getKey(), currntlyReserved - entry.getValue());
-					}
-				}
+            for (Integer eventID : futureEventsToRefund) {
+                fieldSegmentsToRefund.put(eventID, new HashMap<>());
+                seatSegmentsToRefund.put(eventID, new HashMap<>());
 
-				// edit seat
-				seatSegmentsToRefund.put(eventID, new HashMap<>());
-				for (Map.Entry<String, List<String>> entry : seatsSegmentsToEdit.entrySet()) {
-					List<String> reservedSeatsToRefund = venue.getStockRefundForEvent(eventID, entry.getKey(), entry.getValue());
-					if (!reservedSeatsToRefund.isEmpty()) {
-                        seatSegmentsToRefund.get(eventID).put(entry.getKey(), reservedSeatsToRefund);
+                for (FieldSegRecord editedField : fieldSegmentsToEdit) {
+                    String segmentID = editedField.segmentID();
+                    int currentlyReserved = venue.getReservedStockBySegmentEventField(eventID, segmentID);
+
+                    if (currentlyReserved > editedField.size()) {
+                        fieldSegmentsToRefund.get(eventID).put(
+                                segmentID,
+                                currentlyReserved - editedField.size()
+                        );
                     }
-				}
-			}
+                }
+
+                for (ChosenSeatingSegRecord editedSeatSeg : seatSegmentsToEdit) {
+                    String segmentID = editedSeatSeg.segmentID();
+
+                    List<String> newSeatIDs = editedSeatSeg.seats()
+                            .stream()
+                            .map(seat -> seat.row() + "-" + seat.column())
+                            .toList();
+
+                    List<String> reservedSeatsToRefund =
+                            venue.getStockRefundForEvent(eventID, segmentID, newSeatIDs);
+
+                    if (!reservedSeatsToRefund.isEmpty()) {
+                        seatSegmentsToRefund.get(eventID).put(segmentID, reservedSeatsToRefund);
+                    }
+                }
+
+                for (String deletedSegmentID : deletedSegmentIDs) {
+                    if (venue.getSegmentTypeByID(deletedSegmentID).equals("F")) {
+                        int currentlyReserved =
+                                venue.getReservedStockBySegmentEventField(eventID, deletedSegmentID);
+
+                        if (currentlyReserved > 0) {
+                            fieldSegmentsToRefund.get(eventID).put(deletedSegmentID, currentlyReserved);
+                        }
+                    }
+
+                    if (venue.getSegmentTypeByID(deletedSegmentID).equals("S")) {
+                        List<String> reservedSeatsToRefund =
+                                venue.getStockRefundForEvent(eventID, deletedSegmentID, List.of());
+
+                        if (!reservedSeatsToRefund.isEmpty()) {
+                            seatSegmentsToRefund.get(eventID).put(deletedSegmentID, reservedSeatsToRefund);
+                        }
+                    }
+                }
+            }
 
             // after we collect all refunds, we can edit the segments stock:
+            // remove deleted segments
+            logger.info("VenueEventConfigService.editVenueSegments: Removing deleted segments.");
+            for (String deletedSegmentID : deletedSegmentIDs) {
+                venue.removeSegment(deletedSegmentID);
+            }
             // adding the new segments with the new stock.
             // adding new field segments
             logger.info("VenueEventConfigService.editVenueSegments: Adding new segments and editing existing segments.");
+
             for (FieldSegRecord record : newFieldSegments) {
                 venue.addFieldSegment(record);
+                for (Integer eventID : futureEventsToRefund) {
+                    venue.initializeSegmentForEvent(record.segmentID(), eventID);
+                }
             }
             // adding new seating segments
             logger.info("VenueEventConfigService.editVenueSegments: Adding new seating segments.");
+
             for (ChosenSeatingSegRecord record : newSeatSegments) {
                 venue.addChosenSeatingSegment(record);
+                for (Integer eventID : futureEventsToRefund) {
+                    venue.initializeSegmentForEvent(record.segmentID(), eventID);
+                }
             }
             // editing the segments with the new stock
             logger.info("VenueEventConfigService.editVenueSegments: Editing existing segments with new stock.");
-            for (Map.Entry<String, Integer> entry : fieldSegmentsToEdit.entrySet()) {
-                venue.setNewFieldStock(entry.getKey(), entry.getValue());
+            for (FieldSegRecord record : fieldSegmentsToEdit) {
+                venue.setNewFieldStock(record.segmentID(), record.size());
             }
+
             logger.info("VenueEventConfigService.editVenueSegments: Editing existing seating segments with new stock.");
-            for (Map.Entry<String, List<String>> entry : seatsSegmentsToEdit.entrySet()) {
-                venue.setNewSeatingStock(entry.getKey(), entry.getValue());
+            for (ChosenSeatingSegRecord record : seatSegmentsToEdit) {
+                venue.setNewSeatingStock(
+                    record.segmentID(),
+                    record.seats().stream()
+                            .map(seat -> seat.row() + "-" + seat.column())
+                            .toList(),
+                    futureEventsToRefund
+            );
             }
+            // edit the stages and entrances too
+            if (editedVenue.grid() != null) {
+                venue.replaceGrid(editedVenue.grid());
+            }
+
+            venue.replaceStages(editedVenue.stages() == null ? List.of() : editedVenue.stages());
+            venue.replaceEntrances(editedVenue.entrances() == null ? List.of() : editedVenue.entrances());
             
             venueRepository.save(venue);
 			// __refunding tickets__
@@ -361,6 +456,7 @@ public class VenueEventConfigService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+
     private String validateAndGetUserID(String sessionToken) {
 		if (!authService.validateToken(sessionToken)) {
 			throw new AuthException("Invalid session token.");

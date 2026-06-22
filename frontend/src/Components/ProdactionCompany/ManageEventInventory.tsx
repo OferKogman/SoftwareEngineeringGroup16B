@@ -1,43 +1,22 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type {
   ChosenSeatingSegDTO,
   EntranceDTO,
-  EventScheduleDTO,
   FieldSegDTO,
   SeatDTO,
   SegmentDTO,
   StageDTO,
-  VenueGridDTO,
+  VenueDTO,
 } from "../../DTOs/VenueDTO";
 import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
+import type { EventDTO } from "../../DTOs/EventDTO";
 
-const initialGrid: VenueGridDTO = {
-  rows: 10,
-  columns: 10,
-};
+const API_BASE = "http://localhost:8080";
 
-type VenueCreateDTO = {
-  name: string;
-  location: string;
-  segments: Record<string, SegmentDTO>;
-  events: Record<number, EventScheduleDTO>;
-  stages: Record<string, StageDTO>;
-  entrances: Record<string, EntranceDTO>;
-  grid: VenueGridDTO;
-};
 
-const initialVenue: VenueCreateDTO = {
-  name: "",
-  location: "",
-  grid: initialGrid,
-  segments: {},
-  stages: {},
-  events: {},
-  entrances: {},
-};
 
 type SelectedCellData = {
   gridRow: number;
@@ -82,14 +61,14 @@ type SelectedEntranceData = {
   gridColumn: number;
 };
 
-export default function VenueEditor() {
-  const { companyId } = useParams();
+export default function ManageEventInventory() {
+  const { eventID } = useParams();
   const { sessionToken } = useSession();
-  const [formData, setFormData] = useState<VenueCreateDTO>(initialVenue);
-  const [venueName, setVenueName] = useState<string>(initialVenue.name);
-  const [venueLocation, setVenueLocation] = useState<string>(initialVenue.location,);
+  const [formData, setFormData] = useState<VenueDTO | null>(null);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [venueID, setVenueID] = useState<string | null>(null);
+  const [companyId, setCompanyID] = useState<number | null>(null);
 
   const [selectedCell, setSelectedCell] = useState<SelectedCellData | null>(
     null,
@@ -112,87 +91,160 @@ export default function VenueEditor() {
     useState<PendingRectangleData | null>(null);
 
   const apiFetch = useApiFetch();
+  function normalizeVenueSeats(venue: VenueDTO): VenueDTO {
+    const normalizedSegments: Record<string, SegmentDTO> = {};
 
+    Object.values(venue.segments).forEach((segment) => {
+      if (!("seats" in segment)) {
+        normalizedSegments[segment.segmentID] = segment;
+        return;
+      }
+
+      const fixedSeats: Record<string, SeatDTO> = {};
+
+      Object.values(segment.seats).forEach((seat) => {
+        const fixedSeat: SeatDTO = {
+          ...seat,
+          number: seat.number + 1,
+          seatId: `${seat.row}-${seat.number + 1}`,
+        };
+
+        fixedSeats[fixedSeat.seatId] = fixedSeat;
+      });
+
+      normalizedSegments[segment.segmentID] = {
+        ...segment,
+        seats: fixedSeats,
+      };
+    });
+
+    return {
+      ...venue,
+      segments: normalizedSegments,
+    };
+  }
+  useEffect(() => {
+      let cancelled = false;
+  
+      async function loadVenue() {
+        try {
+          setError("");
+            if (!eventID) {
+              setError("Missing event ID.");
+              return;
+            }
+    
+            const eventResponse = await apiFetch(`${API_BASE}/events/${eventID}`, {
+              method: "GET",
+            });
+    
+            if (!eventResponse.ok) {
+              throw new Error(await eventResponse.text());
+            }
+    
+            const event: EventDTO = await eventResponse.json();
+            const venueID = event.eventVenueID;
+            const companyId = event.eventProductionCompanyID;
+            setCompanyID(companyId);
+            setVenueID(venueID);
+            if (!venueID) {
+              setError("Missing venue ID.");
+              return;
+            }
+
+            const venueResponse = await apiFetch(`${API_BASE}/venues/${venueID}`,
+              {
+                method: "GET",
+              },
+            );
+
+            if (!venueResponse.ok) {
+              throw new Error(await venueResponse.text());
+            }
+            const loadedVenue: VenueDTO = await venueResponse.json();
+
+            if (!cancelled) {
+              setFormData(normalizeVenueSeats(loadedVenue));
+            }
+
+          } catch (err) {
+            if (!cancelled) {
+              setError(
+                err instanceof Error ? err.message : "Failed to load venue.",
+              );
+            }
+          }
+      }
+  
+      void loadVenue();
+  
+      return () => {
+        cancelled = true;
+      };
+    }, [venueID, apiFetch]);
+  
+    function venueDtoToVenueRecord(venue: VenueDTO) {
+      const fieldSeg = Object.values(venue.segments)
+        .filter((segment): segment is FieldSegDTO => "size" in segment)
+        .map((segment) => ({
+          segmentID: segment.segmentID,
+          size: segment.size,
+          area: segment.area,
+        }));
+
+      const seatSeg = Object.values(venue.segments)
+        .filter((segment): segment is ChosenSeatingSegDTO => "seats" in segment)
+        .map((segment) => ({
+          segmentID: segment.segmentID,
+          seats: Object.values(segment.seats).map((seat) => ({
+            row: seat.row,
+            column: seat.number,
+          })),
+          area: segment.area,
+        }));
+
+      return {
+        name: venue.name,
+        location: getReadableLocation(venue),
+        fieldSeg,
+        seatSeg,
+        stages: Object.values(venue.stages),
+        entrances: Object.values(venue.entrances),
+        grid: venue.grid,
+        events: [],
+      };
+    }
   async function onSubmitVenue() {
     setError("");
     setSuccess("");
 
-    if (!companyId) {
-      setError("Missing company ID or event ID.");
-      return;
-    }
-
-    const trimmedName = venueName.trim();
-    const trimmedLocation = venueLocation.trim();
-
-    if (!sessionToken) {
-      setError("Missing session token.");
-      return;
-    }
-
-    if (trimmedName === "") {
-      setError("Venue name cannot be empty.");
-      return;
-    }
-
-    if (trimmedLocation === "") {
-      setError("Venue location cannot be empty.");
-      return;
-    }
+    if (!venueID) {setError("Missing venue ID.");return;}
+    if (!companyId) {setError("Missing company ID.");return;}
+    if (!sessionToken) {setError("Missing session token.");return;}
+    if (!formData) {setError("Venue was not loaded.");return;}
 
     try {
-      const segmentValues = Object.values(formData.segments);
-
-      const newVenueLayout = {
-        name: trimmedName,
-        location: trimmedLocation,
-        fieldSeg: segmentValues.filter((segment): segment is FieldSegDTO => {
-          return "size" in segment;
-        }),
-        seatSeg: segmentValues
-          .filter((segment): segment is ChosenSeatingSegDTO => {
-            return "seats" in segment;
-          })
-          .map((segment) => ({
-            segmentID: segment.segmentID,
-            seats: Object.values(segment.seats),
-            area: segment.area,
-          })),
-        stages: Object.values(formData.stages),
-        entrances: Object.values(formData.entrances),
-        grid: formData.grid,
-        events: Object.values(formData.events),
-      };
-
-      const response = await apiFetch(
-        "http://localhost:8080/venues/configureNewLayoutAndInventory",
+      const response = await apiFetch(`${API_BASE}/venues/${venueID}/editVenueSegments`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: {"Content-Type": "application/json",},
           body: JSON.stringify({
             companyID: Number(companyId),
-            newVenueLayout,
+            newVenueLayout: venueDtoToVenueRecord(formData),
           }),
         },
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(errorText || "Failed to configure venue layout.");
+        throw new Error(errorText || "Failed to update venue segments.");
       }
 
-      setSuccess("Venue created successfully.");
-      setVenueName("");
-      setVenueLocation("");
-      setFormData(initialVenue);
+      setSuccess("Venue updated successfully.");
       clearSelections();
     } catch (err) {
       setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to configure venue layout.",
+        err instanceof Error ? err.message : "Failed to update venue segments.",
       );
     }
   }
@@ -262,7 +314,7 @@ export default function VenueEditor() {
     return `${prefix}${nextNumber}`;
   }
   function handleAddFieldSegment() {
-    if (!pendingRectangle) {
+    if (!formData || !pendingRectangle) {
       return;
     }
 
@@ -289,14 +341,16 @@ export default function VenueEditor() {
       setError("Segments cannot overlap.");
       return;
     }
-
-    setFormData((current) => ({
-      ...current,
-      segments: {
-        ...current.segments,
-        [newSegment.segmentID]: newSegment,
-      },
-    }));
+    setFormData((current) => {
+      if (!current) {return current;}
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [newSegment.segmentID]: newSegment,
+        },
+      };
+    });
 
     setPendingRectangle(null);
   }
@@ -326,7 +380,7 @@ export default function VenueEditor() {
       return seats;
     }
 
-    if (!pendingRectangle) {
+    if (!formData || !pendingRectangle) {
       return;
     }
 
@@ -339,6 +393,7 @@ export default function VenueEditor() {
     };
 
     const newSegment: ChosenSeatingSegDTO = {
+      
       segmentID: getNextID(Object.keys(formData.segments), "S"),
       seats: createSeatsRecord(newSegmentArea),
       area: newSegmentArea,
@@ -355,19 +410,21 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      segments: {
-        ...current.segments,
-        [newSegment.segmentID]: newSegment,
-      },
-    }));
+    setFormData((current) => {
+      if (!current) {return current;}
+      return {
+        ...current,
+        segments: {
+          ...current.segments,
+          [newSegment.segmentID]: newSegment,
+        },};
+    });
 
     setPendingRectangle(null);
   }
 
   function handleAddStage() {
-    if (!pendingRectangle) {
+    if (!formData || !pendingRectangle) {
       return;
     }
 
@@ -396,19 +453,22 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      stages: {
-        ...current.stages,
-        [newStage.stageID]: newStage,
-      },
-    }));
+    setFormData((current) => {
+    if (!current) {return current;}
+    return {
+        ...current,
+        stages: {
+          ...current.stages,
+          [newStage.stageID]: newStage,
+        },
+      };
+    });
 
     setPendingRectangle(null);
   }
 
   function handleAddEntrance() {
-    if (!pendingRectangle) {
+    if (!formData || !pendingRectangle) {
       return;
     }
 
@@ -439,13 +499,15 @@ export default function VenueEditor() {
       return;
     }
 
-    setFormData((current) => ({
-      ...current,
-      entrances: {
-        ...current.entrances,
-        [newEntrance.entranceID]: newEntrance,
-      },
-    }));
+    setFormData((current) => {
+      if (!current) {return current;}
+      return {
+        ...current,
+        entrances: {
+          ...current.entrances,
+          [newEntrance.entranceID]: newEntrance,
+        },};
+    });
 
     setPendingRectangle(null);
   }
@@ -505,6 +567,7 @@ export default function VenueEditor() {
     }
 
     setFormData((current) => {
+      if (!current) {return current;}
       const segmentID = selectedSeat.segment.segmentID;
       const currentSegment = current.segments[segmentID];
 
@@ -536,6 +599,7 @@ export default function VenueEditor() {
     }
 
     setFormData((current) => {
+      if (!current) {return current;}
       const updatedSegments = { ...current.segments };
       delete updatedSegments[selectedSeatSeg.segment.segmentID];
 
@@ -554,6 +618,7 @@ export default function VenueEditor() {
     }
 
     setFormData((current) => {
+      if (!current) {return current;}
       const updatedSegments = { ...current.segments };
       delete updatedSegments[selectedFieldSeg.segment.segmentID];
 
@@ -572,6 +637,7 @@ export default function VenueEditor() {
     }
 
     setFormData((current) => {
+      if (!current) {return current;}
       const updatedStages = { ...current.stages };
       delete updatedStages[selectedStage.stage.stageID];
 
@@ -590,6 +656,7 @@ export default function VenueEditor() {
     }
 
     setFormData((current) => {
+      if (!current) {return current;}
       const updatedEntrances = { ...current.entrances };
       delete updatedEntrances[selectedEntrance.entrance.entranceID];
 
@@ -620,6 +687,7 @@ export default function VenueEditor() {
     };
 
     setFormData((current) => {
+      if (!current) {return current;}
       const segmentID = selectedSeatSeg.segment.segmentID;
       const currentSegment = current.segments[segmentID];
 
@@ -665,6 +733,7 @@ export default function VenueEditor() {
     const segmentID = selectedFieldSeg.segment.segmentID;
 
     setFormData((current) => {
+      if (!current) {return current;}
       const currentSegment = current.segments[segmentID];
 
       if (!currentSegment || !("size" in currentSegment)) {
@@ -699,24 +768,32 @@ export default function VenueEditor() {
   }
 
   function handleAddRow() {
-    setFormData((current) => ({
-      ...current,
-      grid: {
-        ...current.grid,
-        rows: current.grid.rows + 1,
-      },
-    }));
-  }
+      setFormData((current) => {
+        if (!current) {
+          return current;
+        }
+
+        return {
+          ...current,
+          grid: {
+            ...current.grid,
+            rows: current.grid.rows + 1,
+          },
+        };
+      });
+    }
 
   function handleAddColumn() {
-    setFormData((current) => ({
-      ...current,
-      grid: {
-        ...current.grid,
-        columns: current.grid.columns + 1,
-      },
-    }));
-  }
+      setFormData((current) => {
+        if (!current) {return current;}
+        return {
+        ...current,
+        grid: {
+          ...current.grid,
+          columns: current.grid.columns + 1,
+        },
+      }});
+    }
 
   function renderPopup(): ReactNode {
     if (pendingRectangle) {
@@ -903,7 +980,23 @@ export default function VenueEditor() {
 
     return null;
   }
+  function getReadableLocation(venue: VenueDTO) {
+    const location = venue.location;
 
+    return [
+      location.name,
+      location.houseNumber,
+      location.street,
+      location.city,
+      location.state,
+      location.country,
+    ]
+      .filter((part) => part !== null && part !== undefined && part !== "")
+      .join(", ");
+  }
+  if (!formData) {
+    return <p>Loading venue...</p>;
+  }
   return (
     <div
       style={{
@@ -929,26 +1022,12 @@ export default function VenueEditor() {
       >
         <label>
           Venue Name
-          <input
-            type="text"
-            value={venueName}
-            onChange={(event) => {
-              setVenueName(event.currentTarget.value);
-            }}
-            style={{ width: "100%" }}
-          />
+          <p>{formData.name}</p>
         </label>
 
         <label>
           Venue Location
-          <input
-            type="text"
-            value={venueLocation}
-            onChange={(event) => {
-              setVenueLocation(event.currentTarget.value);
-            }}
-            style={{ width: "100%" }}
-          />
+          <p>{getReadableLocation(formData)}</p>
         </label>
       </div>
 
@@ -965,21 +1044,9 @@ export default function VenueEditor() {
           handleSeatClick={handleSeatClick}
           handleStageClick={handleStageClick}
           handleEntranceClick={handleEntranceClick}
-          venue={{
-            ...formData,
-            location: {
-              name: "",
-              houseNumber: "",
-              street: "",
-              city: "",
-              state: "",
-              country: "",
-              latitude: null,
-              longitude: null,
-            },
-          }}
+          venue={formData}
           pendingRectangle={pendingRectangle}
-        ></VenueDisplay>
+        />
 
         {renderPopup()}
       </div>
