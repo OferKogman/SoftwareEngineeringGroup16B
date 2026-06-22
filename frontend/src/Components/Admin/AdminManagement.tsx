@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { NavLink, useNavigate, useOutlet } from "react-router-dom";
 import { useAdminLoggedIn } from "../../GlobalContext/AdminLoggedInContext";
 import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
@@ -13,6 +13,12 @@ export default function AdminManagement() {
 
   const apiFetch = useApiFetch();
   const navigate = useNavigate();
+
+  const adminLoggedInRef = useRef(adminLoggedIn);
+
+  useEffect(() => {
+    adminLoggedInRef.current = adminLoggedIn;
+  }, [adminLoggedIn]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -70,19 +76,21 @@ export default function AdminManagement() {
 
   useEffect(() => {
     if (loggedIn) {
-      handleLogout();
+      void handleLogout();
     }
 
     if (!adminLoggedIn) {
       navigate("login");
     }
+  }, [loggedIn, adminLoggedIn, navigate, handleLogout]);
 
+  useEffect(() => {
     return () => {
-      if (adminLoggedIn) {
-        handleAdminLogout();
+      if (adminLoggedInRef.current) {
+        void handleAdminLogout();
       }
     };
-  }, [loggedIn, adminLoggedIn, handleAdminLogout, handleLogout]);
+  }, [handleAdminLogout]);
 
   return (
     <div className="management-page">
