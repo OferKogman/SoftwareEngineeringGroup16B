@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
+import { locationToString } from "../../DTOs/LocationDTO";
 import type {
   ChosenSeatingSegDTO,
   EntranceDTO,
@@ -10,7 +11,6 @@ import type {
   StageDTO,
   VenueDTO,
 } from "../../DTOs/VenueDTO";
-import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
 
 const API_BASE = "http://localhost:8080";
@@ -60,7 +60,6 @@ type SelectedEntranceData = {
 
 export default function ManageEventInventory() {
   const { eventID } = useParams();
-  const { sessionToken } = useSession();
   const [formData, setFormData] = useState<VenueDTO | null>(null);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
@@ -144,7 +143,7 @@ export default function ManageEventInventory() {
     return () => {
       cancelled = true;
     };
-  }, [venueID, apiFetch]);
+  }, [venueID, apiFetch, eventID]);
 
   function venueDtoToVenueRecord(venue: VenueDTO) {
     const fieldSeg = Object.values(venue.segments)
@@ -168,7 +167,7 @@ export default function ManageEventInventory() {
 
     return {
       name: venue.name,
-      location: getReadableLocation(venue),
+      location: locationToString(venue.location),
       fieldSeg,
       seatSeg,
       stages: Object.values(venue.stages),
@@ -187,10 +186,6 @@ export default function ManageEventInventory() {
     }
     if (!companyId) {
       setError("Missing company ID.");
-      return;
-    }
-    if (!sessionToken) {
-      setError("Missing session token.");
       return;
     }
     if (!formData) {
@@ -296,6 +291,7 @@ export default function ManageEventInventory() {
 
     const newSegment: FieldSegDTO = {
       segmentID: getNextID(Object.keys(formData.segments), "F"),
+      eventPrices: {},
       size: 0,
       area: {
         startRow: pendingRectangle.startRow,
@@ -372,6 +368,7 @@ export default function ManageEventInventory() {
 
     const newSegment: ChosenSeatingSegDTO = {
       segmentID: getNextID(Object.keys(formData.segments), "S"),
+      eventPrices: {},
       seats: createSeatsRecord(newSegmentArea),
       area: newSegmentArea,
     };
@@ -982,20 +979,6 @@ export default function ManageEventInventory() {
 
     return null;
   }
-  function getReadableLocation(venue: VenueDTO) {
-    const location = venue.location;
-
-    return [
-      location.name,
-      location.houseNumber,
-      location.street,
-      location.city,
-      location.state,
-      location.country,
-    ]
-      .filter((part) => part !== null && part !== undefined && part !== "")
-      .join(", ");
-  }
   if (!formData) {
     return <p>Loading venue...</p>;
   }
@@ -1029,7 +1012,7 @@ export default function ManageEventInventory() {
 
         <label>
           Venue Location
-          <p>{getReadableLocation(formData)}</p>
+          <p>{locationToString(formData.location)}</p>
         </label>
       </div>
 

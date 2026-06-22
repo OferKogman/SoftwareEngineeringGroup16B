@@ -77,6 +77,7 @@ type VenueDisplayProps = {
   selectedFieldSegmentID?: string;
   selectedSeatSegmentID?: string;
   selectedSeats?: SeatDTO[];
+  segmentPrices?: Record<string, number>;
 };
 
 export default function VenueDisplay({
@@ -92,6 +93,7 @@ export default function VenueDisplay({
   selectedFieldSegmentID,
   selectedSeatSegmentID,
   selectedSeats = [],
+  segmentPrices = {},
 }: VenueDisplayProps) {
   const [hoveredCell, setHoveredCell] = useState<{
     row: number;
@@ -638,6 +640,47 @@ export default function VenueDisplay({
                         }}
                       >
                         {fieldSegment.size}
+                      </div>
+                      <div
+                        style={{
+                          color: "#0b6c97",
+                          fontSize: "12px",
+                          lineHeight: "12px",
+                          margin: 0,
+                        }}
+                      >
+                        ${segmentPrices[fieldSegment.segmentID] ?? 0}
+                      </div>
+                    </>
+                  )}
+                {seatSegment &&
+                  !seat &&
+                  row ===
+                    seatSegment.area.startRow +
+                      Math.floor(seatSegment.area.rowCount / 2) &&
+                  column ===
+                    seatSegment.area.startColumn +
+                      Math.floor(seatSegment.area.columnCount / 2) && (
+                    <>
+                      <div
+                        style={{
+                          color: "#314000",
+                          fontSize: "16px",
+                          lineHeight: "16px",
+                          margin: 0,
+                        }}
+                      >
+                        {seatSegment.segmentID}
+                      </div>
+                      <div
+                        style={{
+                          color: "#314000",
+                          fontSize: "12px",
+                          lineHeight: "12px",
+                          margin: 0,
+                        }}
+                      >
+                        ${segmentPrices[seatSegment.segmentID] ?? 0}
                       </div>
                     </>
                   )}
