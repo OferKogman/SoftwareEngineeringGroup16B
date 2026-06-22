@@ -10,11 +10,17 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
+import com.group16b.ApplicationLayer.Enums.RefundStatus;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
+import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.RefundResult;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -270,7 +276,8 @@ public class AdminManagementService {
                     break;
                 }
             }
-             logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivated event {}", eventID);
+
+            logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivated event {}", eventID);
             List<Order> orders=orderRepo.getByEventId(eventID);
             for(Order order : orders)
             {
@@ -284,6 +291,7 @@ public class AdminManagementService {
          }
     }
 
+    //cancel the order and return whether a refund is needed or not
     private boolean cancelOrder(String orderID)
     {
         logger.info("AdminManagementService.cancelOrder: canceling order: {}", orderID);
@@ -319,10 +327,33 @@ public class AdminManagementService {
     } 
     
 
-    private void refundOrder(String orderID)
+    private RefundResult refundOrder(String orderID)
     {
         logger.info("AdminManagementService.refundOrder: refunding order: {}", orderID);
-
+        try{
+            Order order= orderRepo.findByID(orderID);
+            paymentGateway.cancelPayment(order.getTransactionId());
+            ticketGateway.revokeTicket(order.getExternalTicket());
+            return new RefundResult(orderID,RefundStatus.SUCCESS,null);
+        } catch (IllegalArgumentException e){
+            logger.warn("AdminManagementService.refundOrder: IllegalArgumentException: {}",e.getMessage());
+            return new RefundResult(orderID,RefundStatus.DATA_INTEGRITY_ERROR ,e.getMessage());
+        } catch (RefundFailedException e){
+            logger.warn("AdminManagementService.refundOrder: RefundFailedException: {}",e.getMessage());
+            return new RefundResult(orderID,RefundStatus.REFUND_FAIL,e.getMessage());
+        } catch (RevokeTicketFailureException e){
+            logger.warn("AdminManagementService.refundOrder: RevokeTicketFailureException: {}",e.getMessage());
+            return new RefundResult(orderID,RefundStatus.TICKET_FAIL,e.getMessage());
+        } catch (RefundStatusUnknownException e){
+            logger.error("AdminManagementService.refundOrder: RefundStatusUnknownException: manual review requiered: ",e);
+            return new RefundResult(orderID,RefundStatus.REFUND_FAIL,e.getMessage());
+        } catch (TicketRevokeUnknownStatusException e){
+            logger.error("AdminManagementService.refundOrder: TicketRevokeUnknownStatusException: manual review requiered: ",e);
+            return new RefundResult(orderID,RefundStatus.TICKET_FAIL,e.getMessage());
+        } catch (Exception e){
+            logger.error("AdminManagementService.refundOrder: Unexpected Exception while refunding order: {}. error: ", orderID,e);
+            return new RefundResult(orderID,RefundStatus.UNKNOWN,e.getMessage());
+        }
     } 
 
     public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
