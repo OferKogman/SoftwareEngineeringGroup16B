@@ -10,6 +10,7 @@ import EventManagement from "./Components/Event/EventManagement";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
+import VirtualQueue from "./Components/Event/VirtualQueue";
 import CreateOrder from "./Components/Order/CreateOrder";
 import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
@@ -21,17 +22,18 @@ import Resignation from "./Components/ProdactionCompany/Resignation";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import VenueEditor from "./Components/ProdactionCompany/VenueEditor";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
+import MainPage from "./Components/Shared/MainPage";
 import ChangePasswordForm from "./Components/User/ChangePasswordForm";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
-import VirtualQueue from "./Components/Event/VirtualQueue";
 
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<MainPage />} />
       <Route path="/login" element={<LoginForm title="Login" />} />
       <Route path="/register" element={<RegistrationForm title="Register" />} />
       <Route path="/users/management" element={<UserManagement />}>
