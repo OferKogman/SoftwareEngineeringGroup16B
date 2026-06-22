@@ -1,6 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -115,6 +116,9 @@ public class EventService {
 			logger.info("EventService.activateEvent: Session token verified successfully.");
 
 			Event event = eventRepository.findByID(String.valueOf(eventID));
+
+			event.validateEventIsNotEnded();	//	validae that event has a price set, that it hasnt ended so it can be activated, will throw IllegalStateException if not valid
+			event.validateEventPriceIsSet();	//
 
 			while (true) {
 				logger.info("EventService.activateEvent: retrieving event for activation");
