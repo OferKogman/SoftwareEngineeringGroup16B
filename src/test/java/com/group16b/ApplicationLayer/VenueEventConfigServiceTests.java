@@ -13,12 +13,13 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import java.util.Map;
-import java.util.Arrays;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -104,8 +105,7 @@ public class VenueEventConfigServiceTests {
                                 mockAuthService,
                                 mockProductionCompanyRepository,
                                 mockLocationService,
-                                mockOrderRepository, mockPaymentService, mockTicketGateway
-                                );
+                                mockOrderRepository, mockPaymentService, mockTicketGateway);
         }
 
         private VenueRecord createValidVenueRecord() {
@@ -353,7 +353,7 @@ public class VenueEventConfigServiceTests {
 
                 Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ConcurrentHashMap<>(),
                                 targetVenueID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(),
-                                new ConcurrentHashMap<String, Entrance>(),1);
+                                new ConcurrentHashMap<String, Entrance>(), 1);
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
@@ -408,6 +408,7 @@ public class VenueEventConfigServiceTests {
                 assertFalse(result.isSuccess());
                 assertEquals("An unexpected system error occurred", result.getError());
         }
+
         private void mockValidAuthAndPermission(Venue venue, ProductionCompany company) {
                 User mockUser = mock(User.class);
 
@@ -422,36 +423,33 @@ public class VenueEventConfigServiceTests {
                 doNothing().when(company).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
                 doNothing().when(venue).validateCompanyID(companyID);
         }
+
         private FieldSegRecord fieldRecord(String segmentID, int size) {
                 return new FieldSegRecord(
-                        segmentID,
-                        size,
-                        new GridRectangleRecord(0, 0, 1, 1)
-                );
+                                segmentID,
+                                size,
+                                new GridRectangleRecord(0, 0, 1, 1));
         }
 
         private ChosenSeatingSegRecord seatRecord(String segmentID, SeatRecord... seats) {
                 return new ChosenSeatingSegRecord(
-                        segmentID,
-                        List.of(seats),
-                        new GridRectangleRecord(0, 0, 1, seats.length)
-                );
+                                segmentID,
+                                List.of(seats),
+                                new GridRectangleRecord(0, 0, 1, seats.length));
         }
 
         private VenueRecord editVenueRecord(
-                List<FieldSegRecord> fieldSeg,
-                List<ChosenSeatingSegRecord> seatSeg
-        ) {
+                        List<FieldSegRecord> fieldSeg,
+                        List<ChosenSeatingSegRecord> seatSeg) {
                 return new VenueRecord(
-                        venueName,
-                        "Madison Square Garden",
-                        fieldSeg,
-                        seatSeg,
-                        List.of(),
-                        List.of(),
-                        new VenueGridRecord(6, 7),
-                        List.of()
-                );
+                                venueName,
+                                "Madison Square Garden",
+                                fieldSeg,
+                                seatSeg,
+                                List.of(),
+                                List.of(),
+                                new VenueGridRecord(6, 7),
+                                List.of());
         }
 
         private void mockExistingSegments(Venue venue, String... segmentIDs) {
@@ -463,14 +461,14 @@ public class VenueEventConfigServiceTests {
 
                 when(venue.getSegments()).thenReturn(segments);
         }
+
         @Test
         void editVenueSegments_NullEditedVenue_ReturnsFail() {
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        null
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                null);
 
                 assertFalse(result.isSuccess());
                 assertEquals("Invalid input parameters.", result.getError());
@@ -482,11 +480,10 @@ public class VenueEventConfigServiceTests {
                 when(mockAuthService.validateToken(validToken)).thenReturn(false);
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(List.of(), List.of())
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
                 assertFalse(result.isSuccess());
                 assertEquals("Authentication failed: Invalid session token.", result.getError());
@@ -501,15 +498,14 @@ public class VenueEventConfigServiceTests {
                 mockValidAuthAndPermission(venue, company);
 
                 doThrow(new IllegalArgumentException("Permission denied."))
-                        .when(company)
-                        .validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
+                                .when(company)
+                                .validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(List.of(), List.of())
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
                 assertFalse(result.isSuccess());
                 assertEquals("Permission denied.", result.getError());
@@ -524,15 +520,14 @@ public class VenueEventConfigServiceTests {
                 mockValidAuthAndPermission(venue, company);
 
                 doThrow(new IllegalArgumentException("Venue does not belong to this company."))
-                        .when(venue)
-                        .validateCompanyID(companyID);
+                                .when(venue)
+                                .validateCompanyID(companyID);
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(List.of(), List.of())
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
                 assertFalse(result.isSuccess());
                 assertEquals("Venue does not belong to this company.", result.getError());
@@ -550,14 +545,13 @@ public class VenueEventConfigServiceTests {
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                List.of(fieldRecord("field-a", 50)),
-                                List.of(seatRecord("seat-a", new SeatRecord(1, 1), new SeatRecord(1, 2)))
-                        )
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 50)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1),
+                                                                new SeatRecord(1, 2)))));
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
@@ -583,25 +577,24 @@ public class VenueEventConfigServiceTests {
                 when(futureEvent.getEventID()).thenReturn(eventID);
                 when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
                 when(venue.getStockRefundForEvent(eventID, "seat-a", List.of("1-1")))
-                        .thenReturn(List.of("1-2"));
+                                .thenReturn(List.of("1-2"));
 
                 when(mockOrderRepository.getCompletedByEventIdSeatIds(eventID, "seat-a", List.of("1-2")))
-                        .thenReturn(List.of(order));
+                                .thenReturn(List.of(order));
 
                 when(order.getTransactionId()).thenReturn(11);
                 when(order.getExternalTicket()).thenReturn("ticket-1");
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                List.of(),
-                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))
-                        )
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))));
 
                 assertTrue(result.isSuccess());
 
@@ -627,6 +620,7 @@ public class VenueEventConfigServiceTests {
                 when(futureEvent.getEventID()).thenReturn(eventID);
                 when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
                 when(venue.getReservedStockBySegmentEventField(eventID, "field-a")).thenReturn(5);
 
@@ -640,17 +634,15 @@ public class VenueEventConfigServiceTests {
                 when(bigOrder.getExternalTicket()).thenReturn("ticket-big");
 
                 when(mockOrderRepository.getCompletedByEventIdField(eventID, "field-a"))
-                        .thenReturn(new ArrayList<>(Arrays.asList(bigOrder, smallOrder)));
+                                .thenReturn(new ArrayList<>(Arrays.asList(bigOrder, smallOrder)));
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                List.of(fieldRecord("field-a", 3)),
-                                List.of()
-                        )
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 3)),
+                                                List.of()));
 
                 assertTrue(result.isSuccess());
 
@@ -676,20 +668,20 @@ public class VenueEventConfigServiceTests {
                 when(futureEvent.getEventID()).thenReturn(eventID);
                 when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
                 when(venue.getReservedStockBySegmentEventField(eventID, "field-a")).thenReturn(3);
                 when(venue.getStockRefundForEvent(eventID, "seat-a", List.of("1-1", "1-2")))
-                        .thenReturn(List.of());
+                                .thenReturn(List.of());
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                List.of(fieldRecord("field-a", 5)),
-                                List.of(seatRecord("seat-a", new SeatRecord(1, 1), new SeatRecord(1, 2)))
-                        )
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 5)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1),
+                                                                new SeatRecord(1, 2)))));
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
@@ -716,14 +708,12 @@ public class VenueEventConfigServiceTests {
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(pastEvent));
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                List.of(fieldRecord("field-a", 10)),
-                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))
-                        )
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 10)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))));
 
                 assertTrue(result.isSuccess());
 
@@ -746,11 +736,10 @@ public class VenueEventConfigServiceTests {
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of());
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(List.of(), List.of())
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(), List.of()));
 
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
@@ -777,6 +766,8 @@ public class VenueEventConfigServiceTests {
                 when(event2.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(3));
 
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(event1, event2));
+                when(mockEventRepository.findByID(Integer.toString(101))).thenReturn(event1);
+                when(mockEventRepository.findByID(Integer.toString(102))).thenReturn(event2);
 
                 when(venue.getReservedStockBySegmentEventField(101, "field-a")).thenReturn(2);
                 when(venue.getReservedStockBySegmentEventField(102, "field-a")).thenReturn(4);
@@ -785,14 +776,12 @@ public class VenueEventConfigServiceTests {
                 when(venue.getStockRefundForEvent(102, "seat-a", List.of("1-1"))).thenReturn(List.of());
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                List.of(fieldRecord("field-a", 10)),
-                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))
-                        )
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 10)),
+                                                List.of(seatRecord("seat-a", new SeatRecord(1, 1)))));
 
                 assertTrue(result.isSuccess());
 
@@ -804,6 +793,7 @@ public class VenueEventConfigServiceTests {
 
                 verify(mockVenueRepository).save(venue);
         }
+
         @Test
         void editVenueSegments_NewSegments_AddsAndInitializesForFutureEvents() {
                 Venue venue = mock(Venue.class);
@@ -816,16 +806,16 @@ public class VenueEventConfigServiceTests {
                 when(futureEvent.getEventID()).thenReturn(eventID);
                 when(futureEvent.getEventStartTime()).thenReturn(LocalDateTime.now().plusDays(2));
                 when(mockEventRepository.findAllByVenueID("venue-123")).thenReturn(List.of(futureEvent));
+                when(mockEventRepository.findByID(Integer.toString(eventID))).thenReturn(futureEvent);
 
                 FieldSegRecord newField = fieldRecord("field-new", 20);
                 ChosenSeatingSegRecord newSeat = seatRecord("seat-new", new SeatRecord(1, 1));
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(List.of(newField), List.of(newSeat))
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(List.of(newField), List.of(newSeat)));
 
                 assertTrue(result.isSuccess());
 
@@ -853,22 +843,20 @@ public class VenueEventConfigServiceTests {
                 EntranceRecord entrance = new EntranceRecord("EN1", new GridRectangleRecord(3, 3, 1, 1));
 
                 VenueRecord editedVenue = new VenueRecord(
-                        venueName,
-                        "Madison Square Garden",
-                        List.of(),
-                        List.of(),
-                        List.of(stage),
-                        List.of(entrance),
-                        grid,
-                        List.of()
-                );
+                                venueName,
+                                "Madison Square Garden",
+                                List.of(),
+                                List.of(),
+                                List.of(stage),
+                                List.of(entrance),
+                                grid,
+                                List.of());
 
                 Result<Boolean> result = configService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editedVenue
-                );
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editedVenue);
 
                 assertTrue(result.isSuccess());
 
