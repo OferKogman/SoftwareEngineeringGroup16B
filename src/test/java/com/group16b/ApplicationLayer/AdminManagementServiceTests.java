@@ -14,11 +14,25 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
+import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
+import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
@@ -55,17 +69,30 @@ public class AdminManagementServiceTests {
     private IRepository<User> userRepository;
     private OrderRepositoryMapImpl orderRepository;
     private IProductionCompanyRepository productionCompanyRepository;
+    private IPaymentGateway mockPaymentGateway;
+    private ITicketGateway mockTicketGateway;
 
     private Location location1;
     private Segment segment1;
     private Venue venue1;
     private Event e1;
+    private Order myActiveOrder;
+    private Order myCompletedOrder;
+    private Order myCanceledOrder;
+    private Order unrelatedCompletedOrder;
+    private Event myActiveEvent;
+    private Event myInactiveEvent;
     private User user;
+    private String USER2_MAIL="miki mahus";
     private String sessionToken;
     private String adminToken;
     private String invalidToken;
     private String userSecret;
     private String adminSecret;
+
+    private final int TRANS_ID=12345;
+    private final int REFUNDLESS_COMPANY_ID=10034;
+    private final String EXTERNAL_TICKET="when one door closes, another door always opens, its the last time i buy a closet frim ikea...";
 
     @BeforeEach
     void setUp() throws Exception {
@@ -78,7 +105,10 @@ public class AdminManagementServiceTests {
         userRepository = new UserRepositoryMapImpl();
         orderRepository = new OrderRepositoryMapImpl(); 
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-        adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository);
+
+        mockPaymentGateway=mock(IPaymentGateway.class);
+        mockTicketGateway=mock(ITicketGateway.class);
+        adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository,mockPaymentGateway,mockTicketGateway);
             
         user = new User("testuser", "password");
         adminToken = tokenService.generateAdminToken("admin@test.com");
@@ -96,10 +126,37 @@ public class AdminManagementServiceTests {
         LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         LocalDateTime endTime = LocalDateTime.now().plusDays(2);
 
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5),
-                user.getEmail());
         
         e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), user.getEmail());
+        myActiveEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), USER2_MAIL);
+        myInactiveEvent=new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5), USER2_MAIL);
+        myActiveEvent.activateEvent();
+        eventRepository.save(myActiveEvent);
+
+        ProductionCompany someRnadomCompany=new ProductionCompany(REFUNDLESS_COMPANY_ID,"ra",2.1,"rand");
+        productionCompanyRepository.save(someRnadomCompany);
+
+        Event randomAssEvent=new Event(new EventRecord("venue1", "event1", LocalDateTime.now().minusDays(1), endTime, "artist1", "category1", REFUNDLESS_COMPANY_ID, 3.5), USER2_MAIL);
+        eventRepository.save(randomAssEvent);
+
+        myActiveOrder=new Order("my ACTIVE 1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCompletedOrder=new Order("my COMPLETED", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCompletedOrder.CompleteOrder();
+        myCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
+        myCompletedOrder.setTransactionId(TRANS_ID);
+        myCanceledOrder=new Order("my CANCEL", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
+        myCanceledOrder.CancelOrder();
+        myCanceledOrder.setExternalTicket(EXTERNAL_TICKET);
+        myCanceledOrder.setTransactionId(TRANS_ID);
+        unrelatedCompletedOrder=new Order("segment2", 1, 1.0, randomAssEvent.getEventID(),USER2_MAIL);
+        unrelatedCompletedOrder.CompleteOrder();
+        unrelatedCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
+        unrelatedCompletedOrder.setTransactionId(TRANS_ID);
+        orderRepository.save(myActiveOrder);
+        orderRepository.save(myCompletedOrder);
+        orderRepository.save(myCanceledOrder);
+        orderRepository.save(unrelatedCompletedOrder);
+
     }
 
     // Helper method to keep reflection injection clean
@@ -150,22 +207,6 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanySuccess() throws Exception {
-        int companyID = 1;
-
-        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
-        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
-        productionCompanyRepository.save(testCompany);
-
-        policyField.setAccessible(true);
-        policyField.set(adminManagementService, productionCompanyRepository);
-        
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
-
-        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
-    }
-
-    @Test
     public void testViewAllPurchaseHistoryEmptyHistory() {
         User newUser = new User("newuser@example.com", "password123");
         Result<List<OrderDTO>> history = adminManagementService.viewPurchesHistoryByUser(adminToken,
@@ -201,10 +242,115 @@ public class AdminManagementServiceTests {
     }
 
     @Test
+    public void testCloseProductionCompanySuccess() throws Exception {
+        int companyID = 1;
+
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+
+    @Test
+    public void testCloseProductionCompany_onlyPassedEvents_SuccessAndNoRefunds() throws Exception {
+
+        
+        Result<String> result = adminManagementService.closeProductionCompany(REFUNDLESS_COMPANY_ID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
+    }
+    
+    @Test
+    public void testCloseProductionCompany_paymentServiceDown() throws Exception {
+        int companyID = 1;
+
+        doThrow(new RefundStatusUnknownException("kaboom rico")).when(mockPaymentGateway).cancelPayment(anyInt());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
+    }
+    @Test
+    public void testCloseProductionCompany_paymentServiceRefuse() throws Exception {
+        int companyID = 1;
+
+        doThrow(new RefundFailedException("kaboom rico")).when(mockPaymentGateway).cancelPayment(anyInt());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
+    }
+
+    @Test
+    public void testCloseProductionCompany_ticketServiceDown() throws Exception {
+        int companyID = 1;
+
+        doThrow(new TicketRevokeUnknownStatusException("kaboom rico")).when(mockTicketGateway).revokeTicket(anyString());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+    @Test
+    public void testCloseProductionCompany_ticketServiceReject() throws Exception {
+        int companyID = 1;
+
+        doThrow(new RevokeTicketFailureException("kaboom rico")).when(mockTicketGateway).revokeTicket(anyString());
+        Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
+        ProductionCompany testCompany = new ProductionCompany(companyID, "prodTest", 5, "1"); 
+        productionCompanyRepository.save(testCompany);
+
+        policyField.setAccessible(true);
+        policyField.set(adminManagementService, productionCompanyRepository);
+        
+        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+
+        assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
+    }
+
+    @Test
     public void testCloseProductionCompanyUnauthorized() {
 
         Result<String> result = adminManagementService.closeProductionCompany(1, sessionToken);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
@@ -322,8 +468,8 @@ public class AdminManagementServiceTests {
         assertEquals(2, results.size());
         assertTrue(results.get(0).isSuccess());
         assertTrue(results.get(1).isSuccess());
-        assertEquals(1, results.get(0).getValue().size());
-        assertEquals(1, results.get(1).getValue().size());
+        assertEquals(2, results.get(0).getValue().size());
+        assertEquals(2, results.get(1).getValue().size());
     }
 
     @Test
@@ -394,6 +540,8 @@ public class AdminManagementServiceTests {
         assertEquals(2, results.size());
         long successCount = results.stream().filter(Result::isSuccess).count();
         assertEquals(1, successCount, "Exactly one closure should succeed");
+        verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
+        verify(mockTicketGateway,times(1)).revokeTicket(anyString());
     }
     @Test
     public void testRegisterNewAdminNullToken() {
@@ -437,18 +585,24 @@ public class AdminManagementServiceTests {
     public void testCloseProductionCompanyInvalidToken() {
         Result<String> result = adminManagementService.closeProductionCompany(1, invalidToken);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
     public void testCloseProductionCompanyNullToken() {
         Result<String> result = adminManagementService.closeProductionCompany(1, null);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
     public void testCloseNonExistentProductionCompany() {
         Result<String> result = adminManagementService.closeProductionCompany(99999, adminToken);
         assertFalse(result.isSuccess());
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
@@ -573,6 +727,9 @@ public class AdminManagementServiceTests {
 
         assertTrue(first.isSuccess());
         assertFalse(second.isSuccess());
+        //company 2, some random ass company with no orders
+        verify(mockPaymentGateway,never()).cancelPayment(anyInt());
+        verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test

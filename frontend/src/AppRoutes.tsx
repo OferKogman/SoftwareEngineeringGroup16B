@@ -1,26 +1,34 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 import AdminLoginForm from "./Components/Admin/AdminLoginForm";
 import AdminManagement from "./Components/Admin/AdminManagement";
+import AdminRegisterForm from "./Components/Admin/AdminRegisterForm";
+import ViewAdminCompanyList from "./Components/Admin/ViewAdminCompanyList";
+import ViewAdminPurchaseHistory from "./Components/Admin/ViewAdminPurchaseHistory";
+import ViewUsersList from "./Components/Admin/ViewUsersList";
 import EditDiscountPolicy from "./Components/EditDiscountPolicy";
 import EditPurchasePolicy from "./Components/EditPurchasePolicy";
 import EventCreationForm from "./Components/Event/EventCreationForm";
 import EventInformation from "./Components/Event/EventInformation";
 import EventLottery from "./Components/Event/EventLottery";
 import EventManagement from "./Components/Event/EventManagement";
+import EventPricing from "./Components/Event/EventPricing";
 import EventUpdateForm from "./Components/Event/EventUpdateForm";
 import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
+import VirtualQueue from "./Components/Event/VirtualQueue";
 import CreateOrder from "./Components/Order/CreateOrder";
 import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
 import HierarchyTree from "./Components/ProdactionCompany/HierarchyTree";
+import ManageEventInventory from "./Components/ProdactionCompany/ManageEventInventory";
 import MembersPermissions from "./Components/ProdactionCompany/MembersPermissions";
 import ProductionCompanyMenegment from "./Components/ProdactionCompany/ProductionCompanyMenegment";
 import Resignation from "./Components/ProdactionCompany/Resignation";
 import TotalRevenue from "./Components/ProdactionCompany/TotalRevenue";
 import VenueEditor from "./Components/ProdactionCompany/VenueEditor";
 import ProductionCompanyPurchaseHistory from "./Components/ProdactionCompany/ViewProductionCompanyPurchaseHistory";
+import MainPage from "./Components/Shared/MainPage";
 import ChangePasswordForm from "./Components/User/ChangePasswordForm";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
@@ -31,6 +39,7 @@ import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
 export default function AppRoutes() {
   return (
     <Routes>
+      <Route path="/" element={<MainPage />} />
       <Route path="/login" element={<LoginForm title="Login" />} />
       <Route path="/register" element={<RegistrationForm title="Register" />} />
       <Route path="/users/management" element={<UserManagement />}>
@@ -41,15 +50,20 @@ export default function AppRoutes() {
         <Route path="purchase-history" element={<ViewUserPurchaseHistory />} />
         <Route path="companies" element={<ViewUserCompanyList />} />
       </Route>
-      <Route path="/admins" element={<AdminManagement />} />
-      <Route
-        path="/admins/login"
-        element={<AdminLoginForm title="Admin Login" />}
-      />
-      <Route path="/admins/management" element={<AdminManagement />} />
+      <Route path="/admins" element={<AdminManagement />}>
+        <Route path="login" element={<AdminLoginForm title="Admin Login" />} />
+        <Route
+          path="register"
+          element={<AdminRegisterForm title="Register New Admin" />}
+        />
+        <Route path="purchase-history" element={<ViewAdminPurchaseHistory />} />
+        <Route path="users" element={<ViewUsersList />} />
+        <Route path="companies" element={<ViewAdminCompanyList />} />
+      </Route>
       <Route path="/events/search" element={<SearchEvents />} />
 
       <Route path="/events/:eventID/create-order" element={<CreateOrder />} />
+      <Route path="/events/:eventID/queue" element={<VirtualQueue />} />
       <Route path="/companies/create" element={<CreateProdactionCompany />} />
       <Route path="/payment" element={<PaymentPage />} />
 
@@ -60,9 +74,9 @@ export default function AppRoutes() {
         <Route path="lottery" element={<EventLottery />} />
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
         <Route path="purchase-policy" element={<EditPurchasePolicy />} />
-        <Route path="inventory" element={<VenueEditor />} />
+        <Route path="inventory" element={<ManageEventInventory />} />
+        <Route path="pricing" element={<EventPricing />} />
       </Route>
-
       <Route
         path="/companies/:companyId"
         element={<ProductionCompanyMenegment />}

@@ -98,6 +98,8 @@ public class Order {
 		this.eventId = other.eventId;
 		this.subjectID = other.subjectID;
 		this.version = other.version;
+		this.transactioId=other.transactioId;
+		this.externalTicket=other.externalTicket;
 		
 	}
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
-import ViewSaleHistory from "../ViewSaleHistory";
+import ViewSaleHistory from "../Shared/ViewSaleHistory";
 
 export default function AdminPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);

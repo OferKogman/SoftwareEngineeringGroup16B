@@ -1,22 +1,18 @@
-import type { DiscountPolicyDTO } from "../DTOs/DiscountPolicyDTO";
+import type { DiscountPolicyDTO } from "../../DTOs/DiscountPolicyDTO";
 
 type DiscountPolicyProps = {
   discountPolicy: DiscountPolicyDTO | null;
 };
 
-export default function ViewDiscountPolicies({ discountPolicy }: DiscountPolicyProps) {
+export default function ViewDiscountPolicies({
+  discountPolicy,
+}: DiscountPolicyProps) {
   if (!discountPolicy) {
     return <span>No discount policy.</span>;
   }
 
-  return (
-    <InnerDiscountPolicy
-      discountPolicy={discountPolicy}
-      isRoot={true}
-    />
-  );
+  return <InnerDiscountPolicy discountPolicy={discountPolicy} isRoot={true} />;
 }
-
 
 function InnerDiscountPolicy({
   discountPolicy,
@@ -34,29 +30,28 @@ function InnerDiscountPolicy({
 
         {discountPolicy.type === "Early Bird" &&
           `Discount: ${discountPolicy.percentage}% until ${new Date(
-            discountPolicy.earlyBirdEndDate
+            discountPolicy.earlyBirdEndDate,
           ).toLocaleDateString()}`}
 
         {discountPolicy.type === "Last Minute" &&
           `Discount: ${discountPolicy.percentage}% from ${new Date(
-            discountPolicy.lastMinuteStartDate
+            discountPolicy.lastMinuteStartDate,
           ).toLocaleDateString()}`}
 
         {discountPolicy.type === "Minimum Purchase" &&
           `Discount: ${discountPolicy.percentage}% from minimum tickets: $${discountPolicy.minimumAmount.toFixed(
-            2
+            2,
           )}`}
 
         {discountPolicy.type === "Maximum Purchase" &&
           `Discount: ${discountPolicy.percentage}% up to maximum tickets: $${discountPolicy.maximumAmount.toFixed(
-            2
+            2,
           )}`}
 
         {discountPolicy.type === "Coupon Code" && (
           <span>
-            Coupon Code: {discountPolicy.code}{" "}
-            Discount Percentage: {discountPolicy.percentage}%{" "}
-            Expiration Date:{" "}
+            Coupon Code: {discountPolicy.code} Discount Percentage:{" "}
+            {discountPolicy.percentage}% Expiration Date:{" "}
             {new Date(discountPolicy.expirationDate).toLocaleDateString()}
           </span>
         )}
@@ -72,10 +67,8 @@ function InnerDiscountPolicy({
           discountPolicy={discountPolicy.leftPolicy}
           isRoot={false}
         />
-      )}
-
-      {" "}{discountPolicy.operator}{" "}
-
+      )}{" "}
+      {discountPolicy.operator}{" "}
       {discountPolicy.rightPolicy && (
         <InnerDiscountPolicy
           discountPolicy={discountPolicy.rightPolicy}

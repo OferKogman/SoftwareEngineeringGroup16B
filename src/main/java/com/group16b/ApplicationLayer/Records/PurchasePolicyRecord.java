@@ -1,3 +1,7 @@
 package com.group16b.ApplicationLayer.Records;
 
-public record PurchasePolicyRecord(String type, Integer minAge, Integer maxAge, Integer minTickets, Integer maxTickets) {}
+import com.group16b.ApplicationLayer.Objects.PurchasePolicyTypes;
+
+public record PurchasePolicyRecord(PurchasePolicyTypes type, Integer minAge, Integer maxAge, Integer minTickets,
+        Integer maxTickets, PurchasePolicyRecord left, PurchasePolicyRecord right) {
+}

@@ -1,4 +1,7 @@
 package com.group16b.ApplicationLayer;
+import java.time.LocalDateTime;
+import java.time.chrono.ChronoLocalDateTime;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -10,9 +13,17 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
+import com.group16b.ApplicationLayer.Enums.RefundStatus;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
+import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
+import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.RefundResult;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -33,14 +44,18 @@ public class AdminManagementService {
     private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
     private IRepository<SystemAdmin> systemAdminRepo;
+    private final IPaymentGateway paymentGateway;
+    private final ITicketGateway ticketGateway;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo, IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
         this.orderRepo = orderRepo;
         this.eventRepo = eventRepo;
         this.userRepository = userRepository;
         this.systemAdminRepo = systemAdminRepo;
+        this.paymentGateway=paymentGateway;
+        this.ticketGateway=ticketGateway;
     }
 
 
@@ -84,13 +99,14 @@ public class AdminManagementService {
             }
 
             List<Order> orders = orderRepo.getAll();
-            for (Order order : orders) {
-                Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
-                if (event.getEventProductionCompanyID() != productionCompanyID) {
-                    orders.remove(order);
-                }
-            }
-            List<OrderDTO> orderDTOs = orders.stream()
+            List<Order> filtered = orders.stream()
+                .filter(order -> {
+                    Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
+                    return event.getEventProductionCompanyID() == productionCompanyID && order.isCompleted();
+                })
+                .toList();
+
+            List<OrderDTO> orderDTOs = filtered.stream()
                     .map(order -> new OrderDTO(order))
                     .collect(Collectors.toList());
             return Result.makeOk(orderDTOs);
@@ -117,6 +133,7 @@ public class AdminManagementService {
             List<Order> orders = orderRepo.getAll();
             orders = orders.stream()
                     .filter(order -> order.isBelongsToSubject(userId + ""))
+                    .filter(order -> order.isCompleted())
                     .collect(Collectors.toList());
             List<OrderDTO> orderDTOs = orders.stream()
                     .map(order -> new OrderDTO(order))
@@ -238,10 +255,129 @@ public class AdminManagementService {
     private void deactivateEvents(List<Event> events) {
         logger.info("AdminManagementService.deactivateEvents: Deactivating {} events", events.size());
         for (Event e : events) {
-            e.deactivateEvent();
+            deactivateEventAndRefundOrders(e.getEventID());
             logger.info("AdminManagementService.deactivateEvents: Deactivated event with ID {}", e.getEventID());
         }
     }
+    private void deactivateEventAndRefundOrders(int eventID)
+    {
+         logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivating event {}", eventID);
+         try{
+            Event event=null;
+            while(true){
+                try{
+                    event=eventRepo.findByID(String.valueOf(eventID));
+                    event.deactivateEvent();
+                    eventRepo.save(event);
+                    break;
+                } catch(OptimisticLockingFailureException e){
+                    logger.warn("AdminManagementService.deactivateEventAndRefundUser: optimistic lock exception when saving event {}",eventID);
+                    continue;
+
+                } catch (IllegalArgumentException e){
+                    logger.warn("AdminManagementService.deactivateEventAndRefundUser: IllegalArgumentException: {}",e.getMessage());
+                    return;
+                } catch (IllegalStateException e){
+                    logger.warn("AdminManagementService.deactivateEventAndRefundUser: IllegalStateException: {}",e.getMessage());
+                    break;
+                }
+            }
+
+            logger.info("AdminManagementService.deactivateEventAndRefundUser: Deactivated event {}", eventID);
+            if(!event.getEventStartTime().isAfter(LocalDateTime.now()))
+            {
+                logger.info("AdminManagementService.deactivateEventAndRefundUser: event {} has already passed, no need for refunds", eventID);
+                return;
+            }
+            List<Order> orders=orderRepo.getByEventId(eventID);
+            List<RefundResult> refundResults=new ArrayList<>();
+            int successCount=0, failCount=0;
+            for(Order order : orders)
+            {
+                if(cancelOrder(order.getOrderId())){
+                    RefundResult res=refundOrder(order.getOrderId());
+                    if(res.status()==RefundStatus.SUCCESS)
+                        successCount++;
+                    else
+                        failCount++;
+                    refundResults.add(res);
+                }
+            }
+
+            logger.info("AdminManagementService.deactivateEventAndRefundUser: finished refunding, successes: {}, failures: {}.",successCount,failCount);
+            if(failCount!=0)
+                logger.warn("AdminManagementService.deactivateEventAndRefundUser: SOME REFUNDS FAILED FOR EVENT {}, manuall reconsaliation is needed! Also don't forget to brushyour teeth!",eventID);
+
+
+         } catch(Exception e){
+            logger.error("AdminManagementService.deactivateEventAndRefundUser: An unexpected exception: ",e);
+         }
+    }
+
+    //cancel the order and return whether a refund is needed or not
+    private boolean cancelOrder(String orderID)
+    {
+        logger.info("AdminManagementService.cancelOrder: canceling order: {}", orderID);
+        while(true)
+        {   
+            try{
+                Order order= orderRepo.findByID(orderID);
+                boolean toRefund=false;
+
+                if(order.isActive()){ //only cancel
+                    order.CancelOrder();
+                }
+                else if(order.isCompleted())
+                { //refund
+                    order.CancelOrder();
+                    toRefund=true;
+                }
+                else{ //already canceled
+                    logger.info("AdminManagementService.cancelOrder: order {} was already canceled", orderID);
+                    return false;
+                }
+                orderRepo.save(order);
+                return toRefund;
+
+            } catch(OptimisticLockingFailureException e){
+                logger.warn("AdminManagementService.cancelOrder: concurency issue while canceling order: {}", orderID);
+                continue;
+            } catch(IllegalArgumentException e){
+                logger.warn("AdminManagementService.cancelOrder: IllegalArgumentException: {}", e.getMessage());
+                return false;
+            }
+        }
+    } 
+    
+
+    private RefundResult refundOrder(String orderID)
+    {
+        logger.info("AdminManagementService.refundOrder: refunding order: {}", orderID);
+        try{
+            Order order= orderRepo.findByID(orderID);
+            paymentGateway.cancelPayment(order.getTransactionId());
+            ticketGateway.revokeTicket(order.getExternalTicket());
+            return new RefundResult(orderID,RefundStatus.SUCCESS,null);
+        } catch (IllegalArgumentException e){
+            logger.warn("AdminManagementService.refundOrder: IllegalArgumentException: {}",e.getMessage());
+            return new RefundResult(orderID,RefundStatus.DATA_INTEGRITY_ERROR ,e.getMessage());
+        } catch (RefundFailedException e){
+            logger.warn("AdminManagementService.refundOrder: RefundFailedException: {}",e.getMessage());
+            return new RefundResult(orderID,RefundStatus.REFUND_FAIL,e.getMessage());
+        } catch (RevokeTicketFailureException e){
+            logger.warn("AdminManagementService.refundOrder: RevokeTicketFailureException: {}",e.getMessage());
+            return new RefundResult(orderID,RefundStatus.TICKET_FAIL,e.getMessage());
+        } catch (RefundStatusUnknownException e){
+            logger.error("AdminManagementService.refundOrder: RefundStatusUnknownException: manual review requiered: ",e);
+            return new RefundResult(orderID,RefundStatus.REFUND_FAIL,e.getMessage());
+        } catch (TicketRevokeUnknownStatusException e){
+            logger.error("AdminManagementService.refundOrder: TicketRevokeUnknownStatusException: manual review requiered: ",e);
+            return new RefundResult(orderID,RefundStatus.TICKET_FAIL,e.getMessage());
+        } catch (Exception e){
+            logger.error("AdminManagementService.refundOrder: Unexpected Exception while refunding order: {}. error: ", orderID,e);
+            return new RefundResult(orderID,RefundStatus.UNKNOWN,e.getMessage());
+        }
+    } 
 
     public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try{

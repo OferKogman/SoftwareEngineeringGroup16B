@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
+import { useAdminLoggedIn } from "../../GlobalContext/AdminLoggedInContext";
 import { useSession } from "../../GlobalContext/SessionContext";
 import "../User/CSS/UserLoginForm.css";
-import { useApiFetch } from "../../apiFetch";
 
 export type AdminLoginData = {
   username: string;
@@ -25,6 +26,7 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
   const [error, setError] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
+  const { adminLoggedIn, setAdminLoggedIn } = useAdminLoggedIn();
   const apiFetch = useApiFetch();
 
   const navigate = useNavigate();
@@ -46,7 +48,8 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
       const token: string = await response.text();
 
       setSessionToken(token);
-      navigate("/admins/management");
+      setAdminLoggedIn(true);
+      navigate("/admins");
       console.log("Admin successfully logged in");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to login.");
@@ -81,11 +84,10 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
     }
   }
 
-  return (
+  return !adminLoggedIn ? (
     <form className="login-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
       {error && <p className="form-error">{error}</p>}
-
       <div className="form-row">
         <label>Username</label>
         <input
@@ -131,5 +133,7 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
         </button>
       </div>
     </form>
+  ) : (
+    <div>Already Logged in as admin</div>
   );
 }

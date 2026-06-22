@@ -19,6 +19,7 @@ export type VenueGridDTO = {
 
 export type FieldSegDTO = {
   segmentID: string;
+  eventPrices: Record<number, number>;
   area: GridRectangleDTO;
   size: number;
   stocks: Record<number, number>;
@@ -26,6 +27,7 @@ export type FieldSegDTO = {
 
 export type ChosenSeatingSegDTO = {
   segmentID: string;
+  eventPrices: Record<number, number>;
   seats: Record<string, SeatDTO>;
   area: GridRectangleDTO;
 };

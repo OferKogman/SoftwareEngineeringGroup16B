@@ -1,5 +1,6 @@
 package com.group16b.InfrastructureLayer.MapDBs;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -79,6 +80,15 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 				.filter(order -> order.getEventId() == eventId)
 				.filter(order -> order.getSegmentId().equals(segmentId))
 				.filter(order -> order.getOrderType() == OrderType.FIELD)
+				.map(Order::new)
+				.toList();
+	}
+
+	@Override
+	public List<Order> getByEventId(int eventId)
+	{
+		return this.orders.values().stream()
+				.filter(order -> order.getEventId() == eventId)
 				.map(Order::new)
 				.toList();
 	}
