@@ -153,9 +153,21 @@ export default function VenueDisplay({
       setStages(Object.values(venue.stages));
       setEntrances(Object.values(venue.entrances));
     }
-    console.log(venue);
+    function selectedSeatsToStock() {
+      if (eventID === undefined || eventID === null) {
+        return;
+      }
+
+      selectedSeats.forEach((selectedSeat) => {
+        selectedSeat.stock = {
+          ...selectedSeat.stock,
+          [eventID]: false,
+        };
+      });
+    }
+    void selectedSeatsToStock();
     void loadSegs();
-  }, [venue]);
+  }, [venue, selectedSeats, eventID]);
 
   function getSegmentPrice(
     segment: FieldSegDTO | ChosenSeatingSegDTO,

@@ -132,48 +132,29 @@ export default function TotalRevenue() {
   }, [companyId, sessionToken, apiFetch]);
 
   return (
-    <div className="total-revenue-page">
-      <h2 className="total-revenue-title">Total Revenue</h2>
+    <div className="revenue-page">
+      <div className="revenue-view">
+        <h2 className="revenue-title">Total Revenue</h2>
 
-      {loading ? (
-        <div className="total-revenue-card">
-          <div className="total-revenue-label">Loading revenue...</div>
-        </div>
-      ) : error ? (
-        <div className="total-revenue-card">
-          <div className="total-revenue-label">Could not load revenue</div>
-          <p className="form-error">{error}</p>
-        </div>
-      ) : (
-        <>
-          <div className="total-revenue-card">
-            <div className="total-revenue-label">Total Revenue Generated</div>
+        {loading ? (
+          <div className="revenue-content">Loading revenue...</div>
+        ) : error ? (
+          <div className="revenue-content">
+            <h3>Could not load revenue</h3>
+            <p className="form-error">{error}</p>
+          </div>
+        ) : (
+          <div className="revenue-content">
+            <p className="revenue-label">Total Revenue Generated</p>
 
-            <h1 className="total-revenue-value">
+            <h1 className="revenue-value">
               ₪ {(revenue ?? 0).toLocaleString()}
             </h1>
 
-            <div className="total-revenue-company">Company ID: {companyId}</div>
+            <p className="revenue-company">Company ID: {companyId}</p>
           </div>
-
-          <div className="revenue-stats-grid">
-            <div className="revenue-stat-card">
-              <h3>Completed Orders</h3>
-              <p>438</p>
-            </div>
-
-            <div className="revenue-stat-card">
-              <h3>Events</h3>
-              <p>12</p>
-            </div>
-
-            <div className="revenue-stat-card">
-              <h3>Average Order</h3>
-              <p>₪286</p>
-            </div>
-          </div>
-        </>
-      )}
+        )}
+      </div>
     </div>
   );
 }

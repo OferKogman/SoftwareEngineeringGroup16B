@@ -130,6 +130,13 @@ public class Order {
 	public String getSegmentId() {
 		return segmentId;
 	}
+	public long getOrderStartTime() {
+		if (state instanceof ActiveOrder activeOrder) {
+			return activeOrder.getCreationTime();
+		} else {
+			throw new IllegalStateException("Cannot get order start time for a completed or canceled order");
+		}
+	}
 
 	public List<String> getSeats() {
 		if (orderType == OrderType.FIELD) {
