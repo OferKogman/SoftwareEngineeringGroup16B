@@ -1,62 +1,71 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useOutletContext, useParams } from "react-router-dom";
 import type { EventDTO } from "../DTOs/EventDTO";
+import type { NullablePurchasePolicyDTO } from "../DTOs/PurchasePolicyDTO";
 import { useApiFetch } from "../apiFetch";
+import "./EditPurchasePolicy.css";
 import PurchasePolicyTree from "./Shared/PurchasePolicyTree";
 
 export default function EditPurchasePolicy() {
   const { eventID } = useParams();
-
-  const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
-  const [error, setError] = useState("");
+  const { event } = useOutletContext<{ event: EventDTO }>();
+  const [alert, setAlert] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const apiFetch = useApiFetch();
 
-  useEffect(() => {
-    async function loadEvent() {
-      if (!eventID) {
-        setError("Missing event ID");
-        return;
-      }
-
-      try {
-        const response = await apiFetch(
-          `http://localhost:8080/events/${eventID}`,
-          {
-            method: "GET",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        const data: EventDTO = await response.json();
-
-        setEventDTO(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load event");
-      }
+  async function savePolicy(policy: NullablePurchasePolicyDTO) {
+    if (!eventID) {
+      return;
     }
 
-    void loadEvent();
-  }, [eventID, apiFetch]);
+    try {
+      const response = await apiFetch(
+        `http://localhost:8080/api/events/${eventID}/purchase-policy`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(policy),
+        },
+      );
 
-  if (error) {
-    return <p>{error}</p>;
-  }
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
 
-  if (!eventDTO) {
-    return <p>Loading...</p>;
+      setAlert({
+        type: "success",
+        message: "Purchase policy saved successfully",
+      });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed saving purchase policy",
+      });
+    }
   }
 
   return (
     <main>
       <h2>Edit Purchase Policy</h2>
 
-      <PurchasePolicyTree policy={eventDTO.eventPurchasePolicy} />
+      <PurchasePolicyTree
+        policy={event.eventPurchasePolicy}
+        onSave={savePolicy}
+      />
 
-      {/* your edit controls here */}
+      {alert && (
+        <div className={`settings-alert`}>
+          <p>{alert.message}</p>
+
+          <button onClick={() => setAlert(null)}>OK</button>
+        </div>
+      )}
     </main>
   );
 }
