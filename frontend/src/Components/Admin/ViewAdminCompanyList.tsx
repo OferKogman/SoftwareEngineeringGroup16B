@@ -4,11 +4,31 @@ import { useApiFetch } from "../../apiFetch";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
-  const [companyDTOList, setCompanyDTOList] = useState<
-    ProductionCompanyDTO[] | null
-  >(null);
+  const [companyDTOList, setCompanyDTOList] = useState<ProductionCompanyDTO[]>(
+    [],
+  );
 
   const apiFetch = useApiFetch();
+
+  async function handleCloseCompany(companyID: number) {
+    try {
+      const response = await apiFetch(
+        `http://localhost:8080/api/admin-management/deleteProductionCompany/${companyID}`,
+        {
+          method: "DELETE",
+        },
+      );
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+      setCompanyDTOList((prev) =>
+        prev.filter((company) => company.id !== companyID),
+      );
+      setError("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete users.");
+    }
+  }
 
   useEffect(() => {
     async function loadCompanies() {
@@ -50,7 +70,7 @@ export default function ViewAdminCompanyList() {
       ) : (
         <table
           style={{
-            width: "75%",
+            width: "90%",
             tableLayout: "fixed",
             marginLeft: "auto",
             marginRight: "auto",
@@ -72,7 +92,9 @@ export default function ViewAdminCompanyList() {
                 <td>{company.name}</td>
                 <td>{company.rating}</td>
                 <td>
-                  <button onClick={() => {}}>Close Company</button>
+                  <button onClick={() => handleCloseCompany(company.id)}>
+                    Close Company
+                  </button>
                 </td>
               </tr>
             ))}
