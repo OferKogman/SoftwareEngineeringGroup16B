@@ -64,7 +64,6 @@ export default function AppRoutes() {
       <Route path="/events/search" element={<SearchEvents />} />
 
       <Route path="/events/:eventID/create-order" element={<CreateOrder />} />
-      <Route path="/order/edit" element={<EditOrder />} />
       <Route path="/events/:eventID/queue" element={<VirtualQueue />} />
       <Route path="/companies/create" element={<CreateProdactionCompany />} />
       <Route path="/payment" element={<PaymentPage />} />
@@ -97,6 +96,8 @@ export default function AppRoutes() {
         <Route path="settings" element={<Resignation />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
+      <Route path="/users/management/active-order" element={<EditOrder />} />
+
 
       <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>

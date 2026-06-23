@@ -1,10 +1,54 @@
-import { NavLink, useOutlet } from "react-router-dom";
 import "../../CSS/Management.css";
 import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
+import { useEffect, useState } from "react";
+import { NavLink, useNavigate, useOutlet } from "react-router-dom";
+import { useApiFetch } from "../../apiFetch";
+import type { ActiveOrderDTO } from "../../DTOs/ActiveOrderDTO";
 
 export default function UserManagement() {
   const outlet = useOutlet();
   const isLoggedIn = useLoggedIn();
+  const navigate = useNavigate();
+  const apiFetch = useApiFetch();
+  const [activeOrder, setActiveOrder] = useState<ActiveOrderDTO | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+
+
+  useEffect(() => {
+      async function loadActiveOrder() {
+        try {
+          const response = await apiFetch(
+            "http://localhost:8080/api/user/me/active-order",
+            { method: "GET" },
+          );
+          if (!response.ok) {
+            setActiveOrder(null);
+            return;
+          }
+          const order: ActiveOrderDTO = await response.json();
+          setActiveOrder(order);
+        } catch {
+          setActiveOrder(null);
+        }
+      }
+      void loadActiveOrder();
+  }, [apiFetch]);
+  useEffect(() => {
+      if (!activeOrder) return;
+      const updateTimer = () => {
+        const endTime = activeOrder.orderStartTime + 10 * 60 * 1000;
+        setSecondsLeft(Math.max(0, Math.floor((endTime - Date.now()) / 1000)));
+      };
+      updateTimer();
+      const intervalId = window.setInterval(updateTimer, 1000);
+      return () => window.clearInterval(intervalId);
+    }, [activeOrder]);
+    function formatTimer(seconds: number | null) {
+        if (seconds === null) return "Loading...";
+        const minutes = Math.floor(seconds / 60);
+        const rest = seconds % 60;
+        return `${minutes}:${rest.toString().padStart(2, "0")}`;
+      }
 
   if (!isLoggedIn.loggedIn) {
     return (
@@ -33,6 +77,7 @@ export default function UserManagement() {
           <NavLink to="change-password">Change Password</NavLink>
           <NavLink to="purchase-history">Purchase History</NavLink>
           <NavLink to="companies">My Production Companies</NavLink>
+          {activeOrder && <NavLink to="active-order">Active Order</NavLink>}
         </aside>
 
         <main className="management-content">
