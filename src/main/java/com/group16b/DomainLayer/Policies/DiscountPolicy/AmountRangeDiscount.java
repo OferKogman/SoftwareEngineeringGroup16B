@@ -21,20 +21,13 @@ public class AmountRangeDiscount implements DiscountPolicy {
         this.discountPercentage = discountPercentage;
     }
 
-    public Integer getMinTickets() { return minTickets; }
-    public Integer getMaxTickets() { return maxTickets; }
-    public double getDiscountPercentage() { return discountPercentage; }
 
-    public boolean isMet(int ticketCount){
-        return !((minTickets != null && ticketCount < minTickets) || (maxTickets != null && ticketCount > maxTickets));
-    }
-    public double calculateDiscount(double originalPrice, int ticketCount) {
-
-        return isMet(ticketCount) ? originalPrice * (1 - discountPercentage / 100) : originalPrice;
+    public boolean isMet(DiscountContext dc){
+        return !((minTickets != null && dc.ticketCount() < minTickets) || (maxTickets != null && dc.ticketCount() > maxTickets));
     }
 
     @Override
-    public double calculateDiscount(double originalPrice) {
-        return originalPrice; // use calculateDiscount(price, ticketCount) instead
+    public double calculateDiscount(double originalPrice, DiscountContext dc) {
+        return isMet(dc) ? originalPrice * (1 - discountPercentage / 100) : originalPrice;
     }
 }

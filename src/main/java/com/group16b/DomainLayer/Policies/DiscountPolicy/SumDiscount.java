@@ -1,25 +1,30 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
-import java.util.List;
-
 public class SumDiscount implements DiscountPolicy {
-    private List<DiscountPolicy> policies;
+    private final DiscountPolicy left;
+    private final DiscountPolicy right;
 
-    public SumDiscount(List<DiscountPolicy> policies) {
-        if (policies == null || policies.isEmpty()) {
-            throw new IllegalArgumentException("SumDiscount must have at least one policy.");
+    public SumDiscount(DiscountPolicy left, DiscountPolicy right) {
+        if (left == null || right == null) {
+            throw new IllegalArgumentException("SumDiscount must have both left and right policies.");
         }
-        this.policies = policies;
+        this.left = left;
+        this.right = right;
     }
 
-    public List<DiscountPolicy> getPolicies() { return policies; }
+    public DiscountPolicy getLeft() { return left; }
+    public DiscountPolicy getRight() { return right; }
 
     @Override
-    public double calculateDiscount(double originalPrice) {
+    public boolean isMet(DiscountContext dc) {
+        return left.isMet(dc) || right.isMet(dc);
+    }
+
+    @Override
+    public double calculateDiscount(double originalPrice, DiscountContext dc) {
         double price = originalPrice;
-        for (DiscountPolicy policy : policies) {
-            price = Math.max(policy.calculateDiscount(price), 0);
-        }
-        return Math.max(price,0);
+        price = left.calculateDiscount(price, dc);
+        price = right.calculateDiscount(price, dc);
+        return Math.max(price, 0);
     }
 }

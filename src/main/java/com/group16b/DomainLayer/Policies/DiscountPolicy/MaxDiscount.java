@@ -1,28 +1,29 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
-import java.util.List;
-
 public class MaxDiscount implements DiscountPolicy {
-    private List<DiscountPolicy> policies;
+    private final DiscountPolicy left;
+    private final DiscountPolicy right;
 
-    public MaxDiscount(List<DiscountPolicy> policies) {
-        if (policies == null || policies.isEmpty()) {
-            throw new IllegalArgumentException("MaxDiscount must have at least one policy.");
+    public MaxDiscount(DiscountPolicy left, DiscountPolicy right) {
+        if (left == null || right == null) {
+            throw new IllegalArgumentException("MaxDiscount must have both left and right policies.");
         }
-        this.policies = policies;
+        this.left = left;
+        this.right = right;
     }
 
-    public List<DiscountPolicy> getPolicies() { return policies; }
+    public DiscountPolicy getLeft() { return left; }
+    public DiscountPolicy getRight() { return right; }
 
     @Override
-    public double calculateDiscount(double originalPrice) {
-        double bestPrice = originalPrice;
-        for (DiscountPolicy policy : policies) {
-            double discountedPrice = policy.calculateDiscount(originalPrice);
-            if (discountedPrice < bestPrice) {
-                bestPrice = discountedPrice;
-            }
-        }
-        return bestPrice;
+    public boolean isMet(DiscountContext dc) {
+        return left.isMet(dc) || right.isMet(dc);
+    }
+
+    @Override
+    public double calculateDiscount(double originalPrice, DiscountContext dc) {
+        double leftPrice = left.calculateDiscount(originalPrice, dc);
+        double rightPrice = right.calculateDiscount(originalPrice, dc);
+        return Math.min(leftPrice, rightPrice);
     }
 }

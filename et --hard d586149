@@ -1,0 +1,20 @@
+[33m3607043[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32moverall-playground[m[33m)[m Merge branch 'main' of https://github.com/OferKogman/SoftwareEngineeringGroup16B into overall-playground
+[33md586149[m[33m ([m[1;31morigin/overall-playground[m[33m)[m Discount policy refactor - reference implementation complete
+[33mae3c342[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Merge pull request #599 from OferKogman/408-add-active-order-to-user
+[33mcd78135[m Merge pull request #600 from OferKogman/463-company-purchase-policies
+[33me386187[m[33m ([m[1;31morigin/463-company-purchase-policies[m[33m)[m done
+[33m44e65bc[m[33m ([m[1;31morigin/408-add-active-order-to-user[m[33m)[m add button
+[33m544b713[m[33m ([m[1;31morigin/598-timer-reset[m[33m)[m Merge pull request #596 from OferKogman/465-event-purchase-policies
+[33md269eb1[m[33m ([m[1;31morigin/465-event-purchase-policies[m[33m)[m yupidido it works!
+[33m7320171[m Merge pull request #595 from OferKogman/580-inventory-isnt-loading-correctly
+[33mdb55daa[m[33m ([m[1;31morigin/580-inventory-isnt-loading-correctly[m[33m)[m stock is shown
+[33m9957e09[m fixed create-order
+[33me744dc3[m Merge pull request #593 from OferKogman/409-add-manage-active-order-to-user
+[33maa5d5c7[m[33m ([m[1;31morigin/409-add-manage-active-order-to-user[m[33m)[m do stuff
+[33m5131353[m Merge pull request #592 from OferKogman/540-refactor-revenue
+[33mae597e1[m[33m ([m[1;31morigin/540-refactor-revenue[m[33m)[m done
+[33md79f38a[m Merge pull request #591 from OferKogman/584-admin-view-order-history
+[33m849760c[m[33m ([m[1;31morigin/584-admin-view-order-history[m[33m)[m fixed
+[33mf02a29f[m big code
+[33mbe9a81a[m Merge pull request #590 from OferKogman/587-vieworder-refund
+[33m90e81b1[m[33m ([m[1;31morigin/587-vieworder-refund[m[33m)[m refunded orders marked with X

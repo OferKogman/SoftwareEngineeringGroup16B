@@ -1,5 +1,6 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 
-public record DiscountContext (int age, int ticketCount) {
-}
+import java.time.LocalDateTime;
+
+public record DiscountContext(int age, int ticketCount, LocalDateTime date, String couponCode) {}
