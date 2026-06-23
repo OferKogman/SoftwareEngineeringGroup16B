@@ -413,6 +413,74 @@ public class Venue {
             throw new IllegalArgumentException("Company ID mismatch: Venue does not belong to the specified company.");
         }
     }
+    
+
+    public void removeSegment(String segmentID) {
+        if (!segments.containsKey(segmentID)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+
+        segments.remove(segmentID);
+    }
+
+    public void replaceStages(List<StageRecord> stageRecords) {
+        stages.clear();
+
+        for (StageRecord record : stageRecords) {
+            stages.put(record.stageID(), new Stage(record.stageID(), new GridRectangle(record.area())));
+        }
+    }
+
+    public void replaceEntrances(List<EntranceRecord> entranceRecords) {
+        entrances.clear();
+
+        for (EntranceRecord record : entranceRecords) {
+            entrances.put(record.entranceID(), new Entrance(record.entranceID(), new GridRectangle(record.area())));
+        }
+    }
+
+    public void replaceGrid(VenueGridRecord gridRecord) {
+        this.grid = new VenueGrid(gridRecord.rows(), gridRecord.columns());
+    }
+    public void initializeSegmentForEvent(String segmentID, int eventID) {
+        Segment segment = segments.get(segmentID);
+
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+
+        if (segment instanceof FieldSeg fieldSeg) {
+            fieldSeg.addEvent(eventID);
+            return;
+        }
+
+        if (segment instanceof ChosenSeatingSeg seatingSeg) {
+            for (Seat seat : seatingSeg.seats.values()) {
+                seat.addEvent(eventID);
+            }
+            return;
+        }
+
+        throw new IllegalArgumentException("Unknown segment type for segment ID " + segmentID);
+    }
+    public void setNewSeatingStock(
+            String segmentId,
+            List<String> newSeatsIDs,
+            List<Integer> eventIDsToInitialize
+    ) {
+        Segment segment = segments.get(segmentId);
+
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+
+        if (segment instanceof ChosenSeatingSeg chosenSeatingSeg) {
+            chosenSeatingSeg.setNewStock(newSeatsIDs, eventIDsToInitialize);
+            return;
+        }
+
+        throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a chosen seating segment");
+    }
 
 	public VenueGrid getGrid() { return grid; }
     public Map<String, Stage> getStages() { return stages; }

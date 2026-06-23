@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import type {
@@ -12,13 +12,6 @@ import VenueDisplay from "../Shared/VenueDisplay";
 import "./CSS/CreateOrder.css";
 
 const API_BASE = "http://localhost:8080";
-/*
-type SegmentAvailability = {
-  segmentID: string;
-  taken: number;
-  total: number;
-};
-*/
 
 type CreatedOrderResponse = {
   orderId?: string;
@@ -29,10 +22,17 @@ type CreatedOrderResponse = {
 
 export default function CreateOrderPage() {
   const { eventID } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
 
   const [venueID, setVenueID] = useState("");
   const [venue, setVenue] = useState<VenueDTO | null>(null);
+
+  const lotteryCode = (location.state as { lotteryCode?: string } | null)
+    ?.lotteryCode;
+
+  //TODO: Pass Age to reservation somehow when implemented in the backend
+  const age = (location.state as { age?: number } | null)?.age;
 
   const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
     null,
@@ -51,6 +51,26 @@ export default function CreateOrderPage() {
 
     async function loadVenue() {
       try {
+        const response = await apiFetch(
+          `http://localhost:8080/events/${eventID}/reservations/status`,
+          {
+            method: "GET",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
+        const status = await response.json();
+        if (status != -1) {
+          navigate(`/events/${eventID}/queue`, {
+            state: {
+              initialStatus: status,
+            },
+          });
+        }
+
         setError("");
         if (!eventID) {
           setError("Missing event ID.");
@@ -81,6 +101,7 @@ export default function CreateOrderPage() {
         const venue: VenueDTO = await venueResponse.json();
 
         if (!cancelled) {
+          console.log(venue);
           setVenueID(loadedVenueID);
           setVenue(venue);
         }
@@ -98,7 +119,7 @@ export default function CreateOrderPage() {
     return () => {
       cancelled = true;
     };
-  }, [eventID, apiFetch]);
+  }, [eventID, navigate, apiFetch]);
 
   function handleFieldSegmentSelected(segment: FieldSegDTO) {
     setError("");
@@ -162,32 +183,60 @@ export default function CreateOrderPage() {
     segmentID: string,
     amount: number,
   ) {
-    const response = await apiFetch(
-      `${API_BASE}/events/${eventID}/reservations/field`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    if (lotteryCode === null) {
+      const response = await apiFetch(
+        `${API_BASE}/events/${eventID}/reservations/field`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            venueId: venueID,
+            segmentId: segmentID,
+            amount,
+          }),
         },
-        body: JSON.stringify({
-          venueId: venueID,
-          segmentId: segmentID,
-          amount,
-        }),
-      },
-    );
+      );
+      const text = await response.text();
 
-    const text = await response.text();
+      if (!response.ok) {
+        throw new Error(text || "Failed to reserve field.");
+      }
 
-    if (!response.ok) {
-      throw new Error(text || "Failed to reserve field.");
+      const orderId = text.replace("new OrderId:", "").trim();
+
+      return {
+        orderId,
+      };
+    } else {
+      const response = await apiFetch(
+        `${API_BASE}/events/${eventID}/reservations/field/lottery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            venueId: venueID,
+            lotteryCode: lotteryCode,
+            segmentId: segmentID,
+            amount,
+          }),
+        },
+      );
+      const text = await response.text();
+
+      if (!response.ok) {
+        throw new Error(text || "Failed to reserve field.");
+      }
+
+      const orderId = text.replace("new OrderId:", "").trim();
+
+      return {
+        orderId,
+      };
     }
-
-    const orderId = text.replace("new OrderId:", "").trim();
-
-    return {
-      orderId,
-    };
   }
 
   async function reserveSeats(
@@ -198,30 +247,58 @@ export default function CreateOrderPage() {
   ) {
     const seatIDs = seats.map((seat) => `${seat.row}-${seat.number}`);
 
-    const response = await apiFetch(
-      `${API_BASE}/events/${eventID}/reservations/seats`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
+    if (lotteryCode === null) {
+      const response = await apiFetch(
+        `${API_BASE}/events/${eventID}/reservations/seats`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            venueId: venueID,
+            segmentId: segmentID,
+            seatIds: seatIDs,
+          }),
         },
-        body: JSON.stringify({
-          venueId: venueID,
-          segmentId: segmentID,
-          seatIds: seatIDs,
-        }),
-      },
-    );
+      );
 
-    const text = await response.text();
+      const text = await response.text();
 
-    if (!response.ok) {
-      throw new Error(text || "Failed to reserve seats.");
+      if (!response.ok) {
+        throw new Error(text || "Failed to reserve seats.");
+      }
+
+      const orderId = text.replace("new OrderId:", "").trim();
+
+      return { orderId };
+    } else {
+      const response = await apiFetch(
+        `${API_BASE}/events/${eventID}/reservations/seats/lottery`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            venueId: venueID,
+            lotteryCode: lotteryCode,
+            segmentId: segmentID,
+            seatIds: seatIDs,
+          }),
+        },
+      );
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        throw new Error(text || "Failed to reserve seats.");
+      }
+
+      const orderId = text.replace("new OrderId:", "").trim();
+
+      return { orderId };
     }
-
-    const orderId = text.replace("new OrderId:", "").trim();
-
-    return { orderId };
   }
 
   function moveToPayment(createdOrder: CreatedOrderResponse) {
@@ -344,6 +421,12 @@ export default function CreateOrderPage() {
           value={fieldTicketAmount}
           onChange={(event) => setFieldTicketAmount(event.currentTarget.value)}
         />
+        <h3>
+          Subtotal:{" "}
+          {selectedFieldSeg.eventPrices[Number(eventID)] *
+            Number(fieldTicketAmount)}
+          $
+        </h3>
 
         <button type="button" onClick={handleFieldOrder}>
           Order Field Tickets
@@ -377,11 +460,19 @@ export default function CreateOrderPage() {
       return null;
     }
 
+    if (!eventID) {
+      return null;
+    }
+
     return (
       <div className="form-card">
         <h3>Seat Section {selectedSeatSeg.segmentID}</h3>
         <p>Click seats inside the selected section to add/remove them.</p>
         <p>Selected seats: {selectedSeats.length}</p>
+        <h3>
+          Subtotal:{" "}
+          {selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length}$
+        </h3>
 
         <button type="button" onClick={handleSeatOrder}>
           Order Selected Seats
@@ -444,6 +535,7 @@ export default function CreateOrderPage() {
           handleSeatClick={handleVenueSeatClick}
           handleFieldSegmentClick={handleFieldSegmentSelected}
           handleSeatSegmentClick={handleSeatSegmentSelected}
+          eventID={eventID}
         />
 
         <div className="create-order-side-panel">
