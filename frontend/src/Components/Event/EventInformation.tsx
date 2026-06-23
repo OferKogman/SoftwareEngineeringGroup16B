@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
+import type { PurchasePolicyDTO } from "../../DTOs/PurchasePolicyDTO";
 import ViewEvent from "./ViewEvent";
 
 export default function EventInformation() {
@@ -13,9 +14,17 @@ export default function EventInformation() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [lotteryCode, setLotteryCode] = useState<string | null>(null);
+  const [age, setAge] = useState<number | null>(null);
 
   async function handleCreateOrder() {
     try {
+      if (age === -1) {
+        throw new Error("Age is required");
+      }
+      if (lotteryCode === "") {
+        throw new Error("Lottery code is required");
+      }
       const response = await apiFetch(
         `http://localhost:8080/events/${eventID}/reservations/status`,
         {
@@ -29,11 +38,18 @@ export default function EventInformation() {
 
       const status = await response.json();
       if (status === -1) {
-        navigate("create-order");
+        navigate("create-order", {
+          state: {
+            lotteryCode,
+            age,
+          },
+        });
       } else {
         navigate(`/events/${eventID}/queue`, {
           state: {
             initialStatus: status,
+            lotteryCode,
+            age,
           },
         });
       }
@@ -90,6 +106,34 @@ export default function EventInformation() {
     eventDTO?.lotteryDTO &&
     new Date(eventDTO.lotteryDTO.lotteryRegistrationDueDate) > new Date();
 
+  function checkAgeRequired(purchasePolicy: PurchasePolicyDTO): boolean {
+    return purchasePolicy.type === "AND" || purchasePolicy.type === "OR"
+      ? checkAgeRequired(purchasePolicy.left) ||
+          checkAgeRequired(purchasePolicy.right)
+      : purchasePolicy.type === "MIN_AGE" || purchasePolicy.type === "MAX_AGE";
+  }
+  const ageRequired =
+    eventDTO?.eventPurchasePolicy &&
+    checkAgeRequired(eventDTO.eventPurchasePolicy);
+
+  useEffect(() => {
+    async function needCode() {
+      if (eventDTO?.lotteryDTO && lotteryCode === null) {
+        setLotteryCode("");
+      }
+    }
+    void needCode();
+  }, [eventDTO?.lotteryDTO, lotteryCode]);
+
+  useEffect(() => {
+    async function needAge() {
+      if (ageRequired && age === null) {
+        setAge(-1);
+      }
+    }
+    void needAge();
+  }, [ageRequired, age]);
+
   return (
     <>
       <ViewEvent />
@@ -99,12 +143,37 @@ export default function EventInformation() {
           Enroll In Lottery
         </button>
       ) : (
-        <button
-          className="order-tickets-button"
-          onClick={() => handleCreateOrder()}
-        >
-          Order Tickets
-        </button>
+        <div>
+          {eventDTO?.lotteryDTO && (
+            <div>
+              <label>Lottery Code</label>
+              <input
+                id="lotteryCode"
+                type="text"
+                value={lotteryCode ?? ""}
+                onChange={(e) => setLotteryCode(e.target.value)}
+              />
+            </div>
+          )}
+          {ageRequired && (
+            <div>
+              <label>Age</label>
+              <input
+                id="age"
+                type="number"
+                min="0"
+                value={age ?? -1}
+                onChange={(e) => setAge(Number(e.target.value))}
+              />
+            </div>
+          )}
+          <button
+            className="order-tickets-button"
+            onClick={() => handleCreateOrder()}
+          >
+            Order Tickets
+          </button>
+        </div>
       )}
 
       {message && (
