@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
-import ViewSaleHistory from "../Shared/ViewSaleHistory";
+import ViewOrder from "../Shared/ViewOrder";
+import "./CSS/ViewAdminPurchaseHistory.css";
 
 export default function AdminPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
@@ -146,7 +147,13 @@ export default function AdminPurchaseHistory() {
 
       <button onClick={loadSelectedPurchaseHistory}>Load</button>
 
-      <ViewSaleHistory orders={orders} />
+      <div className="orders-list">
+        {orders.length > 0 ? (
+          orders.map((order) => <ViewOrder key={order.orderId} order={order} />)
+        ) : (
+          <p>No purchases found.</p>
+        )}
+      </div>
     </div>
   );
 }

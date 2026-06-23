@@ -27,7 +27,7 @@
   gap: 1rem;
 }
 
-.company-event-card {
+.dark .company-event-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -40,6 +40,40 @@
   border: 1px solid rgba(168, 85, 247, 0.6);
 
   box-shadow: 0 0 22px rgba(168, 85, 247, 0.25);
+}
+
+.company-event-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  padding: 1.2rem;
+
+  border-radius: 1rem;
+}
+
+.dark .company-event-card {
+  background: rgba(255, 255, 255, 0.04);
+  color: #f5f5f5;
+
+  border: 1px solid rgba(255, 150, 0, 0.4);
+
+  box-shadow:
+    0 0 20px rgba(255, 0, 255, 0.4),
+    0 0 40px rgba(168, 85, 247, 0.35),
+    0 0 80px rgba(168, 85, 247, 0.2);
+}
+
+.light .company-event-card {
+  background: rgba(0, 0, 0, 0.04);
+  color: #111111;
+
+  border: 1px solid rgba(255, 183, 0, 0.4);
+
+  box-shadow:
+    0 0 20px rgba(255, 0, 255, 0.4),
+    0 0 40px rgba(168, 85, 247, 0.35),
+    0 0 80px rgba(168, 85, 247, 0.2);
 }
 
 .company-event-card h3 {

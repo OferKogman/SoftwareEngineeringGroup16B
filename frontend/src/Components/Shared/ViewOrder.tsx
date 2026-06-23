@@ -60,7 +60,7 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
           segmentId: "segmentA",
           numOfTickets: 2,
           orderType: "Seat",
-          totalOrderPrice: 250.0,
+          tocalOrderPrice: 250.0,
           eventId: 1,
           subjectId: "42",
         };
@@ -106,7 +106,7 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
         <div className="order-row">
           <span className="order-label">Total Price</span>
           <span className="order-value">
-            ₪{orderDTO.totalOrderPrice.toFixed(2)}
+            ₪{orderDTO.tocalOrderPrice.toFixed(2)}
           </span>
         </div>
 
