@@ -144,10 +144,11 @@ export default function CreateOrderPage() {
       return;
     }
 
-    return !(
+    return (
       selectedSeatSeg &&
       Object.keys(selectedSeatSeg.seats).includes(seat.seatId) &&
-      !seat.stock[Number(eventID)]
+      !selectedSeats.includes(seat) &&
+      seat.stock[Number(eventID)]
     );
   }
 
@@ -531,7 +532,7 @@ export default function CreateOrderPage() {
           handleSeatClick={handleVenueSeatClick}
           handleFieldSegmentClick={handleFieldSegmentSelected}
           handleSeatSegmentClick={handleSeatSegmentSelected}
-          eventID={eventID}
+          eventID={Number(eventID)}
         />
 
         <div className="create-order-side-panel">
