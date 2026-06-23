@@ -247,12 +247,14 @@ public class OrderService {
 
             logger.info("OrderService.changeSeatsToOrder: Reserving new seats {} for order {}.", seatsToAdd, orderId);
 			Venue venue = venueRepo.findByID(event.getEventVenueID());
-			venue.reserveSeats(ReservationRequest.forSeats(order.getEventId(), seatsToAdd, order.getSegmentId()));
-            
+			if (!seatsToAdd.isEmpty()) {
+				venue.reserveSeats(ReservationRequest.forSeats(order.getEventId(), seatsToAdd, order.getSegmentId()));
+			}
             // free seatsToRemove
             logger.info("OrderService.changeSeatsToOrder: Freeing old seats {} for order {}.", seatsToRemove, orderId);
-			venue.freeSeats(ReservationRequest.forSeats(order.getEventId(), seatsToRemove, order.getSegmentId()));
-			
+			if (!seatsToRemove.isEmpty()) {
+				venue.freeSeats(ReservationRequest.forSeats(order.getEventId(), seatsToRemove, order.getSegmentId()));
+			}
 			logger.info("OrderService.changeSeatsToOrder: Validating purchase policy for event {} for order {}.", eventID, orderId);
 			validatePurchasePolicy(event.getEventID());
 

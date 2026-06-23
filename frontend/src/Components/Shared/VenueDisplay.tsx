@@ -443,8 +443,7 @@ export default function VenueDisplay({
     }
 
     return selectedSeats.some(
-      (selectedSeat) =>
-        selectedSeat.row === seat.row && selectedSeat.number === seat.number,
+      (selectedSeat) => selectedSeat.row === seat.row && selectedSeat.number === seat.number,
     );
   }
 
