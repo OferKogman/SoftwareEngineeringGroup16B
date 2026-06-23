@@ -64,7 +64,10 @@ public class AdminManagementService {
     public Result<List<OrderDTO>> viewAllPurchesHistory(String sTocken) {
         try {
             logger.info("AdminManagementService.viewAllPurchesHistory: Retrieving all completed orders for purchase history");
-
+            if (sTocken == null || sTocken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.viewAllPurchesHistory: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
                 logger.warn("AdminManagementService.viewAllPurchesHistory: Invalid token");
@@ -89,7 +92,10 @@ public class AdminManagementService {
     public Result<List<OrderDTO>> viewPurchesHistoryByCompany(String sTocken, int productionCompanyID){
         try {
             logger.info("AdminManagementService.viewPurchesHistoryByCompany: Retrieving completed orders for specific company");
-
+            if (sTocken == null || sTocken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
                 logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
@@ -121,7 +127,10 @@ public class AdminManagementService {
     public Result<List<OrderDTO>> viewPurchesHistoryByUser(String sTocken, String userId){
         try {
             logger.info("AdminManagementService.viewPurchesHistoryByUser: Retrieving completed orders for specific user");
-
+            if (sTocken == null || sTocken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
                 logger.warn("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
@@ -153,7 +162,12 @@ public class AdminManagementService {
 
     public Result<String> deleteProductionCompany(int productionCompanyId, String sToken) {
         try {
-            logger.info("AdminManagementService.deleteProductionCompany: Attempting to close production company with ID {}", productionCompanyId);            if (!authenticationService.validateToken(sToken)  ) {
+            logger.info("AdminManagementService.deleteProductionCompany: Attempting to close production company with ID {}", productionCompanyId);     
+            if (sToken == null || sToken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.deleteProductionCompany: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
+            if (!authenticationService.validateToken(sToken)  ) {
                 logger.warn("AdminManagementService.deleteProductionCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
@@ -173,16 +187,28 @@ public class AdminManagementService {
                             .collect(Collectors.toSet());
             List<Order> completedOrders = getCompletedOrdersByEventIDs(eventIds);
 
-            for(Order order: completedOrders){
-                for(String ticket: (order.getState()).getTickets()){
-                    paymentService.cancelPayment(order.getTransactionId());
-                    ticketService.revokeTicket(ticket);
+            for(Order order: completedOrders) {
+                //Fetch the event and skip refunds if it's already in the past
+                Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
+                if (event != null && !event.getEventStartTime().isAfter(LocalDateTime.now())) {
+                    logger.info("Event {} has already passed, skipping refund for order {}", event.getEventID(), order.getOrderId());
+                    continue; // skips the refund and moves to the next order
+                }
+                if (cancelOrder(order.getOrderId())) {
+                    try {
+                        paymentService.cancelPayment(order.getTransactionId());
+                        for(String ticket: (order.getState()).getTickets()) {
+                            ticketService.revokeTicket(ticket);
+                        }
+                    } catch (Exception e) {
+                        logger.error("AdminManagementService.deleteProductionCompany: Failed to refund or revoke for transaction {}", order.getTransactionId(), e);
+                    }
                 }
             }
             logger.info("AdminManagementService.deleteProductionCompany: Refunded {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
             
             if(!companyEvents.isEmpty()) {
-                deactivateEvents(companyEvents);
+                deactivateEventsNoRefund(companyEvents);
                 logger.info("AdminManagementService.deleteProductionCompany: Deactivated {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
             }
 
@@ -203,6 +229,10 @@ public class AdminManagementService {
     public Result<String> removeUser(String userID, String sessionToken){
         try {
             logger.info("Attempting to remove the user subscription of user ID {}", userID);
+            if (sessionToken == null || sessionToken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.removeUser: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             if (!authenticationService.validateToken(sessionToken)  ) {
                 logger.error("AdminManagementService.removeUser: Invalid token");
                 return Result.makeFail("Invalid token");
@@ -261,6 +291,21 @@ public class AdminManagementService {
             logger.error("AdminManagementService.removeUser: System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while saving the layout.");
         }    
+    }
+
+    private void deactivateEventsNoRefund(List<Event> events) {
+        logger.info("AdminManagementService.deactivateEventsNoRefund: Deactivating {} events", events.size());
+        for (Event e : events) {
+            try {
+                e.deactivateEvent();
+                eventRepo.save(e); 
+                logger.info("AdminManagementService.deactivateEventsNoRefund: Deactivated event with ID {}", e.getEventID());
+            } catch (IllegalStateException ex) {
+                logger.info("AdminManagementService.deactivateEventsNoRefund: Skipping deactivation for event {} (It has likely already passed)", e.getEventID());
+            } catch (Exception ex) {
+                logger.error("AdminManagementService.deactivateEventsNoRefund: Unexpected error deactivating event {}", e.getEventID(), ex);
+            }
+        }
     }
 
     private void deactivateEvents(List<Event> events) {
@@ -393,7 +438,7 @@ public class AdminManagementService {
     public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try{
             logger.info("AdminManagementService.registerNewAdmin: Attempting to register new system admin with username {}", newAdminUsername);
-            if (!authenticationService.validateToken(sToken)  ) {
+            if (!authenticationService.validateToken(sToken)) {
                 logger.warn("AdminManagementService.registerNewAdmin: Invalid token");
                 return Result.makeFail("Invalid token");
             }
