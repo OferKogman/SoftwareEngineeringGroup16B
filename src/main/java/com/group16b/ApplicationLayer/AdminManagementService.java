@@ -1,14 +1,15 @@
 package com.group16b.ApplicationLayer;
 import java.time.LocalDateTime;
-import java.time.chrono.ChronoLocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
@@ -33,7 +34,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import org.springframework.stereotype.Service;
 
 @Service
 public class AdminManagementService {
@@ -43,26 +43,31 @@ public class AdminManagementService {
     private final OrderRepositoryMapImpl orderRepo;
     private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
+    private final IPaymentGateway paymentService;
+    private final ITicketGateway ticketService;
     private IRepository<SystemAdmin> systemAdminRepo;
-    private final IPaymentGateway paymentGateway;
-    private final ITicketGateway ticketGateway;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo, IPaymentGateway paymentGateway, ITicketGateway ticketGateway) {
+
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo,
+        IPaymentGateway paymentService, ITicketGateway ticketService) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
         this.orderRepo = orderRepo;
         this.eventRepo = eventRepo;
         this.userRepository = userRepository;
         this.systemAdminRepo = systemAdminRepo;
-        this.paymentGateway=paymentGateway;
-        this.ticketGateway=ticketGateway;
+        this.ticketService = ticketService;
+        this.paymentService = paymentService;
     }
 
 
     public Result<List<OrderDTO>> viewAllPurchesHistory(String sTocken) {
         try {
             logger.info("AdminManagementService.viewAllPurchesHistory: Retrieving all completed orders for purchase history");
-
+            if (sTocken == null || sTocken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.viewAllPurchesHistory: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
                 logger.warn("AdminManagementService.viewAllPurchesHistory: Invalid token");
@@ -87,7 +92,10 @@ public class AdminManagementService {
     public Result<List<OrderDTO>> viewPurchesHistoryByCompany(String sTocken, int productionCompanyID){
         try {
             logger.info("AdminManagementService.viewPurchesHistoryByCompany: Retrieving completed orders for specific company");
-
+            if (sTocken == null || sTocken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
                 logger.warn("AdminManagementService.viewPurchesHistoryByCompany: Invalid token");
@@ -119,7 +127,10 @@ public class AdminManagementService {
     public Result<List<OrderDTO>> viewPurchesHistoryByUser(String sTocken, String userId){
         try {
             logger.info("AdminManagementService.viewPurchesHistoryByUser: Retrieving completed orders for specific user");
-
+            if (sTocken == null || sTocken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             // validate admin token (this is a placeholder, implement actual validation logic)
             if (!authenticationService.validateToken(sTocken)  ) {
                 logger.warn("AdminManagementService.viewPurchesHistoryByUser: Invalid token");
@@ -149,49 +160,79 @@ public class AdminManagementService {
         }
     }
 
-    public Result<String> closeProductionCompany(int productionCompanyId, String sToken) {
-        try{
-            logger.info("AdminManagementService.closeProductionCompany: Attempting to close production company with ID {}", productionCompanyId);
-            // validate admin token (this is a placeholder, implement actual validation logic)
+    public Result<String> deleteProductionCompany(int productionCompanyId, String sToken) {
+        try {
+            logger.info("AdminManagementService.deleteProductionCompany: Attempting to close production company with ID {}", productionCompanyId);     
+            if (sToken == null || sToken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.deleteProductionCompany: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             if (!authenticationService.validateToken(sToken)  ) {
-                logger.warn("AdminManagementService.closeProductionCompany: Invalid token");
+                logger.warn("AdminManagementService.deleteProductionCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sToken)) {
-                logger.warn("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.deleteProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-            productionCompanyRepo.findByID(String.valueOf(productionCompanyId)); // validate company exists, throws error if not
-            
+            productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
 
             List<Integer> productionCompanyIDs = new LinkedList<>();
             productionCompanyIDs.add(productionCompanyId);
 
             List<Event> companyEvents = eventRepo.searchEvents(null, null, null, null, null, null, null, null, null, productionCompanyIDs);
-                if(!companyEvents.isEmpty()) {
-                    deactivateEvents(companyEvents);
-                    logger.info("AdminManagementService.closeProductionCompany: Deactivated {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
-                }
 
-                productionCompanyRepo.delete(String.valueOf(productionCompanyId));
-                logger.info("AdminManagementService.closeProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
+            Set<Integer> eventIds = companyEvents.stream()
+                            .map(Event::getEventID)
+                            .collect(Collectors.toSet());
+            List<Order> completedOrders = getCompletedOrdersByEventIDs(eventIds);
+
+            for(Order order: completedOrders) {
+                //Fetch the event and skip refunds if it's already in the past
+                Event event = eventRepo.findByID(String.valueOf(order.getEventId()));
+                if (event != null && !event.getEventStartTime().isAfter(LocalDateTime.now())) {
+                    logger.info("Event {} has already passed, skipping refund for order {}", event.getEventID(), order.getOrderId());
+                    continue; // skips the refund and moves to the next order
+                }
+                if (cancelOrder(order.getOrderId())) {
+                    try {
+                        paymentService.cancelPayment(order.getTransactionId());
+                        for(String ticket: (order.getState()).getTickets()) {
+                            ticketService.revokeTicket(ticket);
+                        }
+                    } catch (Exception e) {
+                        logger.error("AdminManagementService.deleteProductionCompany: Failed to refund or revoke for transaction {}", order.getTransactionId(), e);
+                    }
+                }
+            }
+            logger.info("AdminManagementService.deleteProductionCompany: Refunded {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
+            
+            if(!companyEvents.isEmpty()) {
+                deactivateEventsNoRefund(companyEvents);
+                logger.info("AdminManagementService.deleteProductionCompany: Deactivated {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
+            }
+
+            productionCompanyRepo.delete(String.valueOf(productionCompanyId));
+            logger.info("AdminManagementService.deleteProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
 
             return Result.makeOk("Production company with ID " + productionCompanyId + " has been closed successfully.");
         }
         catch(IllegalArgumentException e) {
-            logger.error("AdminManagementService.closeProductionCompany: Production company with ID {} not found", productionCompanyId, e);
+            logger.error("AdminManagementService.deleteProductionCompany: Production company with ID {} not found", productionCompanyId, e);
             return Result.makeFail("Production company with ID " + productionCompanyId + " not found");
+        } catch (Exception e) {
+            logger.error("AdminManagementService.deleteProductionCompany: Error occurred while deleting production company with ID {}", productionCompanyId, e);
+            return Result.makeFail("Error occurred while deleting production company with ID " + productionCompanyId);        
         }
-        catch(Exception e) {
-            logger.error("AdminManagementService.closeProductionCompany: Error occurred while closing production company with ID {}", productionCompanyId, e);
-            return Result.makeFail("Error occurred while closing production company with ID " + productionCompanyId);
-        }
-
-    }
+    }    
 
     public Result<String> removeUser(String userID, String sessionToken){
         try {
             logger.info("Attempting to remove the user subscription of user ID {}", userID);
+            if (sessionToken == null || sessionToken.trim().isEmpty()) {
+                logger.warn("AdminManagementService.removeUser: Invalid token");
+                return Result.makeFail("Invalid token");
+            }
             if (!authenticationService.validateToken(sessionToken)  ) {
                 logger.error("AdminManagementService.removeUser: Invalid token");
                 return Result.makeFail("Invalid token");
@@ -216,7 +257,7 @@ public class AdminManagementService {
                         ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(companyID));
                         if (company.isFounder(userID))
                         {
-                            closeProductionCompany(companyID, sessionToken);
+                            deleteProductionCompany(companyID, sessionToken);
                             // company no longer exists after closure
                             success = true;
                             logger.info("AdminManagementService.removeUser: User {} was founder of company {}. Closed company as part of user removal process.", userID, companyID);
@@ -250,6 +291,21 @@ public class AdminManagementService {
             logger.error("AdminManagementService.removeUser: System error: {}", e.getMessage(), e);
             return Result.makeFail("An unexpected system error occurred while saving the layout.");
         }    
+    }
+
+    private void deactivateEventsNoRefund(List<Event> events) {
+        logger.info("AdminManagementService.deactivateEventsNoRefund: Deactivating {} events", events.size());
+        for (Event e : events) {
+            try {
+                e.deactivateEvent();
+                eventRepo.save(e); 
+                logger.info("AdminManagementService.deactivateEventsNoRefund: Deactivated event with ID {}", e.getEventID());
+            } catch (IllegalStateException ex) {
+                logger.info("AdminManagementService.deactivateEventsNoRefund: Skipping deactivation for event {} (It has likely already passed)", e.getEventID());
+            } catch (Exception ex) {
+                logger.error("AdminManagementService.deactivateEventsNoRefund: Unexpected error deactivating event {}", e.getEventID(), ex);
+            }
+        }
     }
 
     private void deactivateEvents(List<Event> events) {
@@ -355,8 +411,8 @@ public class AdminManagementService {
         logger.info("AdminManagementService.refundOrder: refunding order: {}", orderID);
         try{
             Order order= orderRepo.findByID(orderID);
-            paymentGateway.cancelPayment(order.getTransactionId());
-            ticketGateway.revokeTicket(order.getExternalTicket());
+            paymentService.cancelPayment(order.getTransactionId());
+            ticketService.revokeTicket(order.getExternalTicket());
             return new RefundResult(orderID,RefundStatus.SUCCESS,null);
         } catch (IllegalArgumentException e){
             logger.warn("AdminManagementService.refundOrder: IllegalArgumentException: {}",e.getMessage());
@@ -382,7 +438,7 @@ public class AdminManagementService {
     public Result<String> registerNewAdmin(String sToken, String newAdminUsername, String newAdminPassword, String newAdminEmail){
         try{
             logger.info("AdminManagementService.registerNewAdmin: Attempting to register new system admin with username {}", newAdminUsername);
-            if (!authenticationService.validateToken(sToken)  ) {
+            if (!authenticationService.validateToken(sToken)) {
                 logger.warn("AdminManagementService.registerNewAdmin: Invalid token");
                 return Result.makeFail("Invalid token");
             }
@@ -466,5 +522,12 @@ public class AdminManagementService {
             throw new AuthException("Unauthorized access");
         }
         systemAdminRepo.findByID(authenticationService.extractSubjectFromToken(sToken)); // validate admin exists, throws error if not
+    }
+
+    private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {//needed function in this context aswell
+        return orderRepo.getAll().stream()
+                .filter(Order::isCompleted)
+                .filter(order -> eventIDs.contains(order.getEventId()))
+                .toList();
     }
 }
