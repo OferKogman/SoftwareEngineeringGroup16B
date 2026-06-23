@@ -14,11 +14,6 @@ export default function ViewUsers({ users }: UsersListProps) {
 
   async function handleCancelSubscription(userID: string) {
     try {
-      if (users !== undefined && users !== null) {
-        setUserDTOList(users);
-        return;
-      }
-
       const response = await apiFetch(
         `http://localhost:8080/api/admin-management/removeUser/${userID}`,
         {
