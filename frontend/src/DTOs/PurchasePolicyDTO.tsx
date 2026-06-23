@@ -4,8 +4,7 @@ export type PurchasePolicyTypes =
   | "MIN_AGE"
   | "MAX_AGE"
   | "MIN_TICKETS"
-  | "MAX_TICKETS"
-  | "NONE";
+  | "MAX_TICKETS";
 
 export interface IPurchasePolicyDTO {
   type: PurchasePolicyTypes;
@@ -52,5 +51,11 @@ export type PurchasePolicyDTO =
   | MaxAgeDTO
   | MinTicketsDTO
   | MaxTicketsDTO;
+
+export type SimplePolicyTypes =
+  | "MIN_AGE"
+  | "MAX_AGE"
+  | "MIN_TICKETS"
+  | "MAX_TICKETS";
 
 export type NullablePurchasePolicyDTO = PurchasePolicyDTO | null;
