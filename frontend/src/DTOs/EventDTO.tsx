@@ -1,6 +1,6 @@
 import type { LotteryDTO } from "../Components/Event/EventLottery";
 import type { DiscountPolicyDTO } from "./DiscountPolicyDTO";
-import type { PurchasePolicyDTO } from "./PurchasePolicyDTO";
+import type { NullablePurchasePolicyDTO } from "./PurchasePolicyDTO";
 
 export type EventDTO = {
   eventID: number;
@@ -13,7 +13,7 @@ export type EventDTO = {
   eventCategory: string;
   eventProductionCompanyID: number;
   eventDiscountPolicy: DiscountPolicyDTO;
-  eventPurchasePolicy: PurchasePolicyDTO;
+  eventPurchasePolicy: NullablePurchasePolicyDTO;
   eventPrice: number;
   eventRating: number;
 

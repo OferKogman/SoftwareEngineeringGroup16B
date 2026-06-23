@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, useOutlet, useParams } from "react-router-dom";
+import { NavLink, Outlet, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import "../../CSS/Management.css";
 import type { EventDTO } from "../../DTOs/EventDTO";
@@ -49,7 +49,6 @@ async function readResponseBody(response: Response): Promise<unknown> {
 
 export default function EventManagement() {
   const { eventID } = useParams();
-  const outlet = useOutlet();
 
   const [event, setEvent] = useState<EventDTO | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,12 +167,7 @@ export default function EventManagement() {
               <p>{error}</p>
             </div>
           ) : (
-            (outlet ?? (
-              <div className="management-default-content">
-                <h2>Event Management</h2>
-                <p>Select an option from the sidebar.</p>
-              </div>
-            ))
+            <Outlet context={{ event }} />
           )}
         </main>
       </div>

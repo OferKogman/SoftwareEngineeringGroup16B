@@ -18,6 +18,7 @@ import { PolicyNode, type PolicyPath } from "./PolicyNode";
 
 type Props = {
   policy: NullablePurchasePolicyDTO;
+  onSave: (policy: NullablePurchasePolicyDTO) => void;
 };
 
 type PolicyEdge = Edge;
@@ -324,7 +325,7 @@ function replacePolicyAtPath(
   };
 }
 
-export default function PurchasePolicyTree({ policy }: Props) {
+export default function PurchasePolicyTree({ policy, onSave }: Props) {
   const [currentPolicy, setCurrentPolicy] =
     useState<NullablePurchasePolicyDTO>(policy);
   const nodeTypes = {
@@ -379,6 +380,8 @@ export default function PurchasePolicyTree({ policy }: Props) {
       >
         <Background />
       </ReactFlow>
+
+      <button onClick={() => onSave(currentPolicy)}>Save Changes</button>
     </div>
   );
 }
