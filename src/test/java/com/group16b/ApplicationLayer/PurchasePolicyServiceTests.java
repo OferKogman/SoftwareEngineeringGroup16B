@@ -38,7 +38,7 @@ import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImp
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.Security.Role;
-/*
+
 public class PurchasePolicyServiceTests {
     private PurchasePolicyService purchasePolicyService;
     private IAuthenticationService mockTokenService;
@@ -107,7 +107,7 @@ public class PurchasePolicyServiceTests {
     @Test
     public void createEventPurchasePolicy_Success() {
         Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", e1.getEventID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 1, null, null, null));
+                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, 10, null, 1, null, null, null));
         assertTrue(res.isSuccess());
     }
 
@@ -138,7 +138,7 @@ public class PurchasePolicyServiceTests {
         company.addPurchasePolicy(oldPolicy);
         productionCompanyRepository.save(company);
         Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", company.getProductionCompanyID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 2, null, null, null));
+                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, 10, null, 2, null, null, null));
         assertTrue(res.isSuccess());
     }
 
@@ -168,4 +168,3 @@ public class PurchasePolicyServiceTests {
         assertFalse(res.isSuccess());
     }
 }
-*/

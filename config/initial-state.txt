@@ -1,0 +1,42 @@
+# Register all 4 users
+guest-registration(u1@test.com, password123);
+guest-registration(u2@test.com, password123);
+guest-registration(u3@test.com, password123);
+guest-registration(u4@test.com, password123);
+
+# u1 opens company p1
+login(u1@test.com, password123);
+open-production-company(u1@test.com, p1);
+
+# u1 appoints u2 as owner
+appoint-owner(u1@test.com, 1, u2@test.com);
+
+# u2 accepts and appoints u3 as manager (venue config only, no policy)
+login(u2@test.com, password123);
+accept-invite(u2@test.com, 1, u1@test.com);
+appoint-manager(u2@test.com, 1, u3@test.com, VENUE_CONFIGURATION);
+
+# u3 accepts
+login(u3@test.com, password123);
+accept-invite(u3@test.com, 1, u2@test.com);
+
+# u2 creates event e1
+create-event(u2@test.com, venue1, e1, TestArtist, Concert, 1);
+
+# set prices
+set-prices(u2@test.com, e1, standingZone, 50.0);
+set-prices(u2@test.com, e1, seatingZone, 100.0);
+
+# activate
+activate-event(u2@test.com, e1);
+
+# coupon discount 20% for company (code sale123)
+add-company-discount(u2@test.com, 1, COUPON, 20.0, sale123);
+
+
+# all users logout
+login(u4@test.com, password123);
+logout(u1@test.com);
+logout(u2@test.com);
+logout(u3@test.com);
+logout(u4@test.com);

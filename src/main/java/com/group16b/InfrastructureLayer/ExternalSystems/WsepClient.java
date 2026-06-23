@@ -14,11 +14,13 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import com.group16b.ApplicationLayer.Exceptions.WsepCommunicationException;
+import org.springframework.beans.factory.annotation.Value;
 
 @Component
 public class WsepClient
 {
-    private static final String BASE_URL ="https://damp-lynna-wsep-1984852e.koyeb.app/";
+    @Value("${wsep.base-url}")
+    private String BASE_URL;
     private final String HANDSHAKE_OK_RESPONSE="OK";
 
     private final RestTemplate restTemplate;

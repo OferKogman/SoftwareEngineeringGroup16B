@@ -8,5 +8,6 @@ public enum ManagerPermissions {
     PURCHASE_POLICY,
     CUSTOMER_SUPPORT,
     VIEW_PURCHASE_HISTORY,
-    SALES_REPORT
+    SALES_REPORT,
+    DISCOUNT_POLICY
 }

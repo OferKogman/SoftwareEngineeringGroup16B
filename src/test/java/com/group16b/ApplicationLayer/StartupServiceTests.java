@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.group16b.DomainLayer.Venue.Venue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -28,14 +29,23 @@ public class StartupServiceTests {
     private WsepClient mockWsepClient;
     private IRepository<SystemAdmin> mockAdminRepository;
 
+    private InitialStateExecutor mockInitialStateExecutor;
+
     private final List<SystemAdmin> INITIAL_ADMINS=List.of(new SystemAdmin());
+    private IRepository<Venue> mockVenueRepository;
+
 
     @BeforeEach
     void startup()
     {
         mockWsepClient=mock(WsepClient.class);
         mockAdminRepository=mock(IRepository.class);
-        startupService=new StartupService(mockAdminRepository, mockWsepClient);
+        mockInitialStateExecutor = mock(InitialStateExecutor.class);
+        mockVenueRepository = mock(IRepository.class);
+        when(mockVenueRepository.getAll()).thenReturn(List.of()); // empty by default
+        startupService = new StartupService(mockAdminRepository, mockWsepClient,
+                mockInitialStateExecutor, mockVenueRepository);
+        startupService.setConfigFilePath("src/test/resources/test-config.properties");
 
         doNothing().when(mockWsepClient).handshake();
         when(mockAdminRepository.getAll()).thenReturn(INITIAL_ADMINS);

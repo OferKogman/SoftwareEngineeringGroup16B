@@ -29,6 +29,7 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import org.springframework.beans.factory.annotation.Value;
 
 import io.jsonwebtoken.JwtException;
 
@@ -44,11 +45,12 @@ public class EventService {
 	private final IEventRepository eventRepository;
 	private final IRepository<VirtualQueue> queueRepository;
 	private final IProductionCompanyRepository productionCompanyRepository;
+	private final int passNum;
 
 	public EventService(IAuthenticationService authenticationService, ILocationService locationService,
 			EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo,
 			IRepository<VirtualQueue> queueRepository, IRepository<Venue> venueRepository,
-			IEventRepository eventRepository, IRepository<User> userRepository) {
+			IEventRepository eventRepository, IRepository<User> userRepository, @Value("${queue.pass-num:50}") int passNum) {
 		this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
@@ -57,6 +59,7 @@ public class EventService {
 		this.venueRepository = venueRepository;
 		this.eventRepository = eventRepository;
 		this.userRepository = userRepository;
+		this.passNum = passNum;
 	}
 
 	// need to make event active manually
@@ -78,7 +81,7 @@ public class EventService {
 			Event event = new Event(eventRecord, user.getEmail());
 
 			logger.info("EventService.createEvent: Creating queue for the new event");
-			VirtualQueue q = new VirtualQueue(event.getEventID());
+			VirtualQueue q = new VirtualQueue(event.getEventID(), passNum);
 
 			logger.info("EventService.createEvent: Verifying venue availability.");
 			Venue venue = venueRepository.findByID(eventRecord.venueID());
