@@ -24,8 +24,8 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 import com.group16b.InfrastructureLayer.RequestContext;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 import com.group16b.InfrastructureLayer.Security.Role;
 
 @Service
@@ -197,7 +197,6 @@ public class ProductionCompanyService {
         }
     }
 
-
     // gets all orders for the company
     private Set<Integer> getCompanyEventIDs(int companyID) {
         return getCompanyEvents(companyID).stream()
@@ -242,7 +241,7 @@ public class ProductionCompanyService {
 
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {
         return orderRepo.getAll().stream()
-                .filter(Order::isCompleted)
+                .filter(order -> !order.isActive())
                 .filter(order -> eventIDs.contains(order.getEventId()))
                 .toList();
     }
@@ -266,12 +265,12 @@ public class ProductionCompanyService {
         return userID;
     }
 
-    private String validateRoleAndGetUserId()
-    {
-        //if we do implement error 403 then this if will also disapear, along with the function
-        if(!Role.SIGNED.equals(RequestContext.getRole()))
+    private String validateRoleAndGetUserId() {
+        // if we do implement error 403 then this if will also disapear, along with the
+        // function
+        if (!Role.SIGNED.equals(RequestContext.getRole()))
             throw new AuthException("Only users are allowed to perform this operation.");
-        String userId=RequestContext.getUserId();
+        String userId = RequestContext.getUserId();
         return userId;
     }
 
