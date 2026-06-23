@@ -80,7 +80,33 @@ public class DiscountPolicyService {
     }
 
     public Result<DiscountPolicyDTO> getCompanyDiscountPolicy(String sessionToken, int companyID) {
-        return null;
+        try {
+            // Validate token
+            if (!authenticationService.validateToken(sessionToken)) {
+                return Result.makeFail("Authentication failed: Invalid Token");
+            }
+
+            authenticationService.extractSubjectFromToken(sessionToken);
+
+            // Find company
+            ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
+
+            // Get discount policy
+            DiscountPolicy policy = company.getDiscountPolicy();
+
+            // Convert to DTO if policy exists, else return null
+            if (policy == null) {
+                return Result.makeOk(null);
+            }
+
+            DiscountPolicyDTO dto = toDTO(policy);
+            return Result.makeOk(dto);
+
+        } catch (IllegalArgumentException e) {
+            return Result.makeFail("Illegal argument: " + e.getMessage());
+        } catch (Exception e) {
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
     }
 
     public Result<Double> applyCoupon(String orderID, String couponCode) {
