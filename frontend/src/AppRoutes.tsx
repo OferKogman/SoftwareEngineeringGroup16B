@@ -35,6 +35,7 @@ import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
+import EditOrder from "./Components/Order/EditOrder";
 
 export default function AppRoutes() {
   return (
@@ -63,6 +64,7 @@ export default function AppRoutes() {
       <Route path="/events/search" element={<SearchEvents />} />
 
       <Route path="/events/:eventID/create-order" element={<CreateOrder />} />
+      <Route path="/order/edit" element={<EditOrder />} />
       <Route path="/events/:eventID/queue" element={<VirtualQueue />} />
       <Route path="/companies/create" element={<CreateProdactionCompany />} />
       <Route path="/payment" element={<PaymentPage />} />

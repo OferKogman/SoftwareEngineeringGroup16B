@@ -14,11 +14,17 @@ public class ActiveOrder implements OrderState {
     public ActiveOrder() {
         this.creationTime = System.currentTimeMillis();
     }
+    public ActiveOrder(long creationTime) {
+        this.creationTime = creationTime;
+    }
 
     @Override
     public boolean isActive() {
         validateTime();
         return true;
+    }
+    public long getstartTime() {
+        return creationTime;
     }
 
     @Override
@@ -44,7 +50,7 @@ public class ActiveOrder implements OrderState {
 
     @Override
     public OrderState copy() {
-        return new ActiveOrder();
+        return new ActiveOrder(this.creationTime);
     }
 
     private void validateTime() {

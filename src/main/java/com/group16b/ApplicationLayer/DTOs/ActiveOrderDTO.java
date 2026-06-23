@@ -1,5 +1,7 @@
 package com.group16b.ApplicationLayer.DTOs;
 
+import java.util.List;
+
 import com.group16b.DomainLayer.Order.Order;
 
 public class ActiveOrderDTO {
@@ -11,6 +13,8 @@ public class ActiveOrderDTO {
     private final double tocalOrderPrice;
     private final int eventId;
     private final String subjectID;
+    private final long orderStartTime;
+    private final List<String> seats;
 
     public ActiveOrderDTO(Order order){
         if (order == null) {
@@ -26,6 +30,8 @@ public class ActiveOrderDTO {
         this.tocalOrderPrice = order.getTotalOrderprice();
         this.eventId = order.getEventId();
         this.subjectID = order.getSubjectId();
+        this.orderStartTime = order.getOrderStartTime();
+        this.seats = order.getOrderType().toString().equals("SEAT") ? order.getSeats() : List.of();
     }
 
     public String getOrderId() {
@@ -49,6 +55,12 @@ public class ActiveOrderDTO {
     }
     public String getSubjectId() {
         return subjectID;
+    }
+    public long getOrderStartTime() {
+        return orderStartTime;
+    }
+    public List<String> getSeats() {
+        return seats;
     }
     
 }
