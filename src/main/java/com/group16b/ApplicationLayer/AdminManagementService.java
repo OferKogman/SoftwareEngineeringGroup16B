@@ -1,17 +1,21 @@
 package com.group16b.ApplicationLayer;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -22,7 +26,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
-import org.springframework.stereotype.Service;
 
 @Service
 public class AdminManagementService {
@@ -32,15 +35,20 @@ public class AdminManagementService {
     private final OrderRepositoryMapImpl orderRepo;
     private final IEventRepository eventRepo;
 	private final IAuthenticationService authenticationService;
+    private final IPaymentGateway paymentService;
+    private final ITicketGateway ticketService;
     private IRepository<SystemAdmin> systemAdminRepo;
 
-    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo) {
+    public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo,
+        IPaymentGateway paymentService, ITicketGateway ticketService) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo=productionCompanyRepository;
         this.orderRepo = orderRepo;
         this.eventRepo = eventRepo;
         this.userRepository = userRepository;
         this.systemAdminRepo = systemAdminRepo;
+        this.ticketService = ticketService;
+        this.paymentService = paymentService;
     }
 
 
@@ -132,45 +140,54 @@ public class AdminManagementService {
         }
     }
 
-    public Result<String> closeProductionCompany(int productionCompanyId, String sToken) {
-        try{
-            logger.info("AdminManagementService.closeProductionCompany: Attempting to close production company with ID {}", productionCompanyId);
-            // validate admin token (this is a placeholder, implement actual validation logic)
-            if (!authenticationService.validateToken(sToken)  ) {
-                logger.warn("AdminManagementService.closeProductionCompany: Invalid token");
+    public Result<String> deleteProductionCompany(int productionCompanyId, String sToken) {
+        try {
+            logger.info("AdminManagementService.deleteProductionCompany: Attempting to close production company with ID {}", productionCompanyId);            if (!authenticationService.validateToken(sToken)  ) {
+                logger.warn("AdminManagementService.deleteProductionCompany: Invalid token");
                 return Result.makeFail("Invalid token");
             }
             if (!authenticationService.isAdminToken(sToken)) {
-                logger.warn("AdminManagementService.closeProductionCompany: Unauthorized access attempt by non-admin user");
+                logger.warn("AdminManagementService.deleteProductionCompany: Unauthorized access attempt by non-admin user");
                 return Result.makeFail("Unauthorized access");
             }
-            productionCompanyRepo.findByID(String.valueOf(productionCompanyId)); // validate company exists, throws error if not
-            
+            productionCompanyRepo.findByID(String.valueOf(productionCompanyId));
 
             List<Integer> productionCompanyIDs = new LinkedList<>();
             productionCompanyIDs.add(productionCompanyId);
 
             List<Event> companyEvents = eventRepo.searchEvents(null, null, null, null, null, null, null, null, null, productionCompanyIDs);
-                if(!companyEvents.isEmpty()) {
-                    deactivateEvents(companyEvents);
-                    logger.info("AdminManagementService.closeProductionCompany: Deactivated {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
-                }
 
-                productionCompanyRepo.delete(String.valueOf(productionCompanyId));
-                logger.info("AdminManagementService.closeProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
+            Set<Integer> eventIds = companyEvents.stream()
+                            .map(Event::getEventID)
+                            .collect(Collectors.toSet());
+            List<Order> completedOrders = getCompletedOrdersByEventIDs(eventIds);
+
+            for(Order order: completedOrders){
+                for(String ticket: (order.getState()).getTickets()){
+                    paymentService.cancelPayment(order.getTransactionId());
+                    ticketService.revokeTicket(ticket);
+                }
+            }
+            logger.info("AdminManagementService.deleteProductionCompany: Refunded {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
+            
+            if(!companyEvents.isEmpty()) {
+                deactivateEvents(companyEvents);
+                logger.info("AdminManagementService.deleteProductionCompany: Deactivated {} events associated with production company ID {}", companyEvents.size(), productionCompanyId);
+            }
+
+            productionCompanyRepo.delete(String.valueOf(productionCompanyId));
+            logger.info("AdminManagementService.deleteProductionCompany: Successfully closed production company with ID {}", productionCompanyId);
 
             return Result.makeOk("Production company with ID " + productionCompanyId + " has been closed successfully.");
         }
         catch(IllegalArgumentException e) {
-            logger.error("AdminManagementService.closeProductionCompany: Production company with ID {} not found", productionCompanyId, e);
+            logger.error("AdminManagementService.deleteProductionCompany: Production company with ID {} not found", productionCompanyId, e);
             return Result.makeFail("Production company with ID " + productionCompanyId + " not found");
+        } catch (Exception e) {
+            logger.error("AdminManagementService.deleteProductionCompany: Error occurred while deleting production company with ID {}", productionCompanyId, e);
+            return Result.makeFail("Error occurred while deleting production company with ID " + productionCompanyId);        
         }
-        catch(Exception e) {
-            logger.error("AdminManagementService.closeProductionCompany: Error occurred while closing production company with ID {}", productionCompanyId, e);
-            return Result.makeFail("Error occurred while closing production company with ID " + productionCompanyId);
-        }
-
-    }
+    }    
 
     public Result<String> removeUser(String userID, String sessionToken){
         try {
@@ -199,7 +216,7 @@ public class AdminManagementService {
                         ProductionCompany company = productionCompanyRepo.findByID(String.valueOf(companyID));
                         if (company.isFounder(userID))
                         {
-                            closeProductionCompany(companyID, sessionToken);
+                            deleteProductionCompany(companyID, sessionToken);
                             // company no longer exists after closure
                             success = true;
                             logger.info("AdminManagementService.removeUser: User {} was founder of company {}. Closed company as part of user removal process.", userID, companyID);
@@ -330,5 +347,12 @@ public class AdminManagementService {
             throw new AuthException("Unauthorized access");
         }
         systemAdminRepo.findByID(authenticationService.extractSubjectFromToken(sToken)); // validate admin exists, throws error if not
+    }
+
+    private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {//needed function in this context aswell
+        return orderRepo.getAll().stream()
+                .filter(Order::isCompleted)
+                .filter(order -> eventIDs.contains(order.getEventId()))
+                .toList();
     }
 }

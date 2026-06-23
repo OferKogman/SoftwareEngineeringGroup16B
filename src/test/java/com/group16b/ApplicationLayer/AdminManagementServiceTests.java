@@ -14,11 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
@@ -55,6 +59,8 @@ public class AdminManagementServiceTests {
     private IRepository<User> userRepository;
     private OrderRepositoryMapImpl orderRepository;
     private IProductionCompanyRepository productionCompanyRepository;
+    private IPaymentGateway paymentGateway;
+    private ITicketGateway ticketGateway;
 
     private Location location1;
     private Segment segment1;
@@ -78,7 +84,9 @@ public class AdminManagementServiceTests {
         userRepository = new UserRepositoryMapImpl();
         orderRepository = new OrderRepositoryMapImpl(); 
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-        adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository);
+        adminManagementService = new AdminManagementService(tokenService,productionCompanyRepository, orderRepository, eventRepository, userRepository, systemAdminRepository, paymentGateway, ticketGateway);
+        paymentGateway = mock(IPaymentGateway.class);
+        ticketGateway = mock(ITicketGateway.class);
             
         user = new User("testuser", "password");
         adminToken = tokenService.generateAdminToken("admin@test.com");
@@ -150,7 +158,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanySuccess() throws Exception {
+    public void testdeleteProductionCompanySuccess() throws Exception {
         int companyID = 1;
 
         Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
@@ -160,7 +168,7 @@ public class AdminManagementServiceTests {
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
     }
@@ -201,9 +209,9 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanyUnauthorized() {
+    public void testdeleteProductionCompanyUnauthorized() {
 
-        Result<String> result = adminManagementService.closeProductionCompany(1, sessionToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(1, sessionToken);
         assertFalse(result.isSuccess());
     }
 
@@ -362,7 +370,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void concurrentCloseProductionCompany_OnlyOneSucceeds() throws InterruptedException {
+    public void concurrentdeleteProductionCompany_OnlyOneSucceeds() throws InterruptedException {
         ProductionCompany company = new ProductionCompany(1, "Company1", 1, user.getEmail());
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
@@ -373,7 +381,7 @@ public class AdminManagementServiceTests {
         Runnable closeTask = () -> {
             try {
                 startLatch.await();
-                Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+                Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
                 synchronized (results) {
                     results.add(result);
                 }
@@ -434,20 +442,20 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanyInvalidToken() {
-        Result<String> result = adminManagementService.closeProductionCompany(1, invalidToken);
+    public void testdeleteProductionCompanyInvalidToken() {
+        Result<String> result = adminManagementService.deleteProductionCompany(1, invalidToken);
         assertFalse(result.isSuccess());
     }
 
     @Test
-    public void testCloseProductionCompanyNullToken() {
-        Result<String> result = adminManagementService.closeProductionCompany(1, null);
+    public void testdeleteProductionCompanyNullToken() {
+        Result<String> result = adminManagementService.deleteProductionCompany(1, null);
         assertFalse(result.isSuccess());
     }
 
     @Test
     public void testCloseNonExistentProductionCompany() {
-        Result<String> result = adminManagementService.closeProductionCompany(99999, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(99999, adminToken);
         assertFalse(result.isSuccess());
     }
 
@@ -563,13 +571,13 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanyTwice() {
+    public void testdeleteProductionCompanyTwice() {
         ProductionCompany company = new ProductionCompany(4, "Company2", 1, user.getEmail());
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
 
-        Result<String> first = adminManagementService.closeProductionCompany(companyID, adminToken);
-        Result<String> second = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> first = adminManagementService.deleteProductionCompany(companyID, adminToken);
+        Result<String> second = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(first.isSuccess());
         assertFalse(second.isSuccess());
@@ -618,7 +626,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void concurrentCloseProductionCompany_MultipleCompanies_EachClosedOnce() throws InterruptedException {
+    public void concurrentdeleteProductionCompany_MultipleCompanies_EachClosedOnce() throws InterruptedException {
         ProductionCompany company1 = new ProductionCompany(10, "CompanyA", 1, user.getEmail());
         ProductionCompany company2 = new ProductionCompany(11, "CompanyB", 1, user.getEmail());
         productionCompanyRepository.save(company1);
@@ -630,7 +638,7 @@ public class AdminManagementServiceTests {
         Runnable closeA = () -> {
             try {
                 startLatch.await();
-                Result<String> r = adminManagementService.closeProductionCompany(company1.getProductionCompanyID(), adminToken);
+                Result<String> r = adminManagementService.deleteProductionCompany(company1.getProductionCompanyID(), adminToken);
                 synchronized (results) { results.add(r); }
             } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         };
@@ -638,7 +646,7 @@ public class AdminManagementServiceTests {
         Runnable closeB = () -> {
             try {
                 startLatch.await();
-                Result<String> r = adminManagementService.closeProductionCompany(company2.getProductionCompanyID(), adminToken);
+                Result<String> r = adminManagementService.deleteProductionCompany(company2.getProductionCompanyID(), adminToken);
                 synchronized (results) { results.add(r); }
             } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         };

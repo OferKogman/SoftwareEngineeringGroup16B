@@ -5,7 +5,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-class CompletedOrder implements OrderState {
+public class CompletedOrder implements OrderState {
 
     private List<String> tickets;
 
