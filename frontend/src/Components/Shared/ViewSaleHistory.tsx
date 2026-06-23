@@ -41,7 +41,7 @@ export default function ViewSaleHistory({ orders }: ViewSaleHistoryProps) {
             <p>Segment ID: {order.segmentId}</p>
             <p>Number of Tickets: {order.numOfTickets}</p>
             <p>Order Type: {order.orderType}</p>
-            <p>Total Order Price: {order.totalOrderPrice}</p>
+            <p>Total Order Price: {order.tocalOrderPrice}</p>
           </div>
         ))
       )}

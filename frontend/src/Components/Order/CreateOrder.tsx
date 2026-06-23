@@ -15,7 +15,6 @@ const API_BASE = "http://localhost:8080";
 
 type CreatedOrderResponse = {
   orderId?: string;
-  totalOrderPrice?: number;
   tocalOrderPrice?: number;
   amount?: number;
 };
@@ -303,10 +302,7 @@ export default function CreateOrderPage() {
 
   function moveToPayment(createdOrder: CreatedOrderResponse) {
     const orderId = createdOrder.orderId;
-    const amount =
-      createdOrder.totalOrderPrice ??
-      createdOrder.tocalOrderPrice ??
-      createdOrder.amount;
+    const amount = createdOrder.tocalOrderPrice ?? createdOrder.amount;
 
     if (!orderId) {
       setError("Order was created, but no order ID was returned.");
