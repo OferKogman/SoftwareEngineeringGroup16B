@@ -1,6 +1,8 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 public class SimpleDiscount implements DiscountPolicy{
+
+
     private double discountPercentage;
     public SimpleDiscount(double discountPercentage) {
         if(discountPercentage<0 || discountPercentage >100){
@@ -17,4 +19,8 @@ public class SimpleDiscount implements DiscountPolicy{
     public double calculateDiscount(double originalPrice, DiscountContext dc){
         return originalPrice * (1-this.discountPercentage/100);
     }
+    public double getDiscountPercentage() {
+        return discountPercentage;
+    }
+
 }

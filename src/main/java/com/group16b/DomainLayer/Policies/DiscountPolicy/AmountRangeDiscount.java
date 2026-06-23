@@ -1,6 +1,7 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
 public class AmountRangeDiscount implements DiscountPolicy {
+
     private Integer minTickets;
     private Integer maxTickets;
     private double discountPercentage;
@@ -30,4 +31,19 @@ public class AmountRangeDiscount implements DiscountPolicy {
     public double calculateDiscount(double originalPrice, DiscountContext dc) {
         return isMet(dc) ? originalPrice * (1 - discountPercentage / 100) : originalPrice;
     }
+
+
+    public Integer getMinTickets() {
+        return minTickets;
+    }
+
+    public double getDiscountPercentage() {
+        return discountPercentage;
+    }
+
+    public Integer getMaxTickets() {
+        return maxTickets;
+    }
+
+
 }

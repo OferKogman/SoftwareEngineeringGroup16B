@@ -59,11 +59,12 @@ public class ProductionCompany {
     @Column(name = "children_by_user", columnDefinition = "TEXT")
     private final HashMap<String, Set<String>> childrenByUser = new HashMap<>();
 
-    // TODO: purchasePolicies and discountPolicies need annotations once rewritten
+    // TODO: purchasePolicies needs annotations once rewritten
     @Transient
     private final Set<PurchasePolicy> purchasePolicies = new HashSet<>();
+
     @Transient
-    private final Set<DiscountPolicy> discountPolicies = new HashSet<>();
+    private DiscountPolicy discountPolicy;
 
     protected ProductionCompany() {}
 
@@ -94,7 +95,7 @@ public class ProductionCompany {
         }
 
         this.purchasePolicies.addAll(other.purchasePolicies);
-        this.discountPolicies.addAll(other.discountPolicies);
+        this.discountPolicy = other.discountPolicy;
     }
 
     public ProductionCompany(int id, String name, double rating, String founderID)
@@ -159,8 +160,8 @@ public class ProductionCompany {
         this.version=version;
     }
 
-    public Set<DiscountPolicy> getDiscountPolicy() {
-        return new HashSet<>(discountPolicies);
+    public DiscountPolicy getDiscountPolicy() {
+        return discountPolicy;
     }
 
     public Set<PurchasePolicy> getPurchasePolicy() {
@@ -526,11 +527,7 @@ public class ProductionCompany {
         purchasePolicies.remove(pp);
     }
 
-    public void addDiscountPolicy(DiscountPolicy dp) {
-        discountPolicies.add(dp);
-    }
-
-    public void removeDiscountPolicy(DiscountPolicy dp) {
-        discountPolicies.remove(dp);
+    public void setDiscountPolicy(DiscountPolicy policy) {
+        this.discountPolicy = policy;
     }
 }

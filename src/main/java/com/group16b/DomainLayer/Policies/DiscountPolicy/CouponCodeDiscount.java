@@ -37,4 +37,18 @@ public class CouponCodeDiscount implements DiscountPolicy {
         if(valid) currentUsages++; //made this one a bit longer because we have to update on successful uses.
         return valid ? originalPrice * (1 - discountPercentage / 100) : originalPrice;
     }
+
+    public LocalDateTime getExpiryDate() {
+        return expiryDate;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public double getDiscountPercentage() {
+        return discountPercentage;
+    }
+
+
 }

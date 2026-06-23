@@ -548,7 +548,7 @@ public class ReserveServiceTest {
                 Event eventSpy = spy(testEvent);
 
                 when(mockedEventRepo.findByID(String.valueOf(testEvent.getEventID()))).thenReturn(eventSpy);
-                when(eventSpy.getEventDiscountPolicy()).thenReturn(new HashSet<>(Set.of(failingDiscountPolicy)));
+                when(eventSpy.getEventDiscountPolicy()).thenReturn(failingDiscountPolicy);
 
                 ReserveService service = new ReserveService(
                         authService,
@@ -592,7 +592,7 @@ public class ReserveServiceTest {
                 ProductionCompany companySpy = spy(testPCompany);
 
                 when(mockedCompanyRepo.findByID(String.valueOf(testPCompany.getProductionCompanyID()))).thenReturn(companySpy);
-                when(companySpy.getDiscountPolicy()).thenReturn(new HashSet<>(Set.of(failingDiscountPolicy)));
+                when(companySpy.getDiscountPolicy()).thenReturn(failingDiscountPolicy);
 
                 ReserveService service = new ReserveService(
                         authService,
@@ -1042,7 +1042,7 @@ public class ReserveServiceTest {
                 Event eventSpy = spy(testEvent);
 
                 when(mockedEventRepo.findByID(String.valueOf(testEvent.getEventID()))).thenReturn(eventSpy);
-                when(eventSpy.getEventDiscountPolicy()).thenReturn(new HashSet<>(Set.of(failingDiscountPolicy)));
+                when(eventSpy.getEventDiscountPolicy()).thenReturn(failingDiscountPolicy);
 
                 ReserveService service = new ReserveService(
                         authService, productionCompanyRepo, queueRepo,
@@ -1077,7 +1077,7 @@ public class ReserveServiceTest {
                 ProductionCompany companySpy = spy(testPCompany);
 
                 when(mockedCompanyRepo.findByID(String.valueOf(testPCompany.getProductionCompanyID()))).thenReturn(companySpy);
-                when(companySpy.getDiscountPolicy()).thenReturn(new HashSet<>(Set.of(failingDiscountPolicy)));
+                when(companySpy.getDiscountPolicy()).thenReturn(failingDiscountPolicy);
 
                 ReserveService service = new ReserveService(
                         authService, mockedCompanyRepo, queueRepo,
@@ -1554,7 +1554,7 @@ public class ReserveServiceTest {
 
                 when(lotteryEvent.getEventProductionCompanyID()).thenReturn(testPCompany.getProductionCompanyID());
                 when(lotteryEvent.getEventPurchasePolicy()).thenReturn(new HashSet<>(Set.of(lotteryPolicy)));
-                when(lotteryEvent.getEventDiscountPolicy()).thenReturn(new HashSet<>());
+                when(lotteryEvent.getEventDiscountPolicy()).thenReturn(null);
 
                 return lotteryEvent;
         }

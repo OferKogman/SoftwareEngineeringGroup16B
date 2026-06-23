@@ -325,9 +325,13 @@ public class ReserveService {
 
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
         Event event = eventRepository.findByID(String.valueOf(eventID));
-        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
+        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy() != null
+                ? Set.of(event.getEventDiscountPolicy())
+                : null;
+
+        DiscountPolicy companyPol = productionCompanyRepo
                 .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = companyPol != null ? Set.of(companyPol) : null;
         Set<DiscountPolicy> allPolicies = new HashSet<>();
 
         if (discountPolicy != null) {

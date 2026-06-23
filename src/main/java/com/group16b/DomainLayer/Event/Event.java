@@ -22,7 +22,7 @@ public class Event {
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
-	private final Set<DiscountPolicy> discountPolicy;
+	private DiscountPolicy discountPolicy;
 	private final Set<PurchasePolicy> purchasePolicy;
 	private LotteryPolicy lotteryPolicy;
 	private double price;
@@ -44,7 +44,7 @@ public class Event {
 		validateCategory(eventRecord.category());
 		this.category = eventRecord.category();
 		this.productionCompanyID = eventRecord.pcID();
-		this.discountPolicy = new HashSet<>();
+		this.discountPolicy = null;
 		this.purchasePolicy = new HashSet<>();
 		this.price = 0; //update only based on segment price
 		validateRating(eventRecord.rating());
@@ -64,7 +64,7 @@ public class Event {
 		this.artist = other.getEventArtist();
 		this.category = other.getEventCategory();
 		this.productionCompanyID = other.getEventProductionCompanyID();
-		this.discountPolicy = copyDiscountPolicies(other.getEventDiscountPolicy());
+		this.discountPolicy = other.getEventDiscountPolicy();
 		this.purchasePolicy = copyPurchasePolicies(other.getEventPurchasePolicy());
 		this.price = other.getEventPrice();
 		this.rating = other.getEventRating();
@@ -73,14 +73,7 @@ public class Event {
 		lotteryPolicy = other.lotteryPolicy == null ? null : new LotteryPolicy(other.getLotteryPolicy());
 	}
 
-	private Set<DiscountPolicy> copyDiscountPolicies(Set<DiscountPolicy> policies) {
-		Set<DiscountPolicy> copiedPolicies = new HashSet<>();
-		for (DiscountPolicy policy : policies) {
-			// fix constructor for discount policies
-			copiedPolicies.add(policy);
-		}
-		return copiedPolicies;
-	}
+
 
 	private Set<PurchasePolicy> copyPurchasePolicies(Set<PurchasePolicy> policies) {
 		Set<PurchasePolicy> copiedPolicies = new HashSet<>();
@@ -176,17 +169,13 @@ public class Event {
 		return productionCompanyID;
 	}
 
-	public Set<DiscountPolicy> getEventDiscountPolicy() {
-		return new HashSet<>(discountPolicy);
+	public DiscountPolicy getEventDiscountPolicy() {
+		return discountPolicy;
+	}
+	public void setEventDiscountPolicy(DiscountPolicy policy) {
+		this.discountPolicy = policy;
 	}
 
-	public void addEventDiscountPolicy(DiscountPolicy dp) {
-		discountPolicy.add(dp);
-	}
-
-	public void removeEventDiscountPolicy(DiscountPolicy dp) {
-		discountPolicy.remove(dp);
-	}
 
 	public Set<PurchasePolicy> getEventPurchasePolicy() {
 		return new HashSet<>(purchasePolicy);

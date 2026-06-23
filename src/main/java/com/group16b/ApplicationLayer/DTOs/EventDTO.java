@@ -41,8 +41,8 @@ public class EventDTO {
 		category = event.getEventCategory();
 		productionCompanyID = event.getEventProductionCompanyID();
 		discountPolicy = new HashSet<>();
-		for (var policy : event.getEventDiscountPolicy()) {
-			discountPolicy.add(new DiscountPolicyDTO(policy));
+		if (event.getEventDiscountPolicy() != null) {
+			discountPolicy.add(new DiscountPolicyDTO(event.getEventDiscountPolicy()));
 		}
 		purchasePolicy = new AndDTO(new OrDTO(new AndDTO(new MinAgeDTO(
 				55), new MaxTicketsDTO(5)), new MaxAgeDTO(18)),

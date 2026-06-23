@@ -30,4 +30,18 @@ public class DateRangeDiscount implements DiscountPolicy {
     public double calculateDiscount(double originalPrice, DiscountContext dc) {
         return isMet(dc) ? originalPrice * (1 - discountPercentage / 100) : originalPrice;
     }
+
+    public LocalDateTime getEndDate() {
+        return endDate;
+    }
+
+    public double getDiscountPercentage() {
+        return discountPercentage;
+    }
+
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+
 }

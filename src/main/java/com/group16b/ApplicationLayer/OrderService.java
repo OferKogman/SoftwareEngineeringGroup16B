@@ -407,28 +407,26 @@ public class OrderService {
 		}
     }
 
-    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepo.findByID(String.valueOf(eventID));
-        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+	private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
+		Event event = eventRepo.findByID(String.valueOf(eventID));
+		DiscountPolicy eventPolicy = event.getEventDiscountPolicy();
+		DiscountPolicy companyPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
 
-            if (discountPolicy == null) {
-                logger.error("No discount policy found for event {}", eventID);
-                discountPolicy = Set.of(); // if no discount policy for the event, we will just use the company discount policy (if exists)
-            }
-            if (companyDiscountPolicy == null) {
-                logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
-				companyDiscountPolicy = Set.of(); // if no discount policy for the production company, we will just use the event discount policy (if exists)
-			}
-            discountPolicy.addAll(companyDiscountPolicy);
+		double priceAfterDiscountPolicy = pricePerSeat * amount;
+		DiscountContext dc = new DiscountContext(10, amount, LocalDateTime.now(), null);
 
-            double priceAfterDiscountPolicy = pricePerSeat * amount;
-			DiscountContext dc = new DiscountContext(10, amount, LocalDateTime.now(), null);
-            for (DiscountPolicy dp : discountPolicy) {
-                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy, dc);
-            }
-            return priceAfterDiscountPolicy;
-    }
+		// Apply event discount policy if it exists
+		if (eventPolicy != null) {
+			priceAfterDiscountPolicy = eventPolicy.calculateDiscount(priceAfterDiscountPolicy, dc);
+		}
+
+		// Apply company discount policy if it exists
+		if (companyPolicy != null) {
+			priceAfterDiscountPolicy = companyPolicy.calculateDiscount(priceAfterDiscountPolicy, dc);
+		}
+
+		return priceAfterDiscountPolicy;
+	}
     private void validatePurchasePolicy(int eventID) {
         Event event = eventRepo.findByID(String.valueOf(eventID));
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
