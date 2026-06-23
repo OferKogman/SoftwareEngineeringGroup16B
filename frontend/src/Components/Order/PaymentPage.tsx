@@ -188,7 +188,8 @@ export default function PaymentPage() {
         {error && <p className="payment-error">{error}</p>}
 
         <PaymentForm
-          amount={amount}
+          initAmount={amount}
+          orderID={orderId}
           onPaymentSubmit={async (paymentData) => {
             try {
               setError("");

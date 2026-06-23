@@ -71,3 +71,22 @@ body.dark .payment-page,
   --input-bg: #222;
   --border-color: #555;
 }
+
+.payment-form-field {
+  display: grid;
+  grid-template-columns: 20% 60% 20%;
+  align-items: center;
+  gap: 1rem;
+  width: 90%;
+  margin-bottom: 1rem;
+}
+
+.payment-form-field label {
+  text-align: left;
+}
+
+.payment-form-field input {
+  padding: 6px;
+  box-sizing: border-box;
+  margin-left: 8px;
+}

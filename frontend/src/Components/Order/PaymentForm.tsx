@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useApiFetch } from "../../apiFetch";
 //String currency, , , ,
 type PaymentFormData = {
   firstName: string; //String holder
@@ -30,11 +31,16 @@ type FormErrors = {
 };
 
 type PaymentFormProps = {
-  amount: number;
+  initAmount: number;
+  orderID: string;
   onPaymentSubmit: (paymentData: PaymentPayload) => Promise<void> | void;
 };
 
-export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProps) {
+export default function PaymentForm({
+  initAmount,
+  orderID,
+  onPaymentSubmit,
+}: PaymentFormProps) {
   const [formData, setFormData] = useState<PaymentFormData>({
     firstName: "",
     lastName: "",
@@ -46,10 +52,12 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
 
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [amount, setAmount] = useState(initAmount);
 
-  function handleChange(
-    event: React.ChangeEvent<HTMLInputElement>
-  ) {
+  const apiFetch = useApiFetch();
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = event.target;
 
     setFormData((prev) => ({
@@ -72,42 +80,58 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
     if (!formData.idNumber.trim()) {
       newErrors.idNumber = "ID number is required";
     } else if (!/^\d{9}$/.test(formData.idNumber)) {
-      newErrors.idNumber =
-        "ID number must contain only digits";
+      newErrors.idNumber = "ID number must contain only digits";
     }
 
     if (!formData.cardNumber.trim()) {
       newErrors.cardNumber = "Card number is required";
     } else if (!/^\d{16}$/.test(formData.cardNumber)) {
-      newErrors.cardNumber =
-        "Card number must be 16 digits";
+      newErrors.cardNumber = "Card number must be 16 digits";
     }
 
     if (!formData.expiryDate.trim()) {
-      newErrors.expiryDate =
-        "Expiry date is required";
-    } else if (
-      !/^(0[1-9]|1[0-2])\/\d{2}$/.test(
-        formData.expiryDate
-      )
-    ) {
-      newErrors.expiryDate =
-        "Expiry date must be MM/YY";
+      newErrors.expiryDate = "Expiry date is required";
+    } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.expiryDate)) {
+      newErrors.expiryDate = "Expiry date must be MM/YY";
     }
 
     if (!formData.cvv.trim()) {
       newErrors.cvv = "CVV is required";
     } else if (!/^\d{3}$/.test(formData.cvv)) {
-      newErrors.cvv =
-        "CVV must be 3 digits";
+      newErrors.cvv = "CVV must be 3 digits";
     }
 
     return newErrors;
   }
-  
-  async function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>
-  ) {
+
+  async function handleApplyCoupon() {
+    try {
+      const response = await apiFetch(
+        `http://localhost:8080/api/orders/${orderID}/coupon`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            couponCode: couponCode,
+          }),
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error((await response.text()) || "Failed to reserve field.");
+      }
+
+      setAmount(Number(response.json()));
+    } catch (err) {
+      setErrors({
+        submit: err instanceof Error ? err.message : "Failed apply discount.",
+      });
+    }
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     const validationErrors = validateForm();
@@ -130,8 +154,8 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
         amount: amount,
       });
       alert(
-        `Payment successful!\n\nThank you ${formData.firstName} ${formData.lastName} for paying ₪${amount}`
-  );
+        `Payment successful!\n\nThank you ${formData.firstName} ${formData.lastName} for paying ₪${amount}`,
+      );
 
       setFormData({
         firstName: "",
@@ -145,10 +169,7 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
       setErrors({});
     } catch (error: unknown) {
       setErrors({
-        submit:
-          error instanceof Error
-            ? error.message
-            : "Payment failed",
+        submit: error instanceof Error ? error.message : "Payment failed",
       });
     } finally {
       setIsSubmitting(false);
@@ -209,13 +230,19 @@ export default function PaymentForm({ amount, onPaymentSubmit,}: PaymentFormProp
 
       {errors.submit && <p>{errors.submit}</p>}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-      >
-        {isSubmitting
-          ? "Processing..."
-          : `Pay ₪${amount}`}
+      <div className="payment-form-field">
+        <label>Coupon Code</label>
+        <input
+          id="couponCode"
+          type="text"
+          value={couponCode}
+          onChange={(e) => setCouponCode(e.target.value)}
+        />
+        <button onClick={() => handleApplyCoupon()}>Apply</button>
+      </div>
+
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Processing..." : `Pay $${amount}`}
       </button>
     </form>
   );

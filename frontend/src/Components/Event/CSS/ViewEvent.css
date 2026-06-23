@@ -109,3 +109,22 @@
   font-size: 1.5rem;
   color: rgba(66, 0, 76, 0.8);
 }
+
+.form-field {
+  display: grid;
+  grid-template-columns: 20% 80%;
+  align-items: center;
+  gap: 1rem;
+  width: 40%;
+  margin-bottom: 1rem;
+}
+
+.form-field label {
+  text-align: left;
+}
+
+.form-field input {
+  padding: 6px;
+  box-sizing: border-box;
+  margin-left: 8px;
+}
