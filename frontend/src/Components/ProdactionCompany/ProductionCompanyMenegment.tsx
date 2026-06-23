@@ -54,7 +54,6 @@ async function readResponseBody(response: Response): Promise<unknown> {
 export default function ProductionCompanyManagement() {
   const { companyId } = useParams();
   const { sessionToken } = useSession();
-  const outlet = useOutlet();
 
   const [company, setCompany] = useState<ProductionCompanyDTO | null>(null);
   const [perms, setPerms] = useState<ManagerPermissions[]>([]);
@@ -66,6 +65,13 @@ export default function ProductionCompanyManagement() {
 
   const hasPermission = (permission: ManagerPermissions) =>
     perms.includes(permission);
+
+  const outlet = useOutlet({
+    company,
+    perms,
+    owner,
+    hasPermission,
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -176,6 +182,7 @@ export default function ProductionCompanyManagement() {
               ? company.name
               : "Company unavailable"}
         </h1>
+
         <p>Company ID: {companyId ?? "Missing"}</p>
       </div>
 
@@ -191,6 +198,10 @@ export default function ProductionCompanyManagement() {
             <NavLink to="sales-history">Sales History</NavLink>
           )}
 
+          {hasPermission("PURCHASE_POLICY") && (
+            <NavLink to="purchase-policy">Purchase Policy</NavLink>
+          )}
+
           {hasPermission("EVENT_INVENTORY") && (
             <NavLink to="events">Events</NavLink>
           )}
@@ -202,6 +213,7 @@ export default function ProductionCompanyManagement() {
           {owner && <NavLink to="members">Members & Permissions</NavLink>}
 
           {owner && <NavLink to="hierarchy">Hierarchy Tree</NavLink>}
+
           {owner && <NavLink to="settings">Resignation</NavLink>}
         </aside>
 
@@ -214,12 +226,14 @@ export default function ProductionCompanyManagement() {
           ) : error ? (
             <div className="management-default-content">
               <h2>Cannot load company management</h2>
+
               <p>{error}</p>
             </div>
           ) : (
             (outlet ?? (
               <div className="management-default-content">
                 <h2>Company Management</h2>
+
                 <p>Select an option from the sidebar.</p>
               </div>
             ))
