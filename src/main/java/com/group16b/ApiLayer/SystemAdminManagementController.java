@@ -40,10 +40,10 @@ public class SystemAdminManagementController extends BaseController {
         return executeWithReturnData(() -> adminManagementService.viewPurchesHistoryByUser(sessionToken, userID));
     }
 
-    @PutMapping("/closeProductionCompany/{companyID}")
-    public ResponseEntity<?> closeProductionCompany(@RequestHeader("Authorization") String sessionToken,
+    @DeleteMapping("/deleteProductionCompany/{companyID}")
+    public ResponseEntity<?> deleteProductionCompany(@RequestHeader("Authorization") String sessionToken,
             @PathVariable("companyID") int companyID) {
-        return executeWithReturnData(() -> adminManagementService.closeProductionCompany(companyID, sessionToken));
+        return executeWithReturnData(() -> adminManagementService.deleteProductionCompany(companyID, sessionToken));
     }
 
     @DeleteMapping("/removeUser/{userID}")

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
 import { useApiFetch } from "../../apiFetch";
 import type { OrderDTO } from "../../DTOs/OrderDTO";
-import ViewSaleHistory from "../Shared/ViewSaleHistory";
+import ViewOrder from "../Shared/ViewOrder";
+import "./CSS/ViewAdminPurchaseHistory.css";
 
 export default function AdminPurchaseHistory() {
   const [orders, setOrders] = useState<OrderDTO[]>([]);
@@ -12,7 +13,7 @@ export default function AdminPurchaseHistory() {
   const apiFetch = useApiFetch();
 
   const [selectedMode, setSelectedMode] = useState<AdminHistoryMode>("all");
-  const [idInput, setIdInput] = useState<string>("");
+  const [idInput, setIdInput] = useState<string | number>("");
 
   const loadAllPurchaseHistory = useCallback(async () => {
     try {
@@ -63,14 +64,15 @@ export default function AdminPurchaseHistory() {
   async function loadByProductionCompany() {
     try {
       const response = await apiFetch(
-        `http://localhost:8080/api/admin-management/viewPurchasesHistoryByCompany/${idInput}`,
+        `http://localhost:8080/api/admin-management/viewPurchesHistoryByCompany/${idInput}`,
         {
           method: "GET",
         },
       );
       if (!response.ok) {
         throw new Error(
-          "Failed to load purchase history by production company.",
+          (await response.text()) ??
+            "Failed to load purchase history by production company.",
         );
       }
       const ordersFromServer: OrderDTO[] = await response.json();
@@ -87,7 +89,7 @@ export default function AdminPurchaseHistory() {
   async function loadByUserId() {
     try {
       const response = await apiFetch(
-        `http://localhost:8080/api/admin-management/viewPurchasesHistoryByUser/${idInput}`,
+        `http://localhost:8080/api/admin-management/viewPurchesHistoryByUser/${idInput}`,
         {
           method: "GET",
         },
@@ -118,8 +120,9 @@ export default function AdminPurchaseHistory() {
           <select
             value={selectedMode}
             onChange={(e) => {
-              setSelectedMode(e.target.value as AdminHistoryMode);
-              setIdInput("");
+              const mode = e.target.value as AdminHistoryMode;
+              setSelectedMode(mode);
+              setIdInput(mode === "byUser" ? "" : 0);
             }}
           >
             <option value="all">All purchase history</option>
@@ -136,7 +139,7 @@ export default function AdminPurchaseHistory() {
               ? "User ID: "
               : "Production Company ID: "}
             <input
-              type="text"
+              type={selectedMode === "byUser" ? "mail" : "number"}
               value={idInput}
               onChange={(e) => setIdInput(e.target.value)}
             />
@@ -146,7 +149,13 @@ export default function AdminPurchaseHistory() {
 
       <button onClick={loadSelectedPurchaseHistory}>Load</button>
 
-      <ViewSaleHistory orders={orders} />
+      <div className="orders-list">
+        {orders.length > 0 ? (
+          orders.map((order) => <ViewOrder key={order.orderId} order={order} />)
+        ) : (
+          <p>No purchases found.</p>
+        )}
+      </div>
     </div>
   );
 }

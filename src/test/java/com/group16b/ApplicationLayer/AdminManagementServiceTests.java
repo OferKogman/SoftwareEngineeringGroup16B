@@ -14,6 +14,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
@@ -21,9 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.Exceptions.RefundFailedException;
@@ -38,16 +37,17 @@ import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.CompletedOrder;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.FieldSeg;
 import com.group16b.DomainLayer.Venue.GridRectangle;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Segment;
-import com.group16b.DomainLayer.Venue.Entrance;
 import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
@@ -142,6 +142,7 @@ public class AdminManagementServiceTests {
         myActiveOrder=new Order("my ACTIVE 1", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCompletedOrder=new Order("my COMPLETED", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
         myCompletedOrder.CompleteOrder();
+        ((CompletedOrder)myCompletedOrder.getState()).setTickets(java.util.Arrays.asList(EXTERNAL_TICKET));
         myCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
         myCompletedOrder.setTransactionId(TRANS_ID);
         myCanceledOrder=new Order("my CANCEL", 1, 1.0, myActiveEvent.getEventID(), USER2_MAIL);
@@ -150,6 +151,9 @@ public class AdminManagementServiceTests {
         myCanceledOrder.setTransactionId(TRANS_ID);
         unrelatedCompletedOrder=new Order("segment2", 1, 1.0, randomAssEvent.getEventID(),USER2_MAIL);
         unrelatedCompletedOrder.CompleteOrder();
+        ((CompletedOrder) unrelatedCompletedOrder.getState()).setTickets(java.util.Arrays.asList("some-other-ticket"));
+        unrelatedCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
+        unrelatedCompletedOrder.setTransactionId(TRANS_ID);
         unrelatedCompletedOrder.setExternalTicket(EXTERNAL_TICKET);
         unrelatedCompletedOrder.setTransactionId(TRANS_ID);
         orderRepository.save(myActiveOrder);
@@ -242,7 +246,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanySuccess() throws Exception {
+    public void testdeleteProductionCompanySuccess() throws Exception {
         int companyID = 1;
 
         Field policyField = adminManagementService.getClass().getDeclaredField("productionCompanyRepo");
@@ -252,7 +256,7 @@ public class AdminManagementServiceTests {
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
@@ -260,10 +264,10 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompany_onlyPassedEvents_SuccessAndNoRefunds() throws Exception {
+    public void testdeleteProductionCompany_onlyPassedEvents_SuccessAndNoRefunds() throws Exception {
 
         
-        Result<String> result = adminManagementService.closeProductionCompany(REFUNDLESS_COMPANY_ID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(REFUNDLESS_COMPANY_ID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,never()).cancelPayment(anyInt());
@@ -271,7 +275,7 @@ public class AdminManagementServiceTests {
     }
     
     @Test
-    public void testCloseProductionCompany_paymentServiceDown() throws Exception {
+    public void testdeleteProductionCompany_paymentServiceDown() throws Exception {
         int companyID = 1;
 
         doThrow(new RefundStatusUnknownException("kaboom rico")).when(mockPaymentGateway).cancelPayment(anyInt());
@@ -282,14 +286,14 @@ public class AdminManagementServiceTests {
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
         verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
     @Test
-    public void testCloseProductionCompany_paymentServiceRefuse() throws Exception {
+    public void testdeleteProductionCompany_paymentServiceRefuse() throws Exception {
         int companyID = 1;
 
         doThrow(new RefundFailedException("kaboom rico")).when(mockPaymentGateway).cancelPayment(anyInt());
@@ -300,7 +304,7 @@ public class AdminManagementServiceTests {
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
@@ -308,7 +312,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompany_ticketServiceDown() throws Exception {
+    public void testdeleteProductionCompany_ticketServiceDown() throws Exception {
         int companyID = 1;
 
         doThrow(new TicketRevokeUnknownStatusException("kaboom rico")).when(mockTicketGateway).revokeTicket(anyString());
@@ -319,14 +323,14 @@ public class AdminManagementServiceTests {
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
         verify(mockTicketGateway,times(1)).revokeTicket(anyString());
     }
     @Test
-    public void testCloseProductionCompany_ticketServiceReject() throws Exception {
+    public void testdeleteProductionCompany_ticketServiceReject() throws Exception {
         int companyID = 1;
 
         doThrow(new RevokeTicketFailureException("kaboom rico")).when(mockTicketGateway).revokeTicket(anyString());
@@ -337,7 +341,7 @@ public class AdminManagementServiceTests {
         policyField.setAccessible(true);
         policyField.set(adminManagementService, productionCompanyRepository);
         
-        Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(result.isSuccess(), "Failed to close company: " + result.getError());
         verify(mockPaymentGateway,times(1)).cancelPayment(anyInt());
@@ -345,9 +349,9 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanyUnauthorized() {
+    public void testdeleteProductionCompanyUnauthorized() {
 
-        Result<String> result = adminManagementService.closeProductionCompany(1, sessionToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(1, sessionToken);
         assertFalse(result.isSuccess());
         verify(mockPaymentGateway,never()).cancelPayment(anyInt());
         verify(mockTicketGateway,never()).revokeTicket(anyString());
@@ -508,7 +512,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void concurrentCloseProductionCompany_OnlyOneSucceeds() throws InterruptedException {
+    public void concurrentdeleteProductionCompany_OnlyOneSucceeds() throws InterruptedException {
         ProductionCompany company = new ProductionCompany(1, "Company1", 1, user.getEmail());
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
@@ -519,7 +523,7 @@ public class AdminManagementServiceTests {
         Runnable closeTask = () -> {
             try {
                 startLatch.await();
-                Result<String> result = adminManagementService.closeProductionCompany(companyID, adminToken);
+                Result<String> result = adminManagementService.deleteProductionCompany(companyID, adminToken);
                 synchronized (results) {
                     results.add(result);
                 }
@@ -582,16 +586,16 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanyInvalidToken() {
-        Result<String> result = adminManagementService.closeProductionCompany(1, invalidToken);
+    public void testdeleteProductionCompanyInvalidToken() {
+        Result<String> result = adminManagementService.deleteProductionCompany(1, invalidToken);
         assertFalse(result.isSuccess());
         verify(mockPaymentGateway,never()).cancelPayment(anyInt());
         verify(mockTicketGateway,never()).revokeTicket(anyString());
     }
 
     @Test
-    public void testCloseProductionCompanyNullToken() {
-        Result<String> result = adminManagementService.closeProductionCompany(1, null);
+    public void testdeleteProductionCompanyNullToken() {
+        Result<String> result = adminManagementService.deleteProductionCompany(1, null);
         assertFalse(result.isSuccess());
         verify(mockPaymentGateway,never()).cancelPayment(anyInt());
         verify(mockTicketGateway,never()).revokeTicket(anyString());
@@ -599,7 +603,7 @@ public class AdminManagementServiceTests {
 
     @Test
     public void testCloseNonExistentProductionCompany() {
-        Result<String> result = adminManagementService.closeProductionCompany(99999, adminToken);
+        Result<String> result = adminManagementService.deleteProductionCompany(99999, adminToken);
         assertFalse(result.isSuccess());
         verify(mockPaymentGateway,never()).cancelPayment(anyInt());
         verify(mockTicketGateway,never()).revokeTicket(anyString());
@@ -717,13 +721,13 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void testCloseProductionCompanyTwice() {
+    public void testdeleteProductionCompanyTwice() {
         ProductionCompany company = new ProductionCompany(4, "Company2", 1, user.getEmail());
         productionCompanyRepository.save(company);
         int companyID = company.getProductionCompanyID();
 
-        Result<String> first = adminManagementService.closeProductionCompany(companyID, adminToken);
-        Result<String> second = adminManagementService.closeProductionCompany(companyID, adminToken);
+        Result<String> first = adminManagementService.deleteProductionCompany(companyID, adminToken);
+        Result<String> second = adminManagementService.deleteProductionCompany(companyID, adminToken);
 
         assertTrue(first.isSuccess());
         assertFalse(second.isSuccess());
@@ -775,7 +779,7 @@ public class AdminManagementServiceTests {
     }
 
     @Test
-    public void concurrentCloseProductionCompany_MultipleCompanies_EachClosedOnce() throws InterruptedException {
+    public void concurrentdeleteProductionCompany_MultipleCompanies_EachClosedOnce() throws InterruptedException {
         ProductionCompany company1 = new ProductionCompany(10, "CompanyA", 1, user.getEmail());
         ProductionCompany company2 = new ProductionCompany(11, "CompanyB", 1, user.getEmail());
         productionCompanyRepository.save(company1);
@@ -787,7 +791,7 @@ public class AdminManagementServiceTests {
         Runnable closeA = () -> {
             try {
                 startLatch.await();
-                Result<String> r = adminManagementService.closeProductionCompany(company1.getProductionCompanyID(), adminToken);
+                Result<String> r = adminManagementService.deleteProductionCompany(company1.getProductionCompanyID(), adminToken);
                 synchronized (results) { results.add(r); }
             } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         };
@@ -795,7 +799,7 @@ public class AdminManagementServiceTests {
         Runnable closeB = () -> {
             try {
                 startLatch.await();
-                Result<String> r = adminManagementService.closeProductionCompany(company2.getProductionCompanyID(), adminToken);
+                Result<String> r = adminManagementService.deleteProductionCompany(company2.getProductionCompanyID(), adminToken);
                 synchronized (results) { results.add(r); }
             } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         };

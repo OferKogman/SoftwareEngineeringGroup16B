@@ -9,6 +9,11 @@ export default function VirtualQueue() {
     location.state as { initialStatus?: number } | undefined
   )?.initialStatus;
 
+  const lotteryCode = (location.state as { lotteryCode?: string } | null)
+    ?.lotteryCode;
+
+  const age = (location.state as { age?: number } | null)?.age;
+
   const [position, setPosition] = useState<number | null>(
     initialStatus ?? null,
   );
@@ -44,7 +49,12 @@ export default function VirtualQueue() {
             intervalRef.current = null;
           }
 
-          navigate(`/events/${eventID}/create-order`);
+          navigate(`/events/${eventID}/create-order`, {
+            state: {
+              lotteryCode,
+              age,
+            },
+          });
           return;
         }
       } catch (error) {

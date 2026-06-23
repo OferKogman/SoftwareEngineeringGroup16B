@@ -17,6 +17,7 @@ import SearchEvents from "./Components/Event/SearchEvents";
 import ViewEvent from "./Components/Event/ViewEvent";
 import VirtualQueue from "./Components/Event/VirtualQueue";
 import CreateOrder from "./Components/Order/CreateOrder";
+import EditOrder from "./Components/Order/EditOrder";
 import PaymentPage from "./Components/Order/PaymentPage";
 import CompanyEvents from "./Components/ProdactionCompany/CompanyEvents";
 import CreateProdactionCompany from "./Components/ProdactionCompany/CreateProductionCompany";
@@ -73,7 +74,7 @@ export default function AppRoutes() {
         <Route path="update-info" element={<EventUpdateForm />} />
         <Route path="lottery" element={<EventLottery />} />
         <Route path="discount-policy" element={<EditDiscountPolicy />} />
-        <Route path="purchase-policy" element={<EditPurchasePolicy />} />
+        <Route path="purchase-policy" element={<EditPurchasePolicy type="event" />} />
         <Route path="inventory" element={<ManageEventInventory />} />
         <Route path="pricing" element={<EventPricing />} />
       </Route>
@@ -90,10 +91,13 @@ export default function AppRoutes() {
         <Route path="events" element={<CompanyEvents />} />
         <Route path="venue-config" element={<VenueEditor />} />
         <Route path="members" element={<MembersPermissions />} />
+        <Route path="purchase-policy" element={<EditPurchasePolicy type="company" />} />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<Resignation />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
+      <Route path="/users/management/active-order" element={<EditOrder />} />
+
 
       <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>

@@ -44,6 +44,12 @@
 /* Card */
 /* ========================= */
 
+.order-card {
+  position: relative;
+
+  overflow: hidden;
+}
+
 .dark .order-card {
   display: grid;
   gap: 0;
@@ -85,17 +91,47 @@
   margin-top: 50px;
 }
 .clickable-order {
-
   cursor: pointer;
 
   transition: transform 0.2s ease;
-
 }
 
 .clickable-order:hover {
-
   transform: scale(1.01);
+}
 
+.refunded-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  pointer-events: none;
+
+  z-index: 10;
+}
+
+.refund-line {
+  position: absolute;
+
+  top: 50%;
+
+  left: -15%;
+
+  width: 130%;
+
+  height: 8px;
+
+  background: red;
+
+  border-radius: 4px;
+}
+
+.refund-line-1 {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.refund-line-2 {
+  transform: translateY(-50%) rotate(-45deg);
 }
 /* ========================= */
 /* Mobile */

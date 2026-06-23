@@ -197,7 +197,6 @@ public class ProductionCompanyService {
         }
     }
 
-
     // gets all orders for the company
     private Set<Integer> getCompanyEventIDs(int companyID) {
         return getCompanyEvents(companyID).stream()
@@ -242,7 +241,7 @@ public class ProductionCompanyService {
 
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {
         return orderRepo.getAll().stream()
-                .filter(Order::isCompleted)
+                .filter(order -> !order.isActive())
                 .filter(order -> eventIDs.contains(order.getEventId()))
                 .toList();
     }
@@ -266,12 +265,12 @@ public class ProductionCompanyService {
         return userID;
     }
 
-    private String validateRoleAndGetUserId()
-    {
-        //if we do implement error 403 then this if will also disapear, along with the function
-        if(!Role.SIGNED.equals(RequestContext.getRole()))
+    private String validateRoleAndGetUserId() {
+        // if we do implement error 403 then this if will also disapear, along with the
+        // function
+        if (!Role.SIGNED.equals(RequestContext.getRole()))
             throw new AuthException("Only users are allowed to perform this operation.");
-        String userId=RequestContext.getUserId();
+        String userId = RequestContext.getUserId();
         return userId;
     }
 

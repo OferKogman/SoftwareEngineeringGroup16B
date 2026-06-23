@@ -77,7 +77,7 @@ type VenueDisplayProps = {
   selectedFieldSegmentID?: string;
   selectedSeatSegmentID?: string;
   selectedSeats?: SeatDTO[];
-  eventID?: string | number;
+  eventID?: number;
 };
 
 export default function VenueDisplay({
@@ -153,13 +153,26 @@ export default function VenueDisplay({
       setStages(Object.values(venue.stages));
       setEntrances(Object.values(venue.entrances));
     }
+    function selectedSeatsToStock() {
+      if (eventID === undefined || eventID === null) {
+        return;
+      }
+
+      selectedSeats.forEach((selectedSeat) => {
+        selectedSeat.stock = {
+          ...selectedSeat.stock,
+          [eventID]: false,
+        };
+      });
+    }
+    void selectedSeatsToStock();
     void loadSegs();
-  }, [venue]);
+  }, [venue, selectedSeats, eventID]);
 
   function getSegmentPrice(
     segment: FieldSegDTO | ChosenSeatingSegDTO,
   ): number | undefined {
-    if (eventID === undefined || eventID === null || eventID === "") {
+    if (eventID === undefined || eventID === null) {
       return undefined;
     }
 
@@ -655,7 +668,9 @@ export default function VenueDisplay({
                           margin: 0,
                         }}
                       >
-                        {fieldSegment.size}
+                        {eventID !== undefined && eventID !== null
+                          ? (fieldSegment.stocks?.[Number(eventID)] ?? 0)
+                          : fieldSegment.size}
                       </div>
                       {getSegmentPrice(fieldSegment) !== undefined && (
                         <div
@@ -748,11 +763,16 @@ export default function VenueDisplay({
                       width: "100%",
                       height: "100%",
                       border: seatHovered ? hoverBorder : seatBorder,
-                      backgroundColor: seatSelected
-                        ? "#d4af37"
-                        : seatHovered
-                          ? seatHoverColor
-                          : seatColor,
+                      backgroundColor:
+                        eventID !== undefined &&
+                        eventID !== null &&
+                        seat.stock?.[Number(eventID)]
+                          ? "#9f9f9f"
+                          : seatSelected
+                            ? "#d4af37"
+                            : seatHovered
+                              ? seatHoverColor
+                              : seatColor,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",

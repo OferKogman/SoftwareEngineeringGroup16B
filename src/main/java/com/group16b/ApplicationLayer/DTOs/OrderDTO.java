@@ -11,8 +11,9 @@ public class OrderDTO {
     private final double tocalOrderPrice;
     private final int eventId;
     private final String subjectID;
+    private final boolean isRefunded;
 
-    public OrderDTO(Order order){
+    public OrderDTO(Order order) {
         if (order == null) {
             throw new IllegalArgumentException("Order cannot be null");
         }
@@ -26,11 +27,13 @@ public class OrderDTO {
         this.tocalOrderPrice = order.getTotalOrderprice();
         this.eventId = order.getEventId();
         this.subjectID = order.getSubjectId();
+        this.isRefunded = !order.isActive() && !order.isCompleted() && order.getTransactionId() != null;
     }
 
     public String getOrderId() {
         return orderId;
     }
+
     public String getSegmentId() {
         return segmentId;
     }
@@ -38,17 +41,25 @@ public class OrderDTO {
     public int getNumOfTickets() {
         return numOfTickets;
     }
+
     public String getOrderType() {
         return orderType;
     }
+
     public double getTocalOrderPrice() {
         return tocalOrderPrice;
     }
+
     public int getEventId() {
         return eventId;
     }
+
     public String getSubjectId() {
         return subjectID;
     }
-    
+
+    public boolean getIsRefunded() {
+        return isRefunded;
+    }
+
 }

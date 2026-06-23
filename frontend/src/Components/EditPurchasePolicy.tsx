@@ -1,62 +1,101 @@
-import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useState } from "react";
+import { useOutletContext, useParams } from "react-router-dom";
 import type { EventDTO } from "../DTOs/EventDTO";
+import type { ProductionCompanyDTO } from "../DTOs/ProductionCompanyDTO";
+import type { NullablePurchasePolicyDTO } from "../DTOs/PurchasePolicyDTO";
 import { useApiFetch } from "../apiFetch";
+import "./EditPurchasePolicy.css";
 import PurchasePolicyTree from "./Shared/PurchasePolicyTree";
 
-export default function EditPurchasePolicy() {
-  const { eventID } = useParams();
+type EditPurchasePolicyProps = {
+  type: "event" | "company";
+};
 
-  const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
-  const [error, setError] = useState("");
+type PurchasePolicyContext = {
+  event?: EventDTO;
+  company?: ProductionCompanyDTO;
+};
+
+export default function EditPurchasePolicy({ type }: EditPurchasePolicyProps) {
+  const { eventID, companyId } = useParams();
+
+  const { event, company } = useOutletContext<PurchasePolicyContext>();
+
+  const [alert, setAlert] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
 
   const apiFetch = useApiFetch();
 
-  useEffect(() => {
-    async function loadEvent() {
-      if (!eventID) {
-        setError("Missing event ID");
-        return;
-      }
-
-      try {
-        const response = await apiFetch(
-          `http://localhost:8080/events/${eventID}`,
-          {
-            method: "GET",
-          },
-        );
-
-        if (!response.ok) {
-          throw new Error(await response.text());
-        }
-
-        const data: EventDTO = await response.json();
-
-        setEventDTO(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load event");
-      }
-    }
-
-    void loadEvent();
-  }, [eventID, apiFetch]);
-
-  if (error) {
-    return <p>{error}</p>;
+  if (type === "event" && !event) {
+    return <p>Event data not available.</p>;
   }
 
-  if (!eventDTO) {
-    return <p>Loading...</p>;
+  if (type === "company" && !company) {
+    return <p>Company data not available.</p>;
+  }
+
+  const policy: NullablePurchasePolicyDTO =
+    type === "event"
+      ? (event?.eventPurchasePolicy ?? null)
+      : (company?.purchasePolicy ?? null);
+
+  async function savePolicy(policy: NullablePurchasePolicyDTO) {
+    const id = type === "event" ? eventID : companyId;
+
+    if (!id) {
+      setAlert({
+        type: "error",
+        message: `Missing ${type} ID`,
+      });
+      return;
+    }
+
+    try {
+      const url =
+        type === "event"
+          ? `http://localhost:8080/api/events/${id}/purchase-policy`
+          : `http://localhost:8080/api/production-companies/${id}/purchase-policy`;
+
+      const response = await apiFetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(policy),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      setAlert({
+        type: "success",
+        message: "Purchase policy saved successfully",
+      });
+    } catch (err) {
+      setAlert({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed saving purchase policy",
+      });
+    }
   }
 
   return (
     <main>
-      <h2>Edit Purchase Policy</h2>
+      <h2>Edit {type === "event" ? "Event" : "Company"} Purchase Policy</h2>
 
-      <PurchasePolicyTree policy={eventDTO.eventPurchasePolicy} />
+      <PurchasePolicyTree policy={policy} onSave={savePolicy} />
 
-      {/* your edit controls here */}
+      {alert && (
+        <div className="settings-alert">
+          <p>{alert.message}</p>
+
+          <button onClick={() => setAlert(null)}>OK</button>
+        </div>
+      )}
     </main>
   );
 }

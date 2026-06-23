@@ -44,15 +44,12 @@ export default function PaymentPage() {
         const response = await apiFetch(
           `${API_BASE}/api/order/getOrderPrice/${orderId}`,
           {
-            method: "PUT",
-            headers: {
-              Accept: "application/json",
-            },
+            method: "GET",
           },
         );
         const data = await response.json();
         console.log("getOrderPrice response:", data);
-        return data.value;
+        return data;
       } catch (err) {
         console.error("Failed to fetch order price:", err);
         return 0;
@@ -188,7 +185,8 @@ export default function PaymentPage() {
         {error && <p className="payment-error">{error}</p>}
 
         <PaymentForm
-          amount={amount}
+          initAmount={amount}
+          orderID={orderId}
           onPaymentSubmit={async (paymentData) => {
             try {
               setError("");

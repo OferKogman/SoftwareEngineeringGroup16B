@@ -60,7 +60,7 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
           segmentId: "segmentA",
           numOfTickets: 2,
           orderType: "Seat",
-          totalOrderPrice: 250.0,
+          tocalOrderPrice: 250.0,
           eventId: 1,
           subjectId: "42",
         };
@@ -85,7 +85,16 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
     >
       {error && <p className="form-error">{error}</p>}
 
-      <div className="card order-card">
+      <div
+        className={`card order-card ${orderDTO.isRefunded ? "refunded" : ""}`}
+      >
+        {orderDTO.isRefunded && (
+          <div className="refunded-overlay">
+            <span className="refund-line refund-line-1" />
+
+            <span className="refund-line refund-line-2" />
+          </div>
+        )}
         <h3 className="order-title">Order {orderDTO.orderId}</h3>
 
         <div className="order-row">
@@ -106,7 +115,7 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
         <div className="order-row">
           <span className="order-label">Total Price</span>
           <span className="order-value">
-            ₪{orderDTO.totalOrderPrice.toFixed(2)}
+            ₪{orderDTO.tocalOrderPrice.toFixed(2)}
           </span>
         </div>
 
