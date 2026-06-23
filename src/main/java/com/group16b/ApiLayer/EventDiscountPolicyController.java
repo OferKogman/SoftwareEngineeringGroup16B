@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.group16b.ApplicationLayer.DiscountPolicyService;
+import com.group16b.ApplicationLayer.Records.ApplyCouponCodeRequest;
 import com.group16b.ApplicationLayer.Records.DiscountPolicyRecord;
 
 @RestController
-@RequestMapping("/api/events/{eventId}/discount-policy")
 public class EventDiscountPolicyController extends BaseController{
     private final DiscountPolicyService discountPolicyService;
     public EventDiscountPolicyController(DiscountPolicyService discountPolicyService)
@@ -22,7 +22,7 @@ public class EventDiscountPolicyController extends BaseController{
         this.discountPolicyService=discountPolicyService;
     }
 
-    @PostMapping
+    @PostMapping("/api/events/{eventId}/discount-policy")
     public ResponseEntity<?> createEventDiscountPolicy(
         @RequestHeader("Authorization") String authToken,
         @RequestBody DiscountPolicyRecord record,
@@ -32,7 +32,7 @@ public class EventDiscountPolicyController extends BaseController{
         return executeWithNoReturnData(()-> discountPolicyService.createEventDiscountPolicy (authToken, eventId, record));
     }
 
-    @PutMapping
+    @PutMapping("/api/events/{eventId}/discount-policy")
     public ResponseEntity<?> editEventDiscountPolicy(
         @RequestHeader("Authorization") String authToken,
         @RequestBody DiscountPolicyRecord newRecord,
@@ -42,7 +42,7 @@ public class EventDiscountPolicyController extends BaseController{
         return executeWithNoReturnData(()->discountPolicyService.editEventDiscountPolicy(authToken, eventId, newRecord));
     }
 
-    @GetMapping
+    @GetMapping("/api/events/{eventId}/discount-policy")
     public ResponseEntity<?> getEventDiscountPolicy(
         @RequestHeader("Authorization") String authToken,
         @PathVariable("eventId") int eventId
@@ -51,5 +51,13 @@ public class EventDiscountPolicyController extends BaseController{
         return executeWithReturnData(()-> discountPolicyService.getEventDiscountPolicy(authToken, eventId));
     }
 
+    @PostMapping("/api/orders/{orderId}/coupon")
+        public ResponseEntity<?> applyCoupon(
+        @PathVariable("orderId") String orderId,
+        @RequestBody ApplyCouponCodeRequest request
+    )
+    {
+        return executeWithReturnData(()-> discountPolicyService.applyCoupon(orderId, request.couponCode()));
+    }
     
 }
