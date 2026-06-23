@@ -299,7 +299,7 @@ export default function EventPricing() {
             handleStageClick={() => {}}
             handleEntranceClick={() => {}}
             venue={venue}
-            eventID={eventID}
+            eventID={Number(eventID)}
           ></VenueDisplay>
         )}
         {renderPopup()}
