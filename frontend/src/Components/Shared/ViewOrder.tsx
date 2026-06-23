@@ -85,7 +85,16 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
     >
       {error && <p className="form-error">{error}</p>}
 
-      <div className="card order-card">
+      <div
+        className={`card order-card ${orderDTO.isRefunded ? "refunded" : ""}`}
+      >
+        {orderDTO.isRefunded && (
+          <div className="refunded-overlay">
+            <span className="refund-line refund-line-1" />
+
+            <span className="refund-line refund-line-2" />
+          </div>
+        )}
         <h3 className="order-title">Order {orderDTO.orderId}</h3>
 
         <div className="order-row">

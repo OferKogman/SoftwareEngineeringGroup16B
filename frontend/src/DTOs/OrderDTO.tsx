@@ -6,4 +6,5 @@ export type OrderDTO = {
   tocalOrderPrice: number;
   eventId: number;
   subjectId: string;
+  isRefunded: boolean;
 };
