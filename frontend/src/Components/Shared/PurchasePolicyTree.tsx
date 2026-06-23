@@ -2,11 +2,13 @@ import { Background, ReactFlow, type Edge } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
 import type {
+  AndDTO,
   MaxAgeDTO,
   MaxTicketsDTO,
   MinAgeDTO,
   MinTicketsDTO,
   NullablePurchasePolicyDTO,
+  OrDTO,
   PurchasePolicyDTO,
 } from "../../DTOs/PurchasePolicyDTO";
 
@@ -15,7 +17,7 @@ import "./CSS/PurchasePolicyTree.css";
 import { PolicyNode, type PolicyPath } from "./PolicyNode";
 
 type Props = {
-  policy: PurchasePolicyDTO;
+  policy: NullablePurchasePolicyDTO;
 };
 
 type PolicyEdge = Edge;
@@ -23,12 +25,18 @@ type PolicyEdge = Edge;
 const HORIZONTAL_GAP = 550;
 const VERTICAL_GAP = 220;
 
+function isCompositePolicy(
+  policy: PurchasePolicyDTO,
+): policy is AndDTO | OrDTO {
+  return policy.type === "AND" || policy.type === "OR";
+}
+
 function getSubtreeWidth(policy: PurchasePolicyDTO): number {
   if (!policy) {
     return 1;
   }
 
-  if (policy.type === "AND" || policy.type === "OR") {
+  if (isCompositePolicy(policy)) {
     const leftWidth = getSubtreeWidth(policy.left);
     const rightWidth = getSubtreeWidth(policy.right);
 
@@ -46,14 +54,15 @@ function buildTree(
   edges: PolicyEdge[],
   path: PolicyPath,
   onSwap: (path: PolicyPath) => void,
-  onChangeAge: (path: PolicyPath, newAge: number) => void,
-  onChangeTickets: (path: PolicyPath, newAmount: number) => void,
+  onChangeGoal: (path: PolicyPath, newGoal: number) => void,
+  onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void,
+  onDelete: () => void,
 ): string {
   const id = crypto.randomUUID();
 
   const y = level * VERTICAL_GAP;
 
-  if (policy?.type === "AND" || policy?.type === "OR") {
+  if (isCompositePolicy(policy)) {
     nodes.push({
       id,
       position: {
@@ -67,8 +76,9 @@ function buildTree(
         type: policy.type,
         path,
         onSwap,
-        onChangeAge,
-        onChangeTickets,
+        onChangeGoal,
+        onReplace,
+        onDelete,
       },
     });
 
@@ -87,8 +97,9 @@ function buildTree(
       edges,
       [...path, "left"],
       onSwap,
-      onChangeAge,
-      onChangeTickets,
+      onChangeGoal,
+      onReplace,
+      onDelete,
     );
 
     const rightId = buildTree(
@@ -99,8 +110,9 @@ function buildTree(
       edges,
       [...path, "right"],
       onSwap,
-      onChangeAge,
-      onChangeTickets,
+      onChangeGoal,
+      onReplace,
+      onDelete,
     );
 
     edges.push({
@@ -140,7 +152,7 @@ function buildTree(
       break;
 
     default:
-      label = "Create a policy";
+      label = "Create policy";
   }
 
   nodes.push({
@@ -156,8 +168,9 @@ function buildTree(
       type: policy?.type || "NONE",
       path,
       onSwap,
-      onChangeAge,
-      onChangeTickets,
+      onChangeGoal,
+      onReplace,
+      onDelete,
     },
   });
 
@@ -167,13 +180,33 @@ function buildTree(
 function createFlow(
   policy: NullablePurchasePolicyDTO,
   onSwap: (path: PolicyPath) => void,
-  onChangeAge: (path: PolicyPath, newAge: number) => void,
-  onChangeTickets: (path: PolicyPath, newAmount: number) => void,
+  onChangeGoal: (path: PolicyPath, newGoal: number) => void,
+  onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void,
+  onDelete: () => void,
 ) {
   const nodes: PolicyNode[] = [];
   const edges: PolicyEdge[] = [];
 
   if (!policy) {
+    nodes.push({
+      id: crypto.randomUUID(),
+      position: {
+        x: 0,
+        y: 0,
+      },
+      className: "hierarchy-flow-node",
+      type: "policy",
+      data: {
+        label: "Create a policy",
+        type: "NONE",
+        path: [],
+        onSwap,
+        onChangeGoal,
+        onReplace,
+        onDelete,
+      },
+    });
+
     return { nodes, edges };
   }
 
@@ -185,8 +218,9 @@ function createFlow(
     edges,
     [],
     onSwap,
-    onChangeAge,
-    onChangeTickets,
+    onChangeGoal,
+    onReplace,
+    onDelete,
   );
 
   return { nodes, edges };
@@ -201,7 +235,7 @@ function swapPolicyAtPath(
   }
 
   if (path.length === 0) {
-    if (policy.type !== "AND" && policy.type !== "OR") {
+    if (!isCompositePolicy(policy)) {
       return policy;
     }
 
@@ -211,7 +245,7 @@ function swapPolicyAtPath(
     };
   }
 
-  if (policy.type !== "AND" && policy.type !== "OR") {
+  if (!isCompositePolicy(policy)) {
     return policy;
   }
 
@@ -226,83 +260,67 @@ function swapPolicyAtPath(
   };
 }
 
-function changeAgeAtPath(
+function changeGoalAtPath(
   policy: PurchasePolicyDTO,
   path: PolicyPath,
-  newAge: number,
+  newGoal: number,
 ): PurchasePolicyDTO {
   if (path.length === 0) {
-    if (policy.type === "MIN_AGE") {
-      return {
-        ...policy,
-        minAge: newAge,
-      };
-    }
+    switch (policy.type) {
+      case "MIN_AGE":
+        return { ...policy, minAge: newGoal };
 
-    if (policy.type === "MAX_AGE") {
-      return {
-        ...policy,
-        maxAge: newAge,
-      };
-    }
+      case "MAX_AGE":
+        return { ...policy, maxAge: newGoal };
 
-    return policy;
+      case "MIN_TICKETS":
+        return { ...policy, minTickets: newGoal };
+
+      case "MAX_TICKETS":
+        return { ...policy, maxTickets: newGoal };
+
+      default:
+        return policy;
+    }
   }
 
-  if (policy.type !== "AND" && policy.type !== "OR") {
-    return policy;
-  }
+  if (!isCompositePolicy(policy)) return policy;
 
   const [head, ...rest] = path;
 
-  const updatedChild =
-    head === "left"
-      ? changeAgeAtPath(policy.left, rest, newAge)
-      : changeAgeAtPath(policy.right, rest, newAge);
-
   return {
     ...policy,
-    ...(head === "left" ? { left: updatedChild } : { right: updatedChild }),
+    [head]:
+      head === "left"
+        ? changeGoalAtPath(policy.left, rest, newGoal)
+        : changeGoalAtPath(policy.right, rest, newGoal),
   };
 }
 
-function changeAmountAtPath(
+function replacePolicyAtPath(
   policy: PurchasePolicyDTO,
   path: PolicyPath,
-  newAmount: number,
+  newPolicy: PurchasePolicyDTO,
 ): PurchasePolicyDTO {
   if (path.length === 0) {
-    if (policy.type === "MIN_TICKETS") {
-      return {
-        ...policy,
-        minTickets: newAmount,
-      };
-    }
-
-    if (policy.type === "MAX_TICKETS") {
-      return {
-        ...policy,
-        maxTickets: newAmount,
-      };
-    }
-
-    return policy;
+    return newPolicy;
   }
 
-  if (policy.type !== "AND" && policy.type !== "OR") {
+  if (!isCompositePolicy(policy)) {
     return policy;
   }
 
   const [head, ...rest] = path;
 
-  const updatedChild =
-    head === "left"
-      ? changeAmountAtPath(policy.left, rest, newAmount)
-      : changeAmountAtPath(policy.right, rest, newAmount);
-
   return {
     ...policy,
-    ...(head === "left" ? { left: updatedChild } : { right: updatedChild }),
+    ...(head === "left"
+      ? {
+          left: replacePolicyAtPath(policy.left, rest, newPolicy),
+        }
+      : {
+          right: replacePolicyAtPath(policy.right, rest, newPolicy),
+        }),
   };
 }
 
@@ -320,27 +338,34 @@ export default function PurchasePolicyTree({ policy }: Props) {
     });
   }
 
-  function changeAge(path: PolicyPath, age: number) {
+  function changeGoal(path: PolicyPath, goal: number) {
     setCurrentPolicy((prev) => {
       if (!prev) return prev;
 
-      return changeAgeAtPath(prev, path, age);
+      return changeGoalAtPath(prev, path, goal);
     });
   }
 
-  function changeAmount(path: PolicyPath, amount: number) {
+  function replacePolicy(path: PolicyPath, newPolicy: PurchasePolicyDTO) {
     setCurrentPolicy((prev) => {
-      if (!prev) return prev;
+      if (!prev) {
+        return newPolicy;
+      }
 
-      return changeAmountAtPath(prev, path, amount);
+      return replacePolicyAtPath(prev, path, newPolicy);
     });
+  }
+
+  function deletePolicy() {
+    setCurrentPolicy(null);
   }
 
   const { nodes, edges } = createFlow(
     currentPolicy,
     swapPolicy,
-    changeAge,
-    changeAmount,
+    changeGoal,
+    replacePolicy,
+    deletePolicy,
   );
 
   return (
