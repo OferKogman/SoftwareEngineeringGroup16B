@@ -1,35 +1,28 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
-import java.util.List;
-
 public class MaxDiscount implements DiscountPolicy {
-    private List<DiscountPolicy> policies;
+    private final DiscountPolicy left;
+    private final DiscountPolicy right;
 
-    public MaxDiscount(List<DiscountPolicy> policies) {
-        if (policies == null || policies.isEmpty()) {
-            throw new IllegalArgumentException("MaxDiscount must have at least one policy.");
-        }
-        this.policies = policies;
+    public MaxDiscount(DiscountPolicy left, DiscountPolicy right) {
+        if (left == null || right == null)
+            throw new IllegalArgumentException("MaxDiscount must have both left and right children.");
+        this.left = left;
+        this.right = right;
     }
 
-    public List<DiscountPolicy> getPolicies() { return policies; }
+    public DiscountPolicy getLeft() { return left; }
+    public DiscountPolicy getRight() { return right; }
 
-    public boolean isMet(DiscountContext dc){
-        for (DiscountPolicy policy : policies) {
-            if(policy.isMet(dc)) return true;
-        }
-        return false;
-    }
     @Override
-    public double calculateDiscount(double originalPrice, DiscountContext dc) {
-        double bestPrice = originalPrice;
-        DiscountContext context = dc;
-        for (DiscountPolicy policy : policies) {
-            double discountedPrice = policy.calculateDiscount(originalPrice, context);
-            if (discountedPrice < bestPrice) {
-                bestPrice = discountedPrice;
-            }
-        }
-        return bestPrice;
+    public boolean isMet(DiscountContext context) {
+        return left.isMet(context) || right.isMet(context);
+    }
+
+    @Override
+    public double calculateDiscount(double originalPrice, DiscountContext context) {
+        double leftPrice = left.calculateDiscount(originalPrice, context);
+        double rightPrice = right.calculateDiscount(originalPrice, context);
+        return Math.min(leftPrice, rightPrice);
     }
 }

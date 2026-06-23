@@ -1,22 +1,17 @@
 package com.group16b.ApplicationLayer;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.group16b.ApplicationLayer.DTOs.DiscountPolicyDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.DiscountPolicyTypes;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.DiscountPolicyRecord;
 import com.group16b.ApplicationLayer.Records.EventRecord;
@@ -26,19 +21,11 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.Entrance;
-import com.group16b.DomainLayer.Venue.FieldSeg;
-import com.group16b.DomainLayer.Venue.GridRectangle;
-import com.group16b.DomainLayer.Venue.Location;
-import com.group16b.DomainLayer.Venue.Segment;
-import com.group16b.DomainLayer.Venue.Stage;
-import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.Security.Role;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
 
 public class DiscountPolicyServiceTests {
 
@@ -53,25 +40,33 @@ public class DiscountPolicyServiceTests {
     private Event e1;
     private ProductionCompany company;
 
-    // Simple record helpers — null out fields we don't need
+    // ===== Helper methods for building records with new enum + left/right =====
     private DiscountPolicyRecord simple(double pct) {
-        return new DiscountPolicyRecord("SIMPLE", pct, null, null, null, null, null, null, null, null);
+        return new DiscountPolicyRecord(DiscountPolicyTypes.SIMPLE, pct, null, null, null, null, null, null, null, null, null);
     }
 
     private DiscountPolicyRecord amountRange(Integer min, Integer max, double pct) {
-        return new DiscountPolicyRecord("AMOUNT_RANGE", pct, min, max, null, null, null, null, null, null);
+        return new DiscountPolicyRecord(DiscountPolicyTypes.AMOUNT_RANGE, pct, min, max, null, null, null, null, null, null, null);
     }
 
     private DiscountPolicyRecord coupon(double pct, String code, LocalDateTime expiry, Integer maxUsages) {
-        return new DiscountPolicyRecord("COUPON", pct, null, null, null, null, code, expiry, maxUsages, null);
+        return new DiscountPolicyRecord(DiscountPolicyTypes.COUPON, pct, null, null, null, null, code, expiry, maxUsages, null, null);
     }
 
-    private DiscountPolicyRecord and(double pct, DiscountPolicyRecord... children) {
-        return new DiscountPolicyRecord("AND", pct, null, null, null, null, null, null, null, List.of(children));
+    private DiscountPolicyRecord and(double pct, DiscountPolicyRecord left, DiscountPolicyRecord right) {
+        return new DiscountPolicyRecord(DiscountPolicyTypes.AND, pct, null, null, null, null, null, null, null, left, right);
     }
 
-    private DiscountPolicyRecord or(double pct, DiscountPolicyRecord... children) {
-        return new DiscountPolicyRecord("OR", pct, null, null, null, null, null, null, null, List.of(children));
+    private DiscountPolicyRecord or(double pct, DiscountPolicyRecord left, DiscountPolicyRecord right) {
+        return new DiscountPolicyRecord(DiscountPolicyTypes.OR, pct, null, null, null, null, null, null, null, left, right);
+    }
+
+    private DiscountPolicyRecord sum(DiscountPolicyRecord left, DiscountPolicyRecord right) {
+        return new DiscountPolicyRecord(DiscountPolicyTypes.SUM, null, null, null, null, null, null, null, null, left, right);
+    }
+
+    private DiscountPolicyRecord max(DiscountPolicyRecord left, DiscountPolicyRecord right) {
+        return new DiscountPolicyRecord(DiscountPolicyTypes.MAX, null, null, null, null, null, null, null, null, left, right);
     }
 
     @BeforeEach
@@ -192,16 +187,7 @@ public class DiscountPolicyServiceTests {
     @Test
     public void createCompanyDiscountPolicy_FailInvalidRecord_NullType() {
         DiscountPolicyRecord bad = new DiscountPolicyRecord(
-                null, 10.0, null, null, null, null, null, null, null, null);
-        Result<Boolean> res = discountPolicyService.createCompanyDiscountPolicy(
-                "user1", company.getProductionCompanyID(), bad);
-        assertFalse(res.isSuccess());
-    }
-
-    @Test
-    public void createCompanyDiscountPolicy_FailInvalidRecord_UnknownType() {
-        DiscountPolicyRecord bad = new DiscountPolicyRecord(
-                "BANANA", 10.0, null, null, null, null, null, null, null, null);
+                null, 10.0, null, null, null, null, null, null, null, null, null);
         Result<Boolean> res = discountPolicyService.createCompanyDiscountPolicy(
                 "user1", company.getProductionCompanyID(), bad);
         assertFalse(res.isSuccess());
@@ -209,8 +195,9 @@ public class DiscountPolicyServiceTests {
 
     @Test
     public void createCompanyDiscountPolicy_FailComposite_NoChildren() {
+        // AND with both children null → should fail
         DiscountPolicyRecord bad = new DiscountPolicyRecord(
-                "AND", 10.0, null, null, null, null, null, null, null, List.of());
+                DiscountPolicyTypes.AND, 10.0, null, null, null, null, null, null, null, null, null);
         Result<Boolean> res = discountPolicyService.createCompanyDiscountPolicy(
                 "user1", company.getProductionCompanyID(), bad);
         assertFalse(res.isSuccess());

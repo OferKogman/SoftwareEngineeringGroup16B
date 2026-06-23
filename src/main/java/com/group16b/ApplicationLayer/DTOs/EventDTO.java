@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.AndDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxAgeDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxTicketsDTO;
@@ -41,9 +42,6 @@ public class EventDTO {
 		category = event.getEventCategory();
 		productionCompanyID = event.getEventProductionCompanyID();
 		discountPolicy = new HashSet<>();
-		for (var policy : event.getEventDiscountPolicy()) {
-			discountPolicy.add(new DiscountPolicyDTO(policy));
-		}
 		purchasePolicy = new AndDTO(new OrDTO(new AndDTO(new MinAgeDTO(
 				55), new MaxTicketsDTO(5)), new MaxAgeDTO(18)),
 				new OrDTO(new MinTicketsDTO(10), new MaxTicketsDTO(2)));

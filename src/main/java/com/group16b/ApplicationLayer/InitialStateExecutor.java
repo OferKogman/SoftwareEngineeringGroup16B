@@ -13,6 +13,7 @@ import java.util.Set;
 
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
+import com.group16b.ApplicationLayer.Objects.DiscountPolicyTypes;
 import com.group16b.ApplicationLayer.Records.DiscountPolicyRecord;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 
@@ -234,13 +235,15 @@ public class InitialStateExecutor {
                     require(args, 5, command, lineNumber);
                     String token = resolveToken(args.get(0));
                     int companyId = Integer.parseInt(args.get(1));
+                    DiscountPolicyTypes type = DiscountPolicyTypes.valueOf(args.get(2));
                     DiscountPolicyRecord record = new DiscountPolicyRecord(
-                            args.get(2),                          // type e.g. COUPON
-                            Double.parseDouble(args.get(3)),      // percentage
-                            null, null, null, null,
-                            args.get(4),                          // couponCode
-                            LocalDateTime.now().plusYears(1),     // expiry — 1 year from now
-                            null, null);
+                            type,                                     // type enum
+                            Double.parseDouble(args.get(3)),          // discountPercentage
+                            null, null, null, null,                   // minTickets, maxTickets, startDate, endDate
+                            args.get(4),                              // couponCode
+                            LocalDateTime.now().plusYears(1),         // expiryDate — 1 year from now
+                            null,                                     // maxUsages
+                            null, null);                              // left, right
                     Result<?> res = discountPolicyService.createCompanyDiscountPolicy(token, companyId, record);
                     checkResult(res, command, lineNumber);
                 }

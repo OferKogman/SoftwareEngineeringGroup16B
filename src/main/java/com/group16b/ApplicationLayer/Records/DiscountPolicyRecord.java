@@ -1,10 +1,10 @@
 package com.group16b.ApplicationLayer.Records;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import com.group16b.ApplicationLayer.Objects.DiscountPolicyTypes;
 
 public record DiscountPolicyRecord(
-        String type,
+        DiscountPolicyTypes type,
         Double discountPercentage,
         Integer minTickets,
         Integer maxTickets,
@@ -13,5 +13,6 @@ public record DiscountPolicyRecord(
         String couponCode,
         LocalDateTime expiryDate,
         Integer maxUsages,
-        List<DiscountPolicyRecord> children
+        DiscountPolicyRecord left,
+        DiscountPolicyRecord right
 ) {}

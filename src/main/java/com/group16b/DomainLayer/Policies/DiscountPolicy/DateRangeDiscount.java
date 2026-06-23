@@ -26,6 +26,18 @@ public class DateRangeDiscount implements DiscountPolicy {
         return !((startDate != null && now.isBefore(startDate)) || (endDate != null && now.isAfter(endDate)));
     }
 
+    public LocalDateTime getStartDate() {
+        return startDate;
+    }
+
+    public LocalDateTime getEndDate() {
+        return endDate;
+    }
+    public double getDiscountPercentage() {
+        return discountPercentage;
+    }
+
+
     @Override
     public double calculateDiscount(double originalPrice, DiscountContext dc) {
         return isMet(dc) ? originalPrice * (1 - discountPercentage / 100) : originalPrice;

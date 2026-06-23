@@ -17,4 +17,7 @@ public class SimpleDiscount implements DiscountPolicy{
     public double calculateDiscount(double originalPrice, DiscountContext dc){
         return originalPrice * (1-this.discountPercentage/100);
     }
+    public double getDiscountPercentage(){ return this.discountPercentage;}
+
+
 }

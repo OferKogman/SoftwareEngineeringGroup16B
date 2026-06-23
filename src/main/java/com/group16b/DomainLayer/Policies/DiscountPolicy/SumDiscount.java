@@ -1,32 +1,29 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
-import java.util.List;
-
 public class SumDiscount implements DiscountPolicy {
-    private List<DiscountPolicy> policies;
+    private final DiscountPolicy left;
+    private final DiscountPolicy right;
 
-    public SumDiscount(List<DiscountPolicy> policies) {
-        if (policies == null || policies.isEmpty()) {
-            throw new IllegalArgumentException("SumDiscount must have at least one policy.");
-        }
-        this.policies = policies;
+    public SumDiscount(DiscountPolicy left, DiscountPolicy right) {
+        if (left == null || right == null)
+            throw new IllegalArgumentException("SumDiscount must have both left and right children.");
+        this.left = left;
+        this.right = right;
     }
 
-    public List<DiscountPolicy> getPolicies() { return policies; }
+    public DiscountPolicy getLeft() { return left; }
+    public DiscountPolicy getRight() { return right; }
 
-    public boolean isMet(DiscountContext dc){
-        for (DiscountPolicy policy : policies) {
-            if(policy.isMet(dc)) return true;
-        }
-        return false;
-    }
     @Override
-    public double calculateDiscount(double originalPrice, DiscountContext dc) {
-        double price = originalPrice;
-        DiscountContext context = dc;
-        for (DiscountPolicy policy : policies) {
-            price = Math.max(policy.calculateDiscount(price,context), 0);
-        }
-        return Math.max(price,0);
+    public boolean isMet(DiscountContext context) {
+        return left.isMet(context) || right.isMet(context);
+    }
+
+    @Override
+    public double calculateDiscount(double originalPrice, DiscountContext context) {
+        double after = originalPrice;
+        after = left.calculateDiscount(after, context);
+        after = right.calculateDiscount(after, context);
+        return Math.max(after, 0);
     }
 }

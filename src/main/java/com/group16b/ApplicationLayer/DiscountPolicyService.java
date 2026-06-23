@@ -1,16 +1,13 @@
 package com.group16b.ApplicationLayer;
 
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
-import com.group16b.ApplicationLayer.DTOs.DiscountPolicyDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.DiscountPolicyRecord;
@@ -30,6 +27,7 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
 
 @Service
 public class DiscountPolicyService {
@@ -218,8 +216,7 @@ public class DiscountPolicyService {
             if (policies.isEmpty())
                 return Result.makeOk(null);
 
-            // Return the first (and typically only) policy as DTO
-            DiscountPolicyDTO dto = new DiscountPolicyDTO(policies.iterator().next());
+            DiscountPolicyDTO dto = toDTO(policies.iterator().next());
             logger.info("DiscountPolicyService.getEventDiscountPolicy: Retrieved policy for event {}", eventID);
             return Result.makeOk(dto);
         } catch (IllegalArgumentException e) {
@@ -250,7 +247,7 @@ public class DiscountPolicyService {
             if (policies.isEmpty())
                 return Result.makeOk(null);
 
-            DiscountPolicyDTO dto = new DiscountPolicyDTO(policies.iterator().next());
+            DiscountPolicyDTO dto = toDTO(policies.iterator().next());
             logger.info("DiscountPolicyService.getCompanyDiscountPolicy: Retrieved policy for company {}", companyID);
             return Result.makeOk(dto);
         } catch (IllegalArgumentException e) {
@@ -269,31 +266,75 @@ public class DiscountPolicyService {
         if (record == null || record.type() == null)
             throw new IllegalArgumentException("Discount policy record and type must not be null.");
         return switch (record.type()) {
-            case "SIMPLE" -> new SimpleDiscount(require(record));
-            case "AMOUNT_RANGE" -> new AmountRangeDiscount(record.minTickets(), record.maxTickets(), require(record));
-            case "DATE_RANGE" -> new DateRangeDiscount(record.startDate(), record.endDate(), require(record));
-            case "COUPON" -> new CouponCodeDiscount(require(record), record.couponCode(), record.expiryDate(), record.maxUsages());
-            case "AND" -> new AndDiscount(buildChildren(record), require(record));
-            case "OR"  -> new OrDiscount(buildChildren(record), require(record));
-            case "SUM" -> new SumDiscount(buildChildren(record));
-            case "MAX" -> new MaxDiscount(buildChildren(record));
-            default -> throw new IllegalArgumentException("Unknown discount type: " + record.type());
+            case SIMPLE       -> new SimpleDiscount(require(record));
+            case AMOUNT_RANGE -> new AmountRangeDiscount(record.minTickets(), record.maxTickets(), require(record));
+            case DATE_RANGE   -> new DateRangeDiscount(record.startDate(), record.endDate(), require(record));
+            case COUPON       -> new CouponCodeDiscount(require(record), record.couponCode(), record.expiryDate(), record.maxUsages());
+            case AND          -> new AndDiscount(buildLeft(record), buildRight(record), require(record));
+            case OR           -> new OrDiscount(buildLeft(record), buildRight(record), require(record));
+            case SUM          -> new SumDiscount(buildLeft(record), buildRight(record));
+            case MAX          -> new MaxDiscount(buildLeft(record), buildRight(record));
         };
     }
 
-    private List<DiscountPolicy> buildChildren(DiscountPolicyRecord record) {
-        if (record.children() == null || record.children().isEmpty())
-            throw new IllegalArgumentException("Composite type '" + record.type() + "' must have at least one child.");
-        List<DiscountPolicy> children = new ArrayList<>();
-        for (DiscountPolicyRecord child : record.children()) {
-            children.add(buildPolicy(child));
-        }
-        return children;
+    private DiscountPolicy buildLeft(DiscountPolicyRecord record) {
+        if (record.left() == null)
+            throw new IllegalArgumentException("Composite type '" + record.type() + "' requires a left child.");
+        return buildPolicy(record.left());
+    }
+
+    private DiscountPolicy buildRight(DiscountPolicyRecord record) {
+        if (record.right() == null)
+            throw new IllegalArgumentException("Composite type '" + record.type() + "' requires a right child.");
+        return buildPolicy(record.right());
     }
 
     private double require(DiscountPolicyRecord record) {
         if (record.discountPercentage() == null)
             throw new IllegalArgumentException("Type '" + record.type() + "' requires a discountPercentage.");
         return record.discountPercentage();
+    }
+
+    // ===================================================================
+    // DTO CONVERSION — convert domain policies to DTOs for frontend
+    // ===================================================================
+    private DiscountPolicyDTO toDTO(DiscountPolicy policy) {
+        if (policy instanceof SimpleDiscount s)
+            return new RegularDiscountDTO(s.getDiscountPercentage());
+
+        if (policy instanceof AmountRangeDiscount a) {
+            if (a.getMinTickets() != null && a.getMaxTickets() == null)
+                return new MinimumPurchaseDiscountDTO(a.getDiscountPercentage(), a.getMinTickets());
+            if (a.getMinTickets() == null && a.getMaxTickets() != null)
+                return new MaximumPurchaseDiscountDTO(a.getDiscountPercentage(), a.getMaxTickets());
+            // If both are set, default to minimum
+            return new MinimumPurchaseDiscountDTO(a.getDiscountPercentage(), a.getMinTickets());
+        }
+
+        if (policy instanceof DateRangeDiscount d) {
+            if (d.getStartDate() != null && d.getEndDate() == null)
+                return new EarlyBirdDiscountDTO(d.getDiscountPercentage(), d.getStartDate());
+            if (d.getStartDate() == null && d.getEndDate() != null)
+                return new LastMinuteDiscountDTO(d.getDiscountPercentage(), d.getEndDate());
+            // If both are set, default to early bird
+            return new EarlyBirdDiscountDTO(d.getDiscountPercentage(), d.getStartDate());
+        }
+
+        if (policy instanceof CouponCodeDiscount c)
+            return new CouponCodeDiscountDTO(c.getDiscountPercentage(), c.getCode(), c.getExpiryDate());
+
+        if (policy instanceof AndDiscount a)
+            return new CompositeDiscountDTO(toDTO(a.getLeft()), toDTO(a.getRight()), "AND");
+
+        if (policy instanceof OrDiscount o)
+            return new CompositeDiscountDTO(toDTO(o.getLeft()), toDTO(o.getRight()), "OR");
+
+        if (policy instanceof SumDiscount s)
+            return new CompositeDiscountDTO(toDTO(s.getLeft()), toDTO(s.getRight()), "SUM");
+
+        if (policy instanceof MaxDiscount m)
+            return new CompositeDiscountDTO(toDTO(m.getLeft()), toDTO(m.getRight()), "MAX");
+
+        throw new IllegalArgumentException("Unknown discount policy type: " + policy.getClass().getSimpleName());
     }
 }
