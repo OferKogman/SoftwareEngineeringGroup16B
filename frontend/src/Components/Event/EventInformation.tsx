@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import type { PurchasePolicyDTO } from "../../DTOs/PurchasePolicyDTO";
+import "./CSS/ViewEvent.css";
 import ViewEvent from "./ViewEvent";
 
 export default function EventInformation() {
@@ -143,9 +144,15 @@ export default function EventInformation() {
           Enroll In Lottery
         </button>
       ) : (
-        <div>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           {eventDTO?.lotteryDTO && (
-            <div>
+            <div className="form-field">
               <label>Lottery Code</label>
               <input
                 id="lotteryCode"
@@ -156,7 +163,7 @@ export default function EventInformation() {
             </div>
           )}
           {ageRequired && (
-            <div>
+            <div className="form-field">
               <label>Age</label>
               <input
                 id="age"
