@@ -1,6 +1,5 @@
 package com.group16b.ApplicationLayer;
 import java.time.LocalDateTime;
-import java.time.chrono.ChronoLocalDateTime;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,8 +21,6 @@ import com.group16b.ApplicationLayer.Exceptions.RefundStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.RevokeTicketFailureException;
 import com.group16b.ApplicationLayer.Exceptions.TicketRevokeUnknownStatusException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
-import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
@@ -49,8 +46,7 @@ public class AdminManagementService {
     private final IPaymentGateway paymentService;
     private final ITicketGateway ticketService;
     private IRepository<SystemAdmin> systemAdminRepo;
-    private final IPaymentGateway paymentGateway;
-    private final ITicketGateway ticketGateway;
+
 
     public AdminManagementService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo, IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo,
         IPaymentGateway paymentService, ITicketGateway ticketService) {
@@ -370,8 +366,8 @@ public class AdminManagementService {
         logger.info("AdminManagementService.refundOrder: refunding order: {}", orderID);
         try{
             Order order= orderRepo.findByID(orderID);
-            paymentGateway.cancelPayment(order.getTransactionId());
-            ticketGateway.revokeTicket(order.getExternalTicket());
+            paymentService.cancelPayment(order.getTransactionId());
+            ticketService.revokeTicket(order.getExternalTicket());
             return new RefundResult(orderID,RefundStatus.SUCCESS,null);
         } catch (IllegalArgumentException e){
             logger.warn("AdminManagementService.refundOrder: IllegalArgumentException: {}",e.getMessage());
