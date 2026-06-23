@@ -1,26 +1,27 @@
 package com.group16b.DomainLayer.Policies.DiscountPolicy;
 
-import java.util.List;
-
 public class OrDiscount implements DiscountPolicy {
-    private final List<DiscountPolicy> children;
+    private final DiscountPolicy left;
+    private final DiscountPolicy right;
     private final double discountPercentage;
 
-    public OrDiscount(List<DiscountPolicy> children, double discountPercentage) {
-        if (children == null || children.isEmpty())
-            throw new IllegalArgumentException("OrDiscount must have at least one child.");
+    public OrDiscount(DiscountPolicy left, DiscountPolicy right, double discountPercentage) {
+        if (left == null || right == null)
+            throw new IllegalArgumentException("OrDiscount must have both left and right policies.");
         if (discountPercentage < 0 || discountPercentage > 100)
             throw new IllegalArgumentException("Discount percentage must be between 0 and 100.");
-        this.children = children;
+        this.left = left;
+        this.right = right;
         this.discountPercentage = discountPercentage;
     }
 
-    public List<DiscountPolicy> getChildren() { return children; }
+    public DiscountPolicy getLeft() { return left; }
+    public DiscountPolicy getRight() { return right; }
     public double getDiscountPercentage() { return discountPercentage; }
 
     @Override
     public boolean isMet(DiscountContext context) {
-        return children.stream().anyMatch(child -> child.isMet(context));
+        return left.isMet(context) || right.isMet(context);
     }
 
     @Override
