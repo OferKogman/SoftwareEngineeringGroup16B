@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
+import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import type { PurchasePolicyDTO } from "../../DTOs/PurchasePolicyDTO";
 import "./CSS/ViewEvent.css";
 import ViewEvent from "./ViewEvent";
@@ -12,6 +13,8 @@ export default function EventInformation() {
   const { eventID } = useParams();
 
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
+  const [companyPurchasePolicy, setCompanyPurchasePolicy] =
+    useState<PurchasePolicyDTO | null>(null);
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -71,8 +74,20 @@ export default function EventInformation() {
       );
 
       if (response.ok) {
-        const data = await response.json();
+        const data: EventDTO = await response.json();
         setEventDTO(data);
+
+        const companyResponse = await apiFetch(
+          `http://localhost:8080/production-companies/${data.eventProductionCompanyID}`,
+          {
+            method: "GET",
+          },
+        );
+
+        if (companyResponse.ok) {
+          const data: ProductionCompanyDTO = await companyResponse.json();
+          setCompanyPurchasePolicy(data.purchasePolicy);
+        }
       }
     }
 
@@ -107,15 +122,32 @@ export default function EventInformation() {
     eventDTO?.lotteryDTO &&
     new Date(eventDTO.lotteryDTO.lotteryRegistrationDueDate) > new Date();
 
-  function checkAgeRequired(purchasePolicy: PurchasePolicyDTO): boolean {
+  function checkAgeRequired() {
+    if (!(!eventDTO || eventDTO.eventPurchasePolicy === null)) {
+      if (!(!companyPurchasePolicy || companyPurchasePolicy === null)) {
+        return (
+          checkAgeRequiredRec(eventDTO.eventPurchasePolicy) ||
+          checkAgeRequiredRec(companyPurchasePolicy)
+        );
+      } else {
+        return checkAgeRequiredRec(eventDTO.eventPurchasePolicy);
+      }
+    } else {
+      if (!(!companyPurchasePolicy || companyPurchasePolicy === null)) {
+        return checkAgeRequiredRec(companyPurchasePolicy);
+      } else {
+        return false;
+      }
+    }
+  }
+
+  function checkAgeRequiredRec(purchasePolicy: PurchasePolicyDTO): boolean {
     return purchasePolicy.type === "AND" || purchasePolicy.type === "OR"
-      ? checkAgeRequired(purchasePolicy.left) ||
-          checkAgeRequired(purchasePolicy.right)
+      ? checkAgeRequiredRec(purchasePolicy.left) ||
+          checkAgeRequiredRec(purchasePolicy.right)
       : purchasePolicy.type === "MIN_AGE" || purchasePolicy.type === "MAX_AGE";
   }
-  const ageRequired =
-    eventDTO?.eventPurchasePolicy &&
-    checkAgeRequired(eventDTO.eventPurchasePolicy);
+  const ageRequired = checkAgeRequired();
 
   useEffect(() => {
     async function needCode() {
