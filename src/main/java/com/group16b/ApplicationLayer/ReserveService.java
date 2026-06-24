@@ -56,11 +56,13 @@ public class ReserveService {
         this.userRepo = userRepo;
     }
 
+    @Transactional
     public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId,
             String sessionToken) {
         return this.reserveSeatsWithLottery(segmentId, seatIds, eventID, venueId, "", sessionToken);
     }
 
+    @Transactional
     public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId,
             String sessionToken) {
         return this.reserveFieldSeatsWithLottery(segmentId, amount, eventID, venueId, "", sessionToken);
@@ -184,7 +186,6 @@ public class ReserveService {
         }
     }
 
-    @Transactional
     public VirtualQueue joinQueueSafely(VirtualQueue q, int eventID, String subjectID) {
         q = queueImp.findByID(Integer.toString(eventID));
         q.addToQueue(subjectID);
@@ -202,6 +203,7 @@ public class ReserveService {
         return q;
     }
 
+    @Transactional
     public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId,
             String lotteryCode, String sessionToken) {
         String subjectID = null;
