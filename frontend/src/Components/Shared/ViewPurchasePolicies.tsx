@@ -1,8 +1,11 @@
-import type { PurchasePolicyDTO } from "../../DTOs/PurchasePolicyDTO";
+import type {
+  NullablePurchasePolicyDTO,
+  PurchasePolicyDTO,
+} from "../../DTOs/PurchasePolicyDTO";
 import "./CSS/ViewPurchasePolicies.css";
 
 type Props = {
-  purchasePolicy: PurchasePolicyDTO;
+  purchasePolicy: NullablePurchasePolicyDTO;
 };
 
 export default function ViewPurchasePolicies({ purchasePolicy }: Props) {
@@ -20,10 +23,9 @@ function renderPolicy(policy: PurchasePolicyDTO): React.ReactNode {
     case "AND":
       return (
         <div className="policy-box">
-          <div className="policy-box-title">AND</div>
-
           <div className="policy-box-content">
             {renderPolicy(policy.left)}
+            <div className="policy-box-title">AND</div>
             {renderPolicy(policy.right)}
           </div>
         </div>
@@ -32,10 +34,9 @@ function renderPolicy(policy: PurchasePolicyDTO): React.ReactNode {
     case "OR":
       return (
         <div className="policy-box">
-          <div className="policy-box-title">OR</div>
-
           <div className="policy-box-content">
             {renderPolicy(policy.left)}
+            <div className="policy-box-title">OR</div>
             {renderPolicy(policy.right)}
           </div>
         </div>
