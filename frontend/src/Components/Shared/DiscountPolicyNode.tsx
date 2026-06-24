@@ -132,16 +132,79 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
         </select>
 
         {!isComplex && (
-          <input
-            type="number"
-            value={replaceValue}
-            onChange={(e) => setReplaceValue(e.target.value)}
-            placeholder="Value"
-          />
+          <>
+            {replaceInputValue !== "SIMPLE" && (
+              <input
+                type={
+                  replaceInputValue === "MIN_DATE" ||
+                  replaceInputValue === "MAX_DATE"
+                    ? "datetime-local"
+                    : "number"
+                }
+                min={
+                  replaceInputValue === "MIN_TICKETS" ||
+                  replaceInputValue === "MAX_TICKETS"
+                    ? 1
+                    : undefined
+                }
+                max={
+                  replaceInputValue === "MIN_DATE" ||
+                  replaceInputValue === "MAX_DATE"
+                    ? "9999-12-31T23:59"
+                    : undefined
+                }
+                value={replaceValue}
+                onChange={(e) => setReplaceValue(e.target.value)}
+                placeholder="Ticket amount"
+              />
+            )}
+            <div style={{ position: "relative" }}>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={percentageValue}
+                onChange={(e) => setPercentageValue(Number(e.target.value))}
+                style={{ paddingRight: "20px" }}
+              />
+              <span
+                style={{
+                  position: "absolute",
+                  right: "8px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                }}
+              >
+                %
+              </span>
+            </div>
+          </>
         )}
 
         {isComplex && (
           <>
+            {(replaceInputValue === "AND" || replaceInputValue === "OR") && (
+              <div style={{ position: "relative" }}>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={percentageValue}
+                  onChange={(e) => setPercentageValue(Number(e.target.value))}
+                  style={{ paddingRight: "20px" }}
+                />
+                <span
+                  style={{
+                    position: "absolute",
+                    right: "8px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  %
+                </span>
+              </div>
+            )}
             <select
               onChange={(e) => {
                 const type = e.target.value as SimpleDiscountPolicyTypes;
@@ -238,14 +301,13 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                 );
               }
             }
-
-            props.data.onReplace(props.data.path, newPolicy);
-
             setLeftPolicy(null);
             setRightPolicy(null);
             setReplaceValue("");
             setAction(null);
             setShowPopup(false);
+
+            props.data.onReplace(props.data.path, newPolicy);
           }}
         >
           Replace

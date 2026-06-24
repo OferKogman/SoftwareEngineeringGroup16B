@@ -199,6 +199,10 @@ export default function ProductionCompanyManagement() {
           )}
 
           {hasPermission("PURCHASE_POLICY") && (
+            <NavLink to="discount-policy">Discount Policy</NavLink>
+          )}
+
+          {hasPermission("PURCHASE_POLICY") && (
             <NavLink to="purchase-policy">Purchase Policy</NavLink>
           )}
 
