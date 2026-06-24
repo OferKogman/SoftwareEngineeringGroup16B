@@ -25,6 +25,8 @@ public class Location {
         this.longitude = longitude;
     }
 
+    protected Location(){};
+    
     public String getName() {
         return name;
     }

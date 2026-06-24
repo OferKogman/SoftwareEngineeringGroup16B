@@ -1,13 +1,12 @@
 package com.group16b.DomainLayer.VirtualQueue;
 
+import java.lang.reflect.Field;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.lang.reflect.Field;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -44,7 +43,7 @@ public class VirtualQueueTests {
         PQ.set(q, 1);
         Field PT = q.getClass().getDeclaredField("PASS_TIMEOUT");
         PT.setAccessible(true);
-        PT.set(q, 4000);
+        q.setPassTimeoutForTest(1); 
         q.addToQueue(USER1);
         q.addToQueue(USER2);
         assertTrue(q.isUserPassedQueue(USER1));

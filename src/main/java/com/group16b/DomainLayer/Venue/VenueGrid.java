@@ -12,6 +12,8 @@ public class VenueGrid {
         this.columns = columns;
     }
 
+    protected VenueGrid(){};
+
     public int getRows() { return rows; }
     public int getColumns() { return columns; }
 }
