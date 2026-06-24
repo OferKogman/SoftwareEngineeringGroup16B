@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.ActiveOrderDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
@@ -51,6 +52,7 @@ public class UserService {
 
     }
 
+    @Transactional
     public Result<UserDTO> registerUser(String email, String password) {
         try {
             logger.info("UserService.regeisterUser: Attempting to create new User with email: " + email);
@@ -85,6 +87,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public Result<Boolean> updateUserPassword(String sessionToken, String oldPassword, String newPassword) {
         try {
             logger.info("UserService.updateUserPassword: Extracting token subject and fetching User aggregate.");
