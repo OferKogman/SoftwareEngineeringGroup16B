@@ -1,6 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -27,13 +28,13 @@ import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Order.OrderType;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
-import com.group16b.DomainLayer.Venue.Segment;
 import com.group16b.DomainLayer.Venue.Venue;
 
 
@@ -210,7 +211,12 @@ public class OrderService {
 	}
 	
     public Result<List<String>> changeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
-        
+		boolean venueChanged = false;
+		String segmentId = null;
+		List<String> seatsToAdd = new ArrayList<>();
+		List<String> seatsToRemove = new ArrayList<>();
+		Venue venue = null;
+		int eventID = 0;
         try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
             logger.info("OrderService.changeSeatsToOrder: Attempting to change seats for order {} with new seats {}.", orderId, newSeatIds);
@@ -234,60 +240,77 @@ public class OrderService {
 			logger.info("OrderService.changeSeatsToOrder: verifying that order {} is active for changing seats.", orderId);
             order.validiteOrderIsActive();
 
+			eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+			venue = venueRepo.findByID(event.getEventVenueID());
+
+			logger.info("OrderService.changeSeatsToOrder: Validating purchase policy for event {} for order {}.", eventID, orderId);
+			validatePurchasePolicy(event.getEventID(), newSeatIds.size(), sTocken);
+
+			double pricePerSeat = venue.getPriceForSegment(order.getSegmentId(), eventID);
+			logger.info("OrderService.changeSeatsToOrder: Calculating discount policies for event {} for order {}.", eventID, orderId);
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatIds.size());
+
             List<String> oldSeats = order.getSeats();
             List<String> intersection = getIntersection(newSeatIds, oldSeats);
 
             // remove intersection from new seats -> seatsToAdd
-            List<String> seatsToAdd = removeFromList(newSeatIds, intersection);
+            seatsToAdd = removeFromList(newSeatIds, intersection);
             // remove intersection from old seats -> seatsToRemove
-            List<String> seatsToRemove = removeFromList(oldSeats, intersection);
+            seatsToRemove = removeFromList(oldSeats, intersection);
+			segmentId = order.getSegmentId();
             // reserve new seatsToAdd
-			int eventID = order.getEventId();
-            Event event = eventRepo.findByID(String.valueOf(eventID));
-
+			
             logger.info("OrderService.changeSeatsToOrder: Reserving new seats {} for order {}.", seatsToAdd, orderId);
-			Venue venue = venueRepo.findByID(event.getEventVenueID());
 			if (!seatsToAdd.isEmpty()) {
-				venue.reserveSeats(ReservationRequest.forSeats(order.getEventId(), seatsToAdd, order.getSegmentId()));
+				venue.reserveSeats(ReservationRequest.forSeats(eventID, seatsToAdd, segmentId));
+				venueChanged = true;
 			}
             // free seatsToRemove
             logger.info("OrderService.changeSeatsToOrder: Freeing old seats {} for order {}.", seatsToRemove, orderId);
 			if (!seatsToRemove.isEmpty()) {
-				venue.freeSeats(ReservationRequest.forSeats(order.getEventId(), seatsToRemove, order.getSegmentId()));
+				venue.freeSeats(ReservationRequest.forSeats(eventID, seatsToRemove, segmentId));
+				venueChanged = true;
 			}
-			logger.info("OrderService.changeSeatsToOrder: Validating purchase policy for event {} for order {}.", eventID, orderId);
-			validatePurchasePolicy(event.getEventID());
-
-			Segment segment = venue.getSegmentByID(order.getSegmentId());
-			double pricePerSeat = segment.getPrice(eventID);
-			logger.info("OrderService.changeSeatsToOrder: Calculating discount policies for event {} for order {}.", eventID, orderId);
-            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatIds.size());
-
-            logger.info("OrderService.changeSeatsToOrder: Updating order {} with new seats {}.", orderId, newSeatIds);
-            order.updateSeats(newSeatIds, priceAfterDiscountPolicy);
+			
+			
+			logger.info("OrderService.changeSeatsToOrder: Updating order {} with new seats {}.", orderId, newSeatIds);
+			order.updateSeats(newSeatIds, priceAfterDiscountPolicy);
 			orderRepo.save(order);
+			
+			venueRepo.save(venue);
 
             return Result.makeOk(newSeatIds);
         } catch (AuthException e) {
 			logger.error("OrderService.changeSeatsToOrder: Authentication error during changing seats for order {}: {}", orderId, e.getMessage());
+			rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		}
 		catch (IllegalStateException e) {
 			logger.error("OrderService.changeSeatsToOrder: {}", orderId, e.getMessage());
+			rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
 			return Result.makeFail(e.getMessage());
 		}
 		catch (IllegalArgumentException e) {
             logger.error("OrderService.changeSeatsToOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
+            rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
             return Result.makeFail(e.getMessage());
         }
         catch (Exception e) {
             logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats: {}", e.getMessage());
+            rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
 	
     public Result<Integer> changeNumOfSeatsInFieldOrder(String orderId, String sTocken, int newSeatsNum){
-        try {
+        Venue venue = null;
+        boolean venueChanged = false;
+		String segmentId = null;
+		int oldNumOfTickets = 0;
+		int newNumOfTickets = newSeatsNum;
+        int eventID = 0;
+		try {
             // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
             logger.info("OrderService.changeNumOfSeatsInFieldOrder: Attempting to change number of seats for order {} with new number of seats {}.", orderId, newSeatsNum);
             if (newSeatsNum <= 0) {
@@ -310,51 +333,64 @@ public class OrderService {
 
             logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} is active for changing number of seats.", orderId);
             order.validiteOrderIsActive();
-            
-            int oldNumOfTickets = order.getNumOfTickets();
 
+			// policy validation
+			eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+			venue = venueRepo.findByID(event.getEventVenueID());
+
+			segmentId = order.getSegmentId();
+            oldNumOfTickets = order.getNumOfTickets();
+			
             if (oldNumOfTickets == newSeatsNum){
-                logger.info("OrderService.changeNumOfSeatsInFieldOrder: New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
+				logger.info("OrderService.changeNumOfSeatsInFieldOrder: New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
                 return Result.makeOk(newSeatsNum);
             }
-			int eventID = order.getEventId();
-            Event event = eventRepo.findByID(String.valueOf(eventID));
-			Venue venue = venueRepo.findByID(event.getEventVenueID());
+
+			validatePurchasePolicy(event.getEventID(), newSeatsNum, sTocken);
+			
+			double pricePerSeat = venue.getPriceForSegment(order.getSegmentId(), eventID);
+			double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatsNum);
+			
+			
             if (oldNumOfTickets < newSeatsNum) {
                 // reserve new seatsToAdd
                 int seatsToAdd = newSeatsNum - oldNumOfTickets;
-
                 logger.info("OrderService.changeNumOfSeatsInFieldOrder: Reserving {} new seats for order {}.", seatsToAdd, orderId);
-				venue.reserveSeats(ReservationRequest.forField(order.getEventId(), seatsToAdd, order.getSegmentId()));
+				venue.reserveSeats(ReservationRequest.forField(eventID, seatsToAdd, segmentId));
+				venueChanged = true;
             } else {
                 // free seatsToRemove
                 int seatsToRemove = oldNumOfTickets - newSeatsNum;
                 logger.info("OrderService.changeNumOfSeatsInFieldOrder: Freeing {} old seats for order {}.", seatsToRemove, orderId);
-				venue.freeSeats(ReservationRequest.forField(order.getEventId(), seatsToRemove, order.getSegmentId()));
+				venue.freeSeats(ReservationRequest.forField(eventID, seatsToRemove, segmentId));
+				venueChanged = true;
             }
-
+			
             logger.info("OrderService.changeNumOfSeatsInFieldOrder: Updating order {} with new seats {}.", orderId, newSeatsNum);
-			Segment segment = venue.getSegmentByID(order.getSegmentId());
-
-			double pricePerSeat = segment.getPrice(eventID);
-			validatePurchasePolicy(event.getEventID());
-
-            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatsNum);
+			
+			
 			order.updateNumOfTickets(newSeatsNum, priceAfterDiscountPolicy);
 			orderRepo.save(order);
-            return Result.makeOk(newSeatsNum);
+			venueRepo.save(venue);
+            
+			return Result.makeOk(newSeatsNum);
 
         } catch (IllegalArgumentException e) {
             logger.error("OrderService.changeNumOfSeatsInFieldOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
-            return Result.makeFail(e.getMessage());
+            rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
+			return Result.makeFail(e.getMessage());
         } catch (IllegalStateException e) {
             logger.error("OrderService.changeNumOfSeatsInFieldOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
-            return Result.makeFail(e.getMessage());
+            rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
+			return Result.makeFail(e.getMessage());
         } catch (AuthException e) {
 			logger.error("OrderService.changeNumOfSeatsInFieldOrder: Authentication error during changing number of seats for order {}: {}", orderId, e.getMessage());
+			rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
 			return Result.makeFail("Authentication failed: " + e.getMessage());
 		}catch (Exception e) {
             logger.error("OrderService.changeNumOfSeatsInFieldOrder: Unexpected error during changing seats: {}", e.getMessage());
+            rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -408,47 +444,67 @@ public class OrderService {
     private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
         Event event = eventRepo.findByID(String.valueOf(eventID));
         Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> allPolicies = new HashSet<>();
 
-            if (discountPolicy == null) {
-                logger.error("No discount policy found for event {}", eventID);
-                discountPolicy = Set.of(); // if no discount policy for the event, we will just use the company discount policy (if exists)
-            }
-            if (companyDiscountPolicy == null) {
-                logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
-				companyDiscountPolicy = Set.of(); // if no discount policy for the production company, we will just use the event discount policy (if exists)
-			}
-            discountPolicy.addAll(companyDiscountPolicy);
+        if (discountPolicy != null) {
+            allPolicies.addAll(discountPolicy);
+        } else {
+            logger.error("No discount policy found for event {}", eventID);
+        }
+        if (companyDiscountPolicy != null) {
+            allPolicies.addAll(companyDiscountPolicy);
+        } else {
+            logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+        }
 
-            double priceAfterDiscountPolicy = pricePerSeat * amount;
-            for (DiscountPolicy dp : discountPolicy) {
-                priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
-            }
-            return priceAfterDiscountPolicy;
+        double priceAfterDiscountPolicy = pricePerSeat * amount;
+
+        for (DiscountPolicy dp : allPolicies) {
+            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+        }
+        return priceAfterDiscountPolicy;
     }
-    private void validatePurchasePolicy(int eventID) {
+
+    private void validatePurchasePolicy(int eventID, int ticketsAmount, String sessionToken) {
+
+        int userAge = 0;
+        if (authenticationService.isUserToken(sessionToken)) {
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            User user = userRepo.findByID(userID);
+            // userAge = user.getAge(); TODO: add age to user and uncomment?
+        }
+
+        Set<PurchasePolicy> allPolicies = new HashSet<>();
+
         Event event = eventRepo.findByID(String.valueOf(eventID));
         Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
-        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo.findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
+        if (purchasePolicy != null) {
+            allPolicies.addAll(purchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for event {}", eventID);
+        }
 
-            if (purchasePolicy == null) {
-                logger.error("No purchase policy found for event {}", eventID);
-                purchasePolicy = Set.of(); // if no purchase policy for the event, we will just use the company purchase policy (if exists)
-            }
-            if (companyPurchasePolicy == null) {
-                logger.error("No purchase policy found for production company {}", event.getEventProductionCompanyID());
-                companyPurchasePolicy = Set.of(); // if no purchase policy for the production company, we will just use the event purchase policy (if exists)
-            }
+        if (companyPurchasePolicy != null) {
+            allPolicies.addAll(companyPurchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for production company {}", event.getEventProductionCompanyID());
+        }
 
-            purchasePolicy.addAll(companyPurchasePolicy);
-			for (PurchasePolicy pp : purchasePolicy) {
-				try {
-					pp.validatePurchase(new PurchaseContext(0, 0));
-				} catch (PurchasePolicyException e) {
-					logger.error("User did not meet purchase policy requirements");
-					throw new IllegalArgumentException("User did not meet purchase policy requirements");
-				}
-			}
+        for (PurchasePolicy pp : allPolicies) {
+            try {
+                if (pp instanceof LotteryPolicy) {
+                    continue;
+                }
+                pp.validatePurchase(new PurchaseContext(userAge, ticketsAmount));
+            } catch (PurchasePolicyException e) {
+                logger.error("User did not meet purchase policy requirements");
+                throw new IllegalArgumentException("User did not meet purchase policy requirements");
+            }
+        }
     }
 
 	private String validateAssureNotAdminGetSubjectID(String sessionToken)
@@ -477,11 +533,8 @@ public class OrderService {
 			order.verifyBelongsToSubject(subjectID);
 
 			double price = order.getTotalOrderprice();
-			int amount = order.getOrderType() == OrderType.SEAT ? order.getSeats().size() : order.getNumOfTickets();
 
-            double priceAfterDiscountPolicy = calculateDiscountPolicies(order.getEventId(), price, amount);
-			
-			return Result.makeOk(priceAfterDiscountPolicy);
+			return Result.makeOk(price);
 		} catch (AuthException e) {
 			logger.error("OrderService.getOrderPrice: Authentication error during getting price for order {}: {}", orderId, e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
@@ -526,6 +579,75 @@ public class OrderService {
 	{
 		safeRefund(transactionId);
 		safeTicketRevoke(ticket);
+	}
+	
+	
+	private void rollbackSeatEditIfNeeded(
+			Venue venue,
+			boolean venueChanged,
+			String segmentId,
+			List<String> seatsToAdd,
+			List<String> seatsToRemove,
+			int eventID
+	) {
+		if (venue == null || !venueChanged) {
+			return;
+		}
+
+		try {
+			if (seatsToAdd != null && !seatsToAdd.isEmpty()) {
+				venue.cancelSeatReservation(segmentId, seatsToAdd, eventID);
+			}
+
+			if (seatsToRemove != null && !seatsToRemove.isEmpty()) {
+				venue.reserveSeats(ReservationRequest.forSeats(eventID, seatsToRemove, segmentId));
+			}
+
+			venueRepo.save(venue);
+		} catch (Exception rollbackException) {
+			logger.error(
+					"OrderService.rollbackSeatEditIfNeeded: Failed to rollback seat edit for event {} segment {} added {} removed {}: {}",
+					eventID,
+					segmentId,
+					seatsToAdd,
+					seatsToRemove,
+					rollbackException.getMessage()
+			);
+		}
+	}
+
+   private void rollbackFieldEditIfNeeded(
+			Venue venue,
+			boolean venueChanged,
+			String segmentId,
+			int oldNumOfTickets,
+			int newNumOfTickets,
+			int eventID
+	) {
+		if (venue == null || !venueChanged) {
+			return;
+		}
+
+		try {
+			if (newNumOfTickets > oldNumOfTickets) {
+				int added = newNumOfTickets - oldNumOfTickets;
+				venue.cancelFieldReservation(segmentId, added, eventID);
+			} else if (newNumOfTickets < oldNumOfTickets) {
+				int removed = oldNumOfTickets - newNumOfTickets;
+				venue.reserveSeats(ReservationRequest.forField(eventID, removed, segmentId));
+			}
+
+			venueRepo.save(venue);
+		} catch (Exception rollbackException) {
+			logger.error(
+					"OrderService.rollbackFieldEditIfNeeded: Failed to rollback field edit for event {} segment {} oldAmount {} newAmount {}: {}",
+					eventID,
+					segmentId,
+					oldNumOfTickets,
+					newNumOfTickets,
+					rollbackException.getMessage()
+			);
+		}
 	}
 	
 }
