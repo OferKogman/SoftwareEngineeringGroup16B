@@ -1,5 +1,7 @@
 package com.group16b.ApplicationLayer;
 
+import com.group16b.DomainLayer.Event.Event;
+import com.group16b.DomainLayer.Event.IEventRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -20,14 +22,16 @@ public class DiscountPolicyService {
 
     private final IAuthenticationService authenticationService;
     private final IProductionCompanyRepository productionCompanyRepository;
+    private final IEventRepository eventRepository;
     private final IRepository<User> userRepository;
 
     public DiscountPolicyService(IAuthenticationService authenticationService,
                                  IProductionCompanyRepository productionCompanyRepository,
-                                 IRepository<User> userRepository) {
+                                 IRepository<User> userRepository, IEventRepository eventRepository) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepository = productionCompanyRepository;
         this.userRepository = userRepository;
+        this.eventRepository = eventRepository;
     }
 
     // ===== #368: UNIFIED SET METHOD (create or edit) =====
@@ -58,7 +62,31 @@ public class DiscountPolicyService {
         }
     }
 
+    public Result<DiscountPolicyDTO> setEventDiscountPolicy(String sessionToken, int eventID, DiscountPolicyDTO policyDTO) {
+        try {
+            logger.info("DiscountPolicyService.setEventDiscountPolicy: Setting policy for event {}", eventID);
 
+            authenticationService.validateToken(sessionToken);  // validate first
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);  // then extract userID
+            Event event = eventRepository.findByID(String.valueOf(eventID));  // convert int to String
+            if (event == null) {
+                return Result.makeFail("Event not found");
+            }
+
+            DiscountPolicy domainPolicy = buildPolicy(policyDTO);
+            event.setEventDiscountPolicy(domainPolicy);
+            eventRepository.save(event);
+
+            logger.info("DiscountPolicyService.setEventDiscountPolicy: Policy set for event {}", eventID);
+
+            DiscountPolicyDTO resultDTO = toDTO(domainPolicy);
+            return Result.makeOk(resultDTO);
+
+        } catch (Exception e) {
+            logger.error("DiscountPolicyService.setEventDiscountPolicy: Error: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
+    }
     public Result<Boolean> createCompanyDiscountPolicy(String sessionToken, int companyID, DiscountPolicyRecord record) {
         return null;
     }

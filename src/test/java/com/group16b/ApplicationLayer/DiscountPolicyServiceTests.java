@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.group16b.DomainLayer.Event.IEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +29,7 @@ public class DiscountPolicyServiceTests {
     private IAuthenticationService authService;
     private IProductionCompanyRepository productionCompanyRepo;
     private IRepository<User> userRepo;
-
+    private IEventRepository eventRepository;
     private ProductionCompany testCompany;
     private User testAdmin;
     private static final String VALID_TOKEN = "validSessionToken";
@@ -52,9 +53,12 @@ public class DiscountPolicyServiceTests {
         discountPolicyService = new DiscountPolicyService(
                 authService,
                 productionCompanyRepo,
-                userRepo
+                userRepo,
+                eventRepository
         );
     }
+
+
 
     /**
      * Helper method to set up authentication mocks
@@ -861,4 +865,6 @@ public class DiscountPolicyServiceTests {
             assertEquals(20.0, ((RegularDiscountDTO) getResult2.getValue()).getPercentage());
         }
     }
+
+    
 }
