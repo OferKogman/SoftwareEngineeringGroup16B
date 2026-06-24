@@ -104,7 +104,30 @@ public class DiscountPolicyService {
     }
 
     public Result<DiscountPolicyDTO> getEventDiscountPolicy(String sessionToken, int eventID) {
-        return null;
+        try {
+            logger.info("DiscountPolicyService.getEventDiscountPolicy: Getting policy for event {}", eventID);
+
+            authenticationService.validateToken(sessionToken);  // validate first
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);  // then extract userID
+            Event event = eventRepository.findByID(String.valueOf(eventID));  // convert int to String
+            if (event == null) {
+                return Result.makeFail("Event not found");
+            }
+
+            DiscountPolicy domainPolicy = event.getEventDiscountPolicy();
+            if (domainPolicy == null) {
+                return Result.makeOk(null);
+            }
+
+            logger.info("DiscountPolicyService.getEventDiscountPolicy: Policy retrieved for event {}", eventID);
+
+            DiscountPolicyDTO resultDTO = toDTO(domainPolicy);
+            return Result.makeOk(resultDTO);
+
+        } catch (Exception e) {
+            logger.error("DiscountPolicyService.getEventDiscountPolicy: Error: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        }
     }
 
     public Result<DiscountPolicyDTO> getCompanyDiscountPolicy(String sessionToken, int companyID) {

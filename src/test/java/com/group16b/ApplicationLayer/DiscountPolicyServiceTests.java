@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ public class DiscountPolicyServiceTests {
     private IProductionCompanyRepository productionCompanyRepo;
     private IRepository<User> userRepo;
     private IEventRepository eventRepository;
+    private Event testEvent;
     private ProductionCompany testCompany;
     private User testAdmin;
     private static final String VALID_TOKEN = "validSessionToken";
@@ -44,6 +46,7 @@ public class DiscountPolicyServiceTests {
         authService = mock(IAuthenticationService.class);
         productionCompanyRepo = mock(IProductionCompanyRepository.class);
         userRepo = mock(IRepository.class);
+        eventRepository = mock(IEventRepository.class);
 
         // Create test data
         testAdmin = new User(ADMIN_EMAIL, "password123");
@@ -56,6 +59,12 @@ public class DiscountPolicyServiceTests {
                 userRepo,
                 eventRepository
         );
+
+        testEvent = mock(Event.class);
+        when(testEvent.getEventDiscountPolicy()).thenReturn(null);
+        when(testEvent.getEventID()).thenReturn(1);
+
+
     }
 
 
@@ -866,5 +875,96 @@ public class DiscountPolicyServiceTests {
         }
     }
 
-    
+    @Nested
+    @DisplayName("setEventDiscountPolicy - Success Cases")
+    class SetEventDiscountPolicySuccess {
+
+        @Test
+        @DisplayName("Should create new SimpleDiscount policy for event")
+        void shouldCreateSimpleDiscountForEvent() {
+            // Arrange
+            setupValidAuth(VALID_TOKEN, ADMIN_EMAIL);
+            // Assuming you have a testEvent object
+            when(eventRepository.findByID(String.valueOf(1)))
+                    .thenReturn(testEvent);
+
+            RegularDiscountDTO dto = new RegularDiscountDTO(10.0);
+
+            // Act
+            Result<DiscountPolicyDTO> result = discountPolicyService.setEventDiscountPolicy(
+                    VALID_TOKEN,
+                    1,
+                    dto
+            );
+
+            // Assert
+            assertTrue(result.isSuccess(), "Result should be successful");
+            assertNotNull(result.getValue(), "DTO should not be null");
+            verify(eventRepository).save(any());
+        }
+
+        @Test
+        @DisplayName("Should fail when token is invalid for event policy")
+        void shouldFailWithInvalidTokenForEvent() {
+            // Arrange
+            setupInvalidAuth(INVALID_TOKEN);
+            RegularDiscountDTO dto = new RegularDiscountDTO(10.0);
+
+            // Act
+            Result<DiscountPolicyDTO> result = discountPolicyService.setEventDiscountPolicy(
+                    INVALID_TOKEN,
+                    1,
+                    dto
+            );
+
+            // Assert
+            assertFalse(result.isSuccess(), "Result should fail");
+            verify(eventRepository, never()).save(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("getEventDiscountPolicy - Success Cases")
+    class GetEventDiscountPolicySuccess {
+
+        @Test
+        @DisplayName("Should retrieve existing event discount policy")
+        void shouldRetrieveEventDiscountPolicy() {
+            // Arrange
+            setupValidAuth(VALID_TOKEN, ADMIN_EMAIL);
+            SimpleDiscount policy = new SimpleDiscount(15.0);
+            when(testEvent.getEventDiscountPolicy()).thenReturn(policy);  // MOCK WHAT IT RETURNS
+            when(eventRepository.findByID(String.valueOf(1)))
+                    .thenReturn(testEvent);
+
+            // Act
+            Result<DiscountPolicyDTO> result = discountPolicyService.getEventDiscountPolicy(
+                    VALID_TOKEN,
+                    1
+            );
+
+            // Assert
+            assertTrue(result.isSuccess(), "Result should be successful");
+            assertNotNull(result.getValue(), "Policy DTO should not be null");
+        }
+
+        @Test
+        @DisplayName("Should return null when event has no discount policy")
+        void shouldReturnNullWhenNoEventPolicy() {
+            // Arrange
+            setupValidAuth(VALID_TOKEN, ADMIN_EMAIL);
+            when(eventRepository.findByID(String.valueOf(1)))
+                    .thenReturn(testEvent);
+
+            // Act
+            Result<DiscountPolicyDTO> result = discountPolicyService.getEventDiscountPolicy(
+                    VALID_TOKEN,
+                    1
+            );
+
+            // Assert
+            assertTrue(result.isSuccess(), "Result should be successful");
+            assertNull(result.getValue(), "Policy DTO should be null when no policy exists");
+        }
+    }
 }
