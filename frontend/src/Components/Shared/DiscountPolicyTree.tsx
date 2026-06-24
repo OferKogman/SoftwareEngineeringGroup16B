@@ -5,12 +5,13 @@ import type {
   AndDTO,
   DiscountPolicyDTO,
   EndDateDTO,
-  MaxDTO,
   MaxAmountDTO,
-  StartDateDTO,
+  MaxDTO,
   MinAmountDTO,
   NullableDiscountPolicyDTO,
   OrDTO,
+  SimpleDTO,
+  StartDateDTO,
   SumDTO,
 } from "../../DTOs/DiscountPolicyDTO";
 
@@ -62,7 +63,11 @@ function buildTree(
   edges: PolicyEdge[],
   path: PolicyPath,
   onSwap: (path: PolicyPath) => void,
-  onChangeGoal: (path: PolicyPath, newGoal: number) => void,
+  onChangeGoal: (
+    path: PolicyPath,
+    newGoal: number | string | null,
+    percentage: number,
+  ) => void,
   onReplace: (path: PolicyPath, newPolicy: DiscountPolicyDTO) => void,
   onDelete: () => void,
 ): string {
@@ -81,6 +86,10 @@ function buildTree(
       type: "policy",
       data: {
         label: policy.type,
+        percentage:
+          policy.type === "MAX" || policy.type === "SUM"
+            ? 0
+            : policy.percentage,
         type: policy.type,
         path,
         onSwap,
@@ -159,6 +168,10 @@ function buildTree(
       label = `Max Tickets: ${(policy as MaxAmountDTO).maxAmount}`;
       break;
 
+    case "SIMPLE":
+      label = `Simple Policy: ${(policy as SimpleDTO).percentage}%`;
+      break;
+
     default:
       label = "Create policy";
   }
@@ -179,6 +192,7 @@ function buildTree(
       onChangeGoal,
       onReplace,
       onDelete,
+      percentage: policy?.percentage || 0,
     },
   });
 
@@ -188,7 +202,11 @@ function buildTree(
 function createFlow(
   policy: NullableDiscountPolicyDTO,
   onSwap: (path: PolicyPath) => void,
-  onChangeGoal: (path: PolicyPath, newGoal: number) => void,
+  onChangeGoal: (
+    path: PolicyPath,
+    newGoal: number | string | null,
+    percentage: number,
+  ) => void,
   onReplace: (path: PolicyPath, newPolicy: DiscountPolicyDTO) => void,
   onDelete: () => void,
 ) {
@@ -206,6 +224,7 @@ function createFlow(
       type: "policy",
       data: {
         label: "Create a policy",
+        percentage: 0,
         type: "NONE",
         path: [],
         onSwap,
@@ -279,21 +298,42 @@ function swapPolicyAtPath(
 function changeGoalAtPath(
   policy: DiscountPolicyDTO,
   path: PolicyPath,
-  newGoal: number | string,
+  newGoal: number | string | null,
+  percentageValues: number,
 ): DiscountPolicyDTO {
   if (path.length === 0) {
     switch (policy.type) {
+      case "SIMPLE":
+      case "AND":
+      case "OR":
+        return { ...policy, percentage: percentageValues };
       case "MIN_DATE":
-        return { ...policy, startDate: String(newGoal) };
+        return {
+          ...policy,
+          startDate: String(newGoal),
+          percentage: percentageValues,
+        };
 
       case "MAX_DATE":
-        return { ...policy, endDate: String(newGoal) };
+        return {
+          ...policy,
+          endDate: String(newGoal),
+          percentage: percentageValues,
+        };
 
       case "MIN_TICKETS":
-        return { ...policy, minAmount: Number(newGoal) };
+        return {
+          ...policy,
+          minAmount: Number(newGoal),
+          percentage: percentageValues,
+        };
 
       case "MAX_TICKETS":
-        return { ...policy, maxAmount: Number(newGoal) };
+        return {
+          ...policy,
+          maxAmount: Number(newGoal),
+          percentage: percentageValues,
+        };
 
       default:
         return policy;
@@ -308,8 +348,8 @@ function changeGoalAtPath(
     ...policy,
     [head]:
       head === "left"
-        ? changeGoalAtPath(policy.left, rest, newGoal)
-        : changeGoalAtPath(policy.right, rest, newGoal),
+        ? changeGoalAtPath(policy.left, rest, newGoal, percentageValues)
+        : changeGoalAtPath(policy.right, rest, newGoal, percentageValues),
   };
 }
 
@@ -354,11 +394,15 @@ export default function DiscountPolicyTree({ policy, onSave }: Props) {
     });
   }
 
-  function changeGoal(path: PolicyPath, goal: number | string) {
+  function changeGoal(
+    path: PolicyPath,
+    goal: number | string | null,
+    percentageValues: number,
+  ) {
     setCurrentPolicy((prev) => {
       if (!prev) return prev;
 
-      return changeGoalAtPath(prev, path, goal);
+      return changeGoalAtPath(prev, path, goal, percentageValues);
     });
   }
 
