@@ -45,7 +45,7 @@ public class FieldSeg extends Segment {
 		return size;
 	}
 
-	protected int getStock(int eventID) {
+	public int getStock(int eventID) {
 		return stock.get(eventID);
 	}
 
