@@ -389,23 +389,42 @@ public class Venue {
         }
     }
 
-    public void setNewFieldStock(String segmentId, int newStock) {
+    public void setNewFieldStock(String segmentId, int newSize, List<Integer> eventIDsToUpdate) {
+
         Segment segment = segments.get(segmentId);
+
         if (segment == null) {
             throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
         }
-        if (segment instanceof FieldSeg fieldSeg) {
-            fieldSeg.setSize(newStock);
-        } else {
+
+        if (!(segment instanceof FieldSeg fieldSeg)) {
             throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a field segment");
         }
+
+        int oldSize = fieldSeg.getFieldSize();
+
+        for (Integer eventID : eventIDsToUpdate) {
+            int oldFreeStock = fieldSeg.getStock(eventID);
+            int reserved = oldSize - oldFreeStock;
+
+            if (reserved > newSize) {
+                throw new IllegalArgumentException(
+                        "Cannot set field segment " + segmentId +
+                        " size to " + newSize +
+                        " because event " + eventID +
+                        " has " + reserved + " reserved tickets."
+                );
+            }
+
+            fieldSeg.setStockForEvent(eventID, newSize - reserved);
+        }
+
+        fieldSeg.setSize(newSize);
     }
     public void addChosenSeatingSegment(ChosenSeatingSegRecord seatSeg) {
-        // TODO: if area cut any existing segments, throw exception
         this.segments.put(seatSeg.segmentID(), new ChosenSeatingSeg(seatSeg.segmentID(), seatSeg.seats(), new GridRectangle(seatSeg.area())));
     }
     public void addFieldSegment(FieldSegRecord fieldSeg) {
-        // TODO: if area cut any existing segments, throw exception 
         this.segments.put(fieldSeg.segmentID(), new FieldSeg(fieldSeg.segmentID(), fieldSeg.size(), new GridRectangle(fieldSeg.area())));
     }
     public void validateCompanyID(int companyID) {

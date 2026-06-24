@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -98,11 +99,7 @@ public class ReserveService {
             validateLottery(event, lotteryCode);
 
             logger.info("ReserveService.reserveSeats: Moving queue forward");
-            q = queueImp.findByID(Integer.toString(eventID));
-            q.addToQueue(subjectID);
-            logger.info("ReserveService.reserveSeats: Checking if user passed queue");
-
-            q.validateUserPassedQueue(subjectID);
+            joinQueueSafely(q, eventID, subjectID);
 
             logger.info("ReserveService.reserveSeats: {} is passed the queue", subjectID);
             // 3. System - validates selected seats exist.
@@ -187,6 +184,24 @@ public class ReserveService {
         }
     }
 
+    @Transactional
+    public VirtualQueue joinQueueSafely(VirtualQueue q, int eventID, String subjectID) {
+        q = queueImp.findByID(Integer.toString(eventID));
+        q.addToQueue(subjectID);
+        logger.info("ReserveService.joinQueueSafely: Checking if user passed queue");
+
+        try {
+            q.validateUserPassedQueue(subjectID);
+            q.removePassed(subjectID);   
+        } catch (Exception e) {
+            q.removePassed(subjectID); 
+            queueImp.save(q); 
+            throw e; 
+        }
+        queueImp.save(q);
+        return q;
+    }
+
     public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId,
             String lotteryCode, String sessionToken) {
         String subjectID = null;
@@ -216,10 +231,7 @@ public class ReserveService {
             validateLottery(event, lotteryCode);
 
             logger.info("ReserveService.reserveFieldSeats: Moving queue forward");
-            q = queueImp.findByID(Integer.toString(eventID));
-            q.addToQueue(subjectID);
-            logger.info("ReserveService.reserveFieldSeats: Checking if user passed queue");
-            q.validateUserPassedQueue(subjectID);
+            joinQueueSafely(q, eventID, subjectID);
             logger.info("ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
 
             validatePurchasePolicy(eventID, amount, sessionToken);
@@ -296,6 +308,7 @@ public class ReserveService {
         }
     }
 
+    @Transactional
     public Result<Integer> getPositionInQueueForEvent(int eventID) {
         try {
             String subjectID = validateUserOrGuestAndGetSubjectId();
@@ -387,6 +400,7 @@ public class ReserveService {
         }
     }
 
+    @Transactional
     private void queueRemovePassed(VirtualQueue q, String subjectID) {
         if (q == null || subjectID == null) {
             return;
