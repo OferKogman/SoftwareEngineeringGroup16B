@@ -1,9 +1,17 @@
 package com.group16b.ApplicationLayer.DTOs;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
-import java.util.Set;
 
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.AndDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.MaxDateDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.MaxDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.MaxTicketsDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.MinDateDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.MinTicketsDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.OrDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.SimpleDiscountDTO;
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.SumDiscountDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.AndDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxAgeDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxTicketsDTO;
@@ -23,7 +31,7 @@ public class EventDTO {
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
-	private final Set<DiscountPolicyDTO> discountPolicy;
+	private final DiscountPolicyDTO discountPolicy;
 	private final PurchasePolicyDTO purchasePolicy;
 	private double price;
 	private double rating;
@@ -40,10 +48,24 @@ public class EventDTO {
 		artist = event.getEventArtist();
 		category = event.getEventCategory();
 		productionCompanyID = event.getEventProductionCompanyID();
-		discountPolicy = new HashSet<>();
-		for (var policy : event.getEventDiscountPolicy()) {
-			discountPolicy.add(new DiscountPolicyDTO(policy));
-		}
+		discountPolicy = new SumDiscountDTO(
+				new MaxDiscountDTO(
+						new AndDiscountDTO(
+								new MinTicketsDiscountDTO(
+										10.0,
+										3),
+								new MaxDateDiscountDTO(15.0,
+										LocalDateTime.of(2026, 12, 31, 23, 59)),
+								5.0),
+						new OrDiscountDTO(
+								new MaxTicketsDiscountDTO(
+										12.0,
+										20),
+								new MinDateDiscountDTO(8.0,
+										LocalDateTime.of(2026, 1, 1, 0, 0)),
+								7.5)),
+				new SimpleDiscountDTO(
+						5.0));
 		purchasePolicy = new AndDTO(new OrDTO(new AndDTO(new MinAgeDTO(
 				55), new MaxTicketsDTO(5)), new MaxAgeDTO(18)),
 				new OrDTO(new MinTicketsDTO(10), new MaxTicketsDTO(2)));
@@ -89,7 +111,7 @@ public class EventDTO {
 		return this.productionCompanyID;
 	}
 
-	public Set<DiscountPolicyDTO> getEventDiscountPolicy() {
+	public DiscountPolicyDTO getEventDiscountPolicy() {
 		return this.discountPolicy;
 	}
 

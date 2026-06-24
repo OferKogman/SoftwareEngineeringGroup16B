@@ -2,6 +2,7 @@ package com.group16b.ApplicationLayer.DTOs;
 
 import java.util.List;
 
+import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.PurchasePolicyDTO;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 
@@ -14,6 +15,7 @@ public class ProductionCompanyDTO {
 
     private List<HierarchyNodeDTO> members;
     private PurchasePolicyDTO purchasePolicy;
+    private DiscountPolicyDTO discountPolicy;
 
     public ProductionCompanyDTO(ProductionCompany company) {
         this.id = company.getProductionCompanyID();
@@ -22,6 +24,7 @@ public class ProductionCompanyDTO {
         this.founderID = company.getFounderID();
         this.members = company.getHierarchyTree(founderID).stream().map(HierarchyNodeDTO::new).toList();
         this.purchasePolicy = null;
+        this.discountPolicy = null;
     }
 
     public int getId() {
@@ -46,5 +49,9 @@ public class ProductionCompanyDTO {
 
     public PurchasePolicyDTO getPurchasePolicy() {
         return purchasePolicy;
+    }
+
+    public DiscountPolicyDTO getDiscountPolicy() {
+        return discountPolicy;
     }
 }

@@ -1,6 +1,6 @@
 package com.group16b.ApplicationLayer.DTOs.PurchasePolicy;
 
-import com.group16b.ApplicationLayer.Objects.PurchasePolicyTypes;
+import com.group16b.ApplicationLayer.Enums.PurchasePolicyTypes;
 
 public class AndDTO extends PurchasePolicyDTO {
     private PurchasePolicyDTO left;

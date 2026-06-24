@@ -1,56 +1,93 @@
-export interface DefaultDiscountPolicyDTO {
-  type: string;
+export type DiscountPolicyTypes =
+  | "SIMPLE"
+  | "AND"
+  | "OR"
+  | "SUM"
+  | "MAX"
+  | "MIN_DATE"
+  | "MAX_DATE"
+  | "MIN_TICKETS"
+  | "MAX_TICKETS";
+
+export interface IDiscountPolicyDTO {
+  type: DiscountPolicyTypes;
 }
 
-export type CompositeDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Composite";
-  leftPolicy?: DiscountPolicyDTO;
-  rightPolicy?: DiscountPolicyDTO;
-  operator: "AND" | "OR";
-};
-
-export type SimpleDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Regular";
+export type SimpleDTO = IDiscountPolicyDTO & {
+  type: "SIMPLE";
   percentage: number;
 };
 
-export type EarlyBirdDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Early Bird";
+export type OrDTO = IDiscountPolicyDTO & {
+  type: "OR";
+
+  left: DiscountPolicyDTO;
+  right: DiscountPolicyDTO;
   percentage: number;
-  earlyBirdEndDate: string;
 };
 
-export type LastMinuteDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Last Minute";
+export type AndDTO = IDiscountPolicyDTO & {
+  type: "AND";
+
+  left: DiscountPolicyDTO;
+  right: DiscountPolicyDTO;
   percentage: number;
-  lastMinuteStartDate: string;
 };
 
-export type MinimumPurchaseDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Minimum Purchase";
+export type StartDateDTO = IDiscountPolicyDTO & {
+  type: "MIN_DATE";
+  startDate: string;
   percentage: number;
-  minimumAmount: number;
 };
 
-export type MaximumPurchaseDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Maximum Purchase";
+export type EndDateDTO = IDiscountPolicyDTO & {
+  type: "MAX_DATE";
+  endDate: string;
   percentage: number;
-  maximumAmount: number;
 };
 
-export type CouponCodeDiscountPolicyDTO = DefaultDiscountPolicyDTO & {
-  type: "Coupon Code";
+export type MinAmountDTO = IDiscountPolicyDTO & {
+  type: "MIN_TICKETS";
+  minAmount: number;
   percentage: number;
-  code: string;
-  expirationDate: string;
+};
+
+export type MaxAmountDTO = IDiscountPolicyDTO & {
+  type: "MAX_TICKETS";
+  maxAmount: number;
+  percentage: number;
+};
+
+export type SumDTO = IDiscountPolicyDTO & {
+  type: "SUM";
+  left: DiscountPolicyDTO;
+  right: DiscountPolicyDTO;
+};
+
+export type MaxDTO = IDiscountPolicyDTO & {
+  type: "MAX";
+  left: DiscountPolicyDTO;
+  right: DiscountPolicyDTO;
 };
 
 export type DiscountPolicyDTO =
-  | CompositeDiscountPolicyDTO
-  | SimpleDiscountPolicyDTO
-  | EarlyBirdDiscountPolicyDTO
-  | LastMinuteDiscountPolicyDTO
-  | MinimumPurchaseDiscountPolicyDTO
-  | MaximumPurchaseDiscountPolicyDTO
-  | CouponCodeDiscountPolicyDTO
-  | null;
+  | SimpleDTO
+  | OrDTO
+  | AndDTO
+  | StartDateDTO
+  | EndDateDTO
+  | MinAmountDTO
+  | MaxAmountDTO
+  | SumDTO
+  | MaxDTO;
+
+export type SimpleDiscountPolicyTypes =
+  | "MIN_DATE"
+  | "MAX_DATE"
+  | "MIN_TICKETS"
+  | "MAX_TICKETS"
+  | "SIMPLE";
+
+export type CompositeDiscountPolicyTypes = "OR" | "AND" | "SUM" | "MAX";
+
+export type NullableDiscountPolicyDTO = DiscountPolicyDTO | null;

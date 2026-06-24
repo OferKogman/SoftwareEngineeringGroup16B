@@ -11,8 +11,8 @@ import java.util.Set;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
-import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
+import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
 
 import jakarta.persistence.CascadeType;
@@ -49,15 +49,15 @@ public class ProductionCompany {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "production_company_id")
     @MapKey(name = "userID")
-    private final HashMap<String, MembershipNode> membersNodes = new HashMap<>();
+    private final Map<String, MembershipNode> membersNodes = new HashMap<>();
 
     @Convert(converter = InvitesConverter.class)
     @Column(name = "invites", columnDefinition = "TEXT")
-    private final HashMap<InviteKey, MembershipNode> invites = new HashMap<>();
+    private final Map<InviteKey, MembershipNode> invites = new HashMap<>();
 
     @Convert(converter = ChildrenByUserConverter.class)
     @Column(name = "children_by_user", columnDefinition = "TEXT")
-    private final HashMap<String, Set<String>> childrenByUser = new HashMap<>();
+    private final Map<String, Set<String>> childrenByUser = new HashMap<>();
 
     // TODO: purchasePolicies and discountPolicies need annotations once rewritten
     @Transient
@@ -65,46 +65,42 @@ public class ProductionCompany {
     @Transient
     private final Set<DiscountPolicy> discountPolicies = new HashSet<>();
 
-    protected ProductionCompany() {}
+    protected ProductionCompany() {
+    }
 
-    public ProductionCompany(ProductionCompany other)
-    {
-        this.productionCompanyID=other.productionCompanyID;
-        this.rating=other.rating;
-        this.version=other.version;
-        this.name=other.name;
-        this.founderID=other.founderID;
+    public ProductionCompany(ProductionCompany other) {
+        this.productionCompanyID = other.productionCompanyID;
+        this.rating = other.rating;
+        this.version = other.version;
+        this.name = other.name;
+        this.founderID = other.founderID;
         for (Entry<String, MembershipNode> entry : other.membersNodes.entrySet()) {
             this.membersNodes.put(
                     entry.getKey(),
-                    new MembershipNode(entry.getValue())
-            );
+                    new MembershipNode(entry.getValue()));
         }
         for (Map.Entry<InviteKey, MembershipNode> entry : other.invites.entrySet()) {
             this.invites.put(
                     new InviteKey(entry.getKey()),
-                    new MembershipNode(entry.getValue())
-            );
+                    new MembershipNode(entry.getValue()));
         }
         for (Map.Entry<String, Set<String>> entry : other.childrenByUser.entrySet()) {
             this.childrenByUser.put(
-                entry.getKey(),
-                new HashSet<>(entry.getValue())
-            );
+                    entry.getKey(),
+                    new HashSet<>(entry.getValue()));
         }
 
         this.purchasePolicies.addAll(other.purchasePolicies);
         this.discountPolicies.addAll(other.discountPolicies);
     }
 
-    public ProductionCompany(int id, String name, double rating, String founderID)
-    {
-        this.name=normalizeCompanyName(name);
-        this.rating=rating;
-        this.productionCompanyID=id;
-        this.version=1;
-        this.founderID= founderID;
-        this.membersNodes.put(founderID,MembershipNode.createFounder(founderID));
+    public ProductionCompany(int id, String name, double rating, String founderID) {
+        this.name = normalizeCompanyName(name);
+        this.rating = rating;
+        this.productionCompanyID = id;
+        this.version = 1;
+        this.founderID = founderID;
+        this.membersNodes.put(founderID, MembershipNode.createFounder(founderID));
     }
 
     private String normalizeCompanyName(String name) {
@@ -121,9 +117,8 @@ public class ProductionCompany {
         return trimmed;
     }
 
-    public static ProductionCompany createNewCompany(String name, String founderID, int id)
-    {
-        return new ProductionCompany(id,name,0.0,founderID);
+    public static ProductionCompany createNewCompany(String name, String founderID, int id) {
+        return new ProductionCompany(id, name, 0.0, founderID);
     }
 
     public int getProductionCompanyID() {
@@ -134,29 +129,24 @@ public class ProductionCompany {
         return rating;
     }
 
-    public String getName()
-    {
+    public String getName() {
         return name;
     }
 
-    public String getFounderID()
-    {
+    public String getFounderID() {
         return founderID;
     }
 
-    public void setName(String name)
-    {
-        this.name=name;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public long getVersion()
-    {
+    public long getVersion() {
         return version;
     }
 
-    public void setVersion(long version)
-    {
-        this.version=version;
+    public void setVersion(long version) {
+        this.version = version;
     }
 
     public Set<DiscountPolicy> getDiscountPolicy() {
@@ -167,64 +157,53 @@ public class ProductionCompany {
         return new HashSet<>(purchasePolicies);
     }
 
-    public boolean isFounder(String userID)
-    {
-        MembershipNode node=membersNodes.get(userID);
-        if(node!=null && node.getRoleType()==RoleType.FOUNDER)
+    public boolean isFounder(String userID) {
+        MembershipNode node = membersNodes.get(userID);
+        if (node != null && node.getRoleType() == RoleType.FOUNDER)
             return true;
         return false;
     }
 
-    public boolean isOwner(String userID)
-    {
-        MembershipNode node=membersNodes.get(userID);
-        if(node==null || node.getRoleType() == RoleType.MANAGER)
+    public boolean isOwner(String userID) {
+        MembershipNode node = membersNodes.get(userID);
+        if (node == null || node.getRoleType() == RoleType.MANAGER)
             return false;
         return true;
     }
 
-    public boolean isManager(String userID)
-    {
-        MembershipNode node=membersNodes.get(userID);
-        if(node==null)
+    public boolean isManager(String userID) {
+        MembershipNode node = membersNodes.get(userID);
+        if (node == null)
             return false;
         return true;
     }
 
-    public void AssignOwner(String callerID, String targetID)
-    {
-        if(!isOwner(callerID))
-        {
+    public void AssignOwner(String callerID, String targetID) {
+        if (!isOwner(callerID)) {
             throw new IllegalArgumentException("caller User is not owner in Assign Owner.");
         }
-        if(isOwner(targetID))
-        {
+        if (isOwner(targetID)) {
             throw new IllegalArgumentException("Target " + targetID + " is already an owner of the company.");
         }
         MembershipNode newOnwerInvite = MembershipNode.createOwner(targetID, callerID);
         invites.put(new InviteKey(targetID, callerID), newOnwerInvite);
     }
 
-    public void AssignManager(String callerID, String targetID,Set<ManagerPermissions> perms)
-    {
-        if(!isOwner(callerID))
-        {
+    public void AssignManager(String callerID, String targetID, Set<ManagerPermissions> perms) {
+        if (!isOwner(callerID)) {
             throw new IllegalArgumentException("caller User is not owner in Assign Manager.");
         }
-        if(isManager(targetID))
-        {
+        if (isManager(targetID)) {
             throw new IllegalArgumentException("Target " + targetID + " is already a manager of the company.");
         }
-        if(perms==null || perms.isEmpty())
-        {
+        if (perms == null || perms.isEmpty()) {
             throw new IllegalArgumentException("Manager must have at least one permission.");
         }
-        MembershipNode newManagerInvite = MembershipNode.createManager(targetID, callerID,perms);
+        MembershipNode newManagerInvite = MembershipNode.createManager(targetID, callerID, perms);
         invites.put(new InviteKey(targetID, callerID), newManagerInvite);
     }
 
-    public void acceptInvite(String targetID, String assignerID) 
-    {
+    public void acceptInvite(String targetID, String assignerID) {
         InviteKey key = new InviteKey(targetID, assignerID);
         MembershipNode invite = invites.get(key);
 
@@ -232,10 +211,9 @@ public class ProductionCompany {
             throw new IllegalArgumentException("Invite not found.");
         }
         MembershipNode curRole = membersNodes.get(targetID);
-        if(curRole!=null)
-        {
+        if (curRole != null) {
             String parentID = curRole.getAssignerID();
-            if(parentID!=null)
+            if (parentID != null)
                 childrenByUser.get(parentID).remove(targetID);
         }
         membersNodes.put(targetID, invite);
@@ -243,14 +221,11 @@ public class ProductionCompany {
 
         RoleType acceptedRole = invite.getRoleType();
 
-        invites.entrySet().removeIf(e ->
-            e.getKey().targetId.equals(targetID) &&
-            e.getValue().getRoleType().isLowerOrEqual(acceptedRole)
-        );
+        invites.entrySet().removeIf(e -> e.getKey().targetId.equals(targetID) &&
+                e.getValue().getRoleType().isLowerOrEqual(acceptedRole));
     }
 
-    public void rejectInvite(String targetID, String assignerID) 
-    {
+    public void rejectInvite(String targetID, String assignerID) {
         InviteKey key = new InviteKey(targetID, assignerID);
 
         if (!invites.containsKey(key)) {
@@ -260,35 +235,29 @@ public class ProductionCompany {
         invites.remove(key);
     }
 
-    public void forfeitOwnership(String userID)
-    {
-        if(!isOwner(userID))
-        {
+    public void forfeitOwnership(String userID) {
+        if (!isOwner(userID)) {
             throw new IllegalArgumentException("User " + userID + " is not owner in forfeit Ownership");
         }
-        if(isFounder(userID))
-        {
+        if (isFounder(userID)) {
             throw new IllegalArgumentException("Founder cannot forfeit ownership in his company.");
         }
         removeMember(userID);
     }
 
-    public void removeMemberByOwner(String ownerID, String targetID)
-    {
+    public void removeMemberByOwner(String ownerID, String targetID) {
         canOwnerManageTarget(ownerID, targetID);
         removeMember(targetID);
     }
 
-    public void updatePermissionsOfManager(String ownerID, String targetID, Set<ManagerPermissions> newPerms)
-    {
+    public void updatePermissionsOfManager(String ownerID, String targetID, Set<ManagerPermissions> newPerms) {
         canOwnerManageTarget(ownerID, targetID);
         MembershipNode targetNode = membersNodes.get(targetID);
         targetNode.setPermissions(newPerms);
     }
 
-    public List<HierarchyNodeData> getHierarchyTree(String requesterID)
-    {
-        if(!isOwner(requesterID)) {
+    public List<HierarchyNodeData> getHierarchyTree(String requesterID) {
+        if (!isOwner(requesterID)) {
             throw new IllegalArgumentException("Requester is not owner.");
         }
         List<HierarchyNodeData> result = new ArrayList<>();
@@ -298,35 +267,31 @@ public class ProductionCompany {
                     entry.getKey(),
                     node.getAssignerID(),
                     node.getRoleType(),
-                    node.getPermissions()
-            ));
+                    node.getPermissions()));
         }
         return result;
     }
 
-    public Set<ManagerPermissions> getUserPermissions(String userID)
-    {
-        MembershipNode node=membersNodes.get(userID);
-        if(node==null)
-            throw new IllegalArgumentException("User "+userID+" is not part of the company.");
+    public Set<ManagerPermissions> getUserPermissions(String userID) {
+        MembershipNode node = membersNodes.get(userID);
+        if (node == null)
+            throw new IllegalArgumentException("User " + userID + " is not part of the company.");
         return node.getPermissions();
     }
 
-    public void validateUserPermissions(String userID, RoleType type)
-    {
-        MembershipNode node=membersNodes.get(userID);
-        if(node==null || node.getRoleType().isLowerOrEqual(type) && !(node.getRoleType().equals(type)))
-        {
-            throw new IllegalArgumentException("user "+userID+" dont have high enough permissions in company "+this.productionCompanyID);
+    public void validateUserPermissions(String userID, RoleType type) {
+        MembershipNode node = membersNodes.get(userID);
+        if (node == null || node.getRoleType().isLowerOrEqual(type) && !(node.getRoleType().equals(type))) {
+            throw new IllegalArgumentException(
+                    "user " + userID + " dont have high enough permissions in company " + this.productionCompanyID);
         }
     }
 
-    public void validateUserPermissions(String userID, ManagerPermissions perm)
-    {
-        MembershipNode node=membersNodes.get(userID);
-        if(node==null || !(node.getPermissions().contains(perm)))
-        {
-            throw new IllegalArgumentException("user "+userID+" dont have correct permissions in company "+this.productionCompanyID);
+    public void validateUserPermissions(String userID, ManagerPermissions perm) {
+        MembershipNode node = membersNodes.get(userID);
+        if (node == null || !(node.getPermissions().contains(perm))) {
+            throw new IllegalArgumentException(
+                    "user " + userID + " dont have correct permissions in company " + this.productionCompanyID);
         }
     }
 
@@ -343,8 +308,7 @@ public class ProductionCompany {
         }
     }
 
-    public List<String> getOwnershipDescendants(String userID)
-    {
+    public List<String> getOwnershipDescendants(String userID) {
         List<String> result = new ArrayList<>();
         collectOwnershipDescendants(userID, result);
         return result;
@@ -360,12 +324,10 @@ public class ProductionCompany {
         }
     }
 
-    private boolean isAssignedByOwner(String ownerID, String targetID)
-    {
+    private boolean isAssignedByOwner(String ownerID, String targetID) {
         MembershipNode current = membersNodes.get(targetID);
 
-        while (current.getAssignerID() != null)
-        {
+        while (current.getAssignerID() != null) {
             String assignerID = current.getAssignerID();
 
             if (assignerID.equals(ownerID)) {
@@ -378,11 +340,11 @@ public class ProductionCompany {
         return false;
     }
 
-    private void removeMember(String userID)
-    {
+    private void removeMember(String userID) {
         MembershipNode node = membersNodes.get(userID);
 
-        if (node == null) return;
+        if (node == null)
+            return;
 
         String parentID = node.getAssignerID();
         childrenByUser.get(parentID).remove(userID);
@@ -399,13 +361,10 @@ public class ProductionCompany {
         childrenByUser.remove(userID);
         membersNodes.remove(userID);
 
-        invites.entrySet().removeIf(e ->
-            e.getKey().targetId.equals(userID) || e.getKey().assignerId.equals(userID)
-        );
+        invites.entrySet().removeIf(e -> e.getKey().targetId.equals(userID) || e.getKey().assignerId.equals(userID));
     }
 
-    private void canOwnerManageTarget(String ownerID, String targetID)
-    {
+    private void canOwnerManageTarget(String ownerID, String targetID) {
         if (!isOwner(ownerID)) {
             throw new IllegalArgumentException("Caller is not an owner.");
         }
@@ -420,8 +379,7 @@ public class ProductionCompany {
         }
     }
 
-    public void adminRemoveUser(String userID)
-    {
+    public void adminRemoveUser(String userID) {
         removeMember(userID);
     }
 
@@ -453,11 +411,13 @@ public class ProductionCompany {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof InviteKey)) return false;
+            if (this == o)
+                return true;
+            if (!(o instanceof InviteKey))
+                return false;
             InviteKey other = (InviteKey) o;
             return targetId.equals(other.targetId) &&
-                   assignerId.equals(other.assignerId);
+                    assignerId.equals(other.assignerId);
         }
 
         @Override
@@ -468,54 +428,47 @@ public class ProductionCompany {
 
     public boolean hasPendingInvite(String userID) {
         return invites.keySet()
-                    .stream()
-                    .anyMatch(k -> k.targetId.equals(userID));
+                .stream()
+                .anyMatch(k -> k.targetId.equals(userID));
     }
 
-    public boolean hasPendingInvite(String targetID,String assignerID)
-    {
+    public boolean hasPendingInvite(String targetID, String assignerID) {
         return invites.containsKey(
-            new InviteKey(targetID, assignerID)
-        );
+                new InviteKey(targetID, assignerID));
     }
 
-    public boolean hasPendingOwnerInvite(String targetID,String assignerID) {
-        MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
+    public boolean hasPendingOwnerInvite(String targetID, String assignerID) {
+        MembershipNode node = invites.get(new InviteKey(targetID, assignerID));
         return node != null && node.getRoleType() == RoleType.OWNER;
     }
 
-    public boolean hasPendingManagerInvite(String targetID,String assignerID, Set<ManagerPermissions> perms) {
-        MembershipNode node =invites.get(new InviteKey(targetID, assignerID));
+    public boolean hasPendingManagerInvite(String targetID, String assignerID, Set<ManagerPermissions> perms) {
+        MembershipNode node = invites.get(new InviteKey(targetID, assignerID));
         return node != null && node.getRoleType() == RoleType.MANAGER && node.getPermissions().equals(perms);
     }
 
-    public Set<String> getDirectSubordinates(String userID)
-    {
+    public Set<String> getDirectSubordinates(String userID) {
         return childrenByUser.getOrDefault(userID, Set.of());
     }
 
-    public boolean isDirectSubordinate(String parentID, String childID)
-    {
+    public boolean isDirectSubordinate(String parentID, String childID) {
         return childrenByUser.getOrDefault(parentID, Set.of()).contains(childID);
     }
 
-    public boolean areDirectSubordinates(String parentID, Set<String> childIDs)
-    {
+    public boolean areDirectSubordinates(String parentID, Set<String> childIDs) {
         Set<String> directSubs = childrenByUser.getOrDefault(parentID, Set.of());
         return childIDs.stream().allMatch(directSubs::contains);
     }
 
-    public boolean hasManagerWithPermissions(String userID, Set<ManagerPermissions> perms)
-    {
+    public boolean hasManagerWithPermissions(String userID, Set<ManagerPermissions> perms) {
         MembershipNode node = membersNodes.get(userID);
-        if(node==null || node.getRoleType() != RoleType.MANAGER)
+        if (node == null || node.getRoleType() != RoleType.MANAGER)
             return false;
         return node.getPermissions().containsAll(perms);
     }
 
-    public boolean hasOutgoingInvites(String userID)
-    {
-        return invites.keySet().stream().anyMatch(k->k.assignerId.equals(userID));
+    public boolean hasOutgoingInvites(String userID) {
+        return invites.keySet().stream().anyMatch(k -> k.assignerId.equals(userID));
     }
 
     public void addPurchasePolicy(PurchasePolicy pp) {
