@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static org.slf4j.LoggerFactory.getLogger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,28 +20,31 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.Order;
-import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.InfrastructureLayer.Database.OrderRepository;
+import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
+import com.group16b.InfrastructureLayer.Database.UserRepository;
 
 import io.jsonwebtoken.JwtException;
 
 @Service
 public class UserService {
-    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+    private static final Logger logger = getLogger(UserService.class);
 
-    private final IRepository<Order> orderRepo;
+    private final OrderRepository orderRepo;
     private final IRepository<Venue> venueRepo;
     private final IEventRepository eventRepo;
-    private final IProductionCompanyRepository productionCompanyRepository;
-    private final IRepository<User> userRepo;
+    private final ProductionCompanyRepository productionCompanyRepository;
+    private final UserRepository userRepo;
     private final ITicketGateway ticketGateway;
 
     private final IAuthenticationService authenticationService;
 
     public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway,
-            IRepository<Venue> venueRepo, IRepository<User> userRepo, IRepository<Order> orderRepo,
-            IEventRepository eventRepo, IProductionCompanyRepository productionCompanyRepository) {
+            IRepository<Venue> venueRepo, UserRepository userRepo, OrderRepository orderRepo,
+            IEventRepository eventRepo, ProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
         this.ticketGateway = ticketGateway;
         this.venueRepo = venueRepo;
@@ -57,7 +60,7 @@ public class UserService {
         try {
             logger.info("UserService.regeisterUser: Attempting to create new User with email: " + email);
             try {
-                userRepo.findByID(email);
+                userRepo.findById(email);
 
                 // if the line above DOES NOT throw an error, it means the user exists and we
                 // must fail.
@@ -97,8 +100,9 @@ public class UserService {
                 return Result.makeFail("Invalid token for user update password");
             }
 
-            // test if token is valid and if there is a user with id from token in one line
-            User user = userRepo.findByID(authenticationService.extractSubjectFromToken(sessionToken));
+
+            User user = userRepo.findById(authenticationService.extractSubjectFromToken(sessionToken))
+                .orElseThrow(() -> new IllegalArgumentException("User with ID " + authenticationService.extractSubjectFromToken(sessionToken) + " not found."));
 
             logger.info("UserService.updateUserPassword: Delegating password change logic to User domain object.");
 
@@ -123,6 +127,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Result<List<OrderDTO>> getUserOrderHistory(String sessionToken) {
         try {
             logger.info("UserService.getUserOrderHistory: Extracting token subject and fetching User aggregate.");
@@ -139,11 +144,7 @@ public class UserService {
             String userId = authenticationService.extractSubjectFromToken(sessionToken);
             logger.info("UserService.getUserOrderHistory: Successfully fetched user. Retrieving order history.");
 
-            List<Order> orders = orderRepo.getAll();
-            orders = orders.stream()
-                    .filter(order -> order.isBelongsToSubject(userId))
-                    .filter(order -> !order.isActive())
-                    .collect(Collectors.toList());
+            List<Order> orders = orderRepo.findByUserIdAndActiveFalse(userId);
             List<OrderDTO> orderDTOs = orders.stream()
                     .map(order -> new OrderDTO(order))
                     .collect(Collectors.toList());
@@ -168,6 +169,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Result<ActiveOrderDTO> getUserActiveOrder(String sessionToken) {
         try {
             logger.info("UserService.getUserActiveOrder: Getting user's active order.");
@@ -175,11 +177,7 @@ public class UserService {
             logger.info("UserService.getUserActiveOrder: Extracting token subject and fetching User aggregate.");
             String userId = validateAndGetUserID(sessionToken);
 
-            List<Order> orders = orderRepo.getAll();
-            Order activeOrder = orders.stream()
-                    .filter(order -> order.isBelongsToSubject(userId))
-                    .filter(order -> order.isActive())
-                    .findFirst()
+            Order activeOrder = orderRepo.findFirstByUserIdAndActiveTrue(userId)
                     .orElse(null);
             if (activeOrder == null) {
                 return Result.makeFail("No active order found for user.");
@@ -206,19 +204,21 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Result<List<ProductionCompanyDTO>> getAllUserCompanies(String sessionToken) {
         try {
             logger.info("UserService.getAllUserCompanies: Extracting token subject and fetching User aggregate.");
             String userId = validateAndGetUserID(sessionToken);
             logger.info("UserService.getAllUserCompanies: Successfully fetched user. Retrieving companies.");
 
-            List<ProductionCompanyDTO> companies = productionCompanyRepository.getAll().stream()
-                    .filter(company -> company.isManager(userId))
-                    .map(company -> new ProductionCompanyDTO(company))
+            List<ProductionCompany> companies = productionCompanyRepository.findCompaniesManagedByUser(userId);
+
+            List<ProductionCompanyDTO> dtos = companies.stream()
+                    .map(ProductionCompanyDTO::new)
                     .collect(Collectors.toList());
 
             logger.info("UserService.getAllUserCompanies: Successfully retrieved companies.");
-            return Result.makeOk(companies);
+            return Result.makeOk(dtos);
         } catch (IllegalArgumentException e) {
             logger.warn("UserService.getAllUserCompanies: IllegalArgumentException: " + e.getMessage());
             return Result.makeFail(e.getMessage());
@@ -268,7 +268,9 @@ public class UserService {
         }
         String userID = authenticationService.extractSubjectFromToken(sessionToken);
         // verify user exists in the database, i.e not a stale user
-        userRepo.findByID(userID);
+        if (!userRepo.existsById(userID)) {
+             throw new IllegalArgumentException("User with ID " + userID + " not found.");
+        }
         return userID;
     }
 
