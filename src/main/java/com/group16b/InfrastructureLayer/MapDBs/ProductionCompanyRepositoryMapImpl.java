@@ -11,7 +11,6 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import org.springframework.stereotype.Repository;
 
-@Repository
 public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRepository {
 
     // source of truth
@@ -85,7 +84,6 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
                 return;
             }
 
-            // OPTIMISTIC LOCK CHECK
             if(current.getVersion() != company.getVersion()) {
                 throw new OptimisticLockingFailureException(
                     "Company " + id +
@@ -118,6 +116,18 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
         for (ProductionCompany company : companies.values()) {
             if (company.isManager(userID)) {
                 userCompanies.add(company.getProductionCompanyID());
+            }
+        }
+        
+        return userCompanies;
+    }
+
+    @Override
+    public List<ProductionCompany> findCompaniesManagedByUser(String userId) {
+        List<ProductionCompany> userCompanies = new ArrayList<>();
+        for (ProductionCompany company : companies.values()) {
+            if (company.isManager(userId)) {
+                userCompanies.add(company);
             }
         }
         

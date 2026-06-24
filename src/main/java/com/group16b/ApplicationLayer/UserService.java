@@ -19,13 +19,13 @@ import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.InfrastructureLayer.Database.OrderRepository;
 import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
-import com.group16b.InfrastructureLayer.Database.UserRepository;
 
 import io.jsonwebtoken.JwtException;
 
@@ -33,18 +33,18 @@ import io.jsonwebtoken.JwtException;
 public class UserService {
     private static final Logger logger = getLogger(UserService.class);
 
-    private final OrderRepository orderRepo;
+    private final IOrderRepository orderRepo;
     private final IRepository<Venue> venueRepo;
     private final IEventRepository eventRepo;
-    private final ProductionCompanyRepository productionCompanyRepository;
-    private final UserRepository userRepo;
+    private final IProductionCompanyRepository productionCompanyRepository;
+    private final IRepository<User> userRepo;
     private final ITicketGateway ticketGateway;
 
     private final IAuthenticationService authenticationService;
 
     public UserService(IAuthenticationService authenticationService, ITicketGateway ticketGateway,
-            IRepository<Venue> venueRepo, UserRepository userRepo, OrderRepository orderRepo,
-            IEventRepository eventRepo, ProductionCompanyRepository productionCompanyRepository) {
+            IRepository<Venue> venueRepo, IRepository<User> userRepo, IOrderRepository orderRepo,
+            IEventRepository eventRepo, IProductionCompanyRepository productionCompanyRepository) {
         this.authenticationService = authenticationService;
         this.ticketGateway = ticketGateway;
         this.venueRepo = venueRepo;
@@ -60,7 +60,7 @@ public class UserService {
         try {
             logger.info("UserService.regeisterUser: Attempting to create new User with email: " + email);
             try {
-                userRepo.findById(email);
+                userRepo.findByID(email);
 
                 // if the line above DOES NOT throw an error, it means the user exists and we
                 // must fail.
@@ -100,9 +100,7 @@ public class UserService {
                 return Result.makeFail("Invalid token for user update password");
             }
 
-
-            User user = userRepo.findById(authenticationService.extractSubjectFromToken(sessionToken))
-                .orElseThrow(() -> new IllegalArgumentException("User with ID " + authenticationService.extractSubjectFromToken(sessionToken) + " not found."));
+            User user = userRepo.findByID(authenticationService.extractSubjectFromToken(sessionToken));
 
             logger.info("UserService.updateUserPassword: Delegating password change logic to User domain object.");
 
@@ -177,8 +175,8 @@ public class UserService {
             logger.info("UserService.getUserActiveOrder: Extracting token subject and fetching User aggregate.");
             String userId = validateAndGetUserID(sessionToken);
 
-            Order activeOrder = orderRepo.findFirstByUserIdAndActiveTrue(userId)
-                    .orElse(null);
+            Order activeOrder = orderRepo.findFirstByUserIdAndActiveTrue(userId);
+                
             if (activeOrder == null) {
                 return Result.makeFail("No active order found for user.");
             }
@@ -267,10 +265,9 @@ public class UserService {
             throw new AuthException("Only users are allowed to perform operation");
         }
         String userID = authenticationService.extractSubjectFromToken(sessionToken);
-        // verify user exists in the database, i.e not a stale user
-        if (!userRepo.existsById(userID)) {
-             throw new IllegalArgumentException("User with ID " + userID + " not found.");
-        }
+        
+        userRepo.findByID(userID);
+        
         return userID;
     }
 

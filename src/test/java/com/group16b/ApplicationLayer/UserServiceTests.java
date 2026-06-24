@@ -20,7 +20,10 @@ import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
@@ -36,8 +39,8 @@ import com.group16b.InfrastructureLayer.TicketGateway;
 
 public class UserServiceTests {
 
-    private UserRepositoryMapImpl userRepo;
-    private OrderRepositoryMapImpl orderRepo;
+    private IRepository<User> userRepo;
+    private IOrderRepository orderRepo;
     private AuthenticationServiceJWTImpl authService;
     private UserService userService;
     private String sessionToken;
@@ -69,7 +72,7 @@ public class UserServiceTests {
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
         TicketGateway ticketGateway = new TicketGateway(new WsepClient(mock(RestTemplate.class)));
-        ProductionCompanyRepositoryMapImpl productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
+        IProductionCompanyRepository productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
         userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo, productionCompanyRepository);
 

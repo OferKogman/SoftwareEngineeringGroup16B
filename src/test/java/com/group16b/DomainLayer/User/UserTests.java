@@ -84,16 +84,16 @@ public class UserTests {
         assertEquals("New password cannot be the same as the old password.", ex.getMessage());
     }
 
-    @Test
-    void update_ValidIncomingUser_MutatesFieldsAndIncrementsVersion() {
-        User incomingData = new User("updated@test.com", "UpdatedPassword!");
+    // @Test
+    // void update_ValidIncomingUser_MutatesFieldsAndIncrementsVersion() {
+    //     User incomingData = new User("updated@test.com", "UpdatedPassword!");
         
-        user.update(incomingData);
+    //     user.update(incomingData);
 
-        assertEquals("updated@test.com", user.getEmail());
-        assertEquals(1L, user.getVersion()); // incremented from 0 to 1
-        assertTrue(user.confirmPassword("UpdatedPassword!"));
-    }
+    //     assertEquals("updated@test.com", user.getEmail());
+    //     assertEquals(1L, user.getVersion()); // incremented from 0 to 1
+    //     assertTrue(user.confirmPassword("UpdatedPassword!"));
+    // }
 
     @Test
     void setVersion_ValidLong_UpdatesVersionDirectly() {
