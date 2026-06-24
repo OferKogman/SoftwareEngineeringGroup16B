@@ -23,6 +23,8 @@ public class GridRectangle {
         this.rowCount = other.rowCount();
         this.columnCount = other.columnCount();
     }
+
+    protected GridRectangle(){;}
     
     public int getStartRow() {
         return startRow;

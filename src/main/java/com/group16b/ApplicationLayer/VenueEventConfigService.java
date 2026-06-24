@@ -371,7 +371,7 @@ public class VenueEventConfigService {
             // editing the segments with the new stock
             logger.info("VenueEventConfigService.editVenueSegments: Editing existing segments with new stock.");
             for (FieldSegRecord record : fieldSegmentsToEdit) {
-                venue.setNewFieldStock(record.segmentID(), record.size());
+                venue.setNewFieldStock(record.segmentID(), record.size(), futureEventsToRefund);
             }
 
             logger.info("VenueEventConfigService.editVenueSegments: Editing existing seating segments with new stock.");

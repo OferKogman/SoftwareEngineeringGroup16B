@@ -1,62 +1,98 @@
 package com.group16b.DomainLayer.VirtualQueue;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OrderColumn;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "virtual_queues")
 public class VirtualQueue {
-	private final List<String> queueLine;
-	private final Map<String, Long> passedQueue;
-	private final int id;
-	private final int pass_num;
-	private static final Integer PASS_NUM = 50;
-	private final Integer PASS_TIMEOUT = 60 * 10 * 1000;
 
-	public static final int PASSED_QUEUE = -1;
+    @Id
+    private int id; 
 
-	public VirtualQueue(int id) {
-		this(id, PASS_NUM);
-	}
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "virtual_queue_lines", joinColumns = @JoinColumn(name = "queue_id"))
+    @OrderColumn(name = "queue_position") 
+    @Column(name = "subject_id")
+    private List<String> queueLine = new LinkedList<>();
 
-	public VirtualQueue(int id, int pass_num) {
-		queueLine = new LinkedList<>();
-		this.id = id;
-		this.pass_num = pass_num;
-		this.passedQueue = new LinkedHashMap<>();
-	}
+    @ElementCollection(fetch = FetchType.LAZY)
+    @CollectionTable(name = "virtual_queue_passed", joinColumns = @JoinColumn(name = "queue_id"))
+    @MapKeyColumn(name = "subject_id")
+    @Column(name = "passed_time")
+    private Map<String, Long> passedQueue = new LinkedHashMap<>();
 
-	public VirtualQueue(VirtualQueue other) {
-		this.queueLine = new LinkedList<>(other.queueLine);
-		this.id = other.id;
-		this.passedQueue = new LinkedHashMap<>(other.passedQueue);
-		this.pass_num = other.pass_num;
-	}
+    private int pass_num; 
+    
+    private static final Integer PASS_NUM = 50;
+    private static int PASS_TIMEOUT = 60 * 10 * 1000;
 
-	public void addToQueue(String subjectID) {
-		popFirstIn();
-		if (queueLine.contains(subjectID) || passedQueue.containsKey(subjectID))
-			return;
-		queueLine.add(subjectID);
-		popFirstIn();
-	}
+    // add a package-private setter specifically for tests that dont necessairly use dbms
+    void setPassTimeoutForTest(int timeout) {
+        PASS_TIMEOUT = timeout;
+    }
+    public static final int PASSED_QUEUE = -1;
 
-	private void popFirstIn() {
-		if (queueLine.isEmpty()) {
-			return;
-		}
-		for (Map.Entry<String, Long> entry : passedQueue.entrySet()) {
-			long currentTime = System.currentTimeMillis();
-			if ((currentTime - entry.getValue()) > PASS_TIMEOUT) {
-				passedQueue.remove(entry.getKey());
-			} else {
-				break;
-			}
-		}
-		while (passedQueue.size() < pass_num && !queueLine.isEmpty()) {
-			passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
-		}
-	}
+    protected VirtualQueue() {}
+
+    public VirtualQueue(int id) {
+        this(id, PASS_NUM);
+    }
+
+    public VirtualQueue(int id, int pass_num) {
+        this.id = id;
+        this.pass_num = pass_num;
+    }
+
+    public VirtualQueue(VirtualQueue other) {
+        this.queueLine = new LinkedList<>(other.queueLine);
+        this.id = other.id;
+        this.passedQueue = new LinkedHashMap<>(other.passedQueue);
+        this.pass_num = other.pass_num;
+    }
+
+    public void addToQueue(String subjectID) {
+        popFirstIn();
+        if (queueLine.contains(subjectID) || passedQueue.containsKey(subjectID))
+            return;
+        queueLine.add(subjectID);
+        popFirstIn();
+    }
+
+    private void popFirstIn() {
+        if (queueLine.isEmpty()) {
+            return;
+        }
+        
+        long currentTime = System.currentTimeMillis();
+        Iterator<Map.Entry<String, Long>> iterator = passedQueue.entrySet().iterator();
+        while (iterator.hasNext()) {
+            Map.Entry<String, Long> entry = iterator.next();
+            if ((currentTime - entry.getValue()) > PASS_TIMEOUT) {
+                iterator.remove();
+            } else {
+                break;
+            }
+        }
+        
+        while (passedQueue.size() < pass_num && !queueLine.isEmpty()) {
+            passedQueue.put(queueLine.remove(0), System.currentTimeMillis());
+        }
+    }
 
 	public void removePassed(String subjectID) {
 		passedQueue.remove(subjectID);

@@ -73,8 +73,14 @@ export default function AppRoutes() {
         <Route path="show" element={<ViewEvent />} />
         <Route path="update-info" element={<EventUpdateForm />} />
         <Route path="lottery" element={<EventLottery />} />
-        <Route path="discount-policy" element={<EditDiscountPolicy />} />
-        <Route path="purchase-policy" element={<EditPurchasePolicy type="event" />} />
+        <Route
+          path="discount-policy"
+          element={<EditDiscountPolicy type="event" />}
+        />
+        <Route
+          path="purchase-policy"
+          element={<EditPurchasePolicy type="event" />}
+        />
         <Route path="inventory" element={<ManageEventInventory />} />
         <Route path="pricing" element={<EventPricing />} />
       </Route>
@@ -91,13 +97,19 @@ export default function AppRoutes() {
         <Route path="events" element={<CompanyEvents />} />
         <Route path="venue-config" element={<VenueEditor />} />
         <Route path="members" element={<MembersPermissions />} />
-        <Route path="purchase-policy" element={<EditPurchasePolicy type="company" />} />
+        <Route
+          path="purchase-policy"
+          element={<EditPurchasePolicy type="company" />}
+        />
+        <Route
+          path="discount-policy"
+          element={<EditDiscountPolicy type="company" />}
+        />
         <Route path="hierarchy" element={<HierarchyTree />} />
         <Route path="settings" element={<Resignation />} />
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
       <Route path="/users/management/active-order" element={<EditOrder />} />
-
 
       <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>

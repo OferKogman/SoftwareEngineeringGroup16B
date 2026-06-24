@@ -1,4 +1,4 @@
-package com.group16b.ApplicationLayer.Objects;
+package com.group16b.ApplicationLayer.Enums;
 
 public enum PurchasePolicyTypes {
     MIN_AGE("MIN_AGE"),

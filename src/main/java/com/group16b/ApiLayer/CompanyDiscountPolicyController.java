@@ -15,41 +15,36 @@ import com.group16b.ApplicationLayer.Records.DiscountPolicyRecord;
 
 @RestController
 @RequestMapping("/api/production-companies/{companyId}/discount-policy")
-public class CompanyDiscountPolicyController extends BaseController{
+public class CompanyDiscountPolicyController extends BaseController {
     private final DiscountPolicyService discountPolicyService;
 
-    public CompanyDiscountPolicyController(DiscountPolicyService discountPolicyService)
-    {
-        this.discountPolicyService=discountPolicyService;
+    public CompanyDiscountPolicyController(DiscountPolicyService discountPolicyService) {
+        this.discountPolicyService = discountPolicyService;
     }
 
     @PostMapping
     public ResponseEntity<?> createCompanyDiscountPolicy(
-        @RequestHeader("Authorization") String authToken,
-        @RequestBody DiscountPolicyRecord record,
-        @PathVariable("companyId") int companyId
-    )
-    {
-        return executeWithNoReturnData(()-> discountPolicyService.createCompanyDiscountPolicy(authToken, companyId, record));
+            @RequestHeader("Authorization") String authToken,
+            @RequestBody DiscountPolicyRecord record,
+            @PathVariable("companyId") int companyId) {
+        return executeWithNoReturnData(
+                () -> discountPolicyService.createCompanyDiscountPolicy(authToken, companyId, record));
     }
 
     @PutMapping
     public ResponseEntity<?> editCompanyDiscountPolicy(
-        @RequestHeader("Authorization") String authToken,
-        @RequestBody DiscountPolicyRecord newRecord,
-        @PathVariable("companyId") int companyId
-    )
-    {
-        return executeWithNoReturnData(()->discountPolicyService.editCompanyDiscountPolicy(authToken, companyId, newRecord));
+            @RequestHeader("Authorization") String authToken,
+            @RequestBody DiscountPolicyRecord newRecord,
+            @PathVariable("companyId") int companyId) {
+        return executeWithNoReturnData(
+                () -> discountPolicyService.editCompanyDiscountPolicy(authToken, companyId, newRecord));
     }
 
     @GetMapping
     public ResponseEntity<?> getCompanyDiscountPolicy(
-        @RequestHeader("Authorization") String authToken,
-        @PathVariable("companyId") int companyId
-    )
-    {
-        return executeWithReturnData(()-> discountPolicyService.getCompanyDiscountPolicy(authToken, companyId));
+            @RequestHeader("Authorization") String authToken,
+            @PathVariable("companyId") int companyId) {
+        return executeWithReturnData(() -> discountPolicyService.getCompanyDiscountPolicy(authToken, companyId));
     }
 
 }

@@ -2,14 +2,17 @@ package com.group16b.ApplicationLayer;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -49,6 +52,10 @@ import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
@@ -1184,7 +1191,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 Result<Double> result = orderService.getOrderPrice(seatOrder.getOrderId(), "user1");
 
                 assertTrue(result.isSuccess());
-                assertEquals(200.0, result.getValue());
+                assertEquals(100.0, result.getValue());
         }
 
         @Test
@@ -1193,7 +1200,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         orderService.getOrderPrice(fieldOrder.getOrderId(), "user1");
 
                 assertTrue(result.isSuccess());
-                assertEquals(450.0, result.getValue());
+                assertEquals(150.0, result.getValue());
         }
 
         @Test
@@ -1257,4 +1264,164 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Authentication failed"));
         }
+
+        @Test
+        void changeNumOfSeatsInFieldOrder_validIncrease_savesVenueAfterCapacityChange() {
+        IRepository<Venue> mockVenueRepo = mock(IRepository.class);
+        when(mockVenueRepo.findByID(testVenue.getID())).thenReturn(testVenue);
+
+        OrderService service = new OrderService(
+                authService,
+                productionCompanyRepo,
+                paymentGateway,
+                mockVenueRepo,
+                eventRepo,
+                userRepo,
+                orderRepo,
+                ticketGateway
+        );
+
+        Result<Integer> result =
+                service.changeNumOfSeatsInFieldOrder(fieldOrder.getOrderId(), "user1", 5);
+
+        assertTrue(result.isSuccess());
+
+        verify(mockVenueRepo, times(1)).save(testVenue);
+}
+
+        @Test
+        void changeSeatsToOrder_policyFailsAfterReservingNewSeats_rollsBackNewReservation() {
+        Event mockEvent = mock(Event.class);
+        when(mockEvent.getEventID()).thenReturn(testEvent.getEventID());
+        when(mockEvent.getEventVenueID()).thenReturn(testVenue.getID());
+        when(mockEvent.getEventProductionCompanyID()).thenReturn(testPCompany.getProductionCompanyID());
+
+        PurchasePolicy failingPolicy = mock(PurchasePolicy.class);
+        doThrow(new PurchasePolicyException("blocked"))
+                .when(failingPolicy)
+                .validatePurchase(any(PurchaseContext.class));
+
+        when(mockEvent.getEventPurchasePolicy()).thenReturn(new HashSet<>(Set.of(failingPolicy)));
+
+        IEventRepository mockEventRepo = mock(IEventRepository.class);
+        when(mockEventRepo.findByID(String.valueOf(testEvent.getEventID()))).thenReturn(mockEvent);
+
+        OrderService service = new OrderService(
+                authService,
+                productionCompanyRepo,
+                paymentGateway,
+                venueRepo,
+                mockEventRepo,
+                userRepo,
+                orderRepo,
+                ticketGateway
+        );
+
+        Result<List<String>> result =
+                service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+
+        assertFalse(result.isSuccess());
+
+        assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+
+        assertDoesNotThrow(() ->
+                assertSeatsCanBeReservedAgain(List.of("A-3", "A-4"), "seatingSeg1")
+        );
+}
+
+        @Test
+        void getOrderPrice_eventDiscountPolicyNull_companyDiscountPolicyExists_doesNotCrash() {
+        DiscountPolicy discountPolicy = mock(DiscountPolicy.class);
+        when(discountPolicy.calculateDiscount(anyDouble())).thenAnswer(inv -> inv.getArgument(0));
+
+        ProductionCompany mockCompany = mock(ProductionCompany.class);
+        when(mockCompany.getDiscountPolicy()).thenReturn(new HashSet<>(Set.of(discountPolicy)));
+
+        IProductionCompanyRepository mockCompanyRepo = mock(IProductionCompanyRepository.class);
+        when(mockCompanyRepo.findByID(String.valueOf(testPCompany.getProductionCompanyID())))
+                .thenReturn(mockCompany);
+
+        Event mockEvent = mock(Event.class);
+        when(mockEvent.getEventID()).thenReturn(testEvent.getEventID());
+        when(mockEvent.getEventProductionCompanyID()).thenReturn(testPCompany.getProductionCompanyID());
+        when(mockEvent.getEventDiscountPolicy()).thenReturn(null);
+
+        IEventRepository mockEventRepo = mock(IEventRepository.class);
+        when(mockEventRepo.findByID(String.valueOf(testEvent.getEventID()))).thenReturn(mockEvent);
+
+        OrderService service = new OrderService(
+                authService,
+                mockCompanyRepo,
+                paymentGateway,
+                venueRepo,
+                mockEventRepo,
+                userRepo,
+                orderRepo,
+                ticketGateway
+        );
+
+        Result<Double> result = service.getOrderPrice(seatOrder.getOrderId(), "user1");
+
+        assertTrue(result.isSuccess());
+}
+
+        @Test
+        void changeSeatsToOrder_duplicateSeatIds_failsAndDoesNotChangeOrder() {
+        Result<List<String>> result =
+                orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-3"));
+
+        assertFalse(result.isSuccess());
+        assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+}
+
+        @Test
+        void getOrderPrice_seatOrder_returnsStoredTotalPriceNotTotalTimesAmount() {
+        Result<Double> result = orderService.getOrderPrice(seatOrder.getOrderId(), "user1");
+
+        assertTrue(result.isSuccess());
+
+        assertEquals(100.0, result.getValue());
+}
+
+        @Test
+        void getOrderPrice_fieldOrder_returnsStoredTotalPriceNotTotalTimesAmount() {
+                Result<Double> result = orderService.getOrderPrice(fieldOrder.getOrderId(), "user1");
+
+                assertTrue(result.isSuccess());
+
+                assertEquals(150.0, result.getValue());
+        }
+
+        @Test
+        void changeSeatsToOrder_orderSaveFails_rollsBackVenueChanges() {
+        IOrderRepository mockOrderRepo = mock(IOrderRepository.class);
+        when(mockOrderRepo.findByID(seatOrder.getOrderId())).thenReturn(seatOrder);
+
+        doThrow(new OptimisticLockingFailureException("conflict"))
+                .when(mockOrderRepo)
+                .save(any(Order.class));
+
+        OrderService service = new OrderService(
+                authService,
+                productionCompanyRepo,
+                paymentGateway,
+                venueRepo,
+                eventRepo,
+                userRepo,
+                mockOrderRepo,
+                ticketGateway
+        );
+
+        Result<List<String>> result =
+                service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+
+        assertFalse(result.isSuccess());
+
+        assertDoesNotThrow(() ->
+                assertSeatsCanBeReservedAgain(List.of("A-3", "A-4"), "seatingSeg1")
+        );
+}
+
+
+
 }
