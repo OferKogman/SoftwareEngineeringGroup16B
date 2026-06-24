@@ -1,56 +1,101 @@
 import { useState } from "react";
+import { useOutletContext, useParams } from "react-router-dom";
+import type { NullableDiscountPolicyDTO } from "../DTOs/DiscountPolicyDTO";
+import type { EventDTO } from "../DTOs/EventDTO";
+import type { ProductionCompanyDTO } from "../DTOs/ProductionCompanyDTO";
+import { useApiFetch } from "../apiFetch";
+import "./EditPurchasePolicy.css";
+import DiscountPolicyTree from "./Shared/DiscountPolicyTree";
 
-export default function EditDiscountPolicy() {
-  const [discountPercentage, setDiscountPercentage] = useState("");
-  const [submitError, setSubmitError] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+type EditDiscountPolicyProps = {
+  type: "event" | "company";
+};
 
-  async function onSubmit(discountPercentage: number) {}
+type DiscountPolicyContext = {
+  event?: EventDTO;
+  company?: ProductionCompanyDTO;
+};
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setSubmitError("");
-    setIsSubmitting(true);
+export default function EditDiscountPolicy({ type }: EditDiscountPolicyProps) {
+  const { eventID, companyId } = useParams();
+
+  const { event, company } = useOutletContext<DiscountPolicyContext>();
+
+  const [alert, setAlert] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+
+  const apiFetch = useApiFetch();
+
+  if (type === "event" && !event) {
+    return <p>Event data not available.</p>;
+  }
+
+  if (type === "company" && !company) {
+    return <p>Company data not available.</p>;
+  }
+
+  const policy: NullableDiscountPolicyDTO =
+    type === "event"
+      ? (event?.eventDiscountPolicy ?? null)
+      : (company?.discountPolicy ?? null);
+
+  async function savePolicy(policy: NullableDiscountPolicyDTO) {
+    const id = type === "event" ? eventID : companyId;
+
+    if (!id) {
+      setAlert({
+        type: "error",
+        message: `Missing ${type} ID`,
+      });
+      return;
+    }
 
     try {
-      await onSubmit(Number(discountPercentage));
-      setDiscountPercentage("");
+      const url =
+        type === "event"
+          ? `http://localhost:8080/api/events/${id}/discount-policy`
+          : `http://localhost:8080/api/production-companies/${id}/discount-policy`;
+
+      const response = await apiFetch(url, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(policy),
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      setAlert({
+        type: "success",
+        message: "Discount policy saved successfully",
+      });
     } catch (err) {
-      setSubmitError(
-        err instanceof Error
-          ? err.message
-          : "Failed to update discount policy.",
-      );
-    } finally {
-      setIsSubmitting(false);
+      setAlert({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed saving discount policy",
+      });
     }
   }
 
   return (
-    <form className="event-creation-form" onSubmit={handleSubmit}>
-      <h2>Edit Discount Policy</h2>
+    <main>
+      <h2>Edit {type === "event" ? "Event" : "Company"} Discount Policy</h2>
 
-      {submitError && <p className="form-error">{submitError}</p>}
+      <DiscountPolicyTree policy={policy} onSave={savePolicy} />
 
-      <label>
-        Discount Percentage (%)
-        <input
-          type="number"
-          required
-          min="0"
-          max="100"
-          step="0.01"
-          value={discountPercentage}
-          onChange={(e) => setDiscountPercentage(e.target.value)}
-          placeholder="e.g. 15"
-        />
-      </label>
+      {alert && (
+        <div className="settings-alert">
+          <p>{alert.message}</p>
 
-      <div className="form-actions">
-        <button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : "Update Policy"}
-        </button>
-      </div>
-    </form>
+          <button onClick={() => setAlert(null)}>OK</button>
+        </div>
+      )}
+    </main>
   );
 }

@@ -1,3 +1,4 @@
+import type { NullableDiscountPolicyDTO } from "./DiscountPolicyDTO";
 import type { NullablePurchasePolicyDTO } from "./PurchasePolicyDTO";
 
 export type RoleType = "OWNER" | "MANAGER" | "FOUNDER";
@@ -16,7 +17,8 @@ export type ProductionCompanyDTO = {
   rating: number;
   founderID: string;
   members: string[];
-  purchasePolicy: NullablePurchasePolicyDTO | null;
+  purchasePolicy: NullablePurchasePolicyDTO;
+  discountPolicy: NullableDiscountPolicyDTO;
 };
 
 export type HierarchyNodeDTO = {

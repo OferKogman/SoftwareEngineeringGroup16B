@@ -13,8 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.group16b.ApplicationLayer.Enums.PurchasePolicyTypes;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Objects.PurchasePolicyTypes;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
