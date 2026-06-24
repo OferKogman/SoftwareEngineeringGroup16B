@@ -496,6 +496,36 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	public Result<Long> getActiveOrderTimeStemp(String orderId, String sessionToken) {
+		try {
+			logger.info("OrderService.getActiveOrderTimeStemp: Attempting to get timestamp for order {}.", orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStemp: Verifying session token for getting order timestamp.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+			logger.info("OrderService.getActiveOrderTimeStemp: Session token verified successfully.");
+
+			Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStemp: verifying that order {} belongs to the user with the provided token for getting order timestamp.", orderId);
+			order.verifyBelongsToSubject(subjectID);
+
+			long timestamp = order.getOrderStartTime();
+			
+			return Result.makeOk(timestamp);
+		} catch (AuthException e) {
+			logger.error("OrderService.getActiveOrderTimeStemp: Authentication error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.getActiveOrderTimeStemp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.getActiveOrderTimeStemp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.getActiveOrderTimeStemp: Unexpected error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
 
 	//no need to care for the exception type, as it is a automatic refund, meaning that any issue here is critical and should betreated the same way
 	private void safeRefund(Integer transactionId) {

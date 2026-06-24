@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { EventDTO } from "../../DTOs/EventDTO";
@@ -23,6 +23,7 @@ export default function EditOrderPage() {
     const [activeOrder, setActiveOrder] = useState<ActiveOrderDTO | null>(null);
     const [timeLeft, setTimeLeft] = useState("");
     const [orderId, setOrderId] = useState("");
+    const didAutoCancelRef = useRef(false);
 
 
     const [venueID, setVenueID] = useState("");
@@ -150,12 +151,35 @@ export default function EditOrderPage() {
         if (!activeOrder) {return;}
 
         const expiresAt = activeOrder.orderStartTime + ORDER_LIFETIME_MS;
+        // TODO: delete
+        console.log("=== TIMER DEBUG ===");
+        console.log("orderStartTime:", activeOrder.orderStartTime);
+        console.log("Date.now():", Date.now());
+        console.log("orderStartTime as date:", new Date(activeOrder.orderStartTime));
+        console.log(
+          "orderStartTime * 1000 as date:",
+          new Date(activeOrder.orderStartTime * 1000),
+        );
+        console.log(
+          "expiresAt (milliseconds assumption):",
+          new Date(activeOrder.orderStartTime + ORDER_LIFETIME_MS),
+        );
+        console.log(
+          "expiresAt (seconds assumption):",
+          new Date(activeOrder.orderStartTime * 1000 + ORDER_LIFETIME_MS),
+        );
+        // end delete
         const remaining = Math.max(0, expiresAt - Date.now());
 
         const minutes = Math.floor(remaining / 60000);
         const seconds = Math.floor((remaining % 60000) / 1000);
 
         setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+
+        if (remaining === 0 && !didAutoCancelRef.current) {
+          didAutoCancelRef.current = true;
+          void cancelOrder();
+        }
       }
 
       updateTimer();
@@ -285,13 +309,14 @@ export default function EditOrderPage() {
     }
 
     try {
-
+      if (!activeOrder){return ;}
       await updateFieldOrder(orderId, amount);
       navigate("/payment", {
         state: {
           orderId,
           amount: selectedFieldSeg.eventPrices[Number(eventID)] * amount,
-        },
+          secondsLeft: Math.min(10 * 60,Math.max(0,Math.floor((activeOrder?.orderStartTime + 10 * 60 * 1000 - Date.now()) / 1000,))),
+          },
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to reserve field.");
@@ -337,11 +362,13 @@ export default function EditOrderPage() {
 
     try {
       await updateSeatOrder(orderId, selectedSeats);
-
+      if (!activeOrder) {return ;}
       navigate("/payment", {
         state: {
           orderId,
           amount: selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length,
+          secondsLeft: Math.min(10 * 60,Math.max(0,Math.floor((activeOrder?.orderStartTime + 10 * 60 * 1000 - Date.now()) / 1000,))),
+
         },
       });
     } catch (err) {

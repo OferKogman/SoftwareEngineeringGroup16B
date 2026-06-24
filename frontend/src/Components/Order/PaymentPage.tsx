@@ -31,12 +31,11 @@ export default function PaymentPage() {
 
   const state = location.state as PaymentLocationState | null;
   const orderId = state?.orderId;
-
   const [amount, setAmount] = useState<number>(0);
   const [isLoadingPrice, setIsLoadingPrice] = useState<boolean>(true);
 
-  const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);
-  const [error, setError] = useState("");
+  const [expiresAt, setExpiresAt] = useState<number>(Date.now() + PAYMENT_TIME_LIMIT_SECONDS * 1000,);
+  const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);  const [error, setError] = useState("");
 
   useEffect(() => {
     async function getPrice() {
@@ -81,12 +80,57 @@ export default function PaymentPage() {
   }, [orderId, sessionToken, apiFetch]);
 
   useEffect(() => {
-    const timerID = window.setInterval(() => {
-      setSecondsLeft((current) => Math.max(current - 1, 0));
-    }, 1000);
+      const timerID = window.setInterval(() => {
+        const remainingSeconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000),);
+        setSecondsLeft(remainingSeconds);
+      }, 1000);
 
-    return () => window.clearInterval(timerID);
-  }, []);
+      return () => window.clearInterval(timerID);
+    }, [expiresAt]);
+
+  useEffect(() => {
+      async function loadOrderTimer() {
+        if (!orderId || !sessionToken) {
+          setExpiresAt(Date.now() + PAYMENT_TIME_LIMIT_SECONDS * 1000);
+          return;
+        }
+
+        try {
+          const response = await apiFetch(
+            `${API_BASE}/api/order/getOrderStartTime/${orderId}`,
+            {
+              method: "GET",
+              headers: {
+                Accept: "application/json",
+              },
+            },
+          );
+
+          if (!response.ok) {
+            throw new Error(await response.text());
+          }
+
+          const data = await response.json();
+          const orderStartTime = data.value ?? data;
+
+          const loadedExpiresAt = Number(orderStartTime) + PAYMENT_TIME_LIMIT_SECONDS * 1000;
+
+          const remainingSeconds = Math.floor((loadedExpiresAt - Date.now()) / 1000,);
+
+          const safeSeconds = clampPaymentSeconds(remainingSeconds);
+
+          setExpiresAt(Date.now() + safeSeconds * 1000);
+          setSecondsLeft(safeSeconds);
+        } catch (err) {
+          console.error("Failed to fetch order start time:", err);
+          setExpiresAt(Date.now() + PAYMENT_TIME_LIMIT_SECONDS * 1000);
+          setSecondsLeft(PAYMENT_TIME_LIMIT_SECONDS);
+        }
+      }
+
+      void loadOrderTimer();
+    }, [orderId, sessionToken, apiFetch]);
+    
 
   async function cancelOrder() {
     if (!orderId || !sessionToken) {
@@ -104,6 +148,18 @@ export default function PaymentPage() {
     } finally {
       navigate("/events/search");
     }
+  }
+
+  useEffect(() => {
+      if (secondsLeft !== 0) {return;}
+      void cancelOrder();
+    }, [secondsLeft]);
+  function clampPaymentSeconds(seconds: number) {
+    if (!Number.isFinite(seconds)) {
+      return PAYMENT_TIME_LIMIT_SECONDS;
+    }
+
+    return Math.min(Math.max(seconds, 0), PAYMENT_TIME_LIMIT_SECONDS);
   }
 
   function formatTimer(totalSeconds: number) {
