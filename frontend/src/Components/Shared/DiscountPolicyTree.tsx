@@ -10,7 +10,6 @@ import type {
   MinAmountDTO,
   NullableDiscountPolicyDTO,
   OrDTO,
-  SimpleDTO,
   StartDateDTO,
   SumDTO,
 } from "../../DTOs/DiscountPolicyDTO";
@@ -169,7 +168,7 @@ function buildTree(
       break;
 
     case "SIMPLE":
-      label = `Simple Policy: ${(policy as SimpleDTO).percentage}%`;
+      label = `Simple Discount`;
       break;
 
     default:

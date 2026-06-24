@@ -98,6 +98,10 @@ export default function AppRoutes() {
         <Route path="venue-config" element={<VenueEditor />} />
         <Route path="members" element={<MembersPermissions />} />
         <Route
+          path="discount-policy"
+          element={<EditDiscountPolicy type="company" />}
+        />
+        <Route
           path="purchase-policy"
           element={<EditPurchasePolicy type="company" />}
         />
