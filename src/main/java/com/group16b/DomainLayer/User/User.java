@@ -3,16 +3,30 @@ package com.group16b.DomainLayer.User;
 
 import java.security.MessageDigest;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+@Entity
+@Table(name = "users")
 public class User {
 
+	@Id
+    @Column(nullable = false, unique = true)
 	private String email;
+
+	@Column(nullable = false)
 	private String password;
+
+	@Version
 	private long version;
+
+	protected User() {}//required for jpa
 
 	public User(String email, String password) {
 		this.email = email;
 		setPassword(password);
-		version = 0;
 	}
 
 	public User(User user) {
@@ -69,7 +83,6 @@ public class User {
     public void update(User newUser) {
 		this.email = newUser.email;
 		this.password = newUser.password;
-		this.version++;
 		
     }
 

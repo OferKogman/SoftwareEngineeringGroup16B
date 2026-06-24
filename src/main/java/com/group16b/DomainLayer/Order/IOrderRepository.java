@@ -9,4 +9,6 @@ public interface IOrderRepository extends IRepository<Order> {
     List<Order> getCompletedByEventIdSeatIds(int eventId, String segmentId, List<String> seatIds);
     List<Order> getCompletedByEventIdField(int eventId, String segmentId);
     List<Order> getByEventId(int eventId);
+    List<Order> findByUserIdAndActiveFalse(String userId);
+    Order findFirstByUserIdAndActiveTrue(String userId);
     }

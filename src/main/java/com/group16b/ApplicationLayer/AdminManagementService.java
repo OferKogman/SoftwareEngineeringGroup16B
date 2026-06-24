@@ -29,6 +29,7 @@ import com.group16b.ApplicationLayer.Records.RefundResult;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
@@ -41,7 +42,7 @@ public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IRepository<User> userRepository;
     private IProductionCompanyRepository productionCompanyRepo;
-    private final OrderRepositoryMapImpl orderRepo;
+    private final IOrderRepository orderRepo;
     private final IEventRepository eventRepo;
     private final IAuthenticationService authenticationService;
     private final IPaymentGateway paymentService;
@@ -49,7 +50,7 @@ public class AdminManagementService {
     private IRepository<SystemAdmin> systemAdminRepo;
 
     public AdminManagementService(IAuthenticationService authenticationService,
-            IProductionCompanyRepository productionCompanyRepository, OrderRepositoryMapImpl orderRepo,
+            IProductionCompanyRepository productionCompanyRepository, IOrderRepository orderRepo,
             IEventRepository eventRepo, IRepository<User> userRepository, IRepository<SystemAdmin> systemAdminRepo,
             IPaymentGateway paymentService, ITicketGateway ticketService) {
         this.authenticationService = authenticationService;
