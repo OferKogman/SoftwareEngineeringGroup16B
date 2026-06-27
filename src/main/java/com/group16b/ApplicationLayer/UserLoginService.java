@@ -9,6 +9,7 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 import org.springframework.stereotype.Service;
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 @Service
 public class UserLoginService {
@@ -17,10 +18,12 @@ public class UserLoginService {
 
     private final IRepository<User> userRepository;
     private final IAuthenticationService tokenService;
+    private final INotificationService notificationService;
 
-    public UserLoginService(IRepository<User> userRepository, IAuthenticationService tokenService) {
+    public UserLoginService(IRepository<User> userRepository, IAuthenticationService tokenService, INotificationService notificationService) {
         this.userRepository = userRepository;
         this.tokenService = tokenService;
+        this.notificationService = notificationService;
     }
 
     public Result<String> ensureGuestSession(String SessionToken) {
@@ -60,18 +63,19 @@ public class UserLoginService {
         logger.info("UserLoginService.loginMember: Attempting login for user ID {}", userID);
         
         try {
-            User member = userRepository.findByID(userID); 
+            User member = userRepository.findByID(userID);
 
             if (!member.confirmPassword(password)) {
                 logger.warn("UserLoginService.loginMember: Login failed due to invalid password for user ID {}", userID);
-                return Result.makeFail("Invalid user ID or password"); 
+                return Result.makeFail("Invalid user ID or password");
             }
 
             String token = tokenService.generateVisitor_SignedToken(userID);
             logger.info("UserLoginService.loginMember: User ID {} successfully logged in.", userID);
-            
+
+            notificationService.notify(userID, "Hello");
             return Result.makeOk(token);
-            
+
         } catch (IllegalArgumentException e) {
             logger.warn("UserLoginService.loginMember: User not found - {}", e.getMessage());
             return Result.makeFail("Invalid user ID or password"); 
@@ -88,7 +92,7 @@ public class UserLoginService {
                 logger.warn("UserLoginService.logOutMember: Logout failed, token is not a valid user session.");
                 return Result.makeFail("Invalid token for logout");
             }
-            
+
             String recievedID = tokenService.extractSubjectFromToken(sessionToken);
             
             userRepository.findByID(recievedID); 
