@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class StartupService {
     private final static Logger logger = LoggerFactory.getLogger(StartupService.class);
     private final IRepository<SystemAdmin> adminRepo;
@@ -26,7 +27,6 @@ public class StartupService {
     }
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
-    @Transactional
     public void initializeSystem() {
         logger.info("StartupService.initializeSystem: Starting system initialization...");
         validateAdmins();

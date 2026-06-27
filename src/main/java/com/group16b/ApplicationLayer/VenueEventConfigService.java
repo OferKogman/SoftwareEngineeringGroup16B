@@ -37,8 +37,10 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 
 import io.jsonwebtoken.JwtException;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class VenueEventConfigService {
 
     private static final Logger logger = LoggerFactory.getLogger(VenueEventConfigService.class);
