@@ -10,6 +10,7 @@ import type {
 } from "../../DTOs/VenueDTO";
 import VenueDisplay from "../Shared/VenueDisplay";
 import "./CSS/CreateOrder.css";
+import { useNotifications } from "../Notification/NotificationContext";
 
 const API_BASE = "http://localhost:8080";
 
@@ -23,6 +24,7 @@ export default function CreateOrderPage() {
   const { eventID } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addNotification } = useNotifications();
 
   const [venueID, setVenueID] = useState("");
   const [venue, setVenue] = useState<VenueDTO | null>(null);
@@ -353,6 +355,8 @@ export default function CreateOrderPage() {
         selectedFieldSeg.segmentID,
         amount,
       );
+
+      addNotification({ type: "success", message: "Seats reserved! Please complete checkout within 10 minutes.", duration: 5000 });
 
       moveToPayment(createdOrder);
     } catch (err) {
