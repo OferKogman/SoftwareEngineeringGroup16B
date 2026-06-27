@@ -30,6 +30,7 @@ import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
 import io.jsonwebtoken.JwtException;
 
 @Service
+@Transactional
 public class UserService {
     private static final Logger logger = getLogger(UserService.class);
 

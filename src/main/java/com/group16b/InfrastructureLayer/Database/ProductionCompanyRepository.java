@@ -18,7 +18,6 @@ public interface ProductionCompanyRepository extends JpaRepository<ProductionCom
     @Query("SELECT p.productionCompanyID FROM ProductionCompany p JOIN p.membersNodes m WHERE KEY(m) = :userId")
     List<Integer> findCompanyIdsManagedByUser(@Param("userId") String userId);
 
-    // 2. The full object query (this is the one your adapter is complaining about right now!)
     @Query("SELECT p FROM ProductionCompany p JOIN p.membersNodes m WHERE KEY(m) = :userId")
     List<ProductionCompany> findCompaniesManagedByUser(@Param("userId") String userId);
 }

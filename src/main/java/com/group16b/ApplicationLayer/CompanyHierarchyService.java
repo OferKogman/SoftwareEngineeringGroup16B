@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.HierarchyNodeDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
@@ -24,6 +25,7 @@ import com.group16b.InfrastructureLayer.Security.Role;
 import io.jsonwebtoken.JwtException;
 
 @Service
+@Transactional
 public class CompanyHierarchyService {
 	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 
