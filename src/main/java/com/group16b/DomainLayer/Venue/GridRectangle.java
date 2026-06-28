@@ -1,5 +1,7 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.util.Objects;
+
 import com.group16b.ApplicationLayer.Records.GridRectangleRecord;
 
 import jakarta.persistence.Embeddable;
@@ -57,4 +59,21 @@ public class GridRectangle {
     public void setColumnCount(int columnCount) {
         this.columnCount = columnCount;
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if(o==this)
+            return true;
+        if(!(o instanceof GridRectangle other))
+            return false;
+
+        return startColumn==other.startColumn && startRow==other.startRow && rowCount==other.rowCount && columnCount==other.columnCount;
+    }
+
+        @Override
+    public int hashCode() {
+        return Objects.hash(startColumn, startRow,rowCount,columnCount);
+    }
+    
 }
