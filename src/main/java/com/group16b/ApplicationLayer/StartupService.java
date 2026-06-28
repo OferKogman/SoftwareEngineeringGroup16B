@@ -32,6 +32,12 @@ public class StartupService {
         validateAdmins();
         validateExternalDependencies();
     }
+    //--------------------SETUPERS------------------------//
+    //should get he latest id from the db and set the gen to start from it +1
+    private void initProductionCompanyIdGenerator()
+    {
+
+    }
 
     //-------------------- VALIDATORS --------------------//
     //add more validators here as needed, such as validating the existence of at least one admin, etc.
