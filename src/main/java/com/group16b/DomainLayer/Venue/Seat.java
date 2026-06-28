@@ -2,15 +2,12 @@ package com.group16b.DomainLayer.Venue;
 
 import java.util.HashMap;
 import java.util.Map;
-
+import java.util.Objects;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
-import jakarta.persistence.Embeddable;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
@@ -20,9 +17,9 @@ import jakarta.persistence.Table;
 @Table(name = "seats")
 public class Seat {
     @Id
-    private final String seatId;
-    private final int row;
-    private final int number;
+    private String seatId;
+    private int row;
+    private int number;
 
     // --- ADD THE Jpa Mapping Strategy Here ---
     @ElementCollection
@@ -32,7 +29,7 @@ public class Seat {
     )
     @MapKeyColumn(name = "event_id")      // The Map Key (Integer event ID)
     @Column(name = "is_reserved")         // The Map Value (Boolean availability status)
-    private final Map<Integer, Boolean> stock;
+    private Map<Integer, Boolean> stock=new HashMap<>();;
 
 	public Seat(int row, int number) {
 		this.seatId = row + "-" + number;
@@ -111,4 +108,21 @@ public class Seat {
 	public Map<Integer, Boolean> getStock() {
 		return stock;
 	}
+
+	@Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Seat)) {
+            return false;
+        }
+        Seat other = (Seat) o;
+        return Objects.equals(seatId, other.seatId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(seatId);
+    }
 }
