@@ -1,9 +1,9 @@
 package com.group16b.DomainLayer.Venue;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
 import com.group16b.ApplicationLayer.Records.EntranceRecord;
@@ -33,16 +33,16 @@ import jakarta.persistence.Version;
 public class Venue {
 
     @Id
-    private final String id;
-    private final int companyID;
-    private volatile String name;
+    private String id;
+    private int companyID;
+    private String name;
 
     @Version // Automatically tracks updates for safe concurrent writes
     private long version;
 
     @Embedded
 	@AttributeOverride(name = "name", column = @Column(name = "location_name"))
-    private final Location location;
+    private Location location;
 
     @Embedded
     private VenueGrid grid;
@@ -54,13 +54,13 @@ public class Venue {
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "venue_id")
     @MapKey(name = "segmentID")
-    private final Map<String, Segment> segments;
+    private Map<String, Segment> segments;
 
     // Map Key points directly to the auto-generated database ID inside EventSchedule
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "venue_id")
     @MapKey(name = "dbId")
-    private final Map<Integer, EventSchedule> scheduledEvents;
+    private Map<Integer, EventSchedule> scheduledEvents;
 
 
 
@@ -68,18 +68,18 @@ public class Venue {
     @ElementCollection
     @CollectionTable(name = "venue_stages", joinColumns = @JoinColumn(name = "venue_id"))
     @MapKeyColumn(name = "stage_map_key") // Stores the Map's String key
-    private final Map<String, Stage> stages;
+    private Map<String, Stage> stages;
 
     @ElementCollection
     @CollectionTable(name = "venue_entrances", joinColumns = @JoinColumn(name = "venue_id"))
     @MapKeyColumn(name = "entrance_map_key") // Stores the Map's String key
-    private final Map<String, Entrance> entrances;
+    private Map<String, Entrance> entrances;
 
 	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances, int companyID) {
         this.name = name;
         this.location = location;
         this.segments = segments;
-        this.scheduledEvents = new ConcurrentHashMap<>();
+        this.scheduledEvents = new HashMap<>();
         this.grid = grid;
         this.stages = stages;
         this.entrances = entrances;
@@ -90,20 +90,20 @@ public class Venue {
 	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg, String id, VenueGridRecord grid, List<StageRecord> stages, List<EntranceRecord> entrances, int companyID) {
         this.name = name;
         this.location = location;
-        this.segments = new ConcurrentHashMap<>();
+        this.segments = new HashMap<>();
         for (FieldSegRecord fsr : fieldSeg) {
             this.segments.put(fsr.segmentID(), new FieldSeg(fsr.segmentID(), fsr.size(), new GridRectangle(fsr.area())));
         }
         for (ChosenSeatingSegRecord cssr : seatSeg) {
             this.segments.put(cssr.segmentID(), new ChosenSeatingSeg(cssr.segmentID(), cssr.seats(), new GridRectangle(cssr.area())));
         }
-        this.scheduledEvents = new ConcurrentHashMap<>();
+        this.scheduledEvents = new HashMap<>();
         this.grid = new VenueGrid(grid.rows(), grid.columns());
-        this.stages = new ConcurrentHashMap<>();
+        this.stages = new HashMap<>();
         for(StageRecord record: stages){
             this.stages.put(record.stageID(), new Stage(record.stageID(), new GridRectangle(record.area())));
         }
-        this.entrances = new ConcurrentHashMap<>();
+        this.entrances = new HashMap<>();
         for(EntranceRecord record: entrances){
             this.entrances.put(record.entranceID(), new Entrance(record.entranceID(), new GridRectangle(record.area())));
         }
@@ -124,7 +124,7 @@ public class Venue {
         this.name = other.getName();
         this.location = other.getLocation();
 
-        this.segments = new ConcurrentHashMap<>();
+        this.segments = new HashMap<>();
         for (Map.Entry<String, Segment> entry : other.getSegments().entrySet()) {
             Segment origSeg = entry.getValue();
             if (origSeg instanceof FieldSeg fieldSeg) {
@@ -135,14 +135,14 @@ public class Venue {
         }
         
 
-        this.scheduledEvents = new ConcurrentHashMap<>();
+        this.scheduledEvents = new HashMap<>();
         for (Map.Entry<Integer, EventSchedule> entry : other.getScheduledEvents().entrySet()) {
             this.scheduledEvents.put(entry.getKey(), new EventSchedule(entry.getValue().getStartTime(), entry.getValue().getEndTime())); 
         }
 
-        this.grid = other.getGrid();
-        this.stages = new ConcurrentHashMap<>(other.getStages());
-        this.entrances = new ConcurrentHashMap<>(other.getEntrances());
+        this.grid = new VenueGrid(other.getGrid().getRows(), other.getGrid().getColumns());
+        this.stages = new HashMap<>(other.getStages());
+        this.entrances = new HashMap<>(other.getEntrances());
 
         this.IDForSeg = other.getIDForSeg();
         this.version = other.getVersion();
