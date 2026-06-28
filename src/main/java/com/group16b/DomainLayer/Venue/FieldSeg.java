@@ -22,18 +22,16 @@ public class FieldSeg extends Segment {
     @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segmentID"))
     @MapKeyColumn(name = "stock_key")
     @Column(name = "stock_value")
-	private Map<Integer, Integer> stock;
+	private Map<Integer, Integer> stock=new HashMap<>();
 
 	public FieldSeg(String segID, int size, GridRectangle area) {
 		super(segID, area);
 		this.size = size;
-		stock = new HashMap<Integer, Integer>();
 	}
 
 	public FieldSeg() {
 		// Default constructor for JPA
 		this.size = 0;
-		this.stock = new HashMap<Integer, Integer>();
 	}
 	
 	public FieldSeg(FieldSeg other) {

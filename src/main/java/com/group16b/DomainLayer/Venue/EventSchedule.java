@@ -1,6 +1,7 @@
 package com.group16b.DomainLayer.Venue;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 
@@ -15,8 +16,8 @@ public class EventSchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer dbId;
-    private final LocalDateTime startTime;
-    private final LocalDateTime endTime;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 
     public EventSchedule(LocalDateTime startTime, LocalDateTime endTime) {
         if (startTime == null || endTime == null) {
@@ -50,5 +51,17 @@ public class EventSchedule {
 
     public boolean overlapsWith(EventSchedule other) {
         return this.startTime.isBefore(other.endTime) && this.endTime.isAfter(other.startTime);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof EventSchedule other)) return false;
+        return dbId != null && dbId.equals(other.dbId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dbId);
     }
 }
