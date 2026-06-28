@@ -23,9 +23,9 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     @Query("SELECT o FROM Order o JOIN o.seats s WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND s IN :seatIds AND o.state = 'COMPLETED'")
     List<Order> getCompletedByEventIdSeatIds(@Param("eventId") int eventId, @Param("segmentId") String segmentId, @Param("seatIds") List<String> seatIds);
 
-    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state = 'ACTIVE'")
+    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state LIKE 'ACTIVE:%'")
     Optional<Order> findFirstBySubjectIDAndActiveTrue(@Param("subjectID") String subjectID);
 
-    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state != 'ACTIVE'")
+    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state NOT LIKE 'ACTIVE:%'")
     List<Order> findBySubjectIDAndActiveFalse(@Param("subjectID") String subjectID);
 }

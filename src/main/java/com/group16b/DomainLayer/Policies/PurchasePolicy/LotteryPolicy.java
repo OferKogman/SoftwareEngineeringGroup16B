@@ -81,8 +81,14 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
-        if(lotteryRegistrationDueDate.isBefore(LocalDateTime.now()))
+        if (LocalDateTime.now().isBefore(lotteryRegistrationDueDate)) {
             throw new IllegalStateException("Cannot handle lottery results before the registration due time passed.");
+        }
+
+        if (!winnersAndCodes.isEmpty()) {
+            throw new IllegalStateException("Lottery results were already handled.");
+        }
+
         List<String> winners = new ArrayList<>(participants);
 
         Collections.shuffle(winners);
@@ -93,8 +99,6 @@ public class LotteryPolicy implements PurchasePolicy {
             String uniqueCode = UUID.randomUUID().toString();
             winnersAndCodes.put(uniqueCode, winnerID);
         }
-
-        // TODO: Notify winners with their unique codes
     }
 
     public synchronized void validateLotteryCode(String code) {
@@ -134,5 +138,15 @@ public class LotteryPolicy implements PurchasePolicy {
     //FOR TESTS
     public List<String> getWinners() {
         return new ArrayList<>(winnersAndCodes.values());
+    }
+
+    public Map<String, String> getWinnersAndCodes() {
+        return new ConcurrentHashMap<>(winnersAndCodes);
+    }
+
+    public Set<String> getLosers() {
+        Set<String> losers = new HashSet<>(participants);
+        losers.removeAll(winnersAndCodes.values());
+        return losers;
     }
 }

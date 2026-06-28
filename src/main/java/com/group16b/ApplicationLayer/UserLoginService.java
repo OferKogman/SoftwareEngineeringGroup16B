@@ -73,7 +73,6 @@ public class UserLoginService {
             String token = tokenService.generateVisitor_SignedToken(userID);
             logger.info("UserLoginService.loginMember: User ID {} successfully logged in.", userID);
 
-            notificationService.notify(userID, "Hello");
             return Result.makeOk(token);
 
         } catch (IllegalArgumentException e) {
