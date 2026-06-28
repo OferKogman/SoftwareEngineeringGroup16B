@@ -2,9 +2,11 @@ import { useEffect, useState } from "react";
 import { TbStar, TbStarFilled, TbStarHalfFilled } from "react-icons/tb";
 import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
+import type { DiscountPolicyDTO } from "../../DTOs/DiscountPolicyDTO";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import { locationToString } from "../../DTOs/LocationDTO";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import type { PurchasePolicyDTO } from "../../DTOs/PurchasePolicyDTO";
 import type { VenueDTO } from "../../DTOs/VenueDTO";
 import ViewDiscountPolicies from "../Shared/ViewDiscountPolicies";
 import ViewPurchasePolicies from "../Shared/ViewPurchasePolicies";
@@ -17,6 +19,12 @@ export default function ViewEvent() {
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
   const [location, setLocation] = useState<string>("");
   const [companyName, setCompanyName] = useState<string>("");
+
+  const [companyPurchasePolicy, setCompanyPurchasePolicy] =
+    useState<PurchasePolicyDTO | null>(null);
+
+  const [companyDiscountPolicy, setCompanyDiscountPolicy] =
+    useState<DiscountPolicyDTO | null>(null);
 
   const navigate = useNavigate();
   const apiFetch = useApiFetch();
@@ -69,6 +77,8 @@ export default function ViewEvent() {
 
         const company: ProductionCompanyDTO = await companyResponse.json();
         setCompanyName(company.name);
+        setCompanyDiscountPolicy(company.discountPolicy);
+        setCompanyPurchasePolicy(company.purchasePolicy);
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event.");
       }
@@ -130,11 +140,43 @@ export default function ViewEvent() {
 
       <LotteryInformation lottery={eventDTO.lotteryDTO} />
 
-      <h3>Discount Policy</h3>
-      <ViewDiscountPolicies discountPolicy={eventDTO.eventDiscountPolicy} />
+      <h3>Discount Policies</h3>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+        }}
+      >
+        <div>
+          <h4>Company Policy</h4>
+          <ViewDiscountPolicies discountPolicy={companyDiscountPolicy} />
+        </div>
 
-      <h3>Purchase Policy</h3>
-      <ViewPurchasePolicies purchasePolicy={eventDTO.eventPurchasePolicy} />
+        <div>
+          <h4>Event Policy</h4>
+          <ViewDiscountPolicies discountPolicy={eventDTO.eventDiscountPolicy} />
+        </div>
+      </div>
+
+      <h3>Purchase Policies</h3>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "20px",
+        }}
+      >
+        <div>
+          <h4>Company Policy</h4>
+          <ViewPurchasePolicies purchasePolicy={companyPurchasePolicy} />
+        </div>
+
+        <div>
+          <h4>Event Policy</h4>
+          <ViewPurchasePolicies purchasePolicy={eventDTO.eventPurchasePolicy} />
+        </div>
+      </div>
     </div>
   );
 }

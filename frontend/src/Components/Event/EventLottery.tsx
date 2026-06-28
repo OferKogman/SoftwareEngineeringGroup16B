@@ -12,11 +12,6 @@ export type LotteryDTO = {
 };
 export default function EventLottery() {
   const { eventID } = useParams<{ eventID: string }>();
-
-  if (!eventID) {
-    return <p>No event ID provided</p>;
-  }
-
   const [lottery, setLottery] = useState<LotteryDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -24,27 +19,34 @@ export default function EventLottery() {
 
   const apiFetch = useApiFetch();
 
-  async function getLottery() {
-    try {
-      const response = await apiFetch(
-        `http://localhost:8080/events/${eventID}`,
-        {
-          method: "GET",
-        },
-      );
+  useEffect(() => {
+    async function getLottery() {
+      try {
+        const response = await apiFetch(
+          `http://localhost:8080/events/${eventID}`,
+          {
+            method: "GET",
+          },
+        );
 
-      if (!response.ok) {
+        if (!response.ok) {
+          setLottery(null);
+          return;
+        }
+
+        const data: EventDTO = await response.json();
+        setLottery(data.lotteryDTO || null);
+      } catch {
         setLottery(null);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      const data: EventDTO = await response.json();
-      setLottery(data.lotteryDTO || null);
-    } catch {
-      setLottery(null);
-    } finally {
-      setLoading(false);
     }
+    void getLottery();
+  }, [eventID, apiFetch]);
+
+  if (!eventID) {
+    return <p>No event ID provided</p>;
   }
 
   async function handleLotteryResults() {
@@ -77,10 +79,6 @@ export default function EventLottery() {
     setMessage("");
     setError("");
   }
-
-  useEffect(() => {
-    getLottery();
-  }, [eventID]);
 
   if (loading) {
     return <p>Loading lottery...</p>;

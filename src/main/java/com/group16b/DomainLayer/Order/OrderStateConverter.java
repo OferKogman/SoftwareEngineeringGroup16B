@@ -1,5 +1,7 @@
 package com.group16b.DomainLayer.Order;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
@@ -11,12 +13,19 @@ public class OrderStateConverter implements AttributeConverter<OrderState, Strin
 
     private static final ObjectMapper mapper = buildMapper();
 
-    private static ObjectMapper buildMapper() {
+private static ObjectMapper buildMapper() {
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
                 .allowIfSubType(OrderState.class)
                 .build();
         ObjectMapper m = new ObjectMapper();
         m.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL);
+        
+        m.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        
+        m.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        
+        m.disable(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        
         return m;
     }
 

@@ -168,6 +168,7 @@ export default function EventCreationForm({
           <input
             type="datetime-local"
             required
+            max="9999-12-31T23:59"
             value={formData.startTime}
             onChange={(e) => updateField("startTime", e.target.value)}
           />
@@ -179,6 +180,7 @@ export default function EventCreationForm({
             type="datetime-local"
             required
             value={formData.endTime}
+            max={"9999-12-31T23:59"}
             onChange={(e) => updateField("endTime", e.target.value)}
           />
         </div>

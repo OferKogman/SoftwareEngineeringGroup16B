@@ -1,7 +1,6 @@
 package com.group16b.ApplicationLayer;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
@@ -33,6 +33,7 @@ import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import io.jsonwebtoken.JwtException;
 
 @Service
+@Transactional
 public class EventService {
 
 	private static final Logger logger = LoggerFactory.getLogger(EventService.class);

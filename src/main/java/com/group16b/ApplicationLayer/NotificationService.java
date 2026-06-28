@@ -12,8 +12,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class NotificationService implements INotificationService {
     private static final Logger logger = LoggerFactory.getLogger(NotificationService.class);
 

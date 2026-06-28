@@ -28,10 +28,12 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.jsonwebtoken.JwtException;
 
 @Service
+@Transactional
 public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
@@ -184,7 +186,6 @@ public class ReserveService {
         }
     }
 
-    @Transactional
     public VirtualQueue joinQueueSafely(VirtualQueue q, int eventID, String subjectID) {
         q = queueImp.findByID(Integer.toString(eventID));
         q.addToQueue(subjectID);
@@ -308,7 +309,6 @@ public class ReserveService {
         }
     }
 
-    @Transactional
     public Result<Integer> getPositionInQueueForEvent(int eventID) {
         try {
             String subjectID = validateUserOrGuestAndGetSubjectId();
@@ -400,7 +400,6 @@ public class ReserveService {
         }
     }
 
-    @Transactional
     private void queueRemovePassed(VirtualQueue q, String subjectID) {
         if (q == null || subjectID == null) {
             return;
