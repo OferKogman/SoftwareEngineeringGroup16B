@@ -163,7 +163,8 @@ public class VenueRepositoryMapImplTests {
                     Venue concurrentMock = mock(Venue.class);
                     when(concurrentMock.getID()).thenReturn("venue_1");
                     when(concurrentMock.getVersion()).thenReturn(1L); 
-                    
+                    when(concurrentMock.getGrid()).thenReturn(new VenueGrid(10, 10));
+                     
                     venueRepository.save(concurrentMock); 
                 } catch (IllegalArgumentException e) {
                     if (e.getMessage().contains("Version mismatch")) {
