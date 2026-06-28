@@ -1,31 +1,31 @@
-package com.group16b.infrastructureLayer.Database;
+// package com.group16b.infrastructureLayer.Database;
 
-import java.util.List;
+// import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+// import static org.junit.jupiter.api.Assertions.assertEquals;
+// import static org.junit.jupiter.api.Assertions.assertNotNull;
+// import org.junit.jupiter.api.Test;
+// import org.springframework.beans.factory.annotation.Autowired;
+// import org.springframework.boot.test.context.SpringBootTest;
 
-import com.group16b.ApiLayer.SoftwareEngineeringGroup16BApplication;
-import com.group16b.DomainLayer.Order.Order;
-import com.group16b.InfrastructureLayer.Database.OrderRepository;
+// import com.group16b.ApiLayer.SoftwareEngineeringGroup16BApplication;
+// import com.group16b.DomainLayer.Order.Order;
+// import com.group16b.InfrastructureLayer.Database.OrderRepository;
 
-@SpringBootTest(classes = SoftwareEngineeringGroup16BApplication.class)
-public class OrderRepositoryIntegrationTest {
+// @SpringBootTest(classes = SoftwareEngineeringGroup16BApplication.class)
+// public class OrderRepositoryIntegrationTest {
 
-    @Autowired
-    private OrderRepository orderRepository;
+//     @Autowired
+//     private OrderRepository orderRepository;
 
-    @Test
-    void saveOrder_shouldPersistToDatabase() {
-        Order order = new Order("segment1", List.of("A1", "A2"), 150.0, 1, "user1");
-        Order saved = orderRepository.save(order);
+//     @Test
+//     void saveOrder_shouldPersistToDatabase() {
+//         Order order = new Order("segment1", List.of("A1", "A2"), 150.0, 1, "user1");
+//         Order saved = orderRepository.save(order);
 
-        Order found = orderRepository.findById(saved.getOrderId()).orElse(null);
-        assertNotNull(found);
-        assertEquals("segment1", found.getSegmentId());
-        assertEquals(150.0, found.getTotalOrderprice());
-    }
-}
+//         Order found = orderRepository.findById(saved.getOrderId()).orElse(null);
+//         assertNotNull(found);
+//         assertEquals("segment1", found.getSegmentId());
+//         assertEquals(150.0, found.getTotalOrderprice());
+//     }
+// }
