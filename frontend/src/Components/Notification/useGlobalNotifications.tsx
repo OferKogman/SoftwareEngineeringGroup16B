@@ -7,9 +7,13 @@ import { useApiFetch } from "../../apiFetch";
 export function useGlobalNotifications() {
   const { sessionToken } = useSession();
   const apiFetch = useApiFetch();
-  const { addNotification } = useNotifications();
+  
+  const { addNotification, clearInbox, clearAllToasts } = useNotifications();
 
   useEffect(() => {
+    clearInbox();
+    clearAllToasts();
+
     if (!sessionToken) return;
 
     const abortController = new AbortController();
@@ -59,5 +63,5 @@ export function useGlobalNotifications() {
     return () => {
       abortController.abort();
     };
-  }, [sessionToken, addNotification, apiFetch]);
+  }, [sessionToken, addNotification, clearInbox, clearAllToasts, apiFetch]);
 }

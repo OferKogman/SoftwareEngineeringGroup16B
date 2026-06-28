@@ -1,16 +1,13 @@
 package com.group16b.DomainLayer.SystemAdmin;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
-
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
-
-
-import java.nio.charset.StandardCharsets;
 
 @Entity
 @Table(name = "system_admins")
@@ -66,7 +63,9 @@ public class SystemAdmin {
 		this.version = version;
 	}
 
-
+	public void incrementVersion() {
+		this.version++;
+	}
 
 
 	private void setPassword(String newPassword) {
@@ -77,7 +76,6 @@ public class SystemAdmin {
 			MessageDigest md = MessageDigest.getInstance("SHA-256");
 			md.update(newPassword.getBytes(StandardCharsets.UTF_8));
 			this.password = new String(md.digest(), StandardCharsets.ISO_8859_1);
-			this.version++; // Increment version whenever password is set/changed
 		} catch (Exception e) {
 			throw new RuntimeException("Error hashing password: " + e.getMessage(), e);
 		}

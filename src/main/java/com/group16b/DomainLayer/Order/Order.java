@@ -254,7 +254,9 @@ public class Order {
         this.version=version;
     }
 
-	
+	public void incrementVersion() {
+		this.version++;
+	}
 	
 
 }

@@ -19,6 +19,8 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKey;
@@ -32,6 +34,7 @@ import jakarta.persistence.Version;
 public class ProductionCompany {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int productionCompanyID;
 
     @Column(nullable = false)
@@ -94,11 +97,9 @@ public class ProductionCompany {
         this.discountPolicies.addAll(other.discountPolicies);
     }
 
-    public ProductionCompany(int id, String name, double rating, String founderID) {
+    public ProductionCompany(int Id, String name, double rating, String founderID) {
         this.name = normalizeCompanyName(name);
         this.rating = rating;
-        this.productionCompanyID = id;
-        this.version = 1;
         this.founderID = founderID;
         this.membersNodes.put(founderID, MembershipNode.createFounder(founderID));
     }
@@ -118,7 +119,7 @@ public class ProductionCompany {
     }
 
     public static ProductionCompany createNewCompany(String name, String founderID, int id) {
-        return new ProductionCompany(id, name, 0.0, founderID);
+        return new ProductionCompany(id, name, 0.0, founderID);//we no longer need id generation, but will save  signature for mapImpl
     }
 
     public int getProductionCompanyID() {
@@ -386,6 +387,10 @@ public class ProductionCompany {
     private void addChild(String parent, String child) {
         childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
     }
+
+    public void incrementVersion() {
+		this.version++;
+	}
 
     static class InviteKey {
         private final String targetId;
