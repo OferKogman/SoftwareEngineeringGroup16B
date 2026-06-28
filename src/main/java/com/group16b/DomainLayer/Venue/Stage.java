@@ -45,10 +45,9 @@ public class Stage {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Stage)) {
+        if (!(o instanceof Stage other)) {
             return false;
         }
-        Stage other = (Stage) o;
         return Objects.equals(stageID, other.stageID);
     }
 

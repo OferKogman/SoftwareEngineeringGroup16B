@@ -24,12 +24,10 @@ public class VenueGrid {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof VenueGrid)) {
+        if (!(o instanceof VenueGrid other)) {
             return false;
         }
-        VenueGrid other = (VenueGrid) o;
-        return rows == other.rows &&
-            columns == other.columns;
+        return rows == other.rows && columns == other.columns;
     }
 
     @Override

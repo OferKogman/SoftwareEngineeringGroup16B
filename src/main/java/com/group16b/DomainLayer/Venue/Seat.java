@@ -114,10 +114,9 @@ public class Seat {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Seat)) {
+        if (!(o instanceof Seat other)) {
             return false;
         }
-        Seat other = (Seat) o;
         return Objects.equals(seatId, other.seatId);
     }
 
