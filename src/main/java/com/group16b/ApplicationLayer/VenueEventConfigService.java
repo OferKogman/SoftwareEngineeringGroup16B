@@ -486,10 +486,10 @@ public class VenueEventConfigService {
         }
     }
 
-    public Result<LocationDTO> getVenueLocation(String sessionToken, String venueID) {
+    public Result<LocationDTO> getVenueLocation(String venueID) {
         try {
             logger.info("VenueEventConfigService.getVenueLocation: Attempting to get venue with id: {}", venueID);
-            logger.info("VenueEventConfigService.getVenueLocation: Verifying venue exists for id {}",venueID);
+            //we probaly dont cre about user role, maybe dont even care about a valid session token at all
             Venue venue = venueRepository.findByID(venueID);
             logger.info("VenueEventConfigService.getVenueLocation: Successfully found venue for ID {}",venueID);
 
