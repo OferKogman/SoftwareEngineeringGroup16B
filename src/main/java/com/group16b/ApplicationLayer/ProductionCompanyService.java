@@ -28,6 +28,7 @@ import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 import com.group16b.InfrastructureLayer.Security.Role;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 @Service
 @Transactional
@@ -125,6 +126,7 @@ public class ProductionCompanyService {
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("ProductionCompanyService.displayTotalRevenue: Unexpected error", e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -195,6 +197,7 @@ public class ProductionCompanyService {
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("ProductionCompanyService.getCompanyEvents: Unexpected error", e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }

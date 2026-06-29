@@ -80,6 +80,10 @@ public class User {
 		return version;
     }
 
+		public void incrementVersion() {
+		this.version++;
+	}
+
     public void update(User newUser) {
 		this.email = newUser.email;
 		this.password = newUser.password;

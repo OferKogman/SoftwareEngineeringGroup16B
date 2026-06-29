@@ -988,11 +988,11 @@ public class VenueEventConfigServiceTests {
 
         Event event = new Event(eventRecord, userID);
         event.activateEvent();
+        realEventRepo.save(event);
 
         venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
         venue.initializeSegmentForEvent("field-a", event.getEventID());
 
-        realEventRepo.save(event);
         realVenueRepo.save(venue);
         venue = realVenueRepo.findByID("venue-123");
 

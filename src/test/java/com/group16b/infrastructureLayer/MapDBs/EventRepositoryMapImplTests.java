@@ -1,16 +1,5 @@
 package com.group16b.infrastructureLayer.MapDBs;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -19,8 +8,18 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
@@ -198,12 +197,11 @@ public class EventRepositoryMapImplTests {
         );
     }
 
-	@Test
+    @Test
     void save_storesDefensiveCopy() {
+        repository.save(testEvent);
 
-        Event original =spy(testEvent);
-
-        repository.save(original);
+        Event original = spy(testEvent);
 
         original.setEventName("HACKED");
         original.incrementVersion();
@@ -212,11 +210,10 @@ public class EventRepositoryMapImplTests {
 
         assertAll(
                 () -> assertEquals("Test Event", stored.getEventName()),
-                () -> assertEquals(0, stored.getVersion()),
+                () -> assertEquals(0, testEvent.getVersion()),
                 () -> assertNotSame(original, stored)
         );
     }
-
 	@Test
     void save_nullEvent_throwsIllegalArgumentException() {
         IllegalArgumentException ex = assertThrows(
