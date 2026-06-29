@@ -27,7 +27,7 @@ public class EventRepositoryAdapter implements IEventRepository {
 
     @Override
     public Event findByID(String id) {
-        return springRepo.findById(id).orElseThrow(() -> 
+        return springRepo.findById(parseID(id)).orElseThrow(() -> 
             new IllegalArgumentException("Event with ID " + id + " not found.")
         );
     }
@@ -39,7 +39,7 @@ public class EventRepositoryAdapter implements IEventRepository {
 
     @Override
     public void delete(String id) {
-        springRepo.deleteById(id); 
+        springRepo.deleteById(parseID(id)); 
     }
 
     //functon from the devil
@@ -112,9 +112,18 @@ public class EventRepositoryAdapter implements IEventRepository {
 
         return springRepo.findAll(spec);
     }
+
+    @Override
 	public List<Event> findAllByVenueID(String venueID)
     {
         return springRepo.findAllByVenueID(venueID);
     }
     
+    private int parseID(String ID) {
+		try {
+			return Integer.parseInt(ID);
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid Event ID: " + ID);
+		}
+	}
 }
