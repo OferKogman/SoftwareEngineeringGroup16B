@@ -101,6 +101,7 @@ public class ProductionCompany {
         this.name = normalizeCompanyName(name);
         this.rating = rating;
         this.founderID = founderID;
+        this.productionCompanyID = Id;
         this.membersNodes.put(founderID, MembershipNode.createFounder(founderID));
     }
 

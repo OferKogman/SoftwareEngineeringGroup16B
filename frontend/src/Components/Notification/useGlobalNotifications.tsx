@@ -2,10 +2,12 @@ import { useEffect } from "react";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { useNotifications } from "./NotificationContext";
 import { useSession } from "../../GlobalContext/SessionContext";
+import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
 import { useApiFetch } from "../../apiFetch";
 
 export function useGlobalNotifications() {
   const { sessionToken } = useSession();
+  const { loggedIn } = useLoggedIn();
   const apiFetch = useApiFetch();
   
   const { addNotification, clearInbox, clearAllToasts } = useNotifications();
@@ -14,7 +16,7 @@ export function useGlobalNotifications() {
     clearInbox();
     clearAllToasts();
 
-    if (!sessionToken) return;
+    if (!sessionToken || !loggedIn) return;
 
     const abortController = new AbortController();
 
@@ -50,6 +52,7 @@ export function useGlobalNotifications() {
             },
             onerror(err) {
               console.error("Lost broadcast connection:", err);
+              throw err; 
             },
           }
         );
@@ -63,5 +66,5 @@ export function useGlobalNotifications() {
     return () => {
       abortController.abort();
     };
-  }, [sessionToken, addNotification, clearInbox, clearAllToasts, apiFetch]);
-}
+  }, [sessionToken, loggedIn, addNotification, clearInbox, clearAllToasts, apiFetch]);
+}  

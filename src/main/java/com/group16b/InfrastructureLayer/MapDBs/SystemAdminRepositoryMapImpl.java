@@ -5,10 +5,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Repository;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
-import org.springframework.stereotype.Repository;
 
 @Repository
 public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
@@ -47,28 +47,31 @@ public class SystemAdminRepositoryMapImpl implements IRepository<SystemAdmin> {
 	}
 
 	public synchronized void save(SystemAdmin systemAdmin) {
-		if(!isValid(systemAdmin)) {
-			throw new IllegalArgumentException("System admin data is invalid.");
-		}
-		SystemAdmin existingAdmin = systemAdminsByUsername.get(systemAdmin.getUsername());
-		if (existingAdmin != null) { //if admin exists in the system, update it
-			long newVersion = systemAdmin.getVersion();
-			long currentVersion = existingAdmin.getVersion();
-			SystemAdmin adminToUpdate = new SystemAdmin(systemAdmin);
-			if (newVersion != currentVersion) {
-				throw new OptimisticLockingFailureException("Version mismatch: expected " + currentVersion + " but got " + newVersion);
-			}
-			adminToUpdate.setVersion(currentVersion+1);
-			systemAdminsByUsername.put(systemAdmin.getUsername(), adminToUpdate);
-			
-		}
-		else{ //if admin does not exist, add it to the system, no need to check versions because it's a new admin
-			SystemAdmin adminToStore = new SystemAdmin(systemAdmin);
-			adminToStore.setVersion(systemAdmin.getVersion() + 1);
-			systemAdminsByUsername.put(systemAdmin.getUsername(), adminToStore);
-		}
-		
-	}
+        if(!isValid(systemAdmin)) {
+            throw new IllegalArgumentException("System admin data is invalid.");
+        }
+        SystemAdmin existingAdmin = systemAdminsByUsername.get(systemAdmin.getUsername());
+        
+        if (existingAdmin != null) {
+            long currentVersion = existingAdmin.getVersion();
+            
+            if (systemAdmin.getVersion() != currentVersion) {
+                throw new OptimisticLockingFailureException("Version mismatch: expected " + currentVersion + " but got " + systemAdmin.getVersion());
+            }
+            
+            systemAdmin.setVersion(currentVersion + 1);
+            
+            SystemAdmin adminToUpdate = new SystemAdmin(systemAdmin);
+            systemAdminsByUsername.put(systemAdmin.getUsername(), adminToUpdate);
+            
+        }
+        else {
+            systemAdmin.setVersion(systemAdmin.getVersion() + 1);
+            
+            SystemAdmin adminToStore = new SystemAdmin(systemAdmin);
+            systemAdminsByUsername.put(systemAdmin.getUsername(), adminToStore);
+        }
+    }
 	private boolean isValid(SystemAdmin systemAdmin) {
 		if(systemAdmin == null) {
 			return false;

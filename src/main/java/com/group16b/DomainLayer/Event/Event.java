@@ -25,6 +25,7 @@ import jakarta.persistence.Version;
 @Entity
 @Table(name = "events")
 public class Event {
+	
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int eventID;
@@ -142,6 +143,10 @@ public class Event {
 
 	public int getEventID() {
 		return eventID;
+	}
+
+	public void setId(int id){//only for mapImpl repository
+		this.eventID = id;
 	}
 
 	public boolean getEventStatus() {
