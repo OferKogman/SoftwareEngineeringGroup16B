@@ -28,10 +28,12 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
+import org.springframework.transaction.annotation.Transactional;
 
 import io.jsonwebtoken.JwtException;
 
 @Service
+@Transactional
 public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
@@ -56,13 +58,11 @@ public class ReserveService {
         this.userRepo = userRepo;
     }
 
-    @Transactional
     public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId,
             String sessionToken) {
         return this.reserveSeatsWithLottery(segmentId, seatIds, eventID, venueId, "", sessionToken);
     }
 
-    @Transactional
     public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId,
             String sessionToken) {
         return this.reserveFieldSeatsWithLottery(segmentId, amount, eventID, venueId, "", sessionToken);
@@ -203,7 +203,6 @@ public class ReserveService {
         return q;
     }
 
-    @Transactional
     public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId,
             String lotteryCode, String sessionToken) {
         String subjectID = null;
@@ -310,7 +309,6 @@ public class ReserveService {
         }
     }
 
-    @Transactional
     public Result<Integer> getPositionInQueueForEvent(int eventID) {
         try {
             String subjectID = validateUserOrGuestAndGetSubjectId();
@@ -402,7 +400,6 @@ public class ReserveService {
         }
     }
 
-    @Transactional
     private void queueRemovePassed(VirtualQueue q, String subjectID) {
         if (q == null || subjectID == null) {
             return;

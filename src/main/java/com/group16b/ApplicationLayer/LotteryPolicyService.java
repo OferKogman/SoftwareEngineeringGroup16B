@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -24,6 +25,7 @@ import java.util.Set;
 import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 @Service
+@Transactional
 public class LotteryPolicyService {
     private static final Logger logger = LoggerFactory.getLogger(LotteryPolicyService.class);
     private final IEventRepository eventRepository;

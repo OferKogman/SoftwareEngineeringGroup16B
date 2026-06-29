@@ -1,101 +1,60 @@
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, useCallback, useContext, useState } from "react";
 import type { NotificationData } from "../../DTOs/NotificationTypesDTO";
-import { useSession } from "../../GlobalContext/SessionContext";
 import { generateNotificationId } from "./NotificationUtils";
 
 interface NotificationContextType {
-  notifications: NotificationData[];
+  notifications: NotificationData[]; // For the floating toasts
+  inbox: NotificationData[]; // Persistent history for the Bell
+  unreadCount: number;
   addNotification: (notification: Omit<NotificationData, "id">) => void;
   removeNotification: (id: string) => void;
-  clearAll: () => void;
+  clearAllToasts: () => void;
+  markInboxAsRead: () => void;
+  clearInbox: () => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(
-  undefined,
-);
+const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
-export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [notifications, setNotifications] = useState<NotificationData[]>([]);
-
-  const { sessionToken } = useSession();
+  const [inbox, setInbox] = useState<NotificationData[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const removeNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
   }, []);
 
-  const addNotification = useCallback(
-    (notification: Omit<NotificationData, "id">) => {
-      setNotifications((prev) => {
-        // check if a notification with the exact same message and type is already on screen
-        const isDuplicate = prev.some(
-          (n) =>
-            n.message === notification.message && n.type === notification.type,
-        );
+  const addNotification = useCallback((notification: Omit<NotificationData, "id">) => {
+    const id = generateNotificationId();
+    const newNotification = { ...notification, id };
 
-        if (isDuplicate) {
-          return prev;
-        }
+    setInbox((prev) => [newNotification, ...prev]);
+    setUnreadCount((prev) => prev + 1);
 
-        const id = generateNotificationId();
-        const newNotification = { ...notification, id };
+    setNotifications((prev) => {
+      const isDuplicate = prev.some((n) => n.message === notification.message && n.type === notification.type);
+      if (isDuplicate) return prev;
 
-        //set up the timeout if a duration was provided
-        if (notification.duration) {
-          setTimeout(() => {
-            removeNotification(id);
-          }, notification.duration);
-        }
+      if (prev.length >= 3) return prev; 
 
-        //add notificationto the arr
-        return [...prev, newNotification];
-      });
-    },
-    [removeNotification],
-  );
+      if (notification.duration) {
+        setTimeout(() => removeNotification(id), notification.duration);
+      }
+      return [...prev, newNotification];
+    });
+  }, [removeNotification]);
 
-  const clearAll = useCallback(() => {
-    setNotifications([]);
+  const clearAllToasts = useCallback(() => setNotifications([]), []);
+  const markInboxAsRead = useCallback(() => setUnreadCount(0), []);
+  const clearInbox = useCallback(() => {
+    setInbox([]);
+    setUnreadCount(0);
   }, []);
 
-  useEffect(() => {
-    if (!sessionToken) return;
-
-    const eventSource = new EventSource(
-      `http://localhost:8080/api/notifications/stream?token=${sessionToken}`,
-    );
-
-    eventSource.onmessage = (event) => {
-      addNotification({
-        type: "message",
-        message: event.data,
-        duration: 5000, // auto-dismiss after 5 seconds
-      });
-    };
-
-    eventSource.onerror = () => {
-      console.error("Lost connection to notification broadcaster.");
-      eventSource.close();
-    };
-
-    // When the component unmounts or the session ends, this cleanup function runs.
-    // It closes the HTTP stream, which tells the Java backend to call `Broadcaster.removeListener()`.
-    return () => {
-      eventSource.close();
-    };
-  }, [sessionToken, addNotification]);
-
   return (
-    <NotificationContext.Provider
-      value={{ notifications, addNotification, removeNotification, clearAll }}
-    >
+    <NotificationContext.Provider value={{ 
+      notifications, inbox, unreadCount, addNotification, removeNotification, clearAllToasts, markInboxAsRead, clearInbox 
+    }}>
       {children}
     </NotificationContext.Provider>
   );
@@ -103,10 +62,6 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({
 
 export const useNotifications = (): NotificationContextType => {
   const context = useContext(NotificationContext);
-  if (!context) {
-    throw new Error(
-      "useNotifications must be used within a NotificationProvider",
-    );
-  }
+  if (!context) throw new Error("useNotifications must be used within a NotificationProvider");
   return context;
 };

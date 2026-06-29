@@ -9,8 +9,10 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.SessionToken;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class SystemAdminLoginService {
 
     private static final Logger logger = LoggerFactory.getLogger(SystemAdminLoginService.class);

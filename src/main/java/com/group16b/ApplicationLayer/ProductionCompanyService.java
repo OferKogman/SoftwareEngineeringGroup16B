@@ -27,8 +27,10 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 import com.group16b.InfrastructureLayer.Security.Role;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class ProductionCompanyService {
 
     private static final Logger logger = LoggerFactory.getLogger(ProductionCompanyService.class);

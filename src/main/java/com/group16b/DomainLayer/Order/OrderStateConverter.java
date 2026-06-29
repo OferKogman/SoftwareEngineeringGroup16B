@@ -1,5 +1,10 @@
 package com.group16b.DomainLayer.Order;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
@@ -9,6 +14,23 @@ public class OrderStateConverter implements AttributeConverter<OrderState, Strin
     private static final String ACTIVE_PREFIX = "ACTIVE:";
     private static final String COMPLETED = "COMPLETED";
     private static final String CANCELED = "CANCELED";
+    private static final ObjectMapper mapper = buildMapper();
+
+private static ObjectMapper buildMapper() {
+        PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
+                .allowIfSubType(OrderState.class)
+                .build();
+        ObjectMapper m = new ObjectMapper();
+        m.activateDefaultTyping(ptv, ObjectMapper.DefaultTyping.NON_FINAL);
+        
+        m.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        
+        m.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        
+        m.disable(com.fasterxml.jackson.databind.SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        
+        return m;
+    }
 
     @Override
     public String convertToDatabaseColumn(OrderState state) {
