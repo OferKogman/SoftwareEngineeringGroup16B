@@ -40,7 +40,7 @@ public class LotteryPolicy implements PurchasePolicy {
     @Column(name = "user_id")
     private Map<String, String> usedCodes=new HashMap<>();
 
-    public LotteryPolicy(String lotteryName, int winnerAmount,LocalDateTime lotteryRegistrationDueDate) {
+    public LotteryPolicy(int redundendButTests, String lotteryName, int winnerAmount,LocalDateTime lotteryRegistrationDueDate) {
         this.lotteryName = lotteryName;
         this.winnerAmount = winnerAmount;
         validateDate(lotteryRegistrationDueDate);
