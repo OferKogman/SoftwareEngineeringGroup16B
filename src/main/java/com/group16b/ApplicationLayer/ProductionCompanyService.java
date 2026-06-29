@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
@@ -24,10 +25,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
@@ -109,8 +109,8 @@ public class ProductionCompanyService {
 
             logger.info("ProductionCompanyService.displayTotalRevenue: calculating total revenue for company {}",
                     productionCompanyID);
-            double totalRevenue = getAllRevenue(
-                    getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company, userID)));
+            // could be that the refund doesnt turn them canceledcorrectly. or this function considers the refunds?
+            double totalRevenue = getAllRevenue(getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company, userID)));
 
             logger.info(
                     "ProductionCompanyService.displayTotalRevenue: successfuly calculated total revenue for company {}.",
@@ -243,7 +243,7 @@ public class ProductionCompanyService {
 
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {
         return orderRepo.getAll().stream()
-                .filter(order -> !order.isActive())
+                .filter(order -> order.isCompleted()) // changed from !order.isActive() to order.isCompleted() should be fixed now.
                 .filter(order -> eventIDs.contains(order.getEventId()))
                 .toList();
     }
