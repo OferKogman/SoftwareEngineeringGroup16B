@@ -17,7 +17,7 @@ import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 @Tag("external")
 class PaymentServiceRealApiTests {
 
-    private PaymentService paymentService=new PaymentService(new WsepClient(new RestTemplate()));
+    private PaymentService paymentService=new PaymentService(new WsepClient(new RestTemplate(), "https://damp-lynna-wsep-1984852e.koyeb.app/"));
 
     private PaymentInfo validPayment() {
         return new PaymentInfo(

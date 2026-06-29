@@ -35,7 +35,10 @@ public class StartupServiceTests {
     {
         mockWsepClient=mock(WsepClient.class);
         mockAdminRepository=mock(IRepository.class);
-        startupService=new StartupService(mockAdminRepository, mockWsepClient);
+        startupService=new StartupService(mockAdminRepository, mockWsepClient, "test-admin",
+                "test-password",
+                "test-admin@example.com",
+                true);
 
         doNothing().when(mockWsepClient).handshake();
         when(mockAdminRepository.getAll()).thenReturn(INITIAL_ADMINS);
