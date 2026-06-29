@@ -3,6 +3,7 @@ package com.group16b.DomainLayer.Policies.PurchasePolicy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -10,24 +11,40 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class LotteryPolicy implements PurchasePolicy {
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.MapKeyColumn;
 
+@Embeddable
+public class LotteryPolicy implements PurchasePolicy {
     private String lotteryName;
     private int winnerAmount;
     private LocalDateTime lotteryRegistrationDueDate;
-    private Set<String> participants;
-    private Map<String, String> winnersAndCodes;
-    private Map<String, String> usedCodes;
+    
+    @ElementCollection
+    @CollectionTable(name = "lottery_participants")
+    @Column(name = "user_id")
+    private Set<String> participants=new HashSet<>();
 
-    public LotteryPolicy(int lotteryID, String lotteryName, int winnerAmount,
-            LocalDateTime lotteryRegistrationDueDate) {
+    @ElementCollection
+    @CollectionTable(name = "lottery_winners")
+    @MapKeyColumn(name = "code")
+    @Column(name = "user_id")
+    private Map<String, String> winnersAndCodes=new HashMap<>();;
+
+    @ElementCollection
+    @CollectionTable(name = "lottery_used_codes")
+    @MapKeyColumn(name = "code")
+    @Column(name = "user_id")
+    private Map<String, String> usedCodes=new HashMap<>();
+
+    public LotteryPolicy(String lotteryName, int winnerAmount,LocalDateTime lotteryRegistrationDueDate) {
         this.lotteryName = lotteryName;
         this.winnerAmount = winnerAmount;
         validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
-        this.participants = ConcurrentHashMap.newKeySet();
-        this.winnersAndCodes = new ConcurrentHashMap<>();
-        this.usedCodes = new ConcurrentHashMap<>();
     }
 
     public LotteryPolicy(LotteryPolicy other) {
@@ -37,9 +54,11 @@ public class LotteryPolicy implements PurchasePolicy {
 
         this.participants = new HashSet<>(other.participants);
 
-        this.winnersAndCodes = new ConcurrentHashMap<>(other.winnersAndCodes);
-        this.usedCodes = new ConcurrentHashMap<>(other.usedCodes);
+        this.winnersAndCodes = new HashMap<>(other.winnersAndCodes);
+        this.usedCodes = new HashMap<>(other.usedCodes);
     }
+
+    public LotteryPolicy(){}
 
     public String getLotteryName() {
         return lotteryName;
@@ -81,7 +100,7 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
-        if(lotteryRegistrationDueDate.isBefore(LocalDateTime.now()))
+        if(lotteryRegistrationDueDate.isAfter(LocalDateTime.now()))
             throw new IllegalStateException("Cannot handle lottery results before the registration due time passed.");
         List<String> winners = new ArrayList<>(participants);
 

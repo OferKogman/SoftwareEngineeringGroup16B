@@ -61,7 +61,7 @@ public class LotteryPolicyService {
             logger.info(
                     "LotteryPolicyService.createLotteryPolicy: Creating lottery policy with ID: {}, Name: {}, Winner Amount: {}, Registration Due Date: {}",
                     lotteryID, lotteryName, winnerAmount, lotteryRegistrationDueDate);
-            LotteryPolicy lotteryPolicy = new LotteryPolicy(lotteryID, lotteryName, winnerAmount,
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(lotteryName, winnerAmount,
                     lotteryRegistrationDueDate);
 
             while (true) {
