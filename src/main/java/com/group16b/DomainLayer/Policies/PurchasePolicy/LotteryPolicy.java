@@ -9,12 +9,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embeddable;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKeyColumn;
 
 @Embeddable
@@ -24,20 +24,29 @@ public class LotteryPolicy implements PurchasePolicy {
     private LocalDateTime lotteryRegistrationDueDate;
     
     @ElementCollection
-    @CollectionTable(name = "lottery_participants")
-    @Column(name = "user_id")
+    @CollectionTable(
+        name = "lottery_participants",
+        joinColumns = @JoinColumn(name = "event_id")
+    )
+    @Column(name = "user_id",nullable = false)
     private Set<String> participants=new HashSet<>();
 
     @ElementCollection
-    @CollectionTable(name = "lottery_winners")
+    @CollectionTable(
+        name = "lottery_winners",
+        joinColumns = @JoinColumn(name = "event_id")
+    )
     @MapKeyColumn(name = "code")
-    @Column(name = "user_id")
+    @Column(name = "user_id",nullable = false)
     private Map<String, String> winnersAndCodes=new HashMap<>();;
 
     @ElementCollection
-    @CollectionTable(name = "lottery_used_codes")
+    @CollectionTable(
+        name = "lottery_used_codes",
+        joinColumns = @JoinColumn(name = "event_id")
+    )
     @MapKeyColumn(name = "code")
-    @Column(name = "user_id")
+    @Column(name = "user_id",nullable = false)
     private Map<String, String> usedCodes=new HashMap<>();
 
     public LotteryPolicy(int redundendButTests, String lotteryName, int winnerAmount,LocalDateTime lotteryRegistrationDueDate) {

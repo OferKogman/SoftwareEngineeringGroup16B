@@ -10,6 +10,8 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
+import jakarta.persistence.Embedded;
+
 public class Event {
 	private static int IDCounter = 1;
 
@@ -22,8 +24,12 @@ public class Event {
 	private String artist;
 	private String category;
 	private final int productionCompanyID;
+
+	//incorrect so skipped, maybe will be added when actually implemented
 	private final Set<DiscountPolicy> discountPolicy;
 	private final Set<PurchasePolicy> purchasePolicy;
+
+	@Embedded
 	private LotteryPolicy lotteryPolicy;
 	private double price;
 	private double rating;
