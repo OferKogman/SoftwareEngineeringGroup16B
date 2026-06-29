@@ -67,11 +67,7 @@ public class StartupService {
         try{
             if(adminRepo.getAll().isEmpty()) {
                 logger.info("StartupService.validateAdmins: No system admins found. Creating default system admin...");
-                SystemAdmin defaultAdmin = new SystemAdmin(
-                        defaultAdminUsername,
-                        defaultAdminPassword,
-                        defaultAdminEmail
-                );
+                SystemAdmin defaultAdmin = new SystemAdmin(defaultAdminUsername, defaultAdminPassword, defaultAdminEmail);
                 adminRepo.save(defaultAdmin);
             }
         } catch (Exception e) {
