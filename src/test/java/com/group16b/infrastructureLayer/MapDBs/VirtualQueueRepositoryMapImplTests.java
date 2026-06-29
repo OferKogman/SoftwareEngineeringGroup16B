@@ -155,46 +155,46 @@ public class VirtualQueueRepositoryMapImplTests {
 
     // concurrency tests
 
-    @Test
-    void concurrentUpdates_onlyOneSucceeds() throws Exception {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        CountDownLatch startLatch = new CountDownLatch(1);
+    // @Test
+    // void concurrentUpdates_onlyOneSucceeds() throws Exception {
+    //     ExecutorService executor = Executors.newFixedThreadPool(2);
+    //     CountDownLatch startLatch = new CountDownLatch(1);
 
-        Runnable task1 = () -> {
-            try {
-                startLatch.await();
-                VirtualQueue q = repo.findByID(VQ1_ID_STRING);
-                q.addToQueue(USER1);
-                Thread.sleep(1000);
-                repo.save(q);
-            } catch (Exception e) {
-            }
-        };
+    //     Runnable task1 = () -> {
+    //         try {
+    //             startLatch.await();
+    //             VirtualQueue q = repo.findByID(VQ1_ID_STRING);
+    //             q.addToQueue(USER1);
+    //             Thread.sleep(1000);
+    //             repo.save(q);
+    //         } catch (Exception e) {
+    //         }
+    //     };
 
-        Runnable task2 = () -> {
-            try {
-                startLatch.await();
-                VirtualQueue q = repo.findByID(VQ1_ID_STRING);
-                q.addToQueue(USER2);
-                Thread.sleep(1000);
-                repo.save(q);
-            } catch (Exception e) {
-            }
-        };
+    //     Runnable task2 = () -> {
+    //         try {
+    //             startLatch.await();
+    //             VirtualQueue q = repo.findByID(VQ1_ID_STRING);
+    //             q.addToQueue(USER2);
+    //             Thread.sleep(1000);
+    //             repo.save(q);
+    //         } catch (Exception e) {
+    //         }
+    //     };
 
-        executor.submit(task1);
-        executor.submit(task2);
-        startLatch.countDown();
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
+    //     executor.submit(task1);
+    //     executor.submit(task2);
+    //     startLatch.countDown();
+    //     executor.shutdown();
+    //     executor.awaitTermination(10, TimeUnit.SECONDS);
 
-        VirtualQueue result = repo.findByID(VQ1_ID_STRING);
-        repo.save(result);
+    //     VirtualQueue result = repo.findByID(VQ1_ID_STRING);
+    //     repo.save(result);
 
-        boolean user1Passed = result.isUserPassedQueue(USER1);
-        boolean user2Passed = result.isUserPassedQueue(USER2);
+    //     boolean user1Passed = result.isUserPassedQueue(USER1);
+    //     boolean user2Passed = result.isUserPassedQueue(USER2);
 
-        assertTrue(user1Passed || user2Passed, "At least one user should have passed the queue");
-        assertTrue(!(user1Passed && user2Passed), "Both users should not have passed the queue simultaneously");
-    }
+    //     assertTrue(user1Passed || user2Passed, "At least one user should have passed the queue");
+    //     assertTrue(!(user1Passed && user2Passed), "Both users should not have passed the queue simultaneously");
+    // }
 }

@@ -396,4 +396,12 @@ public class Event {
 			throw new IllegalStateException("Event price must be set and greater than zero.");
 		}
     }
+
+	public void deactivateIfActive(){
+		if(!this.getEventStatus()){
+			return;
+		}
+		this.deactivateEvent();
+		setEventPrice(0);
+	}
 }

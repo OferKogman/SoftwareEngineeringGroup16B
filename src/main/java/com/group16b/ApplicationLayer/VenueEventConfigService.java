@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -247,7 +248,8 @@ public class VenueEventConfigService {
             // future events:
             logger.info("VenueEventConfigService.editVenueSegments: Checking for future events to refund.");
             List<Integer> futureEventsToRefund = new ArrayList<>();
-            for (Event event : eventRepository.findAllByVenueID(venueID)) {
+            List<Event> allEvents = eventRepository.findAllByVenueID(venueID);
+            for (Event event : allEvents) {
                 if (event.getEventStartTime().isAfter(java.time.LocalDateTime.now())) {
                     futureEventsToRefund.add(event.getEventID());
                 }
@@ -350,6 +352,22 @@ public class VenueEventConfigService {
             for (String deletedSegmentID : deletedSegmentIDs) {
                 venue.removeSegment(deletedSegmentID);
             }
+
+
+            //checking if new segments are actually added or there is no change in that
+
+            Stream.concat(newFieldSegments.stream(), newSeatSegments.stream())
+                .findFirst()
+                .ifPresent(ignored -> {
+                    for (Integer eventID : futureEventsToRefund) {
+                        Event eventToDeactivate = eventRepository.findByID(String.valueOf(eventID));
+                        eventToDeactivate.deactivateIfActive();
+                        eventToDeactivate.setEventPrice(0);
+                        eventRepository.save(eventToDeactivate);
+                    }
+            });
+
+
             // adding the new segments with the new stock.
             // adding new field segments
             logger.info(
@@ -448,16 +466,6 @@ public class VenueEventConfigService {
                 }
             }
 
-            logger.info(
-                    "VenueEventConfigService.editVenueSegments: Deactivating future events affected by venue edit.");
-            for (Integer eventID : futureEventsToRefund) {
-                Event eventToDeactivate = eventRepository.findByID(String.valueOf(eventID));
-                if (eventToDeactivate.getEventStatus()) {
-                    eventToDeactivate.deactivateEvent();
-                    eventToDeactivate.setEventPrice(0);
-                    eventRepository.save(eventToDeactivate);
-                }
-            }
 
             return Result.makeOk(true);
 
