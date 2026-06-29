@@ -10,11 +10,10 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
@@ -58,6 +57,7 @@ public class Event {
 	private Set<PurchasePolicy> purchasePolicy;
 
 	@Embedded
+	@Nullable
 	private LotteryPolicy lotteryPolicy;
 
 	@Column(nullable = false)
