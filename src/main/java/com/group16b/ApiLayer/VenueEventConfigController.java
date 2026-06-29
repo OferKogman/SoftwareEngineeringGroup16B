@@ -40,7 +40,7 @@ public class VenueEventConfigController extends BaseController {
     @GetMapping("/{venueID}")
     public ResponseEntity<?> getVenue_(@RequestHeader("Authorization") String sessionToken,
             @PathVariable("venueID") String venueID) {
-        System.out.println("Received request to get venue with ID: " + venueID);
+        System.out.println("Received request to get venue Location with ID: " + venueID);
         return executeWithReturnData(() -> venueEventConfigService.getVenue(sessionToken, venueID));
     }
     
