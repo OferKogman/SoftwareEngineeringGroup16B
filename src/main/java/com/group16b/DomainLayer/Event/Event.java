@@ -10,35 +10,70 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
+import jakarta.persistence.Version;
 
+@Entity
+@Table(name = "events")
 public class Event {
 	private static int IDCounter = 1;
 
-	private final int eventID;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private int eventID;
+
+	@Column(nullable = false)
 	private boolean active = false;
+
+	@Column(nullable = false)
 	private String venueID;
+
+	@Column(nullable = false)
 	private String name;
+
+	@Column(nullable = false)
 	private LocalDateTime startTime;
+
+	@Column(nullable = false)
 	private LocalDateTime endTime;
+	@Column(nullable = false)
 	private String artist;
+	@Column(nullable = false)
 	private String category;
-	private final int productionCompanyID;
+
+	@Column(name="production_company_id",nullable = false,updatable = false)
+	private int productionCompanyID;
 
 	//incorrect so skipped, maybe will be added when actually implemented
-	private final Set<DiscountPolicy> discountPolicy;
-	private final Set<PurchasePolicy> purchasePolicy;
+	@Transient
+	private Set<DiscountPolicy> discountPolicy;
+
+	@Transient
+	private Set<PurchasePolicy> purchasePolicy;
 
 	@Embedded
 	private LotteryPolicy lotteryPolicy;
-	private double price;
-	private double rating;
-	private final String ownerId;
 
+	@Column(nullable = false)
+	private double price;
+
+	@Column(nullable = false)
+	private double rating;
+
+	@Column(name = "owner_id", nullable = false, updatable = false)
+	private String ownerId;
+
+	@Version
 	private long version;
 
 	public Event(EventRecord eventRecord, String ownerId) {
-		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
 		validateName(eventRecord.name());
 		this.name = eventRecord.name();
@@ -78,6 +113,7 @@ public class Event {
 		this.version = other.getVersion();
 		lotteryPolicy = other.lotteryPolicy == null ? null : new LotteryPolicy(other.getLotteryPolicy());
 	}
+	public Event(){}
 
 	private Set<DiscountPolicy> copyDiscountPolicies(Set<DiscountPolicy> policies) {
 		Set<DiscountPolicy> copiedPolicies = new HashSet<>();
