@@ -26,7 +26,6 @@ public class Event {
 	private static int IDCounter = 1;
 
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private int eventID;
 
 	@Column(nullable = false)
@@ -74,6 +73,7 @@ public class Event {
 	private long version;
 
 	public Event(EventRecord eventRecord, String ownerId) {
+		this.eventID=IDCounter++;
 		this.venueID = eventRecord.venueID();
 		validateName(eventRecord.name());
 		this.name = eventRecord.name();
