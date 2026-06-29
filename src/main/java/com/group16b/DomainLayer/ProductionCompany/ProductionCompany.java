@@ -151,6 +151,10 @@ public class ProductionCompany {
         this.version = version;
     }
 
+    public void setProductionCompanyId(int id){//for the interception
+        this.productionCompanyID = id;
+    }
+
     public Set<DiscountPolicy> getDiscountPolicy() {
         return new HashSet<>(discountPolicies);
     }
