@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
+import com.group16b.ApplicationLayer.DTOs.LocationDTO;
 import com.group16b.ApplicationLayer.DTOs.VenueDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -482,6 +483,23 @@ public class VenueEventConfigService {
         } catch (Exception e) {
             logger.error("VenueEventConfigService.editVenueSegments: Unexpected error occurred: " + e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public Result<LocationDTO> getVenueLocation(String venueID) {
+        try {
+            logger.info("VenueEventConfigService.getVenueLocation: Attempting to get venue with id: {}", venueID);
+            //we probaly dont cre about user role, maybe dont even care about a valid session token at all
+            Venue venue = venueRepository.findByID(venueID);
+            logger.info("VenueEventConfigService.getVenueLocation: Successfully found venue for ID {}",venueID);
+
+            return Result.makeOk(new LocationDTO(venue.getLocation()));
+        } catch (IllegalArgumentException e) {
+            logger.warn("VenueEventConfigService.getVenueLocation: IllegalArgumentException: {}",e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("VenueEventConfigService.getVenueLocation: Unexpected Exception: {}", e.getMessage(), e);
+            return Result.makeFail("An unexpected system error occurred");
         }
     }
 
