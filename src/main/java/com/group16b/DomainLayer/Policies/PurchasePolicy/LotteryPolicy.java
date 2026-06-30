@@ -41,6 +41,8 @@ public class LotteryPolicy implements PurchasePolicy {
         this.usedCodes = new ConcurrentHashMap<>(other.usedCodes);
     }
 
+    public LotteryPolicy() {}
+
     public String getLotteryName() {
         return lotteryName;
     }

@@ -18,11 +18,12 @@ public class ActiveOrder implements OrderState {
         this.creationTime = creationTime;
     }
 
-    @Override
+   @Override
     public boolean isActive() {
-        validateTime();
-        return true;
+        long currentTime = System.currentTimeMillis();
+        return (currentTime - creationTime) <= ORDER_TIMEOUT;
     }
+    
     public long getstartTime() {
         return creationTime;
     }

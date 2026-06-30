@@ -26,6 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
+import com.group16b.ApplicationLayer.DTOs.LocationDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ILocationService;
 import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
@@ -84,6 +85,8 @@ public class VenueEventConfigServiceTests {
         private final String venueName = "Madison Square Garden";
         private final LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         private final LocalDateTime endTime = startTime.plusHours(3);
+
+        private final String VENUE_ID="venue-123";
 
         @BeforeEach
         void setUp() throws IOException, InterruptedException {
@@ -413,6 +416,50 @@ public class VenueEventConfigServiceTests {
 
                 assertFalse(result.isSuccess());
                 assertEquals("An unexpected system error occurred", result.getError());
+        }
+
+        @Test
+        void getVenueLocation_ValidVenue_ReturnsOkResultWithDTO() {
+                String targetVenueID = "venue-123";
+
+                Location dummyLocation = new Location(
+                                "Madison Square Garden", "4", "Pennsylvania Plaza",
+                                "New York", "NY", "USA", 40.75, -73.99);
+
+                Venue realVenue = new Venue("Madison Square Garden", dummyLocation, new ConcurrentHashMap<>(),
+                                targetVenueID, new VenueGrid(6, 7), new ConcurrentHashMap<String, Stage>(),
+                                new ConcurrentHashMap<String, Entrance>(), 1);
+
+                when(mockVenueRepository.findByID(targetVenueID)).thenReturn(realVenue);
+
+                Result<LocationDTO> result = configService.getVenueLocation(targetVenueID);
+
+                assertTrue(result.isSuccess(), "Expected success when fetching a valid venue.");
+                assertTrue(result.getValue() != null, "Expected a VenueDTO to be returned in the Result payload.");
+                assertEquals(dummyLocation.getName(),result.getValue().getName());
+                verify(mockVenueRepository, times(1)).findByID(targetVenueID);
+        }
+
+        @Test
+        void getVenueLocation_invalidVenue_ReturnsFail() {
+                doThrow(new IllegalArgumentException("genshin impact")).when(mockVenueRepository).findByID(VENUE_ID);
+
+                Result<LocationDTO> result = configService.getVenueLocation(VENUE_ID);
+
+                assertFalse(result.isSuccess(), "Expected fal when fetching an invalid venue.");
+                assertEquals("genshin impact",result.getError());
+                verify(mockVenueRepository, times(1)).findByID(VENUE_ID);
+        }
+
+        @Test
+        void getVenueLocation_unexpectedIssue_ReturnsFail() {
+                doThrow(new RuntimeException("ZENLESS ZONE ZERO!")).when(mockVenueRepository).findByID(VENUE_ID);
+
+                Result<LocationDTO> result = configService.getVenueLocation(VENUE_ID);
+
+                assertFalse(result.isSuccess(), "Expected fal when fetching an invalid venue.");
+                assertEquals("An unexpected system error occurred",result.getError());
+                verify(mockVenueRepository, times(1)).findByID(VENUE_ID);
         }
 
         private void mockValidAuthAndPermission(Venue venue, ProductionCompany company) {
@@ -941,11 +988,11 @@ public class VenueEventConfigServiceTests {
 
         Event event = new Event(eventRecord, userID);
         event.activateEvent();
+        realEventRepo.save(event);
 
         venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
         venue.initializeSegmentForEvent("field-a", event.getEventID());
 
-        realEventRepo.save(event);
         realVenueRepo.save(venue);
         venue = realVenueRepo.findByID("venue-123");
 

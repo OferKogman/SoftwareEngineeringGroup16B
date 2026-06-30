@@ -1,42 +1,42 @@
 package com.group16b.InfrastructureLayer.Adapters;
 
+import java.util.List;
+
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
-import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Interfaces.IRepository;
-import com.group16b.InfrastructureLayer.Database.UserRepository;
-
-import java.util.List;
+import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import com.group16b.InfrastructureLayer.Database.SystemAdminRepository;
 
 @Component
 @Primary
-public class UserRepositoryAdapter implements IRepository<User>{
-    private final UserRepository springRepo;
-
-    public UserRepositoryAdapter(UserRepository springRepo) {
-        this.springRepo = springRepo;
+public class SystemAdminAdapter  implements IRepository<SystemAdmin> {
+    private final SystemAdminRepository springRepo;
+    
+    public SystemAdminAdapter(SystemAdminRepository springRepo){
+        this.springRepo = springRepo;        
     }
 
     @Override
-    public List<User> getAll() {
+    public List<SystemAdmin> getAll() {
         return springRepo.findAll(); 
     }
 
     @Override
-    public User findByID(String id) {
+    public SystemAdmin findByID(String id) {
         return springRepo.findById(id).orElseThrow(() -> 
             new IllegalArgumentException("User with ID " + id + " not found.")
         );
     }
 
     @Override
-    public void save(User user) {
+    public void save(SystemAdmin user) {
         springRepo.save(user);
     }
 
     @Override
     public void delete(String id) {
         springRepo.deleteById(id); 
-    }
+    }    
 }

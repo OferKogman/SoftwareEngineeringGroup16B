@@ -44,8 +44,7 @@ export default function LotteryCreationForm() {
       );
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Failed to create lottery.");
+        throw new Error(await response.text());
       }
 
       setMessage("Lottery created successfully.");
@@ -54,9 +53,7 @@ export default function LotteryCreationForm() {
         navigate(`/events/${eventID}/management/show`);
       }, 2000);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to create lottery.",
-      );
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -99,6 +96,8 @@ export default function LotteryCreationForm() {
           <input
             id="registrationDueDate"
             type="datetime-local"
+            min={new Date().toISOString().slice(0, 16)}
+            max="9999-12-31T23:59"
             value={lotteryRegistrationDueDate}
             onChange={(e) => setLotteryRegistrationDueDate(e.target.value)}
           />
@@ -110,52 +109,16 @@ export default function LotteryCreationForm() {
       </form>
 
       {message && (
-        <div className="popup-alert">
+        <div className="settings-alert">
           <p>{message}</p>
-          <button onClick={closePopup}>OK</button>
+          <button onClick={closePopup}> OK </button>
         </div>
       )}
 
       {error && (
-        <div className="popup-alert">
+        <div className="settings-alert">
           <p>{error}</p>
-          <button onClick={closePopup}>OK</button>
-        </div>
-      )}
-
-      {message && (
-        <div className="popup-alert">
-          <p>{message}</p>
-          <button
-            onClick={closePopup}
-            style={{
-              padding: "0.8rem 1rem",
-              borderRadius: "0.7rem",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            OK
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="popup-alert">
-          <p>{error}</p>
-          <button
-            onClick={closePopup}
-            style={{
-              padding: "0.8rem 1rem",
-              borderRadius: "0.7rem",
-              border: "none",
-              cursor: "pointer",
-              fontWeight: "bold",
-            }}
-          >
-            OK
-          </button>
+          <button onClick={closePopup}> OK </button>
         </div>
       )}
     </main>

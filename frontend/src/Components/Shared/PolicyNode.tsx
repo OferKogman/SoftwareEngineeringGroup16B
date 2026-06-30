@@ -65,6 +65,7 @@ const simplePolicyTypes: PurchasePolicyTypes[] = [
 
 export function PolicyNode(props: NodeProps<PolicyNode>) {
   const [showPopup, setShowPopup] = useState(false);
+  const [error, setError] = useState("");
   const [inputValue, setInputValue] = useState("");
   const [action, setAction] = useState<"CHANGE" | "REPLACE" | null>(null);
   const [replaceInputValue, setReplaceInputValue] =
@@ -74,6 +75,10 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
   const [rightPolicy, setRightPolicy] = useState<PurchasePolicyDTO | null>(
     null,
   );
+
+  function closePopup() {
+    setError("");
+  }
 
   function renderReplace() {
     if (action !== "REPLACE") return null;
@@ -171,7 +176,7 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
               const value = Number(replaceValue);
 
               if (!value || value <= 0) {
-                alert("Enter valid value");
+                setError("Enter valid value");
                 return;
               }
 
@@ -257,7 +262,7 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
                           const goalVal = Number(inputValue);
 
                           if (!goalVal || goalVal <= 0) {
-                            alert("Please enter a valid value");
+                            setError("Please enter a valid value");
                             return;
                           }
                           props.data.onChangeGoal(props.data.path, goalVal);
@@ -331,6 +336,13 @@ export function PolicyNode(props: NodeProps<PolicyNode>) {
 
       {showPopup && (
         <div className="policy-node-popup" onClick={(e) => e.stopPropagation()}>
+          {error && (
+            <div className="settings-alert">
+              <p>{error}</p>
+              <button onClick={closePopup}> OK </button>
+            </div>
+          )}
+
           {renderActions()}
 
           <button onClick={() => setShowPopup(false)}>Close</button>

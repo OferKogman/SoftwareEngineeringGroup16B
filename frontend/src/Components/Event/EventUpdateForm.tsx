@@ -30,11 +30,17 @@ export default function EventUpdateForm() {
 
   const [formData, setFormData] = useState<EventUpdateDetails>(initialFormData);
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [isToggling, setIsToggling] = useState(false);
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
 
   useEffect(() => {
     if (!eventID) {
@@ -51,18 +57,18 @@ export default function EventUpdateForm() {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to load event.");
+          throw new Error(await response.text());
         }
 
         const event: EventDTO = await response.json();
         setEventDTO(event);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load event.");
+        setError(err instanceof Error ? err.message : "");
       }
     }
 
     void loadEvent();
-  }, [eventID]);
+  }, [eventID, apiFetch]);
 
   function updateField<K extends keyof EventUpdateDetails>(
     field: K,
@@ -77,6 +83,7 @@ export default function EventUpdateForm() {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
+    setMessage("");
     setError("");
 
     try {
@@ -95,14 +102,13 @@ export default function EventUpdateForm() {
       });
 
       if (!response.ok) {
-        const message = await response.text();
-        throw new Error(message || "Failed to update event.");
+        throw new Error(await response.text());
       }
 
       setFormData(initialFormData);
-      alert("Event updated successfully.");
+      setMessage("Event updated successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update event.");
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -112,6 +118,7 @@ export default function EventUpdateForm() {
     if (!eventID || !eventDTO || isToggling) return;
 
     setIsToggling(true);
+    setMessage("");
     setError("");
 
     try {
@@ -128,15 +135,14 @@ export default function EventUpdateForm() {
       );
 
       if (!response.ok) {
-        const msg = await response.text();
-        throw new Error(msg || `Failed to ${endpoint} event`);
+        throw new Error(await response.text());
       }
 
       setEventDTO((prev) =>
         prev ? { ...prev, eventStatus: shouldActivate } : prev,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update status");
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsToggling(false);
     }
@@ -154,7 +160,18 @@ export default function EventUpdateForm() {
     <form className="event-update-form" onSubmit={handleSubmit}>
       <h2>Manage Event</h2>
 
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <label className="event-active-toggle">
         <span>{eventDTO.eventStatus ? "Active" : "Inactive"}</span>
@@ -214,6 +231,8 @@ export default function EventUpdateForm() {
         <input
           type="datetime-local"
           required={formData.endDate?.trim() !== ""}
+          min={new Date().toISOString().slice(0, 16)}
+          max="9999-12-31T23:59"
           value={formData.startDate || ""}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(
@@ -234,6 +253,7 @@ export default function EventUpdateForm() {
           type="datetime-local"
           required={formData.startDate?.trim() !== ""}
           min={getMinimumEndDateTime(formData.startDate || "")}
+          max="9999-12-31T23:59"
           value={formData.endDate || ""}
           onInvalid={(event) =>
             event.currentTarget.setCustomValidity(

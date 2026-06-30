@@ -81,6 +81,7 @@ public class EventService {
 
 			logger.info("EventService.createEvent: Attempting to create event: " + eventRecord.name());
 			Event event = new Event(eventRecord, user.getEmail());
+			eventRepository.save(event);//now correct id finally generated - can use since transactional all or nothing
 
 			logger.info("EventService.createEvent: Creating queue for the new event");
 			VirtualQueue q = new VirtualQueue(event.getEventID(), defaultQueuePassNum);
@@ -89,7 +90,6 @@ public class EventService {
 			Venue venue = venueRepository.findByID(eventRecord.venueID());
 			venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
 
-			eventRepository.save(event);
 			queueRepository.save(q);
 			venueRepository.save(venue);
 

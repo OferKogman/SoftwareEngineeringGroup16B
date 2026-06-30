@@ -4,6 +4,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.CollectionTable;
@@ -22,7 +23,8 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "membership_nodes")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class MembershipNode {
+@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE, setterVisibility = JsonAutoDetect.Visibility.NONE)
+public class MembershipNode implements java.io.Serializable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -2,9 +2,7 @@ package com.group16b.DomainLayer.SystemAdmin;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +27,7 @@ class SystemAdminTests {
 
     @Test
     void constructor_ValidData_StartsAtVersionZero() {
-        assertEquals(1L, admin.getVersion());
+        assertEquals(0, admin.getVersion());
     }
 
     @Test
@@ -53,7 +51,7 @@ class SystemAdminTests {
         SystemAdmin copy = new SystemAdmin(admin);
         copy.setVersion(42L);
 
-        assertEquals(1L, admin.getVersion());
+        assertEquals(0, admin.getVersion());
     }
 
 

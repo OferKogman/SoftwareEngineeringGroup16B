@@ -10,6 +10,8 @@ import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
@@ -20,7 +22,8 @@ import jakarta.persistence.Version;
 public class Order {
  
     @Id
-    private final String orderId;
+	@GeneratedValue(strategy = GenerationType.UUID)
+    private String orderId;
  
     @Convert(converter = OrderStateConverter.class)
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -63,7 +66,6 @@ public class Order {
 
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
-		this.orderId = "order_" + ++idCounter;
 		this.state = new ActiveOrder();
 		this.seats = List.copyOf(seats);
 		this.numOfTickets = seats.size();
@@ -75,7 +77,7 @@ public class Order {
 		this.version = 0;
 	}
 	public Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID) {
-		this.orderId = "order_" + ++idCounter;
+
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
@@ -115,6 +117,10 @@ public class Order {
 
 	public String getOrderId() {
 		return orderId;
+	}
+
+	public void setId(int id){
+		this.orderId = "order_" + id;
 	}
 	public int getEventId() {
 		return eventId;
@@ -254,7 +260,9 @@ public class Order {
         this.version=version;
     }
 
-	
+	public void incrementVersion() {
+		this.version++;
+	}
 	
 
 }

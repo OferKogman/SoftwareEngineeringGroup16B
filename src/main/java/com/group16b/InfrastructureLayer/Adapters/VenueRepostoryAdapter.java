@@ -3,13 +3,13 @@ package com.group16b.InfrastructureLayer.Adapters;
 import java.util.List;
 
 import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.Database.VenueRepository;
 
-@Repository
+@Component
 @Primary
 public class VenueRepostoryAdapter implements IRepository<Venue>{
     private final VenueRepository springRepo;
