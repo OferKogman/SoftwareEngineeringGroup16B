@@ -111,7 +111,10 @@ function buildTree(
       nodes,
       edges,
       [...path, "left"],
-      insideAndOr || policy.type === "AND" || policy.type === "OR",
+      isCompositePolicy(policy) &&
+        (policy.type === "AND" || policy.type === "OR")
+        ? true
+        : insideAndOr,
       onSwap,
       onChangeGoal,
       onReplace,
@@ -125,7 +128,10 @@ function buildTree(
       nodes,
       edges,
       [...path, "right"],
-      insideAndOr || policy.type === "AND" || policy.type === "OR",
+      isCompositePolicy(policy) &&
+        (policy.type === "AND" || policy.type === "OR")
+        ? true
+        : insideAndOr,
       onSwap,
       onChangeGoal,
       onReplace,

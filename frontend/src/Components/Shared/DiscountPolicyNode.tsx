@@ -121,7 +121,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
 
         {replaceInputValue !== "SIMPLE" && renderGoalInput()}
 
-        {renderPercentageInput()}
+        {props.data.percentage !== 0 && renderPercentageInput()}
 
         <button onClick={replaceSimplePolicy}>Replace</button>
       </>
@@ -453,7 +453,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                     <>
                       {props.data.type !== "SIMPLE" &&
                         renderGoalInput(props.data.type)}
-                      {renderPercentageInput()}
+                      {props.data.percentage !== 0 && renderPercentageInput()}
 
                       <button
                         onClick={() => {
@@ -485,7 +485,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                             }
                             props.data.onChangeGoal(
                               props.data.path,
-                              dateValue.toISOString(),
+                              changeValueInput as string,
                               percentageValue,
                             );
 
