@@ -24,6 +24,7 @@ const initialFormData: AdminLoginData = {
 export default function AdminLoginForm({ title }: AdminLoginFormProps) {
   const [formData, setFormData] = useState<AdminLoginData>(initialFormData);
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
   const { adminLoggedIn, setAdminLoggedIn } = useAdminLoggedIn();
@@ -56,6 +57,11 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
     }
   }
 
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
+
   function updateField<K extends keyof AdminLoginData>(
     field: K,
     value: AdminLoginData[K],
@@ -69,6 +75,7 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
+    setMessage("");
     setError("");
 
     try {
@@ -87,7 +94,18 @@ export default function AdminLoginForm({ title }: AdminLoginFormProps) {
   return !adminLoggedIn ? (
     <form className="login-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
       <div className="form-row">
         <label>Username</label>
         <input

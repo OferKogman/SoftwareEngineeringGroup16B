@@ -1,11 +1,10 @@
 import { useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import type { NullableDiscountPolicyDTO } from "../DTOs/DiscountPolicyDTO";
-import type { EventDTO } from "../DTOs/EventDTO";
-import type { ProductionCompanyDTO } from "../DTOs/ProductionCompanyDTO";
-import { useApiFetch } from "../apiFetch";
-import "./EditPurchasePolicy.css";
-import DiscountPolicyTree from "./Shared/DiscountPolicyTree";
+import type { NullableDiscountPolicyDTO } from "../../DTOs/DiscountPolicyDTO";
+import type { EventDTO } from "../../DTOs/EventDTO";
+import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
+import { useApiFetch } from "../../apiFetch";
+import DiscountPolicyTree from "./DiscountPolicyTree";
 
 type EditDiscountPolicyProps = {
   type: "event" | "company";
@@ -21,12 +20,15 @@ export default function EditDiscountPolicy({ type }: EditDiscountPolicyProps) {
 
   const { event, company } = useOutletContext<DiscountPolicyContext>();
 
-  const [alert, setAlert] = useState<{
-    type: "success" | "error";
-    message: string;
-  } | null>(null);
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
 
   if (type === "event" && !event) {
     return <p>Event data not available.</p>;
@@ -44,11 +46,11 @@ export default function EditDiscountPolicy({ type }: EditDiscountPolicyProps) {
   async function savePolicy(policy: NullableDiscountPolicyDTO) {
     const id = type === "event" ? eventID : companyId;
 
+    setMessage("");
+    setError("");
+
     if (!id) {
-      setAlert({
-        type: "error",
-        message: `Missing ${type} ID`,
-      });
+      setError(`Missing ${type} ID`);
       return;
     }
 
@@ -70,16 +72,9 @@ export default function EditDiscountPolicy({ type }: EditDiscountPolicyProps) {
         throw new Error(await response.text());
       }
 
-      setAlert({
-        type: "success",
-        message: "Discount policy saved successfully",
-      });
+      setMessage("Discount policy saved successfully.");
     } catch (err) {
-      setAlert({
-        type: "error",
-        message:
-          err instanceof Error ? err.message : "Failed saving discount policy",
-      });
+      setError(err instanceof Error ? err.message : "");
     }
   }
 
@@ -89,11 +84,16 @@ export default function EditDiscountPolicy({ type }: EditDiscountPolicyProps) {
 
       <DiscountPolicyTree policy={policy} onSave={savePolicy} />
 
-      {alert && (
+      {message && (
         <div className="settings-alert">
-          <p>{alert.message}</p>
-
-          <button onClick={() => setAlert(null)}>OK</button>
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
         </div>
       )}
     </main>

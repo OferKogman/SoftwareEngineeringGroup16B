@@ -23,6 +23,7 @@ const initialFormData: AdminRegisterData = {
 export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
   const [formData, setFormData] = useState<AdminRegisterData>(initialFormData);
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { sessionToken, setSessionToken } = useSession();
   const apiFetch = useApiFetch();
@@ -60,6 +61,11 @@ export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
     }
   }
 
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
+
   function updateField<K extends keyof AdminRegisterData>(
     field: K,
     value: AdminRegisterData[K],
@@ -73,6 +79,7 @@ export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
+    setMessage("");
     setError("");
 
     try {
@@ -91,7 +98,18 @@ export default function AdminRegisterForm({ title }: AdminRegisterFormProps) {
   return (
     <form className="register-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="form-row">
         <label>Username</label>

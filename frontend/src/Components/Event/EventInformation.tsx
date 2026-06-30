@@ -18,10 +18,17 @@ export default function EventInformation() {
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isOrdering, setIsOrdering] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [lotteryCode, setLotteryCode] = useState<string | null>(null);
   const [age, setAge] = useState<number | null>(null);
 
   async function handleCreateOrder() {
+    setIsOrdering(true);
+    setMessage("");
+    setError("");
+
     try {
       if (age === -1) {
         throw new Error("Age is required");
@@ -58,22 +65,31 @@ export default function EventInformation() {
         });
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to enroll.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsOrdering(false);
     }
   }
 
   useEffect(() => {
     async function loadEvent() {
-      if (!eventID) return;
+      setMessage("");
+      setError("");
 
-      const response = await apiFetch(
-        `http://localhost:8080/events/${eventID}`,
-        {
-          method: "GET",
-        },
-      );
+      try {
+        if (!eventID) return;
 
-      if (response.ok) {
+        const response = await apiFetch(
+          `http://localhost:8080/events/${eventID}`,
+          {
+            method: "GET",
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+
         const data: EventDTO = await response.json();
         setEventDTO(data);
 
@@ -84,17 +100,27 @@ export default function EventInformation() {
           },
         );
 
-        if (companyResponse.ok) {
-          const data: ProductionCompanyDTO = await companyResponse.json();
-          setCompanyPurchasePolicy(data.purchasePolicy);
+        if (!companyResponse.ok) {
+          throw new Error(await companyResponse.text());
         }
+
+        const companyData: ProductionCompanyDTO = await companyResponse.json();
+        setCompanyPurchasePolicy(companyData.purchasePolicy);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "");
+      } finally {
+        setIsLoading(false);
       }
     }
 
-    loadEvent();
+    void loadEvent();
   }, [eventID, apiFetch]);
 
   async function enrollInLottery() {
+    setIsEnrolling(true);
+    setMessage("");
+    setError("");
+
     try {
       const response = await apiFetch(
         `http://localhost:8080/api/events/${eventID}/lottery/enroll`,
@@ -109,7 +135,9 @@ export default function EventInformation() {
 
       setMessage("Successfully enrolled in lottery.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to enroll.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsEnrolling(false);
     }
   }
 
@@ -167,13 +195,21 @@ export default function EventInformation() {
     void needAge();
   }, [ageRequired, age]);
 
+  if (isLoading) {
+    return <p>Loading event information...</p>;
+  }
+
   return (
     <>
       <ViewEvent />
 
       {canEnroll ? (
-        <button className="order-tickets-button" onClick={enrollInLottery}>
-          Enroll In Lottery
+        <button
+          className="order-tickets-button"
+          disabled={isEnrolling}
+          onClick={enrollInLottery}
+        >
+          {isEnrolling ? "Enrolling..." : "Enroll In Lottery"}
         </button>
       ) : (
         <div
@@ -208,9 +244,10 @@ export default function EventInformation() {
           )}
           <button
             className="order-tickets-button"
-            onClick={() => handleCreateOrder()}
+            disabled={isOrdering}
+            onClick={() => void handleCreateOrder()}
           >
-            Order Tickets
+            {isOrdering ? "Ordering..." : "Order Tickets"}
           </button>
         </div>
       )}

@@ -22,12 +22,20 @@ export default function MembersPermissions() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [isRemoving, setIsRemoving] = useState(false);
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setMessage("");
+    setError("");
+    setSubmitError("");
+  }
 
   async function handleAssignMember(data: AssignMemberData) {
     setMessage("");
     setError("");
+    setSubmitError("");
 
     if (!companyId) {
       setError("Missing company ID.");
@@ -73,6 +81,7 @@ export default function MembersPermissions() {
   ) {
     setMessage("");
     setError("");
+    setSubmitError("");
 
     if (!companyId) {
       setError("Missing company ID.");
@@ -103,6 +112,7 @@ export default function MembersPermissions() {
   async function handleRemoveMember(event: React.FormEvent<HTMLFormElement>) {
     try {
       event.preventDefault();
+      setIsRemoving(true);
 
       setMessage("");
       setError("");
@@ -127,9 +137,9 @@ export default function MembersPermissions() {
       setMessage(`Member ${removeTargetId} removed.`);
       setRemoveTargetId("");
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to assign member.",
-      );
+      setSubmitError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsRemoving(false);
     }
   }
 
@@ -137,8 +147,18 @@ export default function MembersPermissions() {
     <div className="members-page">
       <h2>Members & Permissions</h2>
 
-      {message && <p className="members-success">{message}</p>}
-      {error && <p className="members-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="members-grid">
         <AssignMember onSubmit={handleAssignMember} />
@@ -147,7 +167,12 @@ export default function MembersPermissions() {
         <form onSubmit={handleRemoveMember}>
           <h2>Remove Member</h2>
 
-          {submitError && <p className="form-error">{submitError}</p>}
+          {submitError && (
+            <div className="settings-alert">
+              <p>{submitError}</p>
+              <button onClick={closePopup}> OK </button>
+            </div>
+          )}
 
           <label>
             Target User
@@ -160,7 +185,9 @@ export default function MembersPermissions() {
             />
           </label>
 
-          <button type="submit">Remove Member</button>
+          <button type="submit" disabled={isRemoving}>
+            {isRemoving ? "Removing..." : "Remove Member"}
+          </button>
         </form>
       </div>
     </div>

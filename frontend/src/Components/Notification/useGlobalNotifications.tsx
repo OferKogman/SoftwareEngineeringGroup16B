@@ -1,15 +1,15 @@
-import { useEffect } from "react";
 import { fetchEventSource } from "@microsoft/fetch-event-source";
-import { useNotifications } from "./NotificationContext";
-import { useSession } from "../../GlobalContext/SessionContext";
+import { useEffect } from "react";
 import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
+import { useSession } from "../../GlobalContext/SessionContext";
 import { useApiFetch } from "../../apiFetch";
+import { useNotifications } from "./NotificationContext";
 
 export function useGlobalNotifications() {
   const { sessionToken } = useSession();
   const { loggedIn } = useLoggedIn();
   const apiFetch = useApiFetch();
-  
+
   const { addNotification, clearInbox, clearAllToasts } = useNotifications();
 
   useEffect(() => {
@@ -25,7 +25,7 @@ export function useGlobalNotifications() {
         await fetchEventSource(
           `http://localhost:8080/api/notifications/stream?token=${sessionToken}`,
           {
-            fetch: apiFetch as any,
+            fetch: fetch,
             signal: abortController.signal,
             async onopen(response) {
               if (response.ok) {
@@ -33,7 +33,9 @@ export function useGlobalNotifications() {
                 return;
               }
               if (response.status >= 400 && response.status < 600) {
-                throw new Error(`Server rejected connection: ${response.status}`);
+                throw new Error(
+                  `Server rejected connection: ${response.status}`,
+                );
               }
             },
             onmessage(event) {
@@ -42,19 +44,20 @@ export function useGlobalNotifications() {
                 const parsed = JSON.parse(event.data);
                 messageText = parsed.message || event.data;
               } catch (e) {
+                console.log(e);
               }
 
               addNotification({
-                type: "message", 
+                type: "message",
                 message: messageText,
-                duration: 10000, 
+                duration: 10000,
               });
             },
             onerror(err) {
               console.error("Lost broadcast connection:", err);
-              throw err; 
+              throw err;
             },
-          }
+          },
         );
       } catch (err) {
         console.error("Stream setup error:", err);
@@ -66,5 +69,12 @@ export function useGlobalNotifications() {
     return () => {
       abortController.abort();
     };
-  }, [sessionToken, loggedIn, addNotification, clearInbox, clearAllToasts, apiFetch]);
-}  
+  }, [
+    sessionToken,
+    loggedIn,
+    addNotification,
+    clearInbox,
+    clearAllToasts,
+    apiFetch,
+  ]);
+}

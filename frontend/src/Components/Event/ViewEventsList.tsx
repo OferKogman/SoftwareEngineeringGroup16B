@@ -11,6 +11,10 @@ export default function ViewEvents({ events }: EventsListProps) {
 
   const navigate = useNavigate();
 
+  function closePopup() {
+    setError("");
+  }
+
   if (events && events.length === 0) {
     return <div>No events found</div>;
   }
@@ -19,7 +23,12 @@ export default function ViewEvents({ events }: EventsListProps) {
     <div
       style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
     >
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <table
         style={{
