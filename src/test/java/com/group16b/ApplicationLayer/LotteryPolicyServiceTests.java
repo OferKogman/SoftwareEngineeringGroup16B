@@ -1,4 +1,4 @@
-/*
+
 package com.group16b.ApplicationLayer;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -41,6 +41,7 @@ import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.Security.Role;
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 public class LotteryPolicyServiceTests {
     private LotteryPolicyService lotteryPolicyService;
@@ -49,6 +50,7 @@ public class LotteryPolicyServiceTests {
     private IRepository<User> userRepository;
     private IEventRepository eventRepository;
     private IAuthenticationService authService;
+    private INotificationService notificationService;
 
     private final int BAD_EVENT_ID = 100;
     private final String FOUNDER_MAIL = "yuval hamebulbal";
@@ -70,6 +72,7 @@ public class LotteryPolicyServiceTests {
         eventRepository = new EventRepositoryMapImpl();
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
         authService = mock(IAuthenticationService.class);
+        notificationService = mock(INotificationService.class);
         when(authService.validateToken("user1")).thenReturn(true);
         when(authService.isUserToken("user1")).thenReturn(true);
         when(authService.extractSubjectFromToken("user1")).thenReturn(FOUNDER_MAIL);
@@ -88,8 +91,14 @@ public class LotteryPolicyServiceTests {
         when(authService.isUserToken("user6")).thenReturn(true);
         when(authService.extractSubjectFromToken("user6")).thenReturn(BYSTANDER_MAIL);
 
-        lotteryPolicyService = new LotteryPolicyService(eventRepository, userRepository, productionCompanyRepository,
-                authService);
+        lotteryPolicyService = new LotteryPolicyService(
+                eventRepository,
+                userRepository,
+                productionCompanyRepository,
+                authService,
+                notificationService
+        );
+
 
         seedData();
 
@@ -238,7 +247,7 @@ public class LotteryPolicyServiceTests {
         doThrow(new RuntimeException("sam gaz al abamperim")).when(mockCompanyRepository).findByID(anyString());
 
         lotteryPolicyService = new LotteryPolicyService(eventRepository, userRepository, mockCompanyRepository,
-                authService);
+                authService, notificationService);
 
         Result<Void> res = lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 2, "another", 50,
                 now.plusDays(5), "user1");
@@ -314,7 +323,7 @@ public class LotteryPolicyServiceTests {
         IRepository<User> userRepo = mock(IRepository.class);
         IEventRepository eventRepo = mock(IEventRepository.class);
 
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
+        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService, notificationService);
 
         User user = mock(User.class);
         ProductionCompany company = mock(ProductionCompany.class);
@@ -462,7 +471,7 @@ public class LotteryPolicyServiceTests {
         doThrow(new RuntimeException("sam gaz al abamperim")).when(mockEventRepository).findByID(anyString());
 
         lotteryPolicyService = new LotteryPolicyService(mockEventRepository, userRepository,
-                productionCompanyRepository, authService);
+                productionCompanyRepository, authService, notificationService);
 
         Result<Void> res = lotteryPolicyService.enrollInLottery(event1.getEventID(), "user1");
         assertFalse(res.isSuccess());
@@ -603,7 +612,7 @@ public class LotteryPolicyServiceTests {
         IEventRepository eventRepo = mock(IEventRepository.class);
         IProductionCompanyRepository companyRepo = mock(IProductionCompanyRepository.class);
 
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
+        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService, notificationService);
 
         User user = mock(User.class);
         Event event = mock(Event.class);
@@ -637,6 +646,7 @@ public class LotteryPolicyServiceTests {
                 .enrollInLottery(BYSTANDER_MAIL);
     }
 
+    /*
     @Test
     void handleLotteryResults_Success() {
         createLotteryAndEnroll();
@@ -651,6 +661,8 @@ public class LotteryPolicyServiceTests {
         assertTrue(e.getLotteryPolicy().getWinners().contains(PERMITED_MAIL));
         assertEquals(1, e.getLotteryPolicy().getWinners().size());
     }
+
+     */
 
     @Test
     void handleLotteryResults_noLottery_cail() {
@@ -722,13 +734,14 @@ public class LotteryPolicyServiceTests {
         doThrow(new RuntimeException("sam gaz al abamperim")).when(mockEventRepository).findByID(anyString());
 
         lotteryPolicyService = new LotteryPolicyService(mockEventRepository, userRepository,
-                productionCompanyRepository, authService);
+                productionCompanyRepository, authService, notificationService);
 
         Result<Void> res = lotteryPolicyService.handleLotteryResults(event1.getEventID(), "user1");
         assertFalse(res.isSuccess());
         assertEquals("An unexpected error occurred: sam gaz al abamperim", res.getError());
     }
 
+    /*
     @Test
     void handleLotteryResults_retryAfterOptimisticLockingFailure_succeeds() {
 
@@ -736,7 +749,7 @@ public class LotteryPolicyServiceTests {
         IRepository<User> userRepo = mock(IRepository.class);
         IEventRepository eventRepo = mock(IEventRepository.class);
 
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
+        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService, notificationService);
 
         User user = mock(User.class);
         Event event = mock(Event.class);
@@ -776,6 +789,8 @@ public class LotteryPolicyServiceTests {
         verify(event, times(2)).handleLotteryResults();
     }
 
+     */
+
     private void createLotteryAndEnroll() {
         RequestContext.set(PERMITED_MAIL, Role.SIGNED);
         lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME, 50, now.plusDays(5), "user1");
@@ -784,5 +799,5 @@ public class LotteryPolicyServiceTests {
 
     }
 
+
 }
-*/

@@ -1,4 +1,4 @@
-/*
+
 package com.group16b.ApplicationLayer;
 
 import java.time.LocalDateTime;
@@ -76,6 +76,7 @@ import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 public class OrderServiceTests {
         private OrderService orderService;
@@ -88,6 +89,7 @@ public class OrderServiceTests {
         private IEventRepository eventRepo;
         private IRepository<User> userRepo;
         private IProductionCompanyRepository productionCompanyRepo;
+        private INotificationService notificationService;
 
 
         // example objects:
@@ -114,6 +116,7 @@ public class OrderServiceTests {
         eventRepo = new EventRepositoryMapImpl();
         userRepo = new UserRepositoryMapImpl();
         productionCompanyRepo = new ProductionCompanyRepositoryMapImpl();
+        notificationService = mock(INotificationService.class);
 
         seedUsers();
         seedCompany();
@@ -133,7 +136,8 @@ public class OrderServiceTests {
                 eventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notificationService
         );
         }
         private void seedUsers() {
@@ -458,7 +462,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         eventRepo,
                         userRepo,
                         mockOrderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 Result<String> result =
@@ -509,7 +514,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         eventRepo,
                         userRepo,
                         mockOrderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 Result<String> result =
@@ -570,7 +576,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         eventRepo,
                         userRepo,
                         mockOrderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 Result<String> result =
@@ -841,7 +848,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         mockEventRepo,
                         userRepo,
                         orderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 Result<List<String>> result =
@@ -866,7 +874,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         eventRepo,
                         userRepo,
                         orderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 Result<List<String>> result =
@@ -1076,7 +1085,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         mockEventRepo,
                         userRepo,
                         orderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 String orderId = seatOrder.getOrderId();
@@ -1102,7 +1112,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         eventRepo,
                         userRepo,
                         orderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notificationService
                 );
 
                 String orderId = seatOrder.getOrderId();
@@ -1311,7 +1322,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 eventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notificationService
         );
 
         Result<Integer> result =
@@ -1347,7 +1359,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 mockEventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notificationService
         );
 
         Result<List<String>> result =
@@ -1390,7 +1403,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 mockEventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notificationService
         );
 
         Result<Double> result = service.getOrderPrice(seatOrder.getOrderId(), "user1");
@@ -1442,7 +1456,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 eventRepo,
                 userRepo,
                 mockOrderRepo,
-                ticketGateway
+                ticketGateway,
+                notificationService
         );
 
         Result<List<String>> result =
@@ -1460,4 +1475,3 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
 }
 
 
- */
