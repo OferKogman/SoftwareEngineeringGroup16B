@@ -2,15 +2,16 @@ package com.group16b.InfrastructureLayer.Adapters;
 
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.InfrastructureLayer.Database.OrderRepository;
 
-@Repository 
+@Component
+@Primary
 public class OrderRepositoryAdapter implements IOrderRepository {
 
     private final OrderRepository springRepo;

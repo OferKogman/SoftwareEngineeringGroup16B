@@ -1,18 +1,17 @@
 package com.group16b.InfrastructureLayer.Adapters;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
 
-@Repository
-@Primary 
+@Component
+@Primary
 public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRepository {
 
     private final ProductionCompanyRepository springRepo;
