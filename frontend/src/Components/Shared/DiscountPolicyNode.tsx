@@ -79,241 +79,278 @@ const simpleDiscountPolicyTypes: DiscountPolicyTypes[] = [
   "MAX_TICKETS",
 ];
 
+function isComplexPolicy(type: DiscountPolicyTypes) {
+  return type === "AND" || type === "OR" || type === "SUM" || type === "MAX";
+}
+
 export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
   const [showPopup, setShowPopup] = useState(false);
-  const [inputValue, setInputValue] = useState<string | number>("");
+  const [changeValueInput, setChangeValueInput] = useState<string | number>("");
   const [action, setAction] = useState<"CHANGE" | "REPLACE" | null>(null);
   const [replaceInputValue, setReplaceInputValue] =
     useState<DiscountPolicyTypes>("SIMPLE");
-  const [replaceValue, setReplaceValue] = useState<string>("");
+  const [replaceGoalInput, setReplaceGoalInput] = useState<string>("");
   const [percentageValue, setPercentageValue] = useState(0);
   const [leftPolicy, setLeftPolicy] = useState<DiscountPolicyDTO | null>(null);
   const [rightPolicy, setRightPolicy] = useState<DiscountPolicyDTO | null>(
     null,
   );
 
+  function getDefaultPolicyValue(
+    type: SimpleDiscountPolicyTypes,
+  ): number | string {
+    if (type === "MIN_DATE" || type === "MAX_DATE") {
+      return "DD-MM-YYTHH:MM";
+    }
+
+    return 1;
+  }
+
   function renderReplace() {
     if (action !== "REPLACE") return null;
 
-    const isComplex =
-      replaceInputValue === "AND" ||
-      replaceInputValue === "OR" ||
-      replaceInputValue === "SUM" ||
-      replaceInputValue === "MAX";
+    return isComplexPolicy(replaceInputValue)
+      ? renderComplexReplace()
+      : renderSimpleReplace();
+  }
 
+  function renderSimpleReplace() {
     return (
       <>
-        <select
-          value={replaceInputValue}
-          onChange={(e) => {
-            const value = e.target.value as DiscountPolicyTypes;
+        {renderPolicyTypeSelect()}
 
-            setReplaceInputValue(value);
-            if (value === "MIN_DATE" || value === "MAX_DATE") {
-              setInputValue("");
-            } else {
-              setInputValue(0);
-            }
+        {replaceInputValue !== "SIMPLE" && renderGoalInput()}
 
-            setLeftPolicy(null);
-            setRightPolicy(null);
-            setReplaceValue("");
-          }}
-        >
-          {simpleDiscountPolicyTypes.map((type) => (
-            <option key={type} value={type}>
-              {type.replace("_", " ")}
-            </option>
-          ))}
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-          <option value="SUM">SUM</option>
-          <option value="MAX">MAX</option>
-        </select>
+        {props.data.percentage !== 0 && renderPercentageInput()}
 
-        {!isComplex && (
-          <>
-            {replaceInputValue !== "SIMPLE" && (
-              <input
-                type={
-                  replaceInputValue === "MIN_DATE" ||
-                  replaceInputValue === "MAX_DATE"
-                    ? "datetime-local"
-                    : "number"
-                }
-                min={
-                  replaceInputValue === "MIN_TICKETS" ||
-                  replaceInputValue === "MAX_TICKETS"
-                    ? 1
-                    : undefined
-                }
-                max={
-                  replaceInputValue === "MIN_DATE" ||
-                  replaceInputValue === "MAX_DATE"
-                    ? "9999-12-31T23:59"
-                    : undefined
-                }
-                value={replaceValue}
-                onChange={(e) => setReplaceValue(e.target.value)}
-                placeholder="Ticket amount"
-              />
-            )}
-            <div style={{ position: "relative" }}>
-              <input
-                type="number"
-                min={0}
-                max={100}
-                value={percentageValue}
-                onChange={(e) => setPercentageValue(Number(e.target.value))}
-                style={{ paddingRight: "20px" }}
-              />
-              <span
-                style={{
-                  position: "absolute",
-                  right: "8px",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                }}
-              >
-                %
-              </span>
-            </div>
-          </>
-        )}
+        <button onClick={replaceSimplePolicy}>Replace</button>
+      </>
+    );
+  }
 
-        {isComplex && (
-          <>
-            {(replaceInputValue === "AND" || replaceInputValue === "OR") && (
-              <div style={{ position: "relative" }}>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={percentageValue}
-                  onChange={(e) => setPercentageValue(Number(e.target.value))}
-                  style={{ paddingRight: "20px" }}
-                />
-                <span
-                  style={{
-                    position: "absolute",
-                    right: "8px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                  }}
-                >
-                  %
-                </span>
-              </div>
-            )}
-            <select
-              onChange={(e) => {
-                const type = e.target.value as SimpleDiscountPolicyTypes;
+  function renderComplexReplace() {
+    return (
+      <>
+        {renderPolicyTypeSelect()}
 
-                if (type) {
-                  setLeftPolicy(createSimplePolicy(type, 1, percentageValue));
-                }
-              }}
-            >
-              <option value="">Choose left policy</option>
+        {(replaceInputValue === "AND" || replaceInputValue === "OR") &&
+          renderPercentageInput()}
 
-              {simpleDiscountPolicyTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.replace("_", " ")}
-                </option>
-              ))}
-            </select>
+        {renderPolicySideSelector("left")}
 
-            <select
-              onChange={(e) => {
-                const type = e.target.value as SimpleDiscountPolicyTypes;
-
-                if (type) {
-                  setRightPolicy(createSimplePolicy(type, 1, percentageValue));
-                }
-              }}
-            >
-              <option value="">Choose right policy</option>
-
-              {simpleDiscountPolicyTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+        {renderPolicySideSelector("right")}
 
         <button
-          disabled={isComplex && (!leftPolicy || !rightPolicy)}
-          onClick={() => {
-            let newPolicy: DiscountPolicyDTO;
-
-            if (isComplex) {
-              if (!leftPolicy || !rightPolicy) {
-                return;
-              }
-              if (replaceInputValue === "SUM" || replaceInputValue === "MAX") {
-                newPolicy = {
-                  type: replaceInputValue,
-                  left: leftPolicy,
-                  right: rightPolicy,
-                };
-              } else {
-                newPolicy = {
-                  type: replaceInputValue,
-                  left: leftPolicy,
-                  right: rightPolicy,
-                  percentage: percentageValue,
-                };
-              }
-            } else {
-              if (replaceInputValue === "SIMPLE") {
-                newPolicy = {
-                  type: "SIMPLE",
-                  percentage: percentageValue,
-                };
-              } else if (
-                replaceInputValue === "MIN_DATE" ||
-                replaceInputValue === "MAX_DATE"
-              ) {
-                const value = String(replaceValue);
-                if (!value || value.trim() === "") {
-                  alert("Enter valid value");
-                  return;
-                }
-                newPolicy = createSimplePolicy(
-                  replaceInputValue,
-                  value,
-                  percentageValue,
-                );
-              } else {
-                const value = Number(replaceValue);
-
-                if (!value || value <= 0) {
-                  alert("Enter valid value");
-                  return;
-                }
-
-                newPolicy = createSimplePolicy(
-                  replaceInputValue,
-                  value,
-                  percentageValue,
-                );
-              }
-            }
-            setLeftPolicy(null);
-            setRightPolicy(null);
-            setReplaceValue("");
-            setAction(null);
-            setShowPopup(false);
-
-            props.data.onReplace(props.data.path, newPolicy);
-          }}
+          disabled={!leftPolicy || !rightPolicy}
+          onClick={replaceComplexPolicy}
         >
           Replace
         </button>
       </>
     );
+  }
+
+  function renderPolicyTypeSelect() {
+    return (
+      <select
+        value={replaceInputValue}
+        onChange={(e) => {
+          const value = e.target.value as DiscountPolicyTypes;
+
+          setReplaceInputValue(value);
+
+          setChangeValueInput("");
+
+          setLeftPolicy(null);
+          setRightPolicy(null);
+          setReplaceGoalInput("");
+        }}
+      >
+        {simpleDiscountPolicyTypes.map((type) => (
+          <option key={type} value={type}>
+            {type.replace("_", " ")}
+          </option>
+        ))}
+
+        <option value="AND">AND</option>
+        <option value="OR">OR</option>
+        <option value="SUM">SUM</option>
+        <option value="MAX">MAX</option>
+      </select>
+    );
+  }
+
+  function replaceSimplePolicy() {
+    let newPolicy: DiscountPolicyDTO;
+
+    if (replaceInputValue === "SIMPLE") {
+      newPolicy = {
+        type: "SIMPLE",
+        percentage: percentageValue,
+      };
+    } else if (
+      replaceInputValue === "MIN_DATE" ||
+      replaceInputValue === "MAX_DATE"
+    ) {
+      const value = String(replaceGoalInput);
+
+      if (!value || value.trim() === "") {
+        alert("Enter valid value");
+        return;
+      }
+
+      newPolicy = createSimplePolicy(replaceInputValue, value, percentageValue);
+    } else {
+      const value = Number(replaceGoalInput);
+
+      if (!value || value <= 0) {
+        alert("Enter valid value");
+        return;
+      }
+
+      newPolicy = createSimplePolicy(
+        replaceInputValue as SimpleDiscountPolicyTypes,
+        value,
+        percentageValue,
+      );
+    }
+
+    closeReplacePopup();
+
+    props.data.onReplace(props.data.path, newPolicy);
+  }
+
+  function replaceComplexPolicy() {
+    if (!leftPolicy || !rightPolicy) {
+      return;
+    }
+
+    let newPolicy: DiscountPolicyDTO;
+
+    if (replaceInputValue === "SUM" || replaceInputValue === "MAX") {
+      newPolicy = {
+        type: replaceInputValue,
+        left: leftPolicy,
+        right: rightPolicy,
+      };
+    } else {
+      if (replaceInputValue !== "AND" && replaceInputValue !== "OR") {
+        return;
+      }
+
+      newPolicy = {
+        type: replaceInputValue,
+        left: leftPolicy,
+        right: rightPolicy,
+        percentage: percentageValue,
+      };
+    }
+
+    closeReplacePopup();
+
+    props.data.onReplace(props.data.path, newPolicy);
+  }
+
+  function renderGoalInput(type: DiscountPolicyTypes = replaceInputValue) {
+    return (
+      <input
+        type={
+          type === "MIN_DATE" || type === "MAX_DATE"
+            ? "datetime-local"
+            : "number"
+        }
+        min={type === "MIN_TICKETS" || type === "MAX_TICKETS" ? 1 : undefined}
+        max={
+          type === "MIN_DATE" || type === "MAX_DATE"
+            ? "9999-12-31T23:59"
+            : undefined
+        }
+        value={action === "CHANGE" ? changeValueInput : replaceGoalInput}
+        onChange={(e) => {
+          action === "CHANGE"
+            ? setChangeValueInput(e.target.value)
+            : setReplaceGoalInput(e.target.value);
+        }}
+        placeholder={
+          replaceInputValue === "MIN_DATE" || replaceInputValue === "MAX_DATE"
+            ? "DD-MM-YYTHH:MM"
+            : "Ticket amount"
+        }
+      />
+    );
+  }
+
+  function renderPercentageInput() {
+    return (
+      <div style={{ position: "relative" }}>
+        <input
+          type="number"
+          min={0}
+          max={100}
+          value={percentageValue}
+          onChange={(e) => setPercentageValue(Number(e.target.value))}
+          style={{ paddingRight: "20px" }}
+        />
+        <span
+          style={{
+            position: "absolute",
+            right: "8px",
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}
+        >
+          %
+        </span>
+      </div>
+    );
+  }
+
+  function renderPolicySideSelector(side: "left" | "right") {
+    const policy = side === "left" ? leftPolicy : rightPolicy;
+
+    return (
+      <select
+        value={policy?.type ?? ""}
+        onChange={(e) => {
+          const type = e.target.value as SimpleDiscountPolicyTypes;
+
+          if (!type) return;
+
+          const newPolicy = createSimplePolicy(
+            type,
+            getDefaultPolicyValue(type),
+            0,
+          );
+
+          side === "left"
+            ? setLeftPolicy(newPolicy)
+            : setRightPolicy(newPolicy);
+        }}
+      >
+        <option value="">Choose {side} policy</option>
+
+        {simpleDiscountPolicyTypes.map((type) => (
+          <option key={type} value={type}>
+            {type.replace("_", " ")}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  function closeReplacePopup() {
+    setLeftPolicy(null);
+    setRightPolicy(null);
+    setReplaceGoalInput("");
+    setAction(null);
+    setShowPopup(false);
+  }
+
+  function openReplacePopup() {
+    setLeftPolicy(null);
+    setRightPolicy(null);
+    setReplaceGoalInput("");
+    setAction("REPLACE");
   }
 
   function renderActions() {
@@ -338,28 +375,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                 <>
                   {action === "CHANGE" ? (
                     <>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={percentageValue}
-                          onChange={(e) =>
-                            setPercentageValue(Number(e.target.value))
-                          }
-                          style={{ paddingRight: "20px" }}
-                        />
-                        <span
-                          style={{
-                            position: "absolute",
-                            right: "8px",
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                          }}
-                        >
-                          %
-                        </span>
-                      </div>
+                      {renderPercentageInput()}
 
                       <button
                         onClick={() => {
@@ -399,14 +415,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                     Change {props.data.type === "AND" ? "to OR" : "to AND"}
                   </button>
 
-                  <button
-                    onClick={() => {
-                      setLeftPolicy(null);
-                      setRightPolicy(null);
-                      setReplaceValue("");
-                      setAction("REPLACE");
-                    }}
-                  >
+                  <button onClick={() => openReplacePopup()}>
                     Replace policy
                   </button>
 
@@ -426,6 +435,9 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                   >
                     Change {props.data.type === "SUM" ? "to MAX" : "to SUM"}
                   </button>
+
+                  <button onClick={openReplacePopup}>Replace policy</button>
+
                   {renderReplace()}
                 </>
               );
@@ -439,53 +451,9 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                 <>
                   {action === "CHANGE" ? (
                     <>
-                      {props.data.type !== "SIMPLE" && (
-                        <input
-                          type={
-                            props.data.type === "MIN_DATE" ||
-                            props.data.type === "MAX_DATE"
-                              ? "datetime-local"
-                              : "number"
-                          }
-                          min={
-                            props.data.type === "MIN_TICKETS" ||
-                            props.data.type === "MAX_TICKETS"
-                              ? 1
-                              : undefined
-                          }
-                          max={
-                            props.data.type === "MIN_DATE" ||
-                            props.data.type === "MAX_DATE"
-                              ? "9999-12-31T23:59"
-                              : undefined
-                          }
-                          value={inputValue}
-                          onChange={(e) => setInputValue(e.target.value)}
-                          placeholder="Ticket amount"
-                        />
-                      )}
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type="number"
-                          min={0}
-                          max={100}
-                          value={percentageValue}
-                          onChange={(e) =>
-                            setPercentageValue(Number(e.target.value))
-                          }
-                          style={{ paddingRight: "20px" }}
-                        />
-                        <span
-                          style={{
-                            position: "absolute",
-                            right: "8px",
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                          }}
-                        >
-                          %
-                        </span>
-                      </div>
+                      {props.data.type !== "SIMPLE" &&
+                        renderGoalInput(props.data.type)}
+                      {props.data.percentage !== 0 && renderPercentageInput()}
 
                       <button
                         onClick={() => {
@@ -501,30 +469,32 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                             );
 
                             setPercentageValue(0);
-                            setInputValue("");
+                            setChangeValueInput("");
                             setAction(null);
                             setShowPopup(false);
                           } else if (
                             props.data.type === "MIN_DATE" ||
                             props.data.type === "MAX_DATE"
                           ) {
-                            const dateValue = new Date(inputValue as string);
+                            const dateValue = new Date(
+                              changeValueInput as string,
+                            );
                             if (isNaN(dateValue.getTime())) {
                               alert("Please enter a valid date");
                               return;
                             }
                             props.data.onChangeGoal(
                               props.data.path,
-                              dateValue.toISOString(),
+                              changeValueInput as string,
                               percentageValue,
                             );
 
                             setPercentageValue(0);
-                            setInputValue("");
+                            setChangeValueInput("");
                             setAction(null);
                             setShowPopup(false);
                           } else {
-                            const goalVal = Number(inputValue);
+                            const goalVal = Number(changeValueInput);
 
                             if (!goalVal || goalVal <= 0) {
                               alert("Please enter a valid value");
@@ -537,7 +507,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                             );
 
                             setPercentageValue(0);
-                            setInputValue("");
+                            setChangeValueInput("");
                             setAction(null);
                             setShowPopup(false);
                           }
@@ -556,14 +526,7 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                     </button>
                   )}
 
-                  <button
-                    onClick={() => {
-                      setLeftPolicy(null);
-                      setRightPolicy(null);
-                      setReplaceValue("");
-                      setAction("REPLACE");
-                    }}
-                  >
+                  <button onClick={() => openReplacePopup()}>
                     Replace policy
                   </button>
 
@@ -600,7 +563,8 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
         onClick={() => setShowPopup((prev) => !prev)}
       >
         <label>{props.data.label}</label>
-        {props.data.type !== "NONE" &&
+        {props.data.percentage > 0 &&
+          props.data.type !== "NONE" &&
           props.data.type !== "SUM" &&
           props.data.type !== "MAX" && (
             <label>

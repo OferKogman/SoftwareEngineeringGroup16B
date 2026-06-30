@@ -133,7 +133,7 @@ function buildTree(
     return id;
   }
 
-  let label = "";
+  let label;
 
   switch (policy?.type) {
     case "MIN_AGE":
@@ -328,9 +328,19 @@ function replacePolicyAtPath(
 export default function PurchasePolicyTree({ policy, onSave }: Props) {
   const [currentPolicy, setCurrentPolicy] =
     useState<NullablePurchasePolicyDTO>(policy);
+  const [message, setMessage] = useState("");
   const nodeTypes = {
     policy: PolicyNode,
   };
+
+  function closePopup() {
+    setMessage("");
+  }
+
+  function handleSave() {
+    onSave(currentPolicy);
+    setMessage("Purchase policy saved successfully.");
+  }
 
   function swapPolicy(path: PolicyPath) {
     setCurrentPolicy((prevPolicy) => {
@@ -381,7 +391,14 @@ export default function PurchasePolicyTree({ policy, onSave }: Props) {
         <Background />
       </ReactFlow>
 
-      <button onClick={() => onSave(currentPolicy)}>Save Changes</button>
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+
+      <button onClick={handleSave}>Save Changes</button>
     </div>
   );
 }

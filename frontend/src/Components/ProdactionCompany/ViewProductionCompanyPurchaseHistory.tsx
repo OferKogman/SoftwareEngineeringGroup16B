@@ -23,7 +23,7 @@ function getApiError(data: unknown): string {
     }
   }
 
-  return "Failed to load production company purchase history.";
+  return "";
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {
@@ -54,6 +54,10 @@ export default function ProductionCompanyPurchaseHistory() {
   const [eventIdFilter, setEventIdFilter] = useState("");
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setError("");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -98,11 +102,7 @@ export default function ProductionCompanyPurchaseHistory() {
         setOrders(data);
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load production company purchase history.",
-          );
+          setError(err instanceof Error ? err.message : "");
           setOrders([]);
         }
       } finally {
@@ -130,7 +130,12 @@ export default function ProductionCompanyPurchaseHistory() {
       <h1>Purchase History</h1>
 
       {loading && <p>Loading purchase history...</p>}
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       {!loading && !error && (
         <>

@@ -14,7 +14,7 @@ import type {
   SumDTO,
 } from "../../DTOs/DiscountPolicyDTO";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import "./CSS/PurchasePolicyTree.css";
 import { DiscountPolicyNode, type PolicyPath } from "./DiscountPolicyNode";
 
@@ -23,10 +23,12 @@ type Props = {
   onSave: (policy: NullableDiscountPolicyDTO) => void;
 };
 
-type PolicyEdge = Edge;
-
 const HORIZONTAL_GAP = 550;
 const VERTICAL_GAP = 220;
+
+function getNodeId(path: PolicyPath): string {
+  return path.length === 0 ? "root" : path.join("-");
+}
 
 function isCompositePolicy(
   policy: DiscountPolicyDTO,
@@ -40,10 +42,6 @@ function isCompositePolicy(
 }
 
 function getSubtreeWidth(policy: DiscountPolicyDTO): number {
-  if (!policy) {
-    return 1;
-  }
-
   if (isCompositePolicy(policy)) {
     const leftWidth = getSubtreeWidth(policy.left);
     const rightWidth = getSubtreeWidth(policy.right);
@@ -59,8 +57,9 @@ function buildTree(
   centerX: number,
   level: number,
   nodes: DiscountPolicyNode[],
-  edges: PolicyEdge[],
+  edges: Edge[],
   path: PolicyPath,
+  insideAndOr: boolean,
   onSwap: (path: PolicyPath) => void,
   onChangeGoal: (
     path: PolicyPath,
@@ -70,7 +69,7 @@ function buildTree(
   onReplace: (path: PolicyPath, newPolicy: DiscountPolicyDTO) => void,
   onDelete: () => void,
 ): string {
-  const id = crypto.randomUUID();
+  const id = getNodeId(path);
 
   const y = level * VERTICAL_GAP;
 
@@ -86,7 +85,7 @@ function buildTree(
       data: {
         label: policy.type,
         percentage:
-          policy.type === "MAX" || policy.type === "SUM"
+          insideAndOr || policy.type === "MAX" || policy.type === "SUM"
             ? 0
             : policy.percentage,
         type: policy.type,
@@ -101,9 +100,9 @@ function buildTree(
     const leftWidth = getSubtreeWidth(policy.left);
     const rightWidth = getSubtreeWidth(policy.right);
 
-    const leftCenter = centerX - (rightWidth * HORIZONTAL_GAP) / 2;
+    const leftCenter = centerX - (leftWidth * HORIZONTAL_GAP) / 2;
 
-    const rightCenter = centerX + (leftWidth * HORIZONTAL_GAP) / 2;
+    const rightCenter = centerX + (rightWidth * HORIZONTAL_GAP) / 2;
 
     const leftId = buildTree(
       policy.left,
@@ -112,6 +111,10 @@ function buildTree(
       nodes,
       edges,
       [...path, "left"],
+      isCompositePolicy(policy) &&
+        (policy.type === "AND" || policy.type === "OR")
+        ? true
+        : insideAndOr,
       onSwap,
       onChangeGoal,
       onReplace,
@@ -125,6 +128,10 @@ function buildTree(
       nodes,
       edges,
       [...path, "right"],
+      isCompositePolicy(policy) &&
+        (policy.type === "AND" || policy.type === "OR")
+        ? true
+        : insideAndOr,
       onSwap,
       onChangeGoal,
       onReplace,
@@ -150,14 +157,30 @@ function buildTree(
 
   let label = "";
 
-  switch (policy?.type) {
-    case "MIN_DATE":
-      label = `Min Date: ${(policy as StartDateDTO).startDate}`;
-      break;
+  switch (policy.type) {
+    case "MIN_DATE": {
+      const date = new Date((policy as StartDateDTO).startDate);
 
-    case "MAX_DATE":
-      label = `Max Date: ${(policy as EndDateDTO).endDate}`;
+      label = `Min Date: ${String(date.getDate()).padStart(2, "0")}-${String(
+        date.getMonth() + 1,
+      ).padStart(2, "0")}-${String(date.getFullYear()).slice(-2)}\n${String(
+        date.getHours(),
+      ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
       break;
+    }
+
+    case "MAX_DATE": {
+      const date = new Date((policy as EndDateDTO).endDate);
+
+      label = `Max Date: ${String(date.getDate()).padStart(2, "0")}-${String(
+        date.getMonth() + 1,
+      ).padStart(2, "0")}-${String(date.getFullYear()).slice(-2)}\n${String(
+        date.getHours(),
+      ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+      break;
+    }
 
     case "MIN_TICKETS":
       label = `Min Tickets: ${(policy as MinAmountDTO).minAmount}`;
@@ -185,13 +208,13 @@ function buildTree(
     type: "policy",
     data: {
       label,
-      type: policy?.type || "NONE",
+      type: policy.type || "NONE",
       path,
       onSwap,
       onChangeGoal,
       onReplace,
       onDelete,
-      percentage: policy?.percentage || 0,
+      percentage: insideAndOr ? 0 : policy.percentage,
     },
   });
 
@@ -210,11 +233,11 @@ function createFlow(
   onDelete: () => void,
 ) {
   const nodes: DiscountPolicyNode[] = [];
-  const edges: PolicyEdge[] = [];
+  const edges: Edge[] = [];
 
   if (!policy) {
     nodes.push({
-      id: crypto.randomUUID(),
+      id: "root",
       position: {
         x: 0,
         y: 0,
@@ -244,6 +267,7 @@ function createFlow(
     nodes,
     edges,
     [],
+    false,
     onSwap,
     onChangeGoal,
     onReplace,
@@ -379,12 +403,13 @@ function replacePolicyAtPath(
   };
 }
 
+const nodeTypes = {
+  policy: DiscountPolicyNode,
+};
+
 export default function DiscountPolicyTree({ policy, onSave }: Props) {
   const [currentPolicy, setCurrentPolicy] =
     useState<NullableDiscountPolicyDTO>(policy);
-  const nodeTypes = {
-    policy: DiscountPolicyNode,
-  };
 
   function swapPolicy(path: PolicyPath) {
     setCurrentPolicy((prevPolicy) => {
@@ -419,12 +444,16 @@ export default function DiscountPolicyTree({ policy, onSave }: Props) {
     setCurrentPolicy(null);
   }
 
-  const { nodes, edges } = createFlow(
-    currentPolicy,
-    swapPolicy,
-    changeGoal,
-    replacePolicy,
-    deletePolicy,
+  const { nodes, edges } = useMemo(
+    () =>
+      createFlow(
+        currentPolicy,
+        swapPolicy,
+        changeGoal,
+        replacePolicy,
+        deletePolicy,
+      ),
+    [currentPolicy],
   );
 
   return (

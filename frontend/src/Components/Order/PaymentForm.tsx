@@ -21,12 +21,6 @@ type PaymentPayload = {
 };
 
 type FormErrors = {
-  firstName?: string;
-  lastName?: string;
-  idNumber?: string;
-  cardNumber?: string;
-  expiryDate?: string;
-  cvv?: string;
   submit?: string;
 };
 
@@ -51,14 +45,50 @@ export default function PaymentForm({
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
+  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [amount, setAmount] = useState(initAmount);
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setMessage("");
+    setErrors((prev) => ({ ...prev, submit: undefined }));
+  }
+
   function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = event.target;
+    const { name } = event.target;
+    let value = event.target.value;
+
+    if (name === "expiryDate") {
+      const digits = value.replace(/\D/g, "").slice(0, 4);
+
+      if (digits.length >= 3) {
+        const firstTwoDigits = Number(digits.slice(0, 2));
+
+        if (firstTwoDigits > 12) {
+          value = `0${digits.slice(0, 1)}/${digits.slice(1, 3)}`;
+        } else {
+          value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
+        }
+      } else {
+        value = digits;
+      }
+    }
+
+    if (name === "idNumber") {
+      value = value.replace(/\D/g, "").slice(0, 9);
+    }
+
+    if (name === "cardNumber") {
+      value = value.replace(/\D/g, "").slice(0, 16);
+    }
+
+    if (name === "cvv") {
+      value = value.replace(/\D/g, "").slice(0, 3);
+    }
 
     setFormData((prev) => ({
       ...prev,
@@ -66,45 +96,11 @@ export default function PaymentForm({
     }));
   }
 
-  function validateForm(): FormErrors {
-    const newErrors: FormErrors = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!formData.idNumber.trim()) {
-      newErrors.idNumber = "ID number is required";
-    } else if (!/^\d{9}$/.test(formData.idNumber)) {
-      newErrors.idNumber = "ID number must contain only digits";
-    }
-
-    if (!formData.cardNumber.trim()) {
-      newErrors.cardNumber = "Card number is required";
-    } else if (!/^\d{16}$/.test(formData.cardNumber)) {
-      newErrors.cardNumber = "Card number must be 16 digits";
-    }
-
-    if (!formData.expiryDate.trim()) {
-      newErrors.expiryDate = "Expiry date is required";
-    } else if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(formData.expiryDate)) {
-      newErrors.expiryDate = "Expiry date must be MM/YY";
-    }
-
-    if (!formData.cvv.trim()) {
-      newErrors.cvv = "CVV is required";
-    } else if (!/^\d{3}$/.test(formData.cvv)) {
-      newErrors.cvv = "CVV must be 3 digits";
-    }
-
-    return newErrors;
-  }
-
   async function handleApplyCoupon() {
+    setIsApplyingCoupon(true);
+    setMessage("");
+    setErrors((prev) => ({ ...prev, submit: undefined }));
+
     try {
       const response = await apiFetch(
         `http://localhost:8080/api/orders/${orderID}/coupon`,
@@ -120,26 +116,25 @@ export default function PaymentForm({
       );
 
       if (!response.ok) {
-        throw new Error((await response.text()) || "Failed to reserve field.");
+        throw new Error(await response.text());
       }
 
-      setAmount(Number(response.json()));
+      setAmount(Number(await response.json()));
+      setMessage("Coupon applied successfully.");
     } catch (err) {
       setErrors({
-        submit: err instanceof Error ? err.message : "Failed apply discount.",
+        submit: err instanceof Error ? err.message : "",
       });
+    } finally {
+      setIsApplyingCoupon(false);
     }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setMessage("");
 
-    const validationErrors = validateForm();
-    setErrors(validationErrors);
-
-    if (Object.keys(validationErrors).length > 0) {
-      return;
-    }
+    setErrors({});
 
     setIsSubmitting(true);
 
@@ -153,8 +148,8 @@ export default function PaymentForm({
         cvv: formData.cvv,
         amount: amount,
       });
-      alert(
-        `Payment successful!\n\nThank you ${formData.firstName} ${formData.lastName} for paying ₪${amount}`,
+      setMessage(
+        `Payment successful. Thank you ${formData.firstName} ${formData.lastName} for paying ₪${amount}.`,
       );
 
       setFormData({
@@ -169,7 +164,7 @@ export default function PaymentForm({
       setErrors({});
     } catch (error: unknown) {
       setErrors({
-        submit: error instanceof Error ? error.message : "Payment failed",
+        submit: error instanceof Error ? error.message : "",
       });
     } finally {
       setIsSubmitting(false);
@@ -182,53 +177,92 @@ export default function PaymentForm({
 
       <input
         name="firstName"
+        type="text"
+        required
         value={formData.firstName}
         onChange={handleChange}
         placeholder="First Name"
       />
-      {errors.firstName && <p>{errors.firstName}</p>}
 
       <input
         name="lastName"
+        type="text"
+        required
         value={formData.lastName}
         onChange={handleChange}
         placeholder="Last Name"
       />
-      {errors.lastName && <p>{errors.lastName}</p>}
 
       <input
         name="idNumber"
+        type="text"
+        required
+        inputMode="numeric"
+        maxLength={9}
+        pattern="[0-9]{9}"
+        title="ID number must be exactly 9 digits"
         value={formData.idNumber}
         onChange={handleChange}
         placeholder="ID Number"
       />
-      {errors.idNumber && <p>{errors.idNumber}</p>}
 
       <input
         name="cardNumber"
+        type="text"
+        required
+        inputMode="numeric"
+        maxLength={16}
+        pattern="[0-9]{16}"
+        title="Card number must be exactly 16 digits"
         value={formData.cardNumber}
         onChange={handleChange}
         placeholder="Card Number"
       />
-      {errors.cardNumber && <p>{errors.cardNumber}</p>}
 
       <input
         name="expiryDate"
+        type="text"
+        required
+        inputMode="numeric"
+        maxLength={5}
+        pattern="(0[1-9]|1[0-2])/[0-9]{2}"
+        title="Expiry date must be in MM/YY format"
         value={formData.expiryDate}
         onChange={handleChange}
         placeholder="MM/YY"
       />
-      {errors.expiryDate && <p>{errors.expiryDate}</p>}
 
       <input
         name="cvv"
+        type="text"
+        required
+        inputMode="numeric"
+        maxLength={3}
+        pattern="[0-9]{3}"
+        title="CVV must be exactly 3 digits"
         value={formData.cvv}
         onChange={handleChange}
         placeholder="CVV"
       />
-      {errors.cvv && <p>{errors.cvv}</p>}
 
-      {errors.submit && <p>{errors.submit}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button type="button" onClick={closePopup}>
+            {" "}
+            OK{" "}
+          </button>
+        </div>
+      )}
+      {errors.submit && (
+        <div className="settings-alert">
+          <p>{errors.submit}</p>
+          <button type="button" onClick={closePopup}>
+            {" "}
+            OK{" "}
+          </button>
+        </div>
+      )}
 
       <div className="payment-form-field">
         <label>Coupon Code</label>
@@ -238,7 +272,13 @@ export default function PaymentForm({
           value={couponCode}
           onChange={(e) => setCouponCode(e.target.value)}
         />
-        <button onClick={() => handleApplyCoupon()}>Apply</button>
+        <button
+          type="button"
+          disabled={isApplyingCoupon}
+          onClick={() => void handleApplyCoupon()}
+        >
+          {isApplyingCoupon ? "Applying..." : "Apply"}
+        </button>
       </div>
 
       <button type="submit" disabled={isSubmitting}>

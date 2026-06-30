@@ -4,8 +4,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import org.hibernate.annotations.BatchSize;
-
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -24,7 +22,6 @@ public class Seat {
     private int number;
 
     // --- ADD THE Jpa Mapping Strategy Here ---
-	@BatchSize(size = 100)
     @ElementCollection
     @CollectionTable(
         name = "seat_stock", 

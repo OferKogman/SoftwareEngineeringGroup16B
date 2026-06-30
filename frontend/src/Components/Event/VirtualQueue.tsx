@@ -19,6 +19,7 @@ export default function VirtualQueue() {
   );
 
   const [loading, setLoading] = useState(initialStatus === undefined);
+  const [error, setError] = useState("");
 
   const { eventID } = useParams();
   const apiFetch = useApiFetch();
@@ -26,8 +27,13 @@ export default function VirtualQueue() {
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  function closePopup() {
+    setError("");
+  }
+
   useEffect(() => {
     const fetchPosition = async () => {
+      setError("");
       try {
         const response = await apiFetch(
           `http://localhost:8080/events/${eventID}/reservations/status`,
@@ -58,7 +64,7 @@ export default function VirtualQueue() {
           return;
         }
       } catch (error) {
-        console.error("Failed to refresh queue position:", error);
+        setError(error instanceof Error ? error.message : "");
       } finally {
         setLoading(false);
       }
@@ -73,10 +79,10 @@ export default function VirtualQueue() {
         clearInterval(intervalRef.current);
       }
     };
-  }, [eventID, navigate, apiFetch]);
+  }, [eventID, navigate, apiFetch, age, lotteryCode]);
 
   if (loading && position === null) {
-    return <div>Loading queue status...</div>;
+    return <p>Loading queue status...</p>;
   }
 
   return (
@@ -90,6 +96,12 @@ export default function VirtualQueue() {
         textAlign: "center",
       }}
     >
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
       Waiting in queue. Your placement is {position}
     </div>
   );
