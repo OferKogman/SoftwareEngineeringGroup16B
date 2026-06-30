@@ -11,6 +11,8 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
+import com.group16b.ApplicationLayer.Exceptions.IllegalTicketInfoException;
 import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
@@ -123,11 +125,15 @@ public class OrderService {
 		} catch (AuthException e) {
 			logger.warn("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Authentication failed: " + e.getMessage());
-
 		} catch (IllegalArgumentException e) {
 			logger.warn("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Invalid argument: " + e.getMessage());
-
+		} catch (IllegalPaymentInfoException e) {
+			logger.warn("OrderService.CompleteActiveOrder: IllegalPaymentInfoException for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Bad payment Info: " + e.getMessage());
+		} catch (IllegalTicketInfoException e) {
+			logger.warn("OrderService.CompleteActiveOrder: IllegalTicketInfoException for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Bad ticket Info: " + e.getMessage());
 		} catch (IllegalStateException e) {
 			logger.warn("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
 			return Result.makeFail("Illegal state: " + e.getMessage());
