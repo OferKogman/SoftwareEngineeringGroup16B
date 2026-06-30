@@ -11,6 +11,7 @@ import com.group16b.DomainLayer.Order.OrderType;
 
 public class OrderRepositoryMapImpl implements IOrderRepository {
     private final ConcurrentHashMap<String, Order> orders;
+    private int IDCounter = 1;
     
     public OrderRepositoryMapImpl() {
         this.orders = new ConcurrentHashMap<>();
@@ -18,7 +19,10 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 
     @Override
     public synchronized void save(Order order) {
-        // INSERT
+        if(order.getOrderId() == null){
+            order.setId(IDCounter++);
+        }
+        
         if (!this.orders.containsKey(order.getOrderId())) {
             Order inserted = new Order(order);
             this.orders.put(order.getOrderId(), inserted);
