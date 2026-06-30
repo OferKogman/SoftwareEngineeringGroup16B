@@ -19,10 +19,7 @@ public class OrderRepositoryMapImpl implements IOrderRepository {
 
     @Override
     public synchronized void save(Order order) {
-        if(order.getOrderId() == null){
-            order.setId(IDCounter++);
-        }
-        
+        // INSERT
         if (!this.orders.containsKey(order.getOrderId())) {
             Order inserted = new Order(order);
             this.orders.put(order.getOrderId(), inserted);

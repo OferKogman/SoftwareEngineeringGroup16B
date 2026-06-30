@@ -77,7 +77,6 @@ public class Order {
 		this.version = 0;
 	}
 	public Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID) {
-
 		this.state = new ActiveOrder();
 		this.numOfTickets = amount;
 		this.segmentId = segmentId;
@@ -118,7 +117,6 @@ public class Order {
 	public String getOrderId() {
 		return orderId;
 	}
-
 	public void setId(int id){
 		this.orderId = "order_" + id;
 	}

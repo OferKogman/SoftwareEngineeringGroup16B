@@ -2,6 +2,9 @@ package com.group16b.DomainLayer.Order;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CanceledOrder implements OrderState {
 
     @Override
