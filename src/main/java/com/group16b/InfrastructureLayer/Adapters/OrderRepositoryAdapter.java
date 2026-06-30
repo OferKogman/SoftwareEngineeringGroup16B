@@ -26,11 +26,9 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public Order findByID(String id) {
-        try {
-            return springRepo.findById(id).get(); 
-        } catch (NoSuchElementException e) {
-            throw new IllegalArgumentException("Order with ID " + id + " not found.");
-        }
+        return springRepo.findById(id).orElseThrow(() -> 
+            new IllegalArgumentException("Order with ID " + id + " not found.")
+        );
     }
 
     @Override

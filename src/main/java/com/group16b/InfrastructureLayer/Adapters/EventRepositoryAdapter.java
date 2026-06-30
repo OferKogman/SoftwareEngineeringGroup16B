@@ -26,7 +26,7 @@ public class EventRepositoryAdapter implements IEventRepository {
     @Override
     public Event findByID(String id) {
         return springRepo.findById(id).orElseThrow(() -> 
-            new IllegalArgumentException("User with ID " + id + " not found.")
+            new IllegalArgumentException("Event with ID " + id + " not found.")
         );
     }
 

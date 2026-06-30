@@ -28,13 +28,9 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
 
     @Override
     public ProductionCompany findByID(String id) {
-        try {
-            return springRepo.findById(Integer.parseInt(id)).get(); 
-        } catch (NoSuchElementException e) {
-            throw new IllegalArgumentException("Production Company with ID " + id + " not found.");
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Production Company ID must be a valid integer.");
-        }
+        return springRepo.findById(parseID(id)).orElseThrow(() -> 
+            new IllegalArgumentException("Company with ID " + id + " not found.")
+        );
     }
 
     @Override
@@ -44,11 +40,8 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
 
     @Override
     public void delete(String id) {
-        try {
-            springRepo.deleteById(Integer.parseInt(id));
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Production Company ID must be a valid integer.");
-        }
+       springRepo.deleteById(parseID(id));
+        
     }
 
     @Override
@@ -70,5 +63,14 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
     @Override
     public List<ProductionCompany> findCompaniesManagedByUser(String userId) {
         return springRepo.findCompaniesManagedByUser(userId);
+    }
+
+    private int parseID(String ID)
+    {
+        try{
+            return Integer.parseInt(ID);
+        } catch(NumberFormatException e){
+            throw new IllegalArgumentException("Invalid company ID: "+ID);
+        }
     }
 }
