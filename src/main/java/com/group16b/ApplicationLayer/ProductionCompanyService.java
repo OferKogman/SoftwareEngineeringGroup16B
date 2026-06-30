@@ -8,6 +8,8 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
@@ -24,11 +26,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 @Service
 @Transactional
@@ -140,11 +140,13 @@ public class ProductionCompanyService {
             logger.info("ProductionCompanyService.createProductionCompany: Session token verified successfully.");
 
             ProductionCompany newCompany = ProductionCompany.createNewCompany(companyName, userID, idGen.getNextId());
+            
             productionRepo.save(newCompany);
 
             logger.info(
                     "ProductionCompanyService.createProductionCompany: Successfully created production company with name {} and id {}",
                     companyName, newCompany.getProductionCompanyID());
+            
             return Result.makeOk(new ProductionCompanyDTO(newCompany));
 
         } catch (AuthException e) {
