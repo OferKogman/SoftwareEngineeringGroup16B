@@ -3,6 +3,7 @@ package com.group16b.ApplicationLayer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
@@ -13,7 +14,9 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 
+
 @Service
+@Transactional
 public class DiscountPolicyService {
     private static final Logger logger = LoggerFactory.getLogger(DiscountPolicyService.class);
 

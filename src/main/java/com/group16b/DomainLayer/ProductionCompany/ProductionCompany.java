@@ -19,6 +19,8 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKey;
@@ -32,6 +34,7 @@ import jakarta.persistence.Version;
 public class ProductionCompany {
 
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int productionCompanyID;
 
     @Column(nullable = false)
@@ -94,12 +97,11 @@ public class ProductionCompany {
         this.discountPolicies.addAll(other.discountPolicies);
     }
 
-    public ProductionCompany(int id, String name, double rating, String founderID) {
+    public ProductionCompany(int Id, String name, double rating, String founderID) {
         this.name = normalizeCompanyName(name);
         this.rating = rating;
-        this.productionCompanyID = id;
-        this.version = 1;
         this.founderID = founderID;
+        this.productionCompanyID = Id;
         this.membersNodes.put(founderID, MembershipNode.createFounder(founderID));
     }
 
@@ -118,7 +120,7 @@ public class ProductionCompany {
     }
 
     public static ProductionCompany createNewCompany(String name, String founderID, int id) {
-        return new ProductionCompany(id, name, 0.0, founderID);
+        return new ProductionCompany(id, name, 0.0, founderID);//we no longer need id generation, but will save  signature for mapImpl
     }
 
     public int getProductionCompanyID() {
@@ -147,6 +149,10 @@ public class ProductionCompany {
 
     public void setVersion(long version) {
         this.version = version;
+    }
+
+    public void setProductionCompanyId(int id){//for the interception
+        this.productionCompanyID = id;
     }
 
     public Set<DiscountPolicy> getDiscountPolicy() {
@@ -387,7 +393,11 @@ public class ProductionCompany {
         childrenByUser.computeIfAbsent(parent, k -> new HashSet<>()).add(child);
     }
 
-    static class InviteKey {
+    public void incrementVersion() {
+		this.version++;
+	}
+
+    static class InviteKey implements java.io.Serializable {
         private final String targetId;
         private final String assignerId;
 

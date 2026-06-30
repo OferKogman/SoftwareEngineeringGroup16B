@@ -16,6 +16,7 @@ export default function EventLottery() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const apiFetch = useApiFetch();
 
@@ -50,6 +51,7 @@ export default function EventLottery() {
   }
 
   async function handleLotteryResults() {
+    setIsSubmitting(true);
     setMessage("");
     setError("");
 
@@ -67,11 +69,9 @@ export default function EventLottery() {
 
       setMessage("Lottery results handled successfully.");
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to handle lottery results.",
-      );
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -98,9 +98,12 @@ export default function EventLottery() {
               cursor: "pointer",
               fontWeight: "bold",
             }}
-            onClick={handleLotteryResults}
+            disabled={isSubmitting}
+            onClick={() => void handleLotteryResults()}
           >
-            Handle Lottery Results
+            {isSubmitting
+              ? "Handling..."
+              : "Handle Lottery Results"}
           </button>
         </>
       ) : (

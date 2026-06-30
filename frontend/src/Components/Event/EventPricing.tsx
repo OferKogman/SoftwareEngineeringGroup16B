@@ -33,13 +33,23 @@ export default function EventPricing() {
   const [venue, setVenue] = useState<VenueDTO | null>(null);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { eventID } = useParams();
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setSuccess("");
+    setError("");
+  }
+
   async function onSubmitPricing() {
+    setIsSubmitting(true);
+    setSuccess("");
+    setError("");
+
     try {
-      setSuccess("");
       const response = await apiFetch(
         `http://localhost:8080/events/${eventID}/prices`,
         {
@@ -50,17 +60,16 @@ export default function EventPricing() {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to update venue segments.");
+        throw new Error(await response.text());
       }
 
       setSuccess("Venue updated successfully.");
       setSelectedFieldSeg(null);
       setSelectedSeatSeg(null);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update venue segments.",
-      );
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -156,9 +165,11 @@ export default function EventPricing() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load venue.",
-          );
+          setError(err instanceof Error ? err.message : "");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
         }
       }
     }
@@ -249,6 +260,10 @@ export default function EventPricing() {
     return null;
   }
 
+  if (isLoading) {
+    return <p>Loading venue...</p>;
+  }
+
   return (
     <div
       style={{
@@ -260,8 +275,18 @@ export default function EventPricing() {
       }}
     >
       <h2>Pricing Manager</h2>
-      {error && <p className="form-error">{error}</p>}
-      {success && <p className="form-success">{success}</p>}
+      {success && (
+        <div className="settings-alert">
+          <p>{success}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       {venue && (
         <div
@@ -309,11 +334,12 @@ export default function EventPricing() {
         <div className="form-actions">
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={() => {
               void onSubmitPricing();
             }}
           >
-            {"Save Changes"}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       }

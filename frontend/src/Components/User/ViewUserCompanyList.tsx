@@ -14,6 +14,10 @@ export default function ViewUserCompanyList() {
   const navigate = useNavigate();
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setError("");
+  }
+
   useEffect(() => {
     async function loadCompanies() {
       if (!sessionToken) {
@@ -33,15 +37,13 @@ export default function ViewUserCompanyList() {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to load companies.");
+          throw new Error(await response.text());
         }
 
         const companies: ProductionCompanyDTO[] = await response.json();
         setCompanyDTOList(companies);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load companies.",
-        );
+        setError(err instanceof Error ? err.message : "");
         setCompanyDTOList([]);
       }
     }
@@ -55,7 +57,12 @@ export default function ViewUserCompanyList() {
 
   return (
     <div>
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       {!error ? (
         <div>

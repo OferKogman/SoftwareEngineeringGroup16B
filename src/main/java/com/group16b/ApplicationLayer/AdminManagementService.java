@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
 import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
@@ -35,9 +36,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 
 @Service
+@Transactional
 public class AdminManagementService {
     private static final Logger logger = LoggerFactory.getLogger(AdminManagementService.class);
     private final IRepository<User> userRepository;
@@ -314,7 +315,7 @@ public class AdminManagementService {
             userRepository.delete(userID);
             logger.info("AdminManagementService.removeUser: Successfully removed user with ID {}", userID);
 
-            return Result.makeOk("User with ID: " + userID + ", , has been removed");
+            return Result.makeOk("User with ID: " + userID + " has been removed");
         } catch (IllegalArgumentException e) {
             logger.error("AdminManagementService.removeUser: User with ID {} not found", userID, e);
             return Result.makeFail("User with ID " + userID + " not found");

@@ -2,15 +2,16 @@ package com.group16b.InfrastructureLayer.Adapters;
 
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
-import org.springframework.stereotype.Repository;
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.InfrastructureLayer.Database.OrderRepository;
 
-@Repository 
+@Component
+@Primary
 public class OrderRepositoryAdapter implements IOrderRepository {
 
     private final OrderRepository springRepo;
@@ -26,11 +27,9 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public Order findByID(String id) {
-        try {
-            return springRepo.findById(id).get(); 
-        } catch (NoSuchElementException e) {
-            throw new IllegalArgumentException("Order with ID " + id + " not found.");
-        }
+        return springRepo.findById(id).orElseThrow(() -> 
+            new IllegalArgumentException("Order with ID " + id + " not found.")
+        );
     }
 
     @Override
@@ -50,7 +49,6 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public List<Order> getBySubjectId(String subjectId) {
-        // Update this line to use the capital ID!
         return springRepo.findBySubjectID(subjectId);
     }
 
@@ -66,7 +64,8 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public Order findFirstByUserIdAndActiveTrue(String userId) {
-        return springRepo.findFirstBySubjectIDAndActiveTrue(userId).orElse(null);
+        List<Order> orders = springRepo.findBySubjectIDAndActiveTrue(userId);
+        return orders.isEmpty() ? null : orders.get(0);
     }
 
     @Override

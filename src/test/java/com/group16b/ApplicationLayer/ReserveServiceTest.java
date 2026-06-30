@@ -159,11 +159,14 @@ public class ReserveServiceTest {
                 EventRecord eventRecord = new EventRecord(testVenue.getID(), "Test Event", LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(1).plusHours(2), "Test Artist", "Test Category", testPCompany.getProductionCompanyID(), 4.5);
                 
                 testEvent = new Event(eventRecord, "owner_1");
-                Venue venue = venueRepo.findByID(testVenue.getID());
-                venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), testEvent.getEventID());
                 testEvent.activateEvent();
-                testVenue = venue;
                 eventRepo.save(testEvent);
+
+                Venue venue = venueRepo.findByID(testVenue.getID());
+                
+                venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), testEvent.getEventID());
+                
+                testVenue = venue;
                 venueRepo.save(venue);
         }
         private void seedOrders() {
@@ -171,6 +174,8 @@ public class ReserveServiceTest {
                 //Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID);
                 seatOrder = new Order("seatingSeg1", List.of("A-1", "A-2"), 100.0, testEvent.getEventID(), testUser.getEmail());
                 fieldOrder = new Order("fieldSeg1", 3, 150.0, testEvent.getEventID(), testUser.getEmail());
+                seatOrder.CompleteOrder();
+                fieldOrder.CompleteOrder();
 
                 Venue venue = venueRepo.findByID(testVenue.getID());
                 venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("A-1", "A-2"), "seatingSeg1"));
@@ -1714,6 +1719,30 @@ public class ReserveServiceTest {
                 Result<Integer> result=reserveService.getPositionInQueueForEvent(testEvent.getEventID());
                 assertFalse(result.isSuccess());
                 assertEquals("An unexpected error has occured, pls try again later.", result.getError());
+        }
+        @Test
+        void reserveSeats_userAlreadyHasActiveOrder_returnsFail() {
+        Order activeOrder = new Order(
+                "seatingSeg1",
+                List.of("C-1"),
+                50.0,
+                testEvent.getEventID(),
+                testUser.getEmail()
+        );
+        orderRepo.save(activeOrder);
+
+        Result<String> result = reserveService.reserveSeats(
+                "seatingSeg1",
+                List.of("B-1"),
+                testEvent.getEventID(),
+                testVenue.getID(),
+                "user1"
+        );
+
+        assertFalse(result.isSuccess());
+        assertEquals("User already has an active order.", result.getError());
+
+        verify(queueRepo, never()).findByID(anyString());
         }
 
 }

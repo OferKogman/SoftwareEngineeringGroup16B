@@ -15,9 +15,15 @@ export default function CompanyEvents() {
   const [events, setEvents] = useState<EventDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [message, setMessage] = useState("");
   const [updatingEventId, setUpdatingEventId] = useState<number | null>(null);
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -28,6 +34,7 @@ export default function CompanyEvents() {
       }
 
       setLoading(true);
+      setMessage("");
       setError("");
 
       try {
@@ -38,22 +45,18 @@ export default function CompanyEvents() {
           },
         );
 
-        const data = await response.json();
-
         if (!response.ok) {
-          throw new Error(
-            data?.message || data?.error || "Failed to load events",
-          );
+          throw new Error(await response.text());
         }
+
+        const data: EventDTO[] = await response.json();
 
         if (!cancelled) {
           setEvents(data);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load events",
-          );
+          setError(err instanceof Error ? err.message : "");
         }
       } finally {
         if (!cancelled) {
@@ -86,6 +89,7 @@ export default function CompanyEvents() {
       return;
     }
 
+    setMessage("");
     setError("");
     setUpdatingEventId(eventId);
 
@@ -104,8 +108,7 @@ export default function CompanyEvents() {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || `Failed to ${endpoint} event.`);
+        throw new Error(await response.text());
       }
 
       setEvents((currentEvents) =>
@@ -118,10 +121,11 @@ export default function CompanyEvents() {
             : event,
         ),
       );
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update event status.",
+      setMessage(
+        `Event ${shouldActivate ? "activated" : "deactivated"} successfully.`,
       );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setUpdatingEventId(null);
     }
@@ -138,7 +142,18 @@ export default function CompanyEvents() {
       </div>
 
       {loading && <p>Loading events...</p>}
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="company-events-list">
         {events.map((event) => (

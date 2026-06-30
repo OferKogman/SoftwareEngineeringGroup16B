@@ -19,33 +19,28 @@ public class EventRepositoryMapImpl implements IEventRepository {
 
 	public EventRepositoryMapImpl() {
 	}
+	private int IDCounter = 1; // removed from Event for MapImpl logic
 
 	@Override
-	public synchronized void save(Event e) {
-		if (e == null) {
-			throw new IllegalArgumentException("Event cannot be null");
-		}
+    public synchronized void save(Event e) {
+        if (e == null) throw new IllegalArgumentException("Event cannot be null");
 
-		Event curr = events.get(e.getEventID());
+        if (e.getEventID() == 0) {
+            e.setId(IDCounter++);
+        }
 
-		if (curr != null) {
-			if (curr.getVersion() != e.getVersion()) {
-				throw new OptimisticLockingFailureException(
-						"Event " + e.getEventID() + " version mismatch. Expected " +
-								e.getVersion() +
-								" but found " +
-								curr.getVersion());
-			}
-			Event updated = new Event(e);
-			updated.incrementVersion();
-			events.put(updated.getEventID(), updated);
-		} else {
-			Event updated = new Event(e);
-			events.put(updated.getEventID(), updated);
-		}
+        Event clone = new Event(e);
 
-	}
+        Event curr = events.get(clone.getEventID());
 
+        if (curr != null) { 
+            if (curr.getVersion() != e.getVersion()) {
+                throw new OptimisticLockingFailureException("Version mismatch...");
+            }
+            clone.incrementVersion();
+        }
+        events.put(clone.getEventID(), clone);
+    }
 	@Override
 	public Event findByID(String eventID) {
 		int id = parseID(eventID);

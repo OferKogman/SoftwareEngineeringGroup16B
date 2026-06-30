@@ -37,23 +37,28 @@ export default function PaymentPage() {
 
   const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);
   const [error, setError] = useState("");
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  function closePopup() {
+    setError("");
+  }
 
   useEffect(() => {
     async function getPrice() {
-      try {
-        const response = await apiFetch(
-          `${API_BASE}/api/order/getOrderPrice/${orderId}`,
-          {
-            method: "GET",
-          },
-        );
-        const data = await response.json();
-        console.log("getOrderPrice response:", data);
-        return data;
-      } catch (err) {
-        console.error("Failed to fetch order price:", err);
-        return 0;
+      const response = await apiFetch(
+        `${API_BASE}/api/order/getOrderPrice/${orderId}`,
+        {
+          method: "GET",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
+
+      const data = await response.json();
+      console.log("getOrderPrice response:", data);
+      return data;
     }
     async function loadPrice() {
       if (!orderId || !sessionToken) {
@@ -69,9 +74,7 @@ export default function PaymentPage() {
 
         setAmount(price);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load order price.",
-        );
+        setError(err instanceof Error ? err.message : "");
       } finally {
         setIsLoadingPrice(false);
       }
@@ -89,20 +92,34 @@ export default function PaymentPage() {
   }, []);
 
   async function cancelOrder() {
+    setIsCanceling(true);
+    setError("");
+
     if (!orderId || !sessionToken) {
       navigate("/events/search");
       return;
     }
 
     try {
-      await apiFetch(`${API_BASE}/api/order/cancelOrder/${orderId}`, {
-        method: "PUT",
-        headers: {
-          Accept: "application/json",
+      const response = await apiFetch(
+        `${API_BASE}/api/order/cancelOrder/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+          },
         },
-      });
-    } finally {
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
       navigate("/events/search");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsCanceling(false);
     }
   }
 
@@ -136,8 +153,8 @@ export default function PaymentPage() {
           orderID: orderId,
           paymentInfo: {
             cardNumber: paymentData.cardNumber,
-            month: month,
-            year: year,
+            month,
+            year,
             holder: `${paymentData.firstName} ${paymentData.lastName}`,
             cvv: paymentData.cvv,
             id: paymentData.idNumber,
@@ -149,7 +166,7 @@ export default function PaymentPage() {
     const data = await response.text();
 
     if (!response.ok) {
-      throw new Error(data || "Failed to complete order.");
+      throw new Error(data);
     }
 
     navigate("/events/search");
@@ -158,12 +175,10 @@ export default function PaymentPage() {
   if (!orderId) {
     return (
       <div className="payment-page">
-        <p className="payment-error">
-          Missing order ID. Payment cannot continue.
-        </p>
-        <button onClick={() => navigate("/events/search")}>
-          Back to Search
-        </button>
+        <div className="settings-alert">
+          <p>Missing order ID. Payment cannot continue.</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
       </div>
     );
   }
@@ -182,7 +197,12 @@ export default function PaymentPage() {
       <div className="payment-card">
         <h1>Payment</h1>
 
-        {error && <p className="payment-error">{error}</p>}
+        {error && (
+          <div className="settings-alert">
+            <p>{error}</p>
+            <button onClick={closePopup}> OK </button>
+          </div>
+        )}
 
         <PaymentForm
           initAmount={amount}
@@ -192,7 +212,7 @@ export default function PaymentPage() {
               setError("");
               await completeOrder(paymentData);
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Payment failed.");
+              setError(err instanceof Error ? err.message : "");
               throw err;
             }
           }}
@@ -201,9 +221,10 @@ export default function PaymentPage() {
         <button
           className="payment-cancel-button"
           type="button"
-          onClick={cancelOrder}
+          disabled={isCanceling}
+          onClick={() => void cancelOrder()}
         >
-          Cancel Order
+          {isCanceling ? "Canceling..." : "Cancel Order"}
         </button>
       </div>
     </div>

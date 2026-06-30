@@ -1,7 +1,6 @@
 package com.group16b.ApplicationLayer;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
@@ -29,10 +29,12 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import org.springframework.beans.factory.annotation.Value;
 
 import io.jsonwebtoken.JwtException;
 
 @Service
+@Transactional
 public class EventService {
 
 	private static final Logger logger = LoggerFactory.getLogger(EventService.class);
@@ -44,11 +46,13 @@ public class EventService {
 	private final IEventRepository eventRepository;
 	private final IRepository<VirtualQueue> queueRepository;
 	private final IProductionCompanyRepository productionCompanyRepository;
+	private final int defaultQueuePassNum;
 
 	public EventService(IAuthenticationService authenticationService, ILocationService locationService,
-			EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo,
-			IRepository<VirtualQueue> queueRepository, IRepository<Venue> venueRepository,
-			IEventRepository eventRepository, IRepository<User> userRepository) {
+	                    EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo,
+	                    IRepository<VirtualQueue> queueRepository, IRepository<Venue> venueRepository,
+	                    IEventRepository eventRepository, IRepository<User> userRepository,
+	                    @Value("${virtual-queue.default-pass-num}") int defaultQueuePassNum) {
 		this.eventFilteringService = eventFilteringService;
 		this.authenticationService = authenticationService;
 		this.locationService = locationService;
@@ -57,6 +61,7 @@ public class EventService {
 		this.venueRepository = venueRepository;
 		this.eventRepository = eventRepository;
 		this.userRepository = userRepository;
+		this.defaultQueuePassNum = defaultQueuePassNum;
 	}
 
 	// need to make event active manually
@@ -76,15 +81,15 @@ public class EventService {
 
 			logger.info("EventService.createEvent: Attempting to create event: " + eventRecord.name());
 			Event event = new Event(eventRecord, user.getEmail());
+			eventRepository.save(event);//now correct id finally generated - can use since transactional all or nothing
 
 			logger.info("EventService.createEvent: Creating queue for the new event");
-			VirtualQueue q = new VirtualQueue(event.getEventID());
+			VirtualQueue q = new VirtualQueue(event.getEventID(), defaultQueuePassNum);
 
 			logger.info("EventService.createEvent: Verifying venue availability.");
 			Venue venue = venueRepository.findByID(eventRecord.venueID());
 			venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
 
-			eventRepository.save(event);
 			queueRepository.save(q);
 			venueRepository.save(venue);
 

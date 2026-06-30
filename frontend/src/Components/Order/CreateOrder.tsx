@@ -8,6 +8,7 @@ import type {
   SeatDTO,
   VenueDTO,
 } from "../../DTOs/VenueDTO";
+import { useNotifications } from "../Notification/NotificationContext";
 import VenueDisplay from "../Shared/VenueDisplay";
 import "./CSS/CreateOrder.css";
 
@@ -23,6 +24,7 @@ export default function CreateOrderPage() {
   const { eventID } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { addNotification } = useNotifications();
 
   const [venueID, setVenueID] = useState("");
   const [venue, setVenue] = useState<VenueDTO | null>(null);
@@ -31,7 +33,7 @@ export default function CreateOrderPage() {
     ?.lotteryCode;
 
   //TODO: Pass Age to reservation somehow when implemented in the backend
-  const age = (location.state as { age?: number } | null)?.age;
+  //const age = (location.state as { age?: number } | null)?.age;
 
   const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
     null,
@@ -42,8 +44,13 @@ export default function CreateOrderPage() {
   const [fieldTicketAmount, setFieldTicketAmount] = useState("1");
   const [selectedSeats, setSelectedSeats] = useState<SeatDTO[]>([]);
   const [error, setError] = useState("");
+  const [isOrdering, setIsOrdering] = useState<"field" | "seat" | null>(null);
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setError("");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -106,9 +113,7 @@ export default function CreateOrderPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load venue.",
-          );
+          setError(err instanceof Error ? err.message : "");
         }
       }
     }
@@ -201,7 +206,7 @@ export default function CreateOrderPage() {
       const text = await response.text();
 
       if (!response.ok) {
-        throw new Error(text || "Failed to reserve field.");
+        throw new Error(text);
       }
 
       const orderId = text.replace("new OrderId:", "").trim();
@@ -228,7 +233,7 @@ export default function CreateOrderPage() {
       const text = await response.text();
 
       if (!response.ok) {
-        throw new Error(text || "Failed to reserve field.");
+        throw new Error(text);
       }
 
       const orderId = text.replace("new OrderId:", "").trim();
@@ -266,7 +271,7 @@ export default function CreateOrderPage() {
       const text = await response.text();
 
       if (!response.ok) {
-        throw new Error(text || "Failed to reserve seats.");
+        throw new Error(text);
       }
 
       const orderId = text.replace("new OrderId:", "").trim();
@@ -292,7 +297,7 @@ export default function CreateOrderPage() {
       const text = await response.text();
 
       if (!response.ok) {
-        throw new Error(text || "Failed to reserve seats.");
+        throw new Error(text);
       }
 
       const orderId = text.replace("new OrderId:", "").trim();
@@ -319,6 +324,7 @@ export default function CreateOrderPage() {
   }
 
   async function handleFieldOrder() {
+    setError("");
     if (!eventID) {
       setError("Missing event ID.");
       return;
@@ -346,6 +352,8 @@ export default function CreateOrderPage() {
       return;
     }
 
+    setIsOrdering("field");
+
     try {
       const createdOrder = await reserveFieldSeats(
         eventID,
@@ -354,13 +362,22 @@ export default function CreateOrderPage() {
         amount,
       );
 
+      addNotification({
+        type: "success",
+        message: "Seats reserved! Please complete checkout within 10 minutes.",
+        duration: 5000,
+      });
+
       moveToPayment(createdOrder);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reserve field.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsOrdering(null);
     }
   }
 
   async function handleSeatOrder() {
+    setError("");
     if (!eventID) {
       setError("Missing event ID.");
       return;
@@ -380,6 +397,8 @@ export default function CreateOrderPage() {
       return;
     }
 
+    setIsOrdering("seat");
+
     try {
       const createdOrder = await reserveSeats(
         eventID,
@@ -390,7 +409,9 @@ export default function CreateOrderPage() {
 
       moveToPayment(createdOrder);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reserve seats.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsOrdering(null);
     }
   }
 
@@ -425,8 +446,12 @@ export default function CreateOrderPage() {
           $
         </h3>
 
-        <button type="button" onClick={handleFieldOrder}>
-          Order Field Tickets
+        <button
+          type="button"
+          disabled={isOrdering === "field"}
+          onClick={() => void handleFieldOrder()}
+        >
+          {isOrdering === "field" ? "Ordering..." : "Order Field Tickets"}
         </button>
       </div>
     );
@@ -471,8 +496,12 @@ export default function CreateOrderPage() {
           {selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length}$
         </h3>
 
-        <button type="button" onClick={handleSeatOrder}>
-          Order Selected Seats
+        <button
+          type="button"
+          disabled={isOrdering === "seat"}
+          onClick={() => void handleSeatOrder()}
+        >
+          {isOrdering === "seat" ? "Ordering..." : "Order Selected Seats"}
         </button>
       </div>
     );
@@ -508,7 +537,12 @@ export default function CreateOrderPage() {
     return (
       <div>
         <p>Loading venue...</p>
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <div className="settings-alert">
+            <p>{error}</p>
+            <button onClick={closePopup}> OK </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -517,7 +551,12 @@ export default function CreateOrderPage() {
     <div>
       <h2>Create Order</h2>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="create-order-layout">
         <VenueDisplay

@@ -37,8 +37,13 @@ export default function SearchEvents() {
 
   const [events, setEvents] = useState<EventDTO[] | null>(null);
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setError("");
+  }
 
   function updateField<K extends keyof SearchEventsFilters>(
     field: K,
@@ -51,9 +56,10 @@ export default function SearchEvents() {
   }
 
   async function searchEvents() {
-    try {
-      setError("");
+    setIsSubmitting(true);
+    setError("");
 
+    try {
       const filteredData = Object.fromEntries(
         Object.entries(filters).filter(([_, value]) => {
           if (value === undefined || value === null) {
@@ -79,13 +85,15 @@ export default function SearchEvents() {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to search events.");
+        throw new Error(await response.text());
       }
 
       const data: EventDTO[] = await response.json();
       setEvents(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to search events.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -200,6 +208,8 @@ export default function SearchEvents() {
           <div>Start Date</div>
           <input
             type="datetime-local"
+            min={new Date().toISOString().slice(0, 16)}
+            max="9999-12-31T23:59"
             value={filters.startTime?.[0] ?? ""}
             onChange={(e) =>
               updateField(
@@ -214,6 +224,8 @@ export default function SearchEvents() {
           <div>End Date</div>
           <input
             type="datetime-local"
+            min={new Date().toISOString().slice(0, 16)}
+            max="9999-12-31T23:59"
             value={filters.endTime?.[0] ?? ""}
             onChange={(e) =>
               updateField(
@@ -288,11 +300,18 @@ export default function SearchEvents() {
         </label>
       </div>
 
-      <button onClick={searchEvents}>Search</button>
+      <button disabled={isSubmitting} onClick={() => void searchEvents()}>
+        {isSubmitting ? "Searching..." : "Search"}
+      </button>
 
       <br />
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       {events !== null && <ViewEventsList events={events} />}
     </div>
