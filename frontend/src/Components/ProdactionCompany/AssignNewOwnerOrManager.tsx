@@ -40,7 +40,14 @@ export default function AssignMember({ onSubmit }: AssignMemberProps) {
   );
   const [permissionsError, setPermissionsError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function closePopup() {
+    setMessage("");
+    setSubmitError("");
+    setPermissionsError("");
+  }
 
   function togglePermission(perm: ManagerPermissions) {
     setPermissions((prev) => {
@@ -58,6 +65,7 @@ export default function AssignMember({ onSubmit }: AssignMemberProps) {
     event.preventDefault();
     setPermissionsError("");
     setSubmitError("");
+    setMessage("");
 
     if (role === "MANAGER" && permissions.size === 0) {
       setPermissionsError("Manager must have at least one permission.");
@@ -74,9 +82,7 @@ export default function AssignMember({ onSubmit }: AssignMemberProps) {
       setFields(initialFields);
       setPermissions(new Set());
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to assign member.",
-      );
+      setSubmitError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -88,7 +94,18 @@ export default function AssignMember({ onSubmit }: AssignMemberProps) {
     <form className="event-creation-form" onSubmit={handleSubmit}>
       <h2>Assign Member</h2>
 
-      {submitError && <p className="form-error">{submitError}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {submitError && (
+        <div className="settings-alert">
+          <p>{submitError}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <label>
         Role
@@ -132,7 +149,14 @@ export default function AssignMember({ onSubmit }: AssignMemberProps) {
           ))}
         </fieldset>
       )}
-      {permissionsError && <p className="form-error">{permissionsError}</p>}
+      {permissionsError && (
+        <div className="settings-alert">
+          <p>{permissionsError}</p>
+          <button type="button" onClick={closePopup}>
+            OK
+          </button>
+        </div>
+      )}
 
       <button type="submit" disabled={isSubmitting}>
         {isSubmitting

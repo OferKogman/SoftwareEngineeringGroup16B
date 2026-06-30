@@ -16,6 +16,7 @@ import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
@@ -37,7 +38,7 @@ public class ReserveService {
     private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
 
     private final IRepository<Venue> venueRepo;
-    private final IRepository<Order> orderRepo;
+    private final IOrderRepository orderRepo;
     private final IRepository<VirtualQueue> queueImp;
     private final IEventRepository eventRepository;
     private final IProductionCompanyRepository productionCompanyRepo;
@@ -46,7 +47,7 @@ public class ReserveService {
 
     public ReserveService(IAuthenticationService authenticationService,
             IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp,
-            IRepository<Venue> venueRepo, IEventRepository eventRepository, IRepository<Order> orderRepo,
+            IRepository<Venue> venueRepo, IEventRepository eventRepository, IOrderRepository orderRepo,
             IRepository<User> userRepo) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepo = productionCompanyRepo;
@@ -89,6 +90,12 @@ public class ReserveService {
 
             logger.info("ReserveService.reserveSeats: Verifying session token for reservation.");
             subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+            
+            logger.info("ReserveService.reserveSeats: Checking for existing active orders for {}", subjectID);
+            if (orderRepo.findFirstByUserIdAndActiveTrue(subjectID) != null) {
+                logger.warn("ReserveService.reserveSeats: User {} already has an active order.", subjectID);
+                return Result.makeFail("User already has an active order.");
+            }
 
             logger.info("Checking event is active");
             event = eventRepository.findByID(String.valueOf(eventID));
@@ -223,7 +230,12 @@ public class ReserveService {
             }
             logger.info("ReserveService.reserveFieldSeats: Verifying session token for reservation.");
             subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
-
+            // validate user does not havve another active order
+            logger.info("ReserveService.reserveFieldSeats: Checking for existing active orders for {}", subjectID);
+            if (orderRepo.findFirstByUserIdAndActiveTrue(subjectID) != null) {
+                logger.warn("ReserveService.reserveFieldSeats: User {} already has an active order.", subjectID);
+                return Result.makeFail("User already has an active order.");
+            }
             logger.info("ReserveService.reserveFieldSeats: Checking event is active");
             event = eventRepository.findByID(String.valueOf(eventID));
             event.validateEventIsActive();

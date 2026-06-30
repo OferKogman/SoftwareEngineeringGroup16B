@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 
 import com.group16b.ApplicationLayer.DTOs.EventDTO;
 import com.group16b.ApplicationLayer.DTOs.OrderDTO;
@@ -125,6 +126,7 @@ public class ProductionCompanyService {
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("ProductionCompanyService.displayTotalRevenue: Unexpected error", e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -138,11 +140,13 @@ public class ProductionCompanyService {
             logger.info("ProductionCompanyService.createProductionCompany: Session token verified successfully.");
 
             ProductionCompany newCompany = ProductionCompany.createNewCompany(companyName, userID, idGen.getNextId());
+            
             productionRepo.save(newCompany);
 
             logger.info(
                     "ProductionCompanyService.createProductionCompany: Successfully created production company with name {} and id {}",
                     companyName, newCompany.getProductionCompanyID());
+            
             return Result.makeOk(new ProductionCompanyDTO(newCompany));
 
         } catch (AuthException e) {
@@ -195,6 +199,7 @@ public class ProductionCompanyService {
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("ProductionCompanyService.getCompanyEvents: Unexpected error", e);
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }

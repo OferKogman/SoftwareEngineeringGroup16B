@@ -21,7 +21,7 @@ function getApiError(data: unknown): string {
     }
   }
 
-  return "Could not load total revenue";
+  return "";
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {
@@ -72,6 +72,10 @@ export default function TotalRevenue() {
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setError("");
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -111,11 +115,7 @@ export default function TotalRevenue() {
         setRevenue(getRevenue(data));
       } catch (error) {
         if (!cancelled) {
-          setError(
-            error instanceof Error
-              ? error.message
-              : "Could not load total revenue",
-          );
+          setError(error instanceof Error ? error.message : "");
         }
       } finally {
         if (!cancelled) {
@@ -138,13 +138,15 @@ export default function TotalRevenue() {
 
         {loading ? (
           <div className="revenue-content">Loading revenue...</div>
-        ) : error ? (
-          <div className="revenue-content">
-            <h3>Could not load revenue</h3>
-            <p className="form-error">{error}</p>
-          </div>
         ) : (
           <div className="revenue-content">
+            {error && (
+              <div className="settings-alert">
+                <p>{error}</p>
+                <button onClick={closePopup}> OK </button>
+              </div>
+            )}
+
             <p className="revenue-label">Total Revenue Generated</p>
 
             <h1 className="revenue-value">

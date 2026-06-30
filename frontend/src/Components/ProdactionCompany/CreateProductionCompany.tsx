@@ -16,6 +16,11 @@ export default function CreateProductionCompany() {
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
+
   async function handleCreateCompany(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -41,9 +46,7 @@ export default function CreateProductionCompany() {
       });
 
       if (!response.ok) {
-        throw new Error(
-          (await response.text()) || "Failed to create production company.",
-        );
+        throw new Error(await response.text());
       }
       const data = await response.json();
 
@@ -57,11 +60,7 @@ export default function CreateProductionCompany() {
         navigate(`/companies/${newCompanyId}`);
       }
     } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        setError("Something went wrong.");
-      }
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -69,8 +68,18 @@ export default function CreateProductionCompany() {
 
   return (
     <div style={{ padding: "24px" }}>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-      {message && <p style={{ color: "green" }}>{message}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <form onSubmit={handleCreateCompany}>
         <div>

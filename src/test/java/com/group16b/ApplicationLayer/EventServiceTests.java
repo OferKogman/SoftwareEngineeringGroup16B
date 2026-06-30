@@ -393,7 +393,7 @@ public class EventServiceTests {
                 EventRecord record = new EventRecord("venue1", "event2", now.plusDays(6), now.plusDays(7), "artist2",
                                 "category2", 1, 4.5);
                 EventDTO e2 = new EventDTO(new Event(record, user1.getEmail()));
-                assertEquals(e2.getEventID() + 1, eventService.createEvent(record, "user1").getValue().getEventID());
+                assertEquals(2, eventService.createEvent(record, "user1").getValue().getEventID());
         }
 
         @Test

@@ -92,6 +92,7 @@ export default function VenueEditor() {
   );
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [selectedCell, setSelectedCell] = useState<SelectedCellData | null>(
     null,
@@ -115,12 +116,19 @@ export default function VenueEditor() {
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setSuccess("");
+    setError("");
+  }
+
   async function onSubmitVenue() {
+    setIsSubmitting(true);
     setError("");
     setSuccess("");
 
     if (!companyId) {
       setError("Missing company ID or event ID.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -129,16 +137,19 @@ export default function VenueEditor() {
 
     if (!sessionToken) {
       setError("Missing session token.");
+      setIsSubmitting(false);
       return;
     }
 
     if (trimmedName === "") {
       setError("Venue name cannot be empty.");
+      setIsSubmitting(false);
       return;
     }
 
     if (trimmedLocation === "") {
       setError("Venue location cannot be empty.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -181,8 +192,7 @@ export default function VenueEditor() {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to configure venue layout.");
+        throw new Error(await response.text());
       }
 
       setSuccess("Venue created successfully.");
@@ -191,11 +201,9 @@ export default function VenueEditor() {
       setFormData(initialVenue);
       clearSelections();
     } catch (err) {
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to configure venue layout.",
-      );
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -920,8 +928,18 @@ export default function VenueEditor() {
       }}
     >
       <h2>Venue Editor</h2>
-      {error && <p className="form-error">{error}</p>}
-      {success && <p className="form-success">{success}</p>}
+      {success && (
+        <div className="settings-alert">
+          <p>{success}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div
         style={{
@@ -1009,11 +1027,12 @@ export default function VenueEditor() {
         <div className="form-actions">
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={() => {
               void onSubmitVenue();
             }}
           >
-            {"Save Changes"}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       }

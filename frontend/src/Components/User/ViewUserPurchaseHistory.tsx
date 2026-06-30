@@ -12,6 +12,10 @@ export default function UserPurchaseHistory() {
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setError("");
+  }
+
   useEffect(() => {
     async function loadUserPurchaseHistory() {
       if (!sessionToken) {
@@ -28,18 +32,13 @@ export default function UserPurchaseHistory() {
         );
 
         if (!response.ok) {
-          const message = await response.text();
-          throw new Error(message || "Failed to load user purchase history.");
+          throw new Error(await response.text());
         }
 
         const data: OrderDTO[] = await response.json();
         setOrders(data);
       } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load user purchase history.",
-        );
+        setError(err instanceof Error ? err.message : "");
       }
     }
 
@@ -48,7 +47,12 @@ export default function UserPurchaseHistory() {
 
   return (
     <div>
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="orders-list">
         {orders.length > 0 ? (
