@@ -1,7 +1,7 @@
 package com.group16b.InfrastructureLayer.Adapters;
 
 import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Repository;
+import org.springframework.stereotype.Component;
 
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Interfaces.IRepository;
@@ -9,7 +9,7 @@ import com.group16b.InfrastructureLayer.Database.UserRepository;
 
 import java.util.List;
 
-@Repository
+@Component
 @Primary
 public class UserRepositoryAdapter implements IRepository<User>{
     private final UserRepository springRepo;
