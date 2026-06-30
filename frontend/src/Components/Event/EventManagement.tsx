@@ -56,6 +56,10 @@ export default function EventManagement() {
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setError("");
+  }
+
   useEffect(() => {
     let cancelled = false;
 
@@ -142,7 +146,12 @@ export default function EventManagement() {
         <p>Event ID: {eventID ?? "Missing"}</p>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="management-body">
         <aside className="management-sidebar">

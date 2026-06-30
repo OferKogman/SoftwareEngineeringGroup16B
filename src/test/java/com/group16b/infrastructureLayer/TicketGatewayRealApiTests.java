@@ -17,7 +17,7 @@ import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 class TicketGatewayRealApiTests {
 
     private final TicketGateway ticketGateway =
-            new TicketGateway(new WsepClient(new RestTemplate()));
+            new TicketGateway(new WsepClient(new RestTemplate(), "https://damp-lynna-wsep-1984852e.koyeb.app/"));
 
     @Test
     void generateSeatingTicket_returnsTicketId() {

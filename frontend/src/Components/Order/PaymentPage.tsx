@@ -31,28 +31,34 @@ export default function PaymentPage() {
 
   const state = location.state as PaymentLocationState | null;
   const orderId = state?.orderId;
+
   const [amount, setAmount] = useState<number>(0);
   const [isLoadingPrice, setIsLoadingPrice] = useState<boolean>(true);
 
-  const [expiresAt, setExpiresAt] = useState<number>(Date.now() + PAYMENT_TIME_LIMIT_SECONDS * 1000,);
-  const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);  const [error, setError] = useState("");
+  const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);
+  const [error, setError] = useState("");
+  const [isCanceling, setIsCanceling] = useState(false);
+
+  function closePopup() {
+    setError("");
+  }
 
   useEffect(() => {
     async function getPrice() {
-      try {
-        const response = await apiFetch(
-          `${API_BASE}/api/order/getOrderPrice/${orderId}`,
-          {
-            method: "GET",
-          },
-        );
-        const data = await response.json();
-        console.log("getOrderPrice response:", data);
-        return data;
-      } catch (err) {
-        console.error("Failed to fetch order price:", err);
-        return 0;
+      const response = await apiFetch(
+        `${API_BASE}/api/order/getOrderPrice/${orderId}`,
+        {
+          method: "GET",
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
       }
+
+      const data = await response.json();
+      console.log("getOrderPrice response:", data);
+      return data;
     }
     async function loadPrice() {
       if (!orderId || !sessionToken) {
@@ -68,9 +74,7 @@ export default function PaymentPage() {
 
         setAmount(price);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load order price.",
-        );
+        setError(err instanceof Error ? err.message : "");
       } finally {
         setIsLoadingPrice(false);
       }
@@ -80,86 +84,43 @@ export default function PaymentPage() {
   }, [orderId, sessionToken, apiFetch]);
 
   useEffect(() => {
-      const timerID = window.setInterval(() => {
-        const remainingSeconds = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000),);
-        setSecondsLeft(remainingSeconds);
-      }, 1000);
+    const timerID = window.setInterval(() => {
+      setSecondsLeft((current) => Math.max(current - 1, 0));
+    }, 1000);
 
-      return () => window.clearInterval(timerID);
-    }, [expiresAt]);
-
-  useEffect(() => {
-      async function loadOrderTimer() {
-        if (!orderId || !sessionToken) {
-          setExpiresAt(Date.now() + PAYMENT_TIME_LIMIT_SECONDS * 1000);
-          return;
-        }
-
-        try {
-          const response = await apiFetch(
-            `${API_BASE}/api/order/getOrderStartTime/${orderId}`,
-            {
-              method: "GET",
-              headers: {
-                Accept: "application/json",
-              },
-            },
-          );
-
-          if (!response.ok) {
-            throw new Error(await response.text());
-          }
-
-          const data = await response.json();
-          const orderStartTime = data.value ?? data;
-
-          const loadedExpiresAt = Number(orderStartTime) + PAYMENT_TIME_LIMIT_SECONDS * 1000;
-
-          const remainingSeconds = Math.floor((loadedExpiresAt - Date.now()) / 1000,);
-
-          const safeSeconds = clampPaymentSeconds(remainingSeconds);
-
-          setExpiresAt(Date.now() + safeSeconds * 1000);
-          setSecondsLeft(safeSeconds);
-        } catch (err) {
-          console.error("Failed to fetch order start time:", err);
-          setExpiresAt(Date.now() + PAYMENT_TIME_LIMIT_SECONDS * 1000);
-          setSecondsLeft(PAYMENT_TIME_LIMIT_SECONDS);
-        }
-      }
-
-      void loadOrderTimer();
-    }, [orderId, sessionToken, apiFetch]);
-    
+    return () => window.clearInterval(timerID);
+  }, []);
 
   async function cancelOrder() {
+    setIsCanceling(true);
+    setError("");
+
     if (!orderId || !sessionToken) {
       navigate("/events/search");
       return;
     }
 
     try {
-      await apiFetch(`${API_BASE}/api/order/cancelOrder/${orderId}`, {
-        method: "PUT",
-        headers: {
-          Accept: "application/json",
+      const response = await apiFetch(
+        `${API_BASE}/api/order/cancelOrder/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+          },
         },
-      });
-    } finally {
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
       navigate("/events/search");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsCanceling(false);
     }
-  }
-
-  useEffect(() => {
-      if (secondsLeft !== 0) {return;}
-      void cancelOrder();
-    }, [secondsLeft]);
-  function clampPaymentSeconds(seconds: number) {
-    if (!Number.isFinite(seconds)) {
-      return PAYMENT_TIME_LIMIT_SECONDS;
-    }
-
-    return Math.min(Math.max(seconds, 0), PAYMENT_TIME_LIMIT_SECONDS);
   }
 
   function formatTimer(totalSeconds: number) {
@@ -192,8 +153,8 @@ export default function PaymentPage() {
           orderID: orderId,
           paymentInfo: {
             cardNumber: paymentData.cardNumber,
-            month: month,
-            year: year,
+            month,
+            year,
             holder: `${paymentData.firstName} ${paymentData.lastName}`,
             cvv: paymentData.cvv,
             id: paymentData.idNumber,
@@ -205,7 +166,7 @@ export default function PaymentPage() {
     const data = await response.text();
 
     if (!response.ok) {
-      throw new Error(data || "Failed to complete order.");
+      throw new Error(data);
     }
 
     navigate("/events/search");
@@ -214,12 +175,10 @@ export default function PaymentPage() {
   if (!orderId) {
     return (
       <div className="payment-page">
-        <p className="payment-error">
-          Missing order ID. Payment cannot continue.
-        </p>
-        <button onClick={() => navigate("/events/search")}>
-          Back to Search
-        </button>
+        <div className="settings-alert">
+          <p>Missing order ID. Payment cannot continue.</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
       </div>
     );
   }
@@ -238,7 +197,12 @@ export default function PaymentPage() {
       <div className="payment-card">
         <h1>Payment</h1>
 
-        {error && <p className="payment-error">{error}</p>}
+        {error && (
+          <div className="settings-alert">
+            <p>{error}</p>
+            <button onClick={closePopup}> OK </button>
+          </div>
+        )}
 
         <PaymentForm
           initAmount={amount}
@@ -248,7 +212,7 @@ export default function PaymentPage() {
               setError("");
               await completeOrder(paymentData);
             } catch (err) {
-              setError(err instanceof Error ? err.message : "Payment failed.");
+              setError(err instanceof Error ? err.message : "");
               throw err;
             }
           }}
@@ -257,9 +221,10 @@ export default function PaymentPage() {
         <button
           className="payment-cancel-button"
           type="button"
-          onClick={cancelOrder}
+          disabled={isCanceling}
+          onClick={() => void cancelOrder()}
         >
-          Cancel Order
+          {isCanceling ? "Canceling..." : "Cancel Order"}
         </button>
       </div>
     </div>

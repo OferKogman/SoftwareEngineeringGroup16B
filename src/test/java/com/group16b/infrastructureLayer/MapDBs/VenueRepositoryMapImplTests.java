@@ -42,10 +42,12 @@ public class VenueRepositoryMapImplTests {
         mockVenue1 = mock(Venue.class);
         when(mockVenue1.getID()).thenReturn("venue_1");
         when(mockVenue1.getVersion()).thenReturn(1L);
+        when(mockVenue1.getGrid()).thenReturn(new VenueGrid(10, 10));
 
         mockVenue2 = mock(Venue.class);
         when(mockVenue2.getID()).thenReturn("venue_2");
         when(mockVenue2.getVersion()).thenReturn(1L);
+        when(mockVenue2.getGrid()).thenReturn(new VenueGrid(10, 10));
     }
 
     @Test
@@ -120,6 +122,7 @@ public class VenueRepositoryMapImplTests {
         Venue incomingUpdate = mock(Venue.class);
         when(incomingUpdate.getID()).thenReturn("venue_1");
         when(incomingUpdate.getVersion()).thenReturn(1L); 
+        when(incomingUpdate.getGrid()).thenReturn(new VenueGrid(10, 10));
 
         venueRepository.save(incomingUpdate);
 
@@ -160,7 +163,8 @@ public class VenueRepositoryMapImplTests {
                     Venue concurrentMock = mock(Venue.class);
                     when(concurrentMock.getID()).thenReturn("venue_1");
                     when(concurrentMock.getVersion()).thenReturn(1L); 
-                    
+                    when(concurrentMock.getGrid()).thenReturn(new VenueGrid(10, 10));
+                     
                     venueRepository.save(concurrentMock); 
                 } catch (IllegalArgumentException e) {
                     if (e.getMessage().contains("Version mismatch")) {

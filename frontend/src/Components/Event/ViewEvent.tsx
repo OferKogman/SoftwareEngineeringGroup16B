@@ -4,10 +4,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import type { DiscountPolicyDTO } from "../../DTOs/DiscountPolicyDTO";
 import type { EventDTO } from "../../DTOs/EventDTO";
-import { locationToString } from "../../DTOs/LocationDTO";
+import { locationToString, type LocationDTO } from "../../DTOs/LocationDTO";
 import type { ProductionCompanyDTO } from "../../DTOs/ProductionCompanyDTO";
 import type { PurchasePolicyDTO } from "../../DTOs/PurchasePolicyDTO";
-import type { VenueDTO } from "../../DTOs/VenueDTO";
 import ViewDiscountPolicies from "../Shared/ViewDiscountPolicies";
 import ViewPurchasePolicies from "../Shared/ViewPurchasePolicies";
 import "./CSS/ViewEvent.css";
@@ -16,6 +15,8 @@ import LotteryInformation from "./LotteryInformation";
 export default function ViewEvent() {
   const { eventID } = useParams();
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(true);
   const [eventDTO, setEventDTO] = useState<EventDTO | null>(null);
   const [location, setLocation] = useState<string>("");
   const [companyName, setCompanyName] = useState<string>("");
@@ -29,12 +30,19 @@ export default function ViewEvent() {
   const navigate = useNavigate();
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
+
   useEffect(() => {
     if (!eventID) {
       return;
     }
 
     async function loadEvent() {
+      setMessage("");
+      setError("");
       try {
         const response = await apiFetch(
           `http://localhost:8080/events/${eventID}`,
@@ -51,7 +59,7 @@ export default function ViewEvent() {
         setEventDTO(event);
 
         const locationResponse = await apiFetch(
-          `http://localhost:8080/venues/${event.eventVenueID}`,
+          `http://localhost:8080/venues/${event.eventVenueID}/location`,
           {
             method: "Get",
           },
@@ -61,8 +69,8 @@ export default function ViewEvent() {
           throw new Error(await response.text());
         }
 
-        const ven: VenueDTO = await locationResponse.json();
-        setLocation(locationToString(ven.location));
+        const loc: LocationDTO = await locationResponse.json();
+        setLocation(locationToString(loc));
 
         const companyResponse = await apiFetch(
           `http://localhost:8080/production-companies/${event.eventProductionCompanyID}`,
@@ -80,20 +88,37 @@ export default function ViewEvent() {
         setCompanyDiscountPolicy(company.discountPolicy);
         setCompanyPurchasePolicy(company.purchasePolicy);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load event.");
+        setError(err instanceof Error ? err.message : "");
+      } finally {
+        setIsLoading(false);
       }
     }
 
     void loadEvent();
   }, [apiFetch, eventID]);
 
+  if (isLoading) {
+    return <p>Loading event...</p>;
+  }
+
   if (!eventDTO) {
-    return <div>{error && <p className="form-error">{error}</p>}</div>;
+    return null;
   }
 
   return (
     <div className="event-view">
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <h1 className="event-title">{eventDTO.eventName}</h1>
 

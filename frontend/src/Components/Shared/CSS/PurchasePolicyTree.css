@@ -10,6 +10,10 @@
   font-weight: 600;
 }
 
+.policy-node label {
+  white-space: pre-line;
+}
+
 .and-node {
   background: #6d2aa7;
 

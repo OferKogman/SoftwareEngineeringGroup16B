@@ -23,6 +23,7 @@ export default function Resignation() {
 
     setIsSubmitting(true);
     setMessage("");
+    setError("");
 
     if (!companyId) {
       setError("Missing company ID.");
@@ -39,8 +40,7 @@ export default function Resignation() {
       );
 
       if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || "Failed to forfeit ownership.");
+        throw new Error(await response.text());
       }
 
       setError("");
@@ -50,9 +50,7 @@ export default function Resignation() {
         navigate("/");
       }, 3000);
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to forfeit ownership.",
-      );
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }

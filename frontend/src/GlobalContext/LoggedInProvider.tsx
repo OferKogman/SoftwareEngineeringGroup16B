@@ -30,7 +30,7 @@ export function LoggedInProvider({ children }: { children: ReactNode }) {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to check logged-in status");
+          throw new Error(await response.text());
         }
 
         const result = (await response.text()).trim();

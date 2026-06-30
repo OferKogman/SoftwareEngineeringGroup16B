@@ -19,11 +19,18 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
   const locationState = location.state as LocationState | null;
 
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(
+    order == null && locationState?.order == null,
+  );
   const [orderDTO, setOrderDTO] = useState<OrderDTO | null>(
     order ?? locationState?.order ?? null,
   );
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setError("");
+  }
 
   useEffect(() => {
     if (!orderID) {
@@ -31,6 +38,9 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
     }
 
     async function loadOrder() {
+      setLoading(true);
+      setError("");
+
       if (order) {
         setOrderDTO(order);
         return;
@@ -67,12 +77,18 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
 
         setOrderDTO(fakeOrderDTO);*/
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load order.");
+        setError(err instanceof Error ? err.message : "");
+      } finally {
+        setLoading(false);
       }
     }
 
     void loadOrder();
   }, [orderID, order, locationState?.order, apiFetch]);
+
+  if (loading) {
+    return <p>Loading order...</p>;
+  }
 
   if (!orderDTO) {
     return <div className="loading">Loading order...</div>;
@@ -83,7 +99,12 @@ export default function ViewOrder({ order, onClick }: ViewOrderProps) {
       className={`view-order-container ${onClick ? "clickable-order" : ""}`}
       onClick={onClick}
     >
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div
         className={`card order-card ${orderDTO.isRefunded ? "refunded" : ""}`}

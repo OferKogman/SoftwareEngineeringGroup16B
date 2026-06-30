@@ -7,32 +7,78 @@ import java.util.Set;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicySetConverter;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicyConverter;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicySetConverter;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+@Entity
+@Table(name = "events")
 public class Event {
-	private static int IDCounter = 1;
+	
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int eventID;
 
-	private final int eventID;
-	private boolean active = false;
-	private String venueID;
-	private String name;
-	private LocalDateTime startTime;
-	private LocalDateTime endTime;
-	private String artist;
-	private String category;
-	private final int productionCompanyID;
-	private final Set<DiscountPolicy> discountPolicy;
-	private final Set<PurchasePolicy> purchasePolicy;
-	private LotteryPolicy lotteryPolicy;
-	private double price;
-	private double rating;
-	private final String ownerId;
+    @Version 
+    private long version;
 
-	private long version;
+    @Column(nullable = false)
+    private boolean active = false;
+    
+    @Column(nullable = false)
+    private String venueID;
+    
+    @Column(nullable = false)
+    private String name;
+    
+    @Column(nullable = false)
+    private LocalDateTime startTime;
+    
+    @Column(nullable = false)
+    private LocalDateTime endTime;
+    
+    private String artist; 
+    
+    private String category;
+    
+    @Column(nullable = false)
+    private int productionCompanyID; 
+    
+    @Column(nullable = false)
+    private double price;
+    
+    @Column(nullable = false)
+    private double rating;
+    
+    @Column(nullable = false)
+    private String ownerId; 
+    
+    @Convert(converter = PurchasePolicySetConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private Set<PurchasePolicy> purchasePolicy = new HashSet<>();
+
+    @Convert(converter = DiscountPolicySetConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private Set<DiscountPolicy> discountPolicy = new HashSet<>();
+
+    @Convert(converter = LotteryPolicyConverter.class) 
+    @Column(columnDefinition = "TEXT")
+    private LotteryPolicy lotteryPolicy;
+
+    public Event() {}
 
 	public Event(EventRecord eventRecord, String ownerId) {
-		this.eventID = IDCounter++;
 		this.venueID = eventRecord.venueID();
 		validateName(eventRecord.name());
 		this.name = eventRecord.name();
@@ -97,6 +143,10 @@ public class Event {
 
 	public int getEventID() {
 		return eventID;
+	}
+
+	public void setId(int id){//only for mapImpl repository
+		this.eventID = id;
 	}
 
 	public boolean getEventStatus() {
@@ -396,4 +446,12 @@ public class Event {
 			throw new IllegalStateException("Event price must be set and greater than zero.");
 		}
     }
+
+	public void deactivateIfActive(){
+		if(!this.getEventStatus()){
+			return;
+		}
+		this.deactivateEvent();
+		setEventPrice(0);
+	}
 }

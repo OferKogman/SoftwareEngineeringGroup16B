@@ -1,8 +1,10 @@
 package com.group16b.DomainLayer.Venue;
 
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.group16b.ApplicationLayer.Records.SeatRecord;
@@ -20,9 +22,9 @@ public class ChosenSeatingSeg extends Segment {
 	private int IDforSeat = 0;
 
 	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-	@JoinColumn(name = "segment_id") // Creates a foreign key column in the seats table linking back here
+	@JoinColumn(name = "segment_id", referencedColumnName = "segmentID") // Creates a foreign key column in the seats table linking back here
 	@MapKey(name = "seatId") // Tells Hibernate to use the seatId property from Seat as the Map Key
-	protected final Map<String, Seat> seats;
+	protected Map<String, Seat> seats=new HashMap<>();;
 
 	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
 		super(segmentID, area);
@@ -31,7 +33,6 @@ public class ChosenSeatingSeg extends Segment {
 
 	public ChosenSeatingSeg() {
 		// Default constructor for JPA
-		this.seats = new ConcurrentHashMap<>();
 	}
 
 	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats, GridRectangle area) {
@@ -229,4 +230,16 @@ public class ChosenSeatingSeg extends Segment {
 	public Map<String, Seat> getMap() {
 		return seats;
 	}
+
+	@Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ChosenSeatingSeg other)) return false;
+        return segmentID==other.segmentID;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(segmentID);
+    }
 }

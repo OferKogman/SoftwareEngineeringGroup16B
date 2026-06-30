@@ -26,7 +26,11 @@ export default function EventSmallDisplay({ event }: EventSmallDisplayProps) {
 
   useEffect(() => {
     async function loadEventImage() {
-      const apiKey = import.meta.env.VITE_PEXELS_API_KEY;
+      const apiKey = (
+        import.meta as ImportMeta & {
+          env: { VITE_PEXELS_API_KEY?: string };
+        }
+      ).env.VITE_PEXELS_API_KEY;
 
       if (!apiKey) {
         setImageUrl(FALLBACK_IMAGE_URL);

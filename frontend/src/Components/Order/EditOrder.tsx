@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
+import type { ActiveOrderDTO } from "../../DTOs/ActiveOrderDTO";
 import type { EventDTO } from "../../DTOs/EventDTO";
 import type {
   ChosenSeatingSegDTO,
@@ -8,186 +9,185 @@ import type {
   SeatDTO,
   VenueDTO,
 } from "../../DTOs/VenueDTO";
+import { useSession } from "../../GlobalContext/SessionContext";
 import VenueDisplay from "../Shared/VenueDisplay";
 import "./CSS/CreateOrder.css";
-import { useSession } from "../../GlobalContext/SessionContext";
-import type { ActiveOrderDTO } from "../../DTOs/ActiveOrderDTO";
-
 
 const API_BASE = "http://localhost:8080";
 const ORDER_LIFETIME_MS = 10 * 60 * 1000;
 
 export default function EditOrderPage() {
-    const navigate = useNavigate();
-    const { sessionToken } = useSession();
-    const [activeOrder, setActiveOrder] = useState<ActiveOrderDTO | null>(null);
-    const [timeLeft, setTimeLeft] = useState("");
-    const [orderId, setOrderId] = useState("");
-    const didAutoCancelRef = useRef(false);
+  const navigate = useNavigate();
+  const { sessionToken } = useSession();
+  const [activeOrder, setActiveOrder] = useState<ActiveOrderDTO | null>(null);
+  const [timeLeft, setTimeLeft] = useState("");
+  const [orderId, setOrderId] = useState("");
 
+  const [venueID, setVenueID] = useState("");
+  const [venue, setVenue] = useState<VenueDTO | null>(null);
+  const [eventID, setEventID] = useState<number | null>(null);
 
-    const [venueID, setVenueID] = useState("");
-    const [venue, setVenue] = useState<VenueDTO | null>(null);
-    const [eventID, setEventID] = useState<number | null>(null);
+  const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
+    null,
+  );
+  const [selectedSeatSeg, setSelectedSeatSeg] =
+    useState<ChosenSeatingSegDTO | null>(null);
 
-    const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
-        null,
-    );
-    const [selectedSeatSeg, setSelectedSeatSeg] =
-        useState<ChosenSeatingSegDTO | null>(null);
+  const [fieldTicketAmount, setFieldTicketAmount] = useState("1");
+  const [selectedSeats, setSelectedSeats] = useState<SeatDTO[]>([]);
+  const [error, setError] = useState("");
+  const [isOrdering, setIsOrdering] = useState<
+    "field" | "seat" | "cancel" | null
+  >(null);
 
-    const [fieldTicketAmount, setFieldTicketAmount] = useState("1");
-    const [selectedSeats, setSelectedSeats] = useState<SeatDTO[]>([]);
-    const [error, setError] = useState("");
+  const apiFetch = useApiFetch();
 
-    const apiFetch = useApiFetch();
+  function closePopup() {
+    setError("");
+  }
 
-    useEffect(() => {
-        let cancelled = false;
+  useEffect(() => {
+    let cancelled = false;
 
-        async function loadActiveOrder() {
-            try{
-                if (!sessionToken) {throw new Error("No session token found");}
-                
-                const orderResponse = await apiFetch(`${API_BASE}/api/user/me/active-order`, {
-                    method: "GET",
-                    headers: {
-                    "Authorization": sessionToken,
-                    "Content-Type": "application/json"
-                }
-                });
+    async function loadActiveOrder() {
+      try {
+        if (!sessionToken) {
+          throw new Error("No session token found");
+        }
 
-                if (!orderResponse.ok) {throw new Error(await orderResponse.text());}
+        const orderResponse = await apiFetch(
+          `${API_BASE}/api/user/me/active-order`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: sessionToken,
+              "Content-Type": "application/json",
+            },
+          },
+        );
 
-                const orderData : ActiveOrderDTO = await orderResponse.json();
-                if (cancelled) return;
+        if (!orderResponse.ok) {
+          throw new Error(await orderResponse.text());
+        }
 
-                setActiveOrder(orderData);
-                setOrderId(orderData.orderId);
+        const orderData: ActiveOrderDTO = await orderResponse.json();
+        if (cancelled) return;
 
-                const loadedEventID = orderData.eventId;
+        setActiveOrder(orderData);
+        setOrderId(orderData.orderId);
 
-                setEventID(loadedEventID);      
-                setError("");
-                if (!loadedEventID) {
-                    setError("Order does not have an associated event.");
-                    return;}
-    
-                const eventResponse = await apiFetch(`${API_BASE}/events/${loadedEventID}`, {
-                method: "GET",
-                });
+        const loadedEventID = orderData.eventId;
 
-                if (!eventResponse.ok) {throw new Error(await eventResponse.text());}
+        setEventID(loadedEventID);
+        setError("");
+        if (!loadedEventID) {
+          setError("Order does not have an associated event.");
+          return;
+        }
 
-                const event: EventDTO = await eventResponse.json();
-                const loadedVenueID = event.eventVenueID;
-                if (cancelled) return;
+        const eventResponse = await apiFetch(
+          `${API_BASE}/events/${loadedEventID}`,
+          {
+            method: "GET",
+          },
+        );
 
-                const venueResponse = await apiFetch(
-                `${API_BASE}/venues/${loadedVenueID}`,
-                {
-                    method: "GET",
-                },
-                );
+        if (!eventResponse.ok) {
+          throw new Error(await eventResponse.text());
+        }
 
-                if (!venueResponse.ok) {throw new Error(await venueResponse.text());}
-                const venue: VenueDTO = await venueResponse.json();
-                if (cancelled) {return;}
-                setVenueID(loadedVenueID);
-                setVenue(venue);
+        const event: EventDTO = await eventResponse.json();
+        const loadedVenueID = event.eventVenueID;
+        if (cancelled) return;
 
-                const activeSegment = venue.segments[orderData.segmentId];
+        const venueResponse = await apiFetch(
+          `${API_BASE}/venues/${loadedVenueID}`,
+          {
+            method: "GET",
+          },
+        );
 
-                if (!activeSegment) {throw new Error("Order segment was not found in venue.");}
+        if (!venueResponse.ok) {
+          throw new Error(await venueResponse.text());
+        }
+        const venue: VenueDTO = await venueResponse.json();
+        if (cancelled) {
+          return;
+        }
+        setVenueID(loadedVenueID);
+        setVenue(venue);
 
-                if ("size" in activeSegment) {
-                    setSelectedFieldSeg(activeSegment);
-                    setSelectedSeatSeg(null);
-                    setSelectedSeats([]);
-                    setFieldTicketAmount(String(orderData.numOfTickets));
-                }
+        const activeSegment = venue.segments[orderData.segmentId];
 
-                if ("seats" in activeSegment) {
-                    setSelectedSeatSeg(activeSegment);
-                    setSelectedFieldSeg(null);
+        if (!activeSegment) {
+          throw new Error("Order segment was not found in venue.");
+        }
 
-                    
-                    const orderSeatIds = new Set(orderData.seats ?? []);
-                    const orderSeats = Object.values(activeSegment.seats).filter((seat) =>
-                      orderSeatIds.has(seat.seatId),
+        if ("size" in activeSegment) {
+          setSelectedFieldSeg(activeSegment);
+          setSelectedSeatSeg(null);
+          setSelectedSeats([]);
+          setFieldTicketAmount(String(orderData.numOfTickets));
+        }
 
-                    );
-                    console.log("orderData.seats:", orderData.seats);
-                    console.log("activeSegment seat IDs:", Object.values(activeSegment.seats).map((seat) => seat.seatId));
-                    console.log("matched orderSeats:", orderSeats);
+        if ("seats" in activeSegment) {
+          setSelectedSeatSeg(activeSegment);
+          setSelectedFieldSeg(null);
 
-                    setSelectedSeats(orderSeats);
-                }
-                
+          const orderSeatIds = new Set(orderData.seats ?? []);
+          const orderSeats = Object.values(activeSegment.seats).filter((seat) =>
+            orderSeatIds.has(seat.seatId),
+          );
+          console.log("orderData.seats:", orderData.seats);
+          console.log(
+            "activeSegment seat IDs:",
+            Object.values(activeSegment.seats).map((seat) => seat.seatId),
+          );
+          console.log("matched orderSeats:", orderSeats);
 
-            } catch (err) {
-                if (!cancelled) {
-                setError(
-                    err instanceof Error ? err.message : "Failed to load venue.",
-                );
-                }
-            }
-            }
+          setSelectedSeats(orderSeats);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "");
+        }
+      }
+    }
 
-        void loadActiveOrder();
-        
-          return () => {
-            cancelled = true;
-          };
-    }, [sessionToken, apiFetch]);
+    void loadActiveOrder();
 
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionToken, apiFetch]);
 
-    useEffect(() => {
+  useEffect(() => {
+    if (!activeOrder) {
+      return;
+    }
+
+    function updateTimer() {
       if (!activeOrder) {
         return;
       }
 
-      function updateTimer() {
-        if (!activeOrder) {return;}
+      const expiresAt = activeOrder.orderStartTime + ORDER_LIFETIME_MS;
+      const remaining = Math.max(0, expiresAt - Date.now());
 
-        const expiresAt = activeOrder.orderStartTime + ORDER_LIFETIME_MS;
-        // TODO: delete
-        console.log("=== TIMER DEBUG ===");
-        console.log("orderStartTime:", activeOrder.orderStartTime);
-        console.log("Date.now():", Date.now());
-        console.log("orderStartTime as date:", new Date(activeOrder.orderStartTime));
-        console.log(
-          "orderStartTime * 1000 as date:",
-          new Date(activeOrder.orderStartTime * 1000),
-        );
-        console.log(
-          "expiresAt (milliseconds assumption):",
-          new Date(activeOrder.orderStartTime + ORDER_LIFETIME_MS),
-        );
-        console.log(
-          "expiresAt (seconds assumption):",
-          new Date(activeOrder.orderStartTime * 1000 + ORDER_LIFETIME_MS),
-        );
-        // end delete
-        const remaining = Math.max(0, expiresAt - Date.now());
+      const minutes = Math.floor(remaining / 60000);
+      const seconds = Math.floor((remaining % 60000) / 1000);
 
-        const minutes = Math.floor(remaining / 60000);
-        const seconds = Math.floor((remaining % 60000) / 1000);
+      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+    }
 
-        setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+    updateTimer();
 
-        if (remaining === 0 && !didAutoCancelRef.current) {
-          didAutoCancelRef.current = true;
-          void cancelOrder();
-        }
-      }
+    const intervalId = window.setInterval(updateTimer, 1000);
 
-      updateTimer();
-
-      const intervalId = window.setInterval(updateTimer, 1000);
-
-      return () => {window.clearInterval(intervalId);};
-    }, [activeOrder]);
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [activeOrder]);
 
   function handleFieldSegmentSelected(segment: FieldSegDTO) {
     setError("");
@@ -221,9 +221,13 @@ export default function EditOrderPage() {
   }
 
   function handleSeatClick(seat: SeatDTO) {
-    const alreadySelected = selectedSeats.some((selectedSeat) => selectedSeat.seatId === seat.seatId,);
+    const alreadySelected = selectedSeats.some(
+      (selectedSeat) => selectedSeat.seatId === seat.seatId,
+    );
     if (alreadySelected) {
-      setSelectedSeats((current) => current.filter((selectedSeat) => selectedSeat.seatId !== seat.seatId),);
+      setSelectedSeats((current) =>
+        current.filter((selectedSeat) => selectedSeat.seatId !== seat.seatId),
+      );
       return;
     }
     if (isTakenSeat(seat)) {
@@ -233,10 +237,7 @@ export default function EditOrderPage() {
     setSelectedSeats((current) => [...current, seat]);
   }
 
-  async function updateFieldOrder(
-    orderID: string,
-    amount: number,
-  ) {
+  async function updateFieldOrder(orderID: string, amount: number) {
     const response = await apiFetch(
       `${API_BASE}/api/order/changeNumOfSeatsInFieldOrder/${orderID}`,
       {
@@ -244,22 +245,18 @@ export default function EditOrderPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(amount)
+        body: JSON.stringify(amount),
       },
     );
 
     const text = await response.text();
 
     if (!response.ok) {
-      throw new Error(text || "Failed to reserve field.");
+      throw new Error(text);
     }
-
   }
 
-  async function updateSeatOrder(
-    orderID: string,
-    seats: SeatDTO[],
-  ) {
+  async function updateSeatOrder(orderID: string, seats: SeatDTO[]) {
     const seatIDs = seats.map((seat) => `${seat.row}-${seat.number}`);
     const response = await apiFetch(
       `${API_BASE}/api/order/changeSeatsToOrder/${orderID}`,
@@ -268,19 +265,19 @@ export default function EditOrderPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(seatIDs)
+        body: JSON.stringify(seatIDs),
       },
     );
 
     const text = await response.text();
 
     if (!response.ok) {
-      throw new Error(text || "Failed to reserve seats.");
+      throw new Error(text);
     }
-
   }
 
   async function handleFieldOrder() {
+    setError("");
     if (!eventID) {
       setError("Missing event ID.");
       return;
@@ -308,39 +305,54 @@ export default function EditOrderPage() {
       return;
     }
 
+    setIsOrdering("field");
     try {
-      if (!activeOrder){return ;}
       await updateFieldOrder(orderId, amount);
       navigate("/payment", {
         state: {
           orderId,
           amount: selectedFieldSeg.eventPrices[Number(eventID)] * amount,
-          secondsLeft: Math.min(10 * 60,Math.max(0,Math.floor((activeOrder?.orderStartTime + 10 * 60 * 1000 - Date.now()) / 1000,))),
-          },
+        },
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reserve field.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsOrdering(null);
     }
   }
   async function cancelOrder() {
+    setError("");
+    setIsOrdering("cancel");
     if (!orderId || !sessionToken) {
       navigate("/events/search");
       return;
     }
 
     try {
-      await apiFetch(`${API_BASE}/api/order/cancelOrder/${orderId}`, {
-        method: "PUT",
-        headers: {
-          Accept: "application/json",
+      const response = await apiFetch(
+        `${API_BASE}/api/order/cancelOrder/${orderId}`,
+        {
+          method: "PUT",
+          headers: {
+            Accept: "application/json",
+          },
         },
-      });
-    } finally {
+      );
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
       navigate("/events/search");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsOrdering(null);
     }
   }
 
   async function handleSeatOrder() {
+    setError("");
     if (!eventID) {
       setError("Missing event ID.");
       return;
@@ -360,19 +372,20 @@ export default function EditOrderPage() {
       return;
     }
 
+    setIsOrdering("seat");
     try {
       await updateSeatOrder(orderId, selectedSeats);
-      if (!activeOrder) {return ;}
       navigate("/payment", {
         state: {
           orderId,
-          amount: selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length,
-          secondsLeft: Math.min(10 * 60,Math.max(0,Math.floor((activeOrder?.orderStartTime + 10 * 60 * 1000 - Date.now()) / 1000,))),
-
+          amount:
+            selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length,
         },
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reserve seats.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsOrdering(null);
     }
   }
 
@@ -407,8 +420,12 @@ export default function EditOrderPage() {
           $
         </h3>
 
-        <button type="button" onClick={handleFieldOrder}>
-          Order Field Tickets
+        <button
+          type="button"
+          disabled={isOrdering === "field"}
+          onClick={() => void handleFieldOrder()}
+        >
+          {isOrdering === "field" ? "Ordering..." : "Order Field Tickets"}
         </button>
       </div>
     );
@@ -453,8 +470,12 @@ export default function EditOrderPage() {
           {selectedSeatSeg.eventPrices[Number(eventID)] * selectedSeats.length}$
         </h3>
 
-        <button type="button" onClick={handleSeatOrder}>
-          Order Selected Seats
+        <button
+          type="button"
+          disabled={isOrdering === "seat"}
+          onClick={() => void handleSeatOrder()}
+        >
+          {isOrdering === "seat" ? "Ordering..." : "Order Selected Seats"}
         </button>
       </div>
     );
@@ -490,7 +511,12 @@ export default function EditOrderPage() {
     return (
       <div>
         <p>Loading venue...</p>
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <div className="settings-alert">
+            <p>{error}</p>
+            <button onClick={closePopup}> OK </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -498,7 +524,12 @@ export default function EditOrderPage() {
     return (
       <div>
         <p>Loading event...</p>
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <div className="settings-alert">
+            <p>{error}</p>
+            <button onClick={closePopup}> OK </button>
+          </div>
+        )}
       </div>
     );
   }
@@ -506,13 +537,24 @@ export default function EditOrderPage() {
     <div>
       <h2>Edit Order</h2>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       {timeLeft && (
         <div className="form-card">
           <h5>Time left:</h5>
           <p>{timeLeft}</p>
-          <button type="button" onClick={cancelOrder}>Cancel Order</button>
+          <button
+            type="button"
+            disabled={isOrdering === "cancel"}
+            onClick={() => void cancelOrder()}
+          >
+            {isOrdering === "cancel" ? "Canceling..." : "Cancel Order"}
+          </button>
         </div>
       )}
 
