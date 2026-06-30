@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,6 +44,7 @@ import com.group16b.InfrastructureLayer.Security.Role;
 public class CompanyHierarchyServiceTests {
         private CompanyHierarchyService CompanyHierarchyService;
         private IAuthenticationService mockAuthService;
+        private INotificationService mockNotificationService;
         private IRepository<User> UserRepository;
         private IProductionCompanyRepository ProductionCompanyRepository;
 
@@ -89,12 +91,14 @@ public class CompanyHierarchyServiceTests {
         private Set<String> OWNER2_DEFAULT_CHILDREN;
         private Set<String> OWNER1_DEFAULT_CHILDREN;
 
+
         @BeforeEach
         void setUp() {
                 mockAuthService = mock(IAuthenticationService.class);
+                mockNotificationService = mock(INotificationService.class);
                 UserRepository = new UserRepositoryMapImpl();
                 ProductionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-                CompanyHierarchyService = new CompanyHierarchyService(mockAuthService, ProductionCompanyRepository, UserRepository);
+                CompanyHierarchyService = new CompanyHierarchyService(mockAuthService, ProductionCompanyRepository, UserRepository, mockNotificationService);
 
                 when(mockAuthService.validateToken(anyString())).thenReturn(false);
                 when(mockAuthService.isUserToken(anyString())).thenReturn(false);
@@ -349,7 +353,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                mockNotificationService
                         );
 
                 Result<Boolean> result =
@@ -821,7 +826,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                mockNotificationService
                         );
 
                 Result<Boolean> result =
@@ -1306,7 +1312,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                mockNotificationService
                         );
 
                 Result<Boolean> result =
@@ -1609,7 +1616,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                mockNotificationService
                         );
 
                 Result<Boolean> result =
@@ -2881,7 +2889,7 @@ public class CompanyHierarchyServiceTests {
         {
                 RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
                 IProductionCompanyRepository mockRepo=mock(IProductionCompanyRepository.class);
-                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository);
+                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository, mockNotificationService);
                 
                 doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
                 Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(BAD_COMPANY_ID);
@@ -2932,7 +2940,7 @@ public class CompanyHierarchyServiceTests {
         {
                 RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
                 IProductionCompanyRepository mockRepo=mock(IProductionCompanyRepository.class);
-                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository);
+                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository, mockNotificationService);
                 
                 doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
                 Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);
