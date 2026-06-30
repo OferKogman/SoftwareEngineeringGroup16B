@@ -8,11 +8,23 @@ type UsersListProps = {
 
 export default function ViewUsers({ users }: UsersListProps) {
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [userDTOList, setUserDTOList] = useState<UserDTO[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [cancelingUserID, setCancelingUserID] = useState<string | null>(null);
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
+
   async function handleCancelSubscription(userID: string) {
+    setCancelingUserID(userID);
+    setMessage("");
+    setError("");
+
     try {
       const response = await apiFetch(
         `http://localhost:8080/api/admin-management/removeUser/${userID}`,
@@ -20,15 +32,18 @@ export default function ViewUsers({ users }: UsersListProps) {
           method: "DELETE",
         },
       );
+      const responseText = await response.text();
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(responseText);
       }
       setUserDTOList((prev) =>
         prev.filter((user) => user.userEmail !== userID),
       );
-      setError("");
+      setMessage(responseText || "Subscription canceled successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete users.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setCancelingUserID(null);
     }
   }
 
@@ -54,20 +69,35 @@ export default function ViewUsers({ users }: UsersListProps) {
 
         setUserDTOList(usersFromServer);
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to load user.");
+        setError(err instanceof Error ? err.message : "");
+      } finally {
+        setIsLoading(false);
       }
     }
 
     void loadUsers();
   }, [users, apiFetch]);
 
-  if (userDTOList.length === 0) {
-    return <div>No users found</div>;
+  if (isLoading) {
+    return <p>Loading users...</p>;
   }
 
   return (
     <div>
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+
+      {userDTOList.length === 0 && <p>No users found</p>}
 
       <table
         style={{
@@ -91,11 +121,14 @@ export default function ViewUsers({ users }: UsersListProps) {
 
               <td>
                 <button
+                  disabled={cancelingUserID === user.userEmail}
                   onClick={() => {
-                    handleCancelSubscription(user.userEmail);
+                    void handleCancelSubscription(user.userEmail);
                   }}
                 >
-                  Cancel Subscription
+                  {cancelingUserID === user.userEmail
+                    ? "Canceling..."
+                    : "Cancel Subscription"}
                 </button>
               </td>
             </tr>

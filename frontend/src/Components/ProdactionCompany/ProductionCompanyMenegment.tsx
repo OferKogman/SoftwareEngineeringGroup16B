@@ -25,7 +25,7 @@ function getApiError(data: unknown): string {
     }
   }
 
-  return "Company not found";
+  return "";
 }
 
 function isProductionCompanyDTO(data: unknown): data is ProductionCompanyDTO {
@@ -62,6 +62,10 @@ export default function ProductionCompanyManagement() {
   const [error, setError] = useState("");
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setError("");
+  }
 
   const hasPermission = (permission: ManagerPermissions) =>
     perms.includes(permission);
@@ -154,9 +158,7 @@ export default function ProductionCompanyManagement() {
         setPerms(permissionsData as ManagerPermissions[]);
       } catch (error) {
         if (!cancelled) {
-          setError(
-            error instanceof Error ? error.message : "Company not found",
-          );
+          setError(error instanceof Error ? error.message : "");
         }
       } finally {
         if (!cancelled) {
@@ -186,7 +188,12 @@ export default function ProductionCompanyManagement() {
         <p>Company ID: {companyId ?? "Missing"}</p>
       </div>
 
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="management-body">
         <aside className="management-sidebar">
@@ -230,8 +237,6 @@ export default function ProductionCompanyManagement() {
           ) : error ? (
             <div className="management-default-content">
               <h2>Cannot load company management</h2>
-
-              <p>{error}</p>
             </div>
           ) : (
             (outlet ?? (

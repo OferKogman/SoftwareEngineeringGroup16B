@@ -32,7 +32,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (!response.ok) {
-      throw new Error("Failed to create guest session");
+      throw new Error(await response.text());
     }
 
     const token = (await response.text()).trim();
@@ -43,6 +43,10 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     return token;
   }, []);
 
+  function closePopup() {
+    setSessionError(null);
+  }
+
   useEffect(() => {
     async function validate() {
       try {
@@ -50,9 +54,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       } catch (err) {
         console.error("Failed to fetch session token:", err);
         setSessionToken(null);
-        setSessionError(
-          "Server is unavailable. Could not create a guest session.",
-        );
+        setSessionError(err instanceof Error ? err.message : "");
       } finally {
         setIsSessionLoading(false);
       }
@@ -66,7 +68,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   }
 
   if (sessionError || !sessionToken) {
-    return <div>{sessionError ?? "No session token available."}</div>;
+    return (
+      <div className="settings-alert">
+        <p>{sessionError || "No session token available."}</p>
+        <button onClick={closePopup}> OK </button>
+      </div>
+    );
   }
 
   return (

@@ -5,10 +5,19 @@ import EventSmallDisplay from "../Event/EventSmallDisplay";
 
 export default function MainPage() {
   const [events, setEvents] = useState<EventDTO[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setError("");
+  }
 
   useEffect(() => {
     async function loadEvents() {
+      setLoading(true);
+      setError("");
+
       try {
         const response = await apiFetch("http://localhost:8080/events/search", {
           method: "POST",
@@ -25,7 +34,9 @@ export default function MainPage() {
         const eventList: EventDTO[] = await response.json();
         setEvents(eventList);
       } catch (err) {
-        console.error(err);
+        setError(err instanceof Error ? err.message : "");
+      } finally {
+        setLoading(false);
       }
     }
 
@@ -42,6 +53,13 @@ export default function MainPage() {
         padding: "2rem",
       }}
     >
+      {loading && <p>Loading events...</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
       {events.map((event) => (
         <EventSmallDisplay key={event.eventID} event={event} />
       ))}

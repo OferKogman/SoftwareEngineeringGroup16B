@@ -121,6 +121,10 @@ export default function HierarchyTree() {
   const [error, setError] = useState("");
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setError("");
+  }
+
   useEffect(() => {
     async function loadTree() {
       setLoading(true);
@@ -141,19 +145,14 @@ export default function HierarchyTree() {
           },
         );
 
-        const data = await response.json();
-
         if (!response.ok) {
-          throw new Error(
-            data?.message || data?.error || "Failed to load Hierarchy",
-          );
+          throw new Error(await response.text());
         }
 
+        const data: HierarchyNodeDTO[] = await response.json();
         setHierarchy(data);
       } catch (error) {
-        setError(
-          error instanceof Error ? error.message : "Failed to load Hierarchy",
-        );
+        setError(error instanceof Error ? error.message : "");
       } finally {
         setLoading(false);
       }
@@ -186,15 +185,16 @@ export default function HierarchyTree() {
         <div>
           <div>Loading Hierarchy Tree...</div>
         </div>
-      ) : error ? (
-        <div>
-          <div>Could not load hierarchy tree</div>
-          <p>{error}</p>
-        </div>
       ) : (
         <>
           <div>
             <h2>Hierarchy Tree</h2>
+            {error && (
+              <div className="settings-alert">
+                <p>{error}</p>
+                <button onClick={closePopup}> OK </button>
+              </div>
+            )}
             <div>
               {hierarchy.length === 0 ? (
                 <div>No hierarchy data found</div>

@@ -25,11 +25,17 @@ export default function ChangePasswordForm({
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { sessionToken } = useSession();
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
 
   function updateField<K extends keyof ChangePasswordData>(
     field: K,
@@ -44,6 +50,7 @@ export default function ChangePasswordForm({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    setMessage("");
     setError("");
 
     if (formData.newPassword !== confirmPassword) {
@@ -73,25 +80,16 @@ export default function ChangePasswordForm({
       );
 
       const responseText = await response.text();
-      let message = responseText;
-
-      try {
-        const data = responseText ? JSON.parse(responseText) : null;
-        message = data?.message || responseText;
-      } catch {
-        message = responseText;
-      }
 
       if (!response.ok) {
-        throw new Error(message || "Failed to change password.");
+        throw new Error(responseText);
       }
 
       setFormData(initialFormData);
       setConfirmPassword("");
+      setMessage("Password changed successfully.");
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to change password.",
-      );
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -101,7 +99,18 @@ export default function ChangePasswordForm({
     <form className="change-password-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
 
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="form-row">
         <label>Old Password</label>
