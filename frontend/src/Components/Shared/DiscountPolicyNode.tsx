@@ -96,6 +96,16 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
     null,
   );
 
+  function getDefaultPolicyValue(
+    type: SimpleDiscountPolicyTypes,
+  ): number | string {
+    if (type === "MIN_DATE" || type === "MAX_DATE") {
+      return "DD-MM-YYTHH:MM";
+    }
+
+    return 1;
+  }
+
   function renderReplace() {
     if (action !== "REPLACE") return null;
 
@@ -241,28 +251,31 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
     props.data.onReplace(props.data.path, newPolicy);
   }
 
-  function renderGoalInput() {
+  function renderGoalInput(type: DiscountPolicyTypes = replaceInputValue) {
     return (
       <input
         type={
-          replaceInputValue === "MIN_DATE" || replaceInputValue === "MAX_DATE"
+          type === "MIN_DATE" || type === "MAX_DATE"
             ? "datetime-local"
             : "number"
         }
-        min={
-          replaceInputValue === "MIN_TICKETS" ||
-          replaceInputValue === "MAX_TICKETS"
-            ? 1
-            : undefined
-        }
+        min={type === "MIN_TICKETS" || type === "MAX_TICKETS" ? 1 : undefined}
         max={
-          replaceInputValue === "MIN_DATE" || replaceInputValue === "MAX_DATE"
+          type === "MIN_DATE" || type === "MAX_DATE"
             ? "9999-12-31T23:59"
             : undefined
         }
-        value={replaceGoalInput}
-        onChange={(e) => setReplaceGoalInput(e.target.value)}
-        placeholder="Ticket amount"
+        value={action === "CHANGE" ? changeValueInput : replaceGoalInput}
+        onChange={(e) => {
+          action === "CHANGE"
+            ? setChangeValueInput(e.target.value)
+            : setReplaceGoalInput(e.target.value);
+        }}
+        placeholder={
+          replaceInputValue === "MIN_DATE" || replaceInputValue === "MAX_DATE"
+            ? "DD-MM-YYTHH:MM"
+            : "Ticket amount"
+        }
       />
     );
   }
@@ -303,7 +316,11 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
 
           if (!type) return;
 
-          const newPolicy = createSimplePolicy(type, 1, percentageValue);
+          const newPolicy = createSimplePolicy(
+            type,
+            getDefaultPolicyValue(type),
+            0,
+          );
 
           side === "left"
             ? setLeftPolicy(newPolicy)
@@ -434,7 +451,8 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
                 <>
                   {action === "CHANGE" ? (
                     <>
-                      {props.data.type !== "SIMPLE" && renderGoalInput()}
+                      {props.data.type !== "SIMPLE" &&
+                        renderGoalInput(props.data.type)}
                       {renderPercentageInput()}
 
                       <button
@@ -545,7 +563,8 @@ export function DiscountPolicyNode(props: NodeProps<DiscountPolicyNode>) {
         onClick={() => setShowPopup((prev) => !prev)}
       >
         <label>{props.data.label}</label>
-        {props.data.type !== "NONE" &&
+        {props.data.percentage > 0 &&
+          props.data.type !== "NONE" &&
           props.data.type !== "SUM" &&
           props.data.type !== "MAX" && (
             <label>

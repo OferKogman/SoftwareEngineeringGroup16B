@@ -23,12 +23,10 @@ type Props = {
   onSave: (policy: NullableDiscountPolicyDTO) => void;
 };
 
-type PolicyEdge = Edge;
-
 const HORIZONTAL_GAP = 550;
 const VERTICAL_GAP = 220;
 
-function getNodeId(path: PolicyPath) : string {
+function getNodeId(path: PolicyPath): string {
   return path.length === 0 ? "root" : path.join("-");
 }
 
@@ -59,8 +57,9 @@ function buildTree(
   centerX: number,
   level: number,
   nodes: DiscountPolicyNode[],
-  edges: PolicyEdge[],
+  edges: Edge[],
   path: PolicyPath,
+  insideAndOr: boolean,
   onSwap: (path: PolicyPath) => void,
   onChangeGoal: (
     path: PolicyPath,
@@ -86,7 +85,7 @@ function buildTree(
       data: {
         label: policy.type,
         percentage:
-          policy.type === "MAX" || policy.type === "SUM"
+          insideAndOr || policy.type === "MAX" || policy.type === "SUM"
             ? 0
             : policy.percentage,
         type: policy.type,
@@ -112,6 +111,7 @@ function buildTree(
       nodes,
       edges,
       [...path, "left"],
+      insideAndOr || policy.type === "AND" || policy.type === "OR",
       onSwap,
       onChangeGoal,
       onReplace,
@@ -125,6 +125,7 @@ function buildTree(
       nodes,
       edges,
       [...path, "right"],
+      insideAndOr || policy.type === "AND" || policy.type === "OR",
       onSwap,
       onChangeGoal,
       onReplace,
@@ -151,13 +152,29 @@ function buildTree(
   let label = "";
 
   switch (policy.type) {
-    case "MIN_DATE":
-      label = `Min Date: ${(policy as StartDateDTO).startDate}`;
-      break;
+    case "MIN_DATE": {
+      const date = new Date((policy as StartDateDTO).startDate);
 
-    case "MAX_DATE":
-      label = `Max Date: ${(policy as EndDateDTO).endDate}`;
+      label = `Min Date: ${String(date.getDate()).padStart(2, "0")}-${String(
+        date.getMonth() + 1,
+      ).padStart(2, "0")}-${String(date.getFullYear()).slice(-2)}\n${String(
+        date.getHours(),
+      ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
       break;
+    }
+
+    case "MAX_DATE": {
+      const date = new Date((policy as EndDateDTO).endDate);
+
+      label = `Max Date: ${String(date.getDate()).padStart(2, "0")}-${String(
+        date.getMonth() + 1,
+      ).padStart(2, "0")}-${String(date.getFullYear()).slice(-2)}\n${String(
+        date.getHours(),
+      ).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
+      break;
+    }
 
     case "MIN_TICKETS":
       label = `Min Tickets: ${(policy as MinAmountDTO).minAmount}`;
@@ -191,7 +208,7 @@ function buildTree(
       onChangeGoal,
       onReplace,
       onDelete,
-      percentage: policy.percentage || 0,
+      percentage: insideAndOr ? 0 : policy.percentage,
     },
   });
 
@@ -210,7 +227,7 @@ function createFlow(
   onDelete: () => void,
 ) {
   const nodes: DiscountPolicyNode[] = [];
-  const edges: PolicyEdge[] = [];
+  const edges: Edge[] = [];
 
   if (!policy) {
     nodes.push({
@@ -244,6 +261,7 @@ function createFlow(
     nodes,
     edges,
     [],
+    false,
     onSwap,
     onChangeGoal,
     onReplace,
