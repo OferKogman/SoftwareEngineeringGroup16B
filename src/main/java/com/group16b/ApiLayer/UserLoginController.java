@@ -25,7 +25,6 @@ public class UserLoginController extends BaseController{
     public ResponseEntity<?> loginMember(@RequestBody LoginRequestDTO requestDTO,
                                          @RequestHeader("Authorization") String guestSessionToken
     ) {
-        System.out.println("try to login");
         return executeWithReturnData(() -> userLoginService.loginMember(requestDTO.getEmail(), requestDTO.getPassword(), guestSessionToken));
     }
 

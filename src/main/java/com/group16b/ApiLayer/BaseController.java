@@ -9,39 +9,30 @@ import com.group16b.ApplicationLayer.Objects.Result;
 
 public class BaseController {
     protected <T> ResponseEntity<?> executeWithReturnData(Supplier<Result<T>> action) {
-        try {
-            System.out.println("base controller,right before get");
-            Result<T> result = action.get();
-
-            if (result.isSuccess()) {
-                return ResponseEntity.ok(result.getValue());
-            }
-            else{
-                return ResponseEntity.badRequest().body(result.getError());
-            }
-
-        } catch (DataAccessException e) {
-            System.out.println("Base Controller: DataAccessException: "+e.getMessage()+", type: "+e.getClass());
-            return ResponseEntity.internalServerError().body("Service temporarily unavailable. Please try again later");
-        } catch (Exception e) {
-            System.out.println("Base Controller: Unexpected exception: "+e.getMessage()+", type: "+e.getClass());
-            return ResponseEntity.internalServerError().body("Service temporarily unavailable. Please try again later");
-        }
+        return execute(action,result -> ResponseEntity.ok(result.getValue()));
     }
 
     protected <T> ResponseEntity<?> executeWithNoReturnData(Supplier<Result<T>> action) {
+        return execute(action, result -> ResponseEntity.ok().build());
+    }
+
+    protected <T> ResponseEntity<?> execute(Supplier<Result<T>> action,
+            java.util.function.Function<Result<T>, ResponseEntity<?>> onSuccess) {
         try {
             Result<T> result = action.get();
 
             if (result.isSuccess()) {
-                return ResponseEntity.ok().build();
+                return onSuccess.apply(result);
             }
+
             return ResponseEntity.badRequest().body(result.getError());
+
         } catch (DataAccessException e) {
-            System.out.println("Base Controller: DataAccessException: "+e.getMessage()+", type: "+e.getClass());
+            System.out.println("Base Controller: DataAccessException: " + e.getMessage());
             return ResponseEntity.internalServerError().body("Service temporarily unavailable. Please try again later");
+
         } catch (Exception e) {
-            System.out.println("Base Controller: Unexpected exception: "+e.getMessage()+", type: "+e.getClass());
+            System.out.println("Base Controller: Unexpected exception: " + e.getMessage());
             return ResponseEntity.internalServerError().body("Service temporarily unavailable. Please try again later");
         }
     }
