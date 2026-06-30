@@ -28,7 +28,13 @@ export default function ChangeManagerPermissions({
   );
   const [permissionsError, setPermissionsError] = useState("");
   const [submitError, setSubmitError] = useState("");
+  const [message, setMessage] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function closePopup() {
+    setMessage("");
+    setSubmitError("");
+  }
 
   function togglePermission(perm: ManagerPermissions) {
     setPermissions((prev) => {
@@ -46,6 +52,7 @@ export default function ChangeManagerPermissions({
     event.preventDefault();
     setPermissionsError("");
     setSubmitError("");
+    setMessage("");
 
     if (permissions.size === 0) {
       setPermissionsError("At least one permission must be selected.");
@@ -58,10 +65,9 @@ export default function ChangeManagerPermissions({
       setTargetID("");
       setCompanyID("");
       setPermissions(new Set<ManagerPermissions>());
+      setMessage("Permissions updated successfully.");
     } catch (err) {
-      setSubmitError(
-        err instanceof Error ? err.message : "Failed to update permissions.",
-      );
+      setSubmitError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -71,7 +77,18 @@ export default function ChangeManagerPermissions({
     <form className="event-creation-form" onSubmit={handleSubmit}>
       <h2>Change Manager Permissions</h2>
 
-      {submitError && <p className="form-error">{submitError}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {submitError && (
+        <div className="settings-alert">
+          <p>{submitError}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <label>
         Target User

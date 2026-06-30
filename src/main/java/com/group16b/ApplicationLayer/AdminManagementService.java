@@ -315,7 +315,7 @@ public class AdminManagementService {
             userRepository.delete(userID);
             logger.info("AdminManagementService.removeUser: Successfully removed user with ID {}", userID);
 
-            return Result.makeOk("User with ID: " + userID + ", , has been removed");
+            return Result.makeOk("User with ID: " + userID + " has been removed");
         } catch (IllegalArgumentException e) {
             logger.error("AdminManagementService.removeUser: User with ID {} not found", userID, e);
             return Result.makeFail("User with ID " + userID + " not found");

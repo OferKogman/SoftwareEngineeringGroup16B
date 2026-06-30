@@ -63,6 +63,7 @@ export default function ManageEventInventory() {
   const [formData, setFormData] = useState<VenueDTO | null>(null);
   const [error, setError] = useState<string>("");
   const [success, setSuccess] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [venueID, setVenueID] = useState<string | null>(null);
   const [companyId, setCompanyID] = useState<number | null>(null);
 
@@ -87,6 +88,11 @@ export default function ManageEventInventory() {
     useState<PendingRectangleData | null>(null);
 
   const apiFetch = useApiFetch();
+
+  function closePopup() {
+    setSuccess("");
+    setError("");
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -131,9 +137,7 @@ export default function ManageEventInventory() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load venue.",
-          );
+          setError(err instanceof Error ? err.message : "");
         }
       }
     }
@@ -177,19 +181,23 @@ export default function ManageEventInventory() {
     };
   }
   async function onSubmitVenue() {
+    setIsSubmitting(true);
     setError("");
     setSuccess("");
 
     if (!venueID) {
       setError("Missing venue ID.");
+      setIsSubmitting(false);
       return;
     }
     if (!companyId) {
       setError("Missing company ID.");
+      setIsSubmitting(false);
       return;
     }
     if (!formData) {
       setError("Venue was not loaded.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -207,16 +215,15 @@ export default function ManageEventInventory() {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || "Failed to update venue segments.");
+        throw new Error(await response.text());
       }
 
       setSuccess("Venue updated successfully.");
       clearSelections();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update venue segments.",
-      );
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -993,8 +1000,18 @@ export default function ManageEventInventory() {
       }}
     >
       <h2>Venue Editor</h2>
-      {error && <p className="form-error">{error}</p>}
-      {success && <p className="form-success">{success}</p>}
+      {success && (
+        <div className="settings-alert">
+          <p>{success}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div
         style={{
@@ -1056,11 +1073,12 @@ export default function ManageEventInventory() {
         <div className="form-actions">
           <button
             type="button"
+            disabled={isSubmitting}
             onClick={() => {
               void onSubmitVenue();
             }}
           >
-            {"Save Changes"}
+            {isSubmitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       }

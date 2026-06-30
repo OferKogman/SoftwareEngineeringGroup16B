@@ -4,13 +4,25 @@ import { useApiFetch } from "../../apiFetch";
 
 export default function ViewAdminCompanyList() {
   const [error, setError] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [companyDTOList, setCompanyDTOList] = useState<ProductionCompanyDTO[]>(
     [],
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [closingCompanyID, setClosingCompanyID] = useState<number | null>(null);
 
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setMessage("");
+    setError("");
+  }
+
   async function handleCloseCompany(companyID: number) {
+    setClosingCompanyID(companyID);
+    setMessage("");
+    setError("");
+
     try {
       const response = await apiFetch(
         `http://localhost:8080/api/admin-management/deleteProductionCompany/${companyID}`,
@@ -18,15 +30,18 @@ export default function ViewAdminCompanyList() {
           method: "DELETE",
         },
       );
+      const responseText = await response.text();
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(responseText);
       }
       setCompanyDTOList((prev) =>
         prev.filter((company) => company.id !== companyID),
       );
-      setError("");
+      setMessage(responseText || "Company closed successfully.");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete users.");
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setClosingCompanyID(null);
     }
   }
 
@@ -41,29 +56,40 @@ export default function ViewAdminCompanyList() {
         );
 
         if (!response.ok) {
-          throw new Error("Failed to load companies.");
+          throw new Error(await response.text());
         }
 
         const companies: ProductionCompanyDTO[] = await response.json();
 
         setCompanyDTOList(companies);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to load companies.",
-        );
+        setError(err instanceof Error ? err.message : "");
+      } finally {
+        setIsLoading(false);
       }
     }
 
     void loadCompanies();
   }, [apiFetch]);
 
-  if (!companyDTOList) {
-    return <div>No companies found</div>;
+  if (isLoading) {
+    return <p>Loading companies...</p>;
   }
 
   return (
     <div>
-      {error && <p className="form-error">{error}</p>}
+      {message && (
+        <div className="settings-alert">
+          <p>{message}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       {companyDTOList.length === 0 ? (
         <p>No companies found</p>
@@ -92,8 +118,13 @@ export default function ViewAdminCompanyList() {
                 <td>{company.name}</td>
                 <td>{company.rating}</td>
                 <td>
-                  <button onClick={() => handleCloseCompany(company.id)}>
-                    Close Company
+                  <button
+                    disabled={closingCompanyID === company.id}
+                    onClick={() => handleCloseCompany(company.id)}
+                  >
+                    {closingCompanyID === company.id
+                      ? "Closing..."
+                      : "Close Company"}
                   </button>
                 </td>
               </tr>

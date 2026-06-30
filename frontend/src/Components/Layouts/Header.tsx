@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from "react";
-import { BiSearchAlt, BiBell } from "react-icons/bi";
+import { useEffect, useRef, useState } from "react";
+import { BiBell, BiSearchAlt } from "react-icons/bi";
 import { useNavigate } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import SystemLogo from "../../Assets/SystemLogo.png";
@@ -22,8 +22,13 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
   const navigate = useNavigate();
   const apiFetch = useApiFetch();
 
-  const { inbox, unreadCount, markInboxAsRead, clearInbox } = useNotifications();
+  const { inbox, unreadCount, markInboxAsRead, clearInbox } =
+    useNotifications();
   const [isBellOpen, setIsBellOpen] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState<"user" | "admin" | null>(
+    null,
+  );
   const bellRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +41,10 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  function closePopup() {
+    setError("");
+  }
+
   function toggleBell() {
     setIsBellOpen(!isBellOpen);
     if (!isBellOpen && unreadCount > 0) {
@@ -44,32 +53,44 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
   }
 
   async function handleLogout() {
+    setIsSubmitting("user");
+    setError("");
     try {
-      const response = await apiFetch("http://localhost:8080/api/user/login/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await apiFetch(
+        "http://localhost:8080/api/user/login/logout",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
 
-      if (!response.ok) throw new Error("Failed to create guest session");
-      
+      if (!response.ok) throw new Error(await response.text());
+
       const token = await response.text();
       if (!token) throw new Error("Guest session returned an empty token");
-      
+
       setSessionToken(token);
       setLoggedIn(false);
     } catch (err) {
-      console.error("Failed to fetch session token, please logout again:", err);
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(null);
     }
   }
 
   async function handleAdminLogout() {
+    setIsSubmitting("admin");
+    setError("");
     try {
-      const response = await apiFetch("http://localhost:8080/api/admin/logout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
+      const response = await apiFetch(
+        "http://localhost:8080/api/admin/logout",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
 
-      if (!response.ok) throw new Error("Failed to create guest session");
+      if (!response.ok) throw new Error(await response.text());
 
       const token = await response.text();
       if (!token) throw new Error("Guest session returned an empty token");
@@ -77,7 +98,9 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
       setSessionToken(token);
       setAdminLoggedIn(false);
     } catch (err) {
-      console.error("Failed to fetch session token, please logout again:", err);
+      setError(err instanceof Error ? err.message : "");
+    } finally {
+      setIsSubmitting(null);
     }
   }
 
@@ -86,21 +109,27 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
       <div className="header-toggle">
         <ThemeToggle theme={theme} setTheme={setTheme} />
       </div>
-      
+
       <img
         src={SystemLogo}
         alt="Header Logo"
         className="header-logo"
         onClick={() => navigate("/")}
       />
-      
+
       <div className="header-actions">
+        {error && (
+          <div className="settings-alert">
+            <p>{error}</p>
+            <button onClick={closePopup}> OK </button>
+          </div>
+        )}
         {!loggedIn && !adminLoggedIn && (
           <button className="login-button" onClick={() => navigate("/login")}>
             Login
           </button>
         )}
-        
+
         {loggedIn && (
           <>
             <div className="notification-bell-wrapper" ref={bellRef}>
@@ -121,13 +150,13 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
                       </button>
                     )}
                   </div>
-                  
+
                   {inbox.length === 0 ? (
                     <p className="bell-empty-text">No new notifications.</p>
                   ) : (
                     inbox.map((notif) => (
-                      <div 
-                        key={notif.id} 
+                      <div
+                        key={notif.id}
                         className={`inbox-item notify-${notif.type}`}
                       >
                         {notif.message}
@@ -138,21 +167,35 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
               )}
             </div>
 
-            <button className="login-button" onClick={() => navigate("/users/management")}>
+            <button
+              className="login-button"
+              onClick={() => navigate("/users/management")}
+            >
               My Profile
             </button>
-            <button className="login-button" onClick={() => handleLogout()}>
-              logout
+            <button
+              className="login-button"
+              disabled={isSubmitting === "user"}
+              onClick={() => void handleLogout()}
+            >
+              {isSubmitting === "user" ? "Logging out..." : "Logout"}
             </button>
           </>
         )}
         {adminLoggedIn && (
-          <button className="login-button" onClick={() => handleAdminLogout()}>
-            logout
+          <button
+            className="login-button"
+            disabled={isSubmitting === "admin"}
+            onClick={() => void handleAdminLogout()}
+          >
+            {isSubmitting === "admin" ? "Logging out..." : "Logout"}
           </button>
         )}
-        
-        <button className="search-button" onClick={() => navigate("/events/search")}>
+
+        <button
+          className="search-button"
+          onClick={() => navigate("/events/search")}
+        >
           <BiSearchAlt className="search-icon" />
         </button>
       </div>

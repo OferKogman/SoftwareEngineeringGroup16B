@@ -29,6 +29,10 @@ export default function UserLoginForm({ title }: UserLoginFormProps) {
   const navigate = useNavigate();
   const apiFetch = useApiFetch();
 
+  function closePopup() {
+    setError("");
+  }
+
   async function onUserLogin({ email, password }: UserLoginData) {
     try {
       if (!sessionToken) {
@@ -57,7 +61,7 @@ export default function UserLoginForm({ title }: UserLoginFormProps) {
       navigate("/");
       console.log("User successfully logged in");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login.");
+      setError(err instanceof Error ? err.message : "");
     }
   }
 
@@ -83,7 +87,7 @@ export default function UserLoginForm({ title }: UserLoginFormProps) {
         password: formData.password.trim(),
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to login.");
+      setError(err instanceof Error ? err.message : "");
     } finally {
       setIsSubmitting(false);
     }
@@ -92,7 +96,12 @@ export default function UserLoginForm({ title }: UserLoginFormProps) {
   return (
     <form className="login-form" onSubmit={handleSubmit}>
       <h2>{title}</h2>
-      {error && <p className="form-error">{error}</p>}
+      {error && (
+        <div className="settings-alert">
+          <p>{error}</p>
+          <button onClick={closePopup}> OK </button>
+        </div>
+      )}
 
       <div className="form-row">
         <label>Email</label>
