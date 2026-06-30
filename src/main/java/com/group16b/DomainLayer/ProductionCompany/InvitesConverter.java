@@ -27,6 +27,7 @@ public class InvitesConverter implements AttributeConverter<HashMap<ProductionCo
             }
             return mapper.writeValueAsString(flatMap);
         } catch (Exception e) {
+            e.printStackTrace();
             throw new IllegalArgumentException("Could not serialize invites map", e);
         }
     }

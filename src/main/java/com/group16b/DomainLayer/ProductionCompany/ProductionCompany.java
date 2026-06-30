@@ -397,7 +397,7 @@ public class ProductionCompany {
 		this.version++;
 	}
 
-    static class InviteKey {
+    static class InviteKey implements java.io.Serializable {
         private final String targetId;
         private final String assignerId;
 
