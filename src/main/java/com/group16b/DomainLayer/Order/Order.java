@@ -203,8 +203,12 @@ public class Order {
 
 	
 	public boolean isActive() {
+		if (!state.isActive() && !state.isCompleted()){
+			CancelOrder();
+		}
 		return state.isActive();
 	}
+	
 	public boolean isCompleted() {
 		return state.isCompleted();
 	}
