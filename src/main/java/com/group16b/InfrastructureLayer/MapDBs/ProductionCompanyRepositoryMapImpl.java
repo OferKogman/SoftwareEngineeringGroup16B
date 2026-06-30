@@ -9,7 +9,6 @@ import org.springframework.dao.OptimisticLockingFailureException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
-import org.springframework.stereotype.Repository;
 
 public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRepository {
 
@@ -66,47 +65,46 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
 
     @Override
     public synchronized void save(ProductionCompany company) {
-            int id = company.getProductionCompanyID();
-            ProductionCompany current = companies.get(id);
+        int id = company.getProductionCompanyID();
+        ProductionCompany current = companies.get(id);
 
-            // INSERT
-            if(current == null) {
-                Integer existing = names.get(company.getName());
-                if(existing != null) {
-                    throw new IllegalArgumentException("Company with ID "+id+" is new but Company name already exists: " + company.getName());
-                }
-
-                ProductionCompany inserted = new ProductionCompany(company);
-                inserted.setVersion(1);
-
-                companies.put(id, inserted);
-                names.put(inserted.getName(), id);
-                return;
+        if(current == null) {
+            Integer existing = names.get(company.getName());
+            if(existing != null) {
+                throw new IllegalArgumentException("Company with ID "+id+" is new but Company name already exists: " + company.getName());
             }
 
-            if(current.getVersion() != company.getVersion()) {
-                throw new OptimisticLockingFailureException(
-                    "Company " + id +
-                    " version mismatch. Expected " +
-                    company.getVersion() +
-                    " but found " +
-                    current.getVersion()
-                );
-            }
-            ProductionCompany updated = new ProductionCompany(company);
-            updated.setVersion(company.getVersion() + 1);
+            ProductionCompany inserted = new ProductionCompany(company);
+            inserted.setVersion(1);
 
-            // HANDLE RENAME
-            if(!current.getName().equals(updated.getName())) {
-                Integer existing = names.get(updated.getName());
-                if(existing != null && !existing.equals(id)) {
-                    throw new IllegalArgumentException("Company name already exists in another company: " + updated.getName());
-                }
+            companies.put(id, inserted);
+            names.put(inserted.getName(), id);
+            return;
+        }
 
-                names.remove(current.getName());
-                names.put(updated.getName(), id);
+        if(current.getVersion() != company.getVersion()) {
+            throw new OptimisticLockingFailureException(
+                "Company " + id +
+                " version mismatch. Expected " +
+                company.getVersion() +
+                " but found " +
+                current.getVersion()
+            );
+        }
+        
+        ProductionCompany updated = new ProductionCompany(company);
+        updated.setVersion(current.getVersion() + 1);
+
+        if(!current.getName().equals(updated.getName())) {
+            Integer existing = names.get(updated.getName());
+            if(existing != null && !existing.equals(id)) {
+                throw new IllegalArgumentException("Company name already exists in another company: " + updated.getName());
             }
-            companies.put(id, updated);
+
+            names.remove(current.getName());
+            names.put(updated.getName(), id);
+        }
+        companies.put(id, updated);
     }
 
     public List<Integer> getAllUserComapnies(User user)

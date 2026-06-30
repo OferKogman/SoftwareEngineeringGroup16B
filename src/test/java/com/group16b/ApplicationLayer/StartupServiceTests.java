@@ -18,8 +18,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
+import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
+import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 public class StartupServiceTests {
@@ -27,6 +29,9 @@ public class StartupServiceTests {
 
     private WsepClient mockWsepClient;
     private IRepository<SystemAdmin> mockAdminRepository;
+    private IRepository<VirtualQueue> mockVirtualQueueRepo;
+    private IEventRepository mockEventRepository;
+
 
     private final List<SystemAdmin> INITIAL_ADMINS=List.of(new SystemAdmin());
 
@@ -35,7 +40,9 @@ public class StartupServiceTests {
     {
         mockWsepClient=mock(WsepClient.class);
         mockAdminRepository=mock(IRepository.class);
-        startupService=new StartupService(mockAdminRepository, mockWsepClient);
+        mockVirtualQueueRepo = mock(IRepository.class);
+        mockEventRepository = mock(IEventRepository.class);
+        startupService=new StartupService(mockAdminRepository, mockWsepClient, mockEventRepository, mockVirtualQueueRepo);
 
         doNothing().when(mockWsepClient).handshake();
         when(mockAdminRepository.getAll()).thenReturn(INITIAL_ADMINS);

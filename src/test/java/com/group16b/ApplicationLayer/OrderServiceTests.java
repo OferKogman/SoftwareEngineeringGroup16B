@@ -169,12 +169,13 @@ public class OrderServiceTests {
                 
                 testEvent = new Event(eventRecord, "owner_1");
 
+                eventRepo.save(testEvent); 
+
                 Venue venue = venueRepo.findByID(testVenue.getID());
 
                 venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), testEvent.getEventID());
 
                 testVenue = venue;
-                eventRepo.save(testEvent);
                 venueRepo.save(venue);
         }
         private void seedOrders() {
