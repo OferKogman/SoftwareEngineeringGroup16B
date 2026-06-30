@@ -62,7 +62,7 @@ class PaymentServiceTests{
     void setup()
     {
         restTemplate=mock(RestTemplate.class);
-        paymentService=new PaymentService(new WsepClient(restTemplate));
+        paymentService=new PaymentService(new WsepClient(restTemplate, "http://localhost:9999/"));
         ResponseEntity<String> response =new ResponseEntity<>(TRANSACTION_ID_STRING, HttpStatus.OK);
 
         when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(response);

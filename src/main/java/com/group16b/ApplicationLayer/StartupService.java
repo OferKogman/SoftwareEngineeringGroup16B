@@ -15,6 +15,7 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @Transactional
@@ -25,13 +26,30 @@ public class StartupService {
     private final IEventRepository eventRepo;
     private final IRepository<VirtualQueue> virtualQueueRepo;
 
+    private final String defaultAdminUsername;
+    private final String defaultAdminPassword;
+    private final String defaultAdminEmail;
+    private final boolean validateExternalSystems;
+
 
     //will grow as more invariants would be needed to validate
-    public StartupService(IRepository<SystemAdmin> adminRepo,WsepClient wsepClient, IEventRepository eventRepo, IRepository<VirtualQueue> virtualQueueRepo) {
-        this.adminRepo = adminRepo;
-        this.wsepClient=wsepClient;
-        this.eventRepo = eventRepo;
-        this.virtualQueueRepo = virtualQueueRepo;
+    public StartupService(
+          IRepository<SystemAdmin> adminRepo,
+          WsepClient wsepClient,
+          IEventRepository eventRepo,
+          IRepository<VirtualQueue> virtualQueueRepo,
+          @Value("${system.default-admin.username}") String defaultAdminUsername,
+          @Value("${system.default-admin.password}") String defaultAdminPassword,
+          @Value("${system.default-admin.email}") String defaultAdminEmail,
+          @Value("${startup.validate-external-systems}") boolean validateExternalSystems) {
+            this.adminRepo = adminRepo;
+            this.wsepClient = wsepClient;
+            this.eventRepo = eventRepo;
+            this.virtualQueueRepo = virtualQueueRepo;
+            this.defaultAdminUsername = defaultAdminUsername;
+            this.defaultAdminPassword = defaultAdminPassword;
+            this.defaultAdminEmail = defaultAdminEmail;
+            this.validateExternalSystems = validateExternalSystems;
     }
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
@@ -39,7 +57,12 @@ public class StartupService {
         logger.info("StartupService.initializeSystem: Starting system initialization...");
         validateAdmins();
         validateVirtualQueues();
-        validateExternalDependencies();
+
+        if (validateExternalSystems) {
+            validateExternalDependencies();
+        } else {
+            logger.info("StartupService.initializeSystem: Skipping external dependency validation by configuration.");
+        }
     }
     //--------------------SETUPERS------------------------//
     //should get he latest id from the db and set the gen to start from it +1
@@ -56,7 +79,7 @@ public class StartupService {
         try{
             if(adminRepo.getAll().isEmpty()) {
                 logger.info("StartupService.validateAdmins: No system admins found. Creating default system admin...");
-                SystemAdmin defaultAdmin = new SystemAdmin("admin123","password","mail@example.com");
+                SystemAdmin defaultAdmin = new SystemAdmin(defaultAdminUsername, defaultAdminPassword, defaultAdminEmail);
                 adminRepo.save(defaultAdmin);
             }
         } catch (Exception e) {
