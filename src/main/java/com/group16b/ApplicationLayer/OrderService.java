@@ -133,6 +133,7 @@ public class OrderService {
 			return Result.makeFail("Bad payment Info: " + e.getMessage());
 		} catch (IllegalTicketInfoException e) {
 			logger.warn("OrderService.CompleteActiveOrder: IllegalTicketInfoException for order {}: {}", orderID, e.getMessage());
+			safeExternalRollback(transactionId, ticket);
 			return Result.makeFail("Bad ticket Info: " + e.getMessage());
 		} catch (IllegalStateException e) {
 			logger.warn("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());

@@ -24,7 +24,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.atMostOnce;
@@ -36,7 +35,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.dao.OptimisticLockingFailureException;
 
-import com.group16b.ApplicationLayer.DTOs.TicketDTO;
+import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
+import com.group16b.ApplicationLayer.Exceptions.IllegalTicketInfoException;
 import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
 import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
@@ -204,7 +204,7 @@ public class OrderServiceTests {
         }
         private void setUpPaymentMocks()
         {
-                when(paymentGateway.processPayment(any(), anyInt())).thenReturn(TRANSACTION_ID);
+                when(paymentGateway.processPayment(any(), anyDouble())).thenReturn(TRANSACTION_ID);
         }
         private void setUpTicketMocks()
         {
@@ -240,6 +240,37 @@ public class OrderServiceTests {
                 verify(paymentGateway, never()).cancelPayment(anyInt());
                 verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
                 verify(ticketGateway,times(1)).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
+        }
+
+        @Test
+        void completeActiveOrder_invalidPaymentInfo_failAndDontCharge() {
+                doThrow(new IllegalPaymentInfoException("banana")).when(paymentGateway).processPayment(any(), anyDouble());
+                Result<String> result = orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
+                assertFalse(result.isSuccess());
+                assertEquals("Bad payment Info: banana",result.getError());
+                assertOrderIsActive(seatOrder);
+
+                verify(paymentGateway,times(1)).processPayment(any(), eq(100.0));
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
+        }
+
+        @Test
+        void completeActiveOrder_invalidTicketInfo_failAndRefund() {
+                doThrow(new IllegalTicketInfoException("banana")).when(ticketGateway).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                Result<String> result = orderService.CompleteActiveOrder(seatOrder.getOrderId(), "user1", validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertEquals("Bad ticket Info: banana",result.getError());
+                assertOrderIsActive(seatOrder);
+
+                verify(paymentGateway,times(1)).processPayment(any(), eq(100.0));
+                verify(paymentGateway, times(1)).cancelPayment(TRANSACTION_ID);
+                verify(ticketGateway, times(1)).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
         }
 
