@@ -28,11 +28,13 @@ public class BaseController {
             return ResponseEntity.badRequest().body(result.getError());
 
         } catch (DataAccessException e) {
-            System.out.println("Base Controller: DataAccessException: " + e.getMessage());
+            System.out.println("Base Controller: DataAccessException: " + e.getMessage()+", exception type: "+e.getClass());
+            System.out.println(e);
             return ResponseEntity.internalServerError().body("Service temporarily unavailable. Please try again later");
 
         } catch (Exception e) {
-            System.out.println("Base Controller: Unexpected exception: " + e.getMessage());
+            System.out.println("Base Controller: Unexpected exception: " + e.getMessage()+", exception type: "+e.getClass());
+            System.out.println(e);
             return ResponseEntity.internalServerError().body("Service temporarily unavailable. Please try again later");
         }
     }
