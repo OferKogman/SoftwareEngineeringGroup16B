@@ -64,7 +64,8 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public Order findFirstByUserIdAndActiveTrue(String userId) {
-        return springRepo.findFirstBySubjectIDAndActiveTrue(userId).orElse(null);
+        List<Order> orders = springRepo.findBySubjectIDAndActiveTrue(userId);
+        return orders.isEmpty() ? null : orders.get(0);
     }
 
     @Override

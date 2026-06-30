@@ -25,7 +25,6 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
 
 import io.jsonwebtoken.JwtException;
 
@@ -143,7 +142,7 @@ public class UserService {
             String userId = authenticationService.extractSubjectFromToken(sessionToken);
             logger.info("UserService.getUserOrderHistory: Successfully fetched user. Retrieving order history.");
 
-            List<Order> orders = orderRepo.findByUserIdAndActiveFalse(userId);
+            List<Order> orders = orderRepo.findByUserIdAndActiveFalse(userId); 
             List<OrderDTO> orderDTOs = orders.stream()
                     .map(order -> new OrderDTO(order))
                     .collect(Collectors.toList());
