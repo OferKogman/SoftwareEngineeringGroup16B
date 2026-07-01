@@ -1,0 +1,2818 @@
+===== OrderService.java =====
+package com.group16b.ApplicationLayer;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
+
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
+import com.group16b.ApplicationLayer.Exceptions.IllegalTicketInfoException;
+import com.group16b.ApplicationLayer.Exceptions.IssueTicketStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentFailedException;
+import com.group16b.ApplicationLayer.Exceptions.PaymentStatusUnknownException;
+import com.group16b.ApplicationLayer.Exceptions.TicketGenerationException;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
+import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
+import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.PaymentInfo;
+import com.group16b.DomainLayer.Event.Event;
+import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Order.OrderType;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.ReservationRequest;
+import com.group16b.DomainLayer.Venue.Venue;
+
+
+@Service
+public class OrderService {
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+	private final IAuthenticationService authenticationService;
+    private final ITicketGateway ticketGateway;
+	private final IOrderRepository orderRepo;
+	private final IRepository<Venue> venueRepo;
+	private final IEventRepository eventRepo;
+	private final IRepository<User> userRepo;
+    private final IProductionCompanyRepository productionCompanyRepo;
+	private final IPaymentGateway paymentService;
+
+	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
+	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
+
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
+		this.authenticationService = authenticationService;
+		this.productionCompanyRepo=productionCompanyRepo;
+		this.venueRepo = venueRepo;
+		this.eventRepo = eventRepo;
+		this.userRepo = userRepo;
+		this.orderRepo = orderRepo;
+		this.paymentService = paymentGateway;
+		this.ticketGateway = ticketGateway;
+	}
+
+    public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
+		logger.info(paymentInfo.cardNumber() + "" + paymentInfo.currency());
+		Integer transactionId = null;
+		String ticket=null;
+		try {
+			logger.info("OrderService.CompleteActiveOrder: Attempting to complete order {} ", orderID);
+
+			// 1. user verification
+            logger.info("Verifying session token for completion.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+
+			// 2. order verification 
+			Order order = orderRepo.findByID(orderID);
+
+			logger.info("OrderService.CompleteActiveOrder: validate Order {} is activeOrder", orderID);
+			order.validiteOrderIsActive();
+			
+			logger.info("OrderService.CompleteActiveOrder: verifying that order {} belongs to user {}", orderID, subjectID);
+			order.verifyBelongsToSubject(subjectID);
+
+			//3. price calculation
+			logger.info("OrderService.CompleteActiveOrder: calculating price for order {} for user {}", orderID, subjectID);
+			double price = order.getTotalOrderprice();
+
+			// 4.Payment processing
+			logger.info("OrderService.CompleteActiveOrder: processing payment for order {} for user {} with price {}", orderID, subjectID, price);
+
+			transactionId = paymentService.processPayment(paymentInfo, price); // hander feiler well caouse it will happend regularly
+			
+			// 5. ticket generation
+			logger.info("OrderService.CompleteActiveOrder: generating ticket for order {} for user {}", orderID, subjectID);
+			ticket = generateTicketForOrder(order, subjectID);
+			
+			// 6. complete order with optimistic locking retry
+			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
+			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
+			
+			// 7. return tickets
+			return Result.makeOk(ticket);
+
+		} catch (OrderExpiredException e) {
+			logger.error("OrderService.CompleteActiveOrder: Order {} expired: {}.", orderID, e.getMessage());
+			safeExternalRollback(transactionId,ticket);
+			_cancelOrder(orderID);
+			return Result.makeFail("Order expired: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
+
+		} catch (PaymentFailedException e) {
+			logger.warn("OrderService.CompleteActiveOrder: Payment failed for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Payment failed: " + e.getMessage());
+
+		} catch (TicketGenerationException e) {
+			logger.error("OrderService.CompleteActiveOrder: Ticket generation failed for order {}: {}", orderID, e.getMessage());
+			safeExternalRollback(transactionId,ticket);
+
+			return Result.makeFail("Ticket generation failed: " + e.getMessage()+". "+REFUND_MSG);
+
+		} catch (AuthException e) {
+			logger.warn("OrderService.CompleteActiveOrder: Authentication failed for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.warn("OrderService.CompleteActiveOrder: Invalid argument for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Invalid argument: " + e.getMessage());
+		} catch (IllegalPaymentInfoException e) {
+			logger.warn("OrderService.CompleteActiveOrder: IllegalPaymentInfoException for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Bad payment Info: " + e.getMessage());
+		} catch (IllegalTicketInfoException e) {
+			logger.warn("OrderService.CompleteActiveOrder: IllegalTicketInfoException for order {}: {}", orderID, e.getMessage());
+			safeExternalRollback(transactionId, ticket);
+			return Result.makeFail("Bad ticket Info: " + e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.warn("OrderService.CompleteActiveOrder: Illegal state for order {}: {}", orderID, e.getMessage());
+			return Result.makeFail("Illegal state: " + e.getMessage());
+
+		} catch (OptimisticLockingFailureException e) {
+			safeExternalRollback(transactionId,ticket);
+			return Result.makeFail("Could not complete order due to concurrent update. Please try again. "+POSSIBLE_REFUND_MSG);
+		} catch(PaymentStatusUnknownException e){
+			logger.error("OrderService.CompleteActiveOrder: payment status unknown for order {}. Requires manual reconciliation.",orderID,e);
+			return Result.makeFail("Payment could not be verified. "+POSSIBLE_REFUND_MSG);
+		}catch (IssueTicketStatusUnknownException e){
+			logger.error("OrderService.CompleteActiveOrder: Issue Ticket status unknown for order {}. Requires manual reconciliation.",orderID,e);
+			return Result.makeFail("Ticket could not be verified. "+POSSIBLE_REFUND_MSG);
+		}catch (Exception e) {
+			logger.error("OrderService.CompleteActiveOrder: Unexpected error for order {}: {}", orderID, e.getMessage());
+			safeExternalRollback(transactionId,ticket);
+
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage()+". "+POSSIBLE_REFUND_MSG);
+		}
+	}
+
+	private String generateTicketForOrder(Order order, String subjectID) {
+		if (order.getOrderType() == OrderType.SEAT) {
+			return ticketGateway.generateSeatingTicket(order.getEventId(), subjectID, order.getSegmentId(), order.getSeats());
+		}else{
+			return ticketGateway.generateGeneralAdmissionTicket(order.getEventId(), subjectID, order.getSegmentId(), order.getNumOfTickets());
+		}
+	}
+
+	private void completeOrderWithOptimisticRetry(String orderID, String subjectID, int transactionId, String externalTicket) {
+		final int maxRetries = 3;
+
+		for (int attempt = 1; attempt <= maxRetries; attempt++) {
+			try {
+				Order freshOrder = orderRepo.findByID(orderID);
+
+				freshOrder.validiteOrderIsActive();
+				freshOrder.verifyBelongsToSubject(subjectID);
+
+				freshOrder.setTransactionId(transactionId);
+				freshOrder.setExternalTicket(externalTicket);
+				freshOrder.CompleteOrder();
+				orderRepo.save(freshOrder);
+				return;
+
+			} catch (OptimisticLockingFailureException e) {
+				logger.warn(
+					"OrderService.completeOrderWithOptimisticRetry: Optimistic lock failed for order {} on attempt {}/{}",
+					orderID,
+					attempt,
+					maxRetries
+				);
+
+				if (attempt == maxRetries) {
+					throw e;
+				}
+			}
+		}
+
+		throw new OptimisticLockingFailureException("Failed to complete order after retries");
+	}
+    
+	private void _cancelOrder(String orderID) {
+	try {
+		Order order = orderRepo.findByID(orderID);
+		orderRepo.delete(orderID);
+		int eventID = order.getEventId();
+		Event event = eventRepo.findByID(String.valueOf(eventID));
+		Venue venue = venueRepo.findByID(event.getEventVenueID());
+		if (venue.segmentType(order.getSegmentId()) == OrderType.SEAT) {
+			venue.cancelSeatReservation(order.getSegmentId(), order.getSeats(), eventID);
+		} else {
+			venue.cancelFieldReservation(order.getSegmentId(), order.getNumOfTickets(), eventID);
+		}
+
+		venueRepo.save(venue);
+		} catch (Exception e) {
+			logger.error("OrderService._cancelOrder: Failed to cancel reservation for order {}: {}", orderID, e.getMessage());
+			 // we log the error but do not throw it further as the main goal of this method is to cancel the order and we don't want a failure in cancelling the reservation to prevent the order cancellation.
+		}
+	}
+	
+    public Result<List<String>> changeSeatsToOrder(String orderId, String sTocken, List<String> newSeatIds){
+		boolean venueChanged = false;
+		String segmentId = null;
+		List<String> seatsToAdd = new ArrayList<>();
+		List<String> seatsToRemove = new ArrayList<>();
+		Venue venue = null;
+		int eventID = 0;
+        try {
+            // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
+            logger.info("OrderService.changeSeatsToOrder: Attempting to change seats for order {} with new seats {}.", orderId, newSeatIds);
+            if (newSeatIds == null || newSeatIds.isEmpty()) {
+                return Result.makeFail("New seat IDs list cannot be null or empty");
+            }
+
+            logger.info("OrderService.changeSeatsToOrder: Verifying session token for change.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+			logger.info("OrderService.changeSeatsToOrder: Session token verified successfully.");
+
+            // get order seats. 
+            Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.changeSeatsToOrder: verifying that order {} belongs to the user with the provided token for changing seats.", orderId);
+            order.verifyBelongsToSubject(subjectID);
+
+			logger.info("OrderService.changeSeatsToOrder: verifying that order {} is a seat order for changing seats.", orderId);
+            order.verifyTypeSeats();
+
+			logger.info("OrderService.changeSeatsToOrder: verifying that order {} is active for changing seats.", orderId);
+            order.validiteOrderIsActive();
+
+			eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+			venue = venueRepo.findByID(event.getEventVenueID());
+
+			logger.info("OrderService.changeSeatsToOrder: Validating purchase policy for event {} for order {}.", eventID, orderId);
+			validatePurchasePolicy(event.getEventID(), newSeatIds.size(), sTocken);
+
+			double pricePerSeat = venue.getPriceForSegment(order.getSegmentId(), eventID);
+			logger.info("OrderService.changeSeatsToOrder: Calculating discount policies for event {} for order {}.", eventID, orderId);
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatIds.size());
+
+            List<String> oldSeats = order.getSeats();
+            List<String> intersection = getIntersection(newSeatIds, oldSeats);
+
+            // remove intersection from new seats -> seatsToAdd
+            seatsToAdd = removeFromList(newSeatIds, intersection);
+            // remove intersection from old seats -> seatsToRemove
+            seatsToRemove = removeFromList(oldSeats, intersection);
+			segmentId = order.getSegmentId();
+            // reserve new seatsToAdd
+			
+            logger.info("OrderService.changeSeatsToOrder: Reserving new seats {} for order {}.", seatsToAdd, orderId);
+			if (!seatsToAdd.isEmpty()) {
+				venue.reserveSeats(ReservationRequest.forSeats(eventID, seatsToAdd, segmentId));
+				venueChanged = true;
+			}
+            // free seatsToRemove
+            logger.info("OrderService.changeSeatsToOrder: Freeing old seats {} for order {}.", seatsToRemove, orderId);
+			if (!seatsToRemove.isEmpty()) {
+				venue.freeSeats(ReservationRequest.forSeats(eventID, seatsToRemove, segmentId));
+				venueChanged = true;
+			}
+			
+			
+			logger.info("OrderService.changeSeatsToOrder: Updating order {} with new seats {}.", orderId, newSeatIds);
+			order.updateSeats(newSeatIds, priceAfterDiscountPolicy);
+			orderRepo.save(order);
+			
+			venueRepo.save(venue);
+
+            return Result.makeOk(newSeatIds);
+        } catch (AuthException e) {
+			logger.error("OrderService.changeSeatsToOrder: Authentication error during changing seats for order {}: {}", orderId, e.getMessage());
+			rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}
+		catch (IllegalStateException e) {
+			logger.error("OrderService.changeSeatsToOrder: {}", orderId, e.getMessage());
+			rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+			return Result.makeFail(e.getMessage());
+		}
+		catch (IllegalArgumentException e) {
+            logger.error("OrderService.changeSeatsToOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
+            rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+            return Result.makeFail(e.getMessage());
+        }
+        catch (Exception e) {
+			logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats", e);            
+			rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+	
+    public Result<Integer> changeNumOfSeatsInFieldOrder(String orderId, String sTocken, int newSeatsNum){
+        Venue venue = null;
+        boolean venueChanged = false;
+		String segmentId = null;
+		int oldNumOfTickets = 0;
+		int newNumOfTickets = newSeatsNum;
+        int eventID = 0;
+		try {
+            // if seatsToAdd and SeatsToReamove's intersection is not empty, abort
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: Attempting to change number of seats for order {} with new number of seats {}.", orderId, newSeatsNum);
+            if (newSeatsNum <= 0) {
+                return Result.makeFail("New number of seats must be greater than zero");
+            }
+
+            logger.info("OrderService.Verifying session token for edit.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: Verifying session token for edit.");
+
+            // get order seats. 
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: Attempting to reserve seats for {}", subjectID);
+            Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} belongs to the user with the provided token for changing number of seats.", orderId);
+            order.verifyBelongsToSubject(subjectID);
+
+			logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} is a field order for changing number of seats.", orderId);
+            order.verifyTypeField();
+
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: verifying that order {} is active for changing number of seats.", orderId);
+            order.validiteOrderIsActive();
+
+			// policy validation
+			eventID = order.getEventId();
+            Event event = eventRepo.findByID(String.valueOf(eventID));
+			venue = venueRepo.findByID(event.getEventVenueID());
+
+			segmentId = order.getSegmentId();
+            oldNumOfTickets = order.getNumOfTickets();
+			
+            if (oldNumOfTickets == newSeatsNum){
+				logger.info("OrderService.changeNumOfSeatsInFieldOrder: New number of seats is the same as the old number of seats for order {}. No changes needed.", orderId);
+                return Result.makeOk(newSeatsNum);
+            }
+
+			validatePurchasePolicy(event.getEventID(), newSeatsNum, sTocken);
+			
+			double pricePerSeat = venue.getPriceForSegment(order.getSegmentId(), eventID);
+			double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, newSeatsNum);
+			
+			
+            if (oldNumOfTickets < newSeatsNum) {
+                // reserve new seatsToAdd
+                int seatsToAdd = newSeatsNum - oldNumOfTickets;
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: Reserving {} new seats for order {}.", seatsToAdd, orderId);
+				venue.reserveSeats(ReservationRequest.forField(eventID, seatsToAdd, segmentId));
+				venueChanged = true;
+            } else {
+                // free seatsToRemove
+                int seatsToRemove = oldNumOfTickets - newSeatsNum;
+                logger.info("OrderService.changeNumOfSeatsInFieldOrder: Freeing {} old seats for order {}.", seatsToRemove, orderId);
+				venue.freeSeats(ReservationRequest.forField(eventID, seatsToRemove, segmentId));
+				venueChanged = true;
+            }
+			
+            logger.info("OrderService.changeNumOfSeatsInFieldOrder: Updating order {} with new seats {}.", orderId, newSeatsNum);
+			
+			
+			order.updateNumOfTickets(newSeatsNum, priceAfterDiscountPolicy);
+			orderRepo.save(order);
+			venueRepo.save(venue);
+            
+			return Result.makeOk(newSeatsNum);
+
+        } catch (IllegalArgumentException e) {
+            logger.error("OrderService.changeNumOfSeatsInFieldOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
+            rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
+			return Result.makeFail(e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("OrderService.changeNumOfSeatsInFieldOrder: Failed to change seats for order {}: {}", orderId, e.getMessage());
+            rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
+			return Result.makeFail(e.getMessage());
+        } catch (AuthException e) {
+			logger.error("OrderService.changeNumOfSeatsInFieldOrder: Authentication error during changing number of seats for order {}: {}", orderId, e.getMessage());
+			rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		}catch (Exception e) {
+            logger.error("OrderService.changeNumOfSeatsInFieldOrder: Unexpected error during changing seats: {}", e.getMessage());
+            rollbackFieldEditIfNeeded(venue, venueChanged, segmentId, oldNumOfTickets, newNumOfTickets, eventID);
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+
+    private List<String> getIntersection(List<String> list1, List<String> list2) {
+        List<String> intersection = new ArrayList<>();
+        for (String item : list1) {
+            if (list2.contains(item)) {
+                intersection.add(item);
+            }
+        }
+        return intersection;
+    }
+    private List<String> removeFromList(List<String> original, List<String> toRemove) {
+        List<String> result = new ArrayList<>(original);
+        result.removeAll(toRemove);
+        return result;
+    }
+
+	public Result<Boolean> cancelOrder(String orderId, String sTocken) { // to call when order is expired
+		try {
+
+			logger.info("Verifying session token for completion.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+            logger.info("Session token verified successfully.");
+			
+			
+			logger.info("Attempting to cancel order {}.", orderId);
+			Order order = orderRepo.findByID(orderId);
+			order.verifyBelongsToSubject(subjectID);
+			
+			order.validiteOrderIsActive();
+			_cancelOrder(orderId);
+			return Result.makeOk(true);
+		}catch (AuthException e) {
+			logger.error("OrderService.cancelOrder: Authentication error during cancelling order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.cancelOrder: Failed to cancel order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.cancelOrder: Unexpected error during cancelling order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+    }
+
+    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
+        Event event = eventRepo.findByID(String.valueOf(eventID));
+        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> allPolicies = new HashSet<>();
+
+        if (discountPolicy != null) {
+            allPolicies.addAll(discountPolicy);
+        } else {
+            logger.error("No discount policy found for event {}", eventID);
+        }
+        if (companyDiscountPolicy != null) {
+            allPolicies.addAll(companyDiscountPolicy);
+        } else {
+            logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+        }
+
+        double priceAfterDiscountPolicy = pricePerSeat * amount;
+
+        for (DiscountPolicy dp : allPolicies) {
+            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+        }
+        return priceAfterDiscountPolicy;
+    }
+
+    private void validatePurchasePolicy(int eventID, int ticketsAmount, String sessionToken) {
+
+        int userAge = 0;
+        if (authenticationService.isUserToken(sessionToken)) {
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            User user = userRepo.findByID(userID);
+            // userAge = user.getAge(); TODO: add age to user and uncomment?
+        }
+
+        Set<PurchasePolicy> allPolicies = new HashSet<>();
+
+        Event event = eventRepo.findByID(String.valueOf(eventID));
+        Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
+        if (purchasePolicy != null) {
+            allPolicies.addAll(purchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for event {}", eventID);
+        }
+
+        if (companyPurchasePolicy != null) {
+            allPolicies.addAll(companyPurchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for production company {}", event.getEventProductionCompanyID());
+        }
+
+        for (PurchasePolicy pp : allPolicies) {
+            try {
+                if (pp instanceof LotteryPolicy) {
+                    continue;
+                }
+                pp.validatePurchase(new PurchaseContext(userAge, ticketsAmount));
+            } catch (PurchasePolicyException e) {
+                logger.error("User did not meet purchase policy requirements");
+                throw new IllegalArgumentException("User did not meet purchase policy requirements");
+            }
+        }
+    }
+
+	private String validateAssureNotAdminGetSubjectID(String sessionToken)
+    {
+        if (!authenticationService.validateToken(sessionToken)  ) {
+            throw new AuthException("Invalid Token");
+        }
+        if (authenticationService.isAdminToken(sessionToken)) {
+            throw new AuthException("Admins are not allowed to perform operation");
+        }
+        String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
+        return subjectID;
+    }
+
+	public Result<Double> getOrderPrice(String orderId, String sTocken) {
+		try {
+			logger.info("OrderService.getOrderPrice: Attempting to get price for order {}.", orderId);
+
+			logger.info("OrderService.getOrderPrice: Verifying session token for getting order price.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sTocken);
+			logger.info("OrderService.getOrderPrice: Session token verified successfully.");
+
+			Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.getOrderPrice: verifying that order {} belongs to the user with the provided token for getting order price.", orderId);
+			order.verifyBelongsToSubject(subjectID);
+
+			double price = order.getTotalOrderprice();
+
+			return Result.makeOk(price);
+		} catch (AuthException e) {
+			logger.error("OrderService.getOrderPrice: Authentication error during getting price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.getOrderPrice: Failed to get price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.getOrderPrice: Failed to get price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.getOrderPrice: Unexpected error during getting price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+	public Result<Long> getActiveOrderTimeStamp(String orderId, String sessionToken) {
+		try {
+			logger.info("OrderService.getActiveOrderTimeStamp: Attempting to get timestamp for order {}.", orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStamp: Verifying session token for getting order timestamp.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+			logger.info("OrderService.getActiveOrderTimeStamp: Session token verified successfully.");
+
+			Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStamp: verifying that order {} belongs to the user with the provided token for getting order timestamp.", orderId);
+			order.verifyBelongsToSubject(subjectID);
+
+			long timestamp = order.getOrderStartTime();
+			
+			return Result.makeOk(timestamp);
+		} catch (AuthException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Authentication error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.getActiveOrderTimeStamp: Unexpected error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+	//no need to care for the exception type, as it is a automatic refund, meaning that any issue here is critical and should betreated the same way
+	private void safeRefund(Integer transactionId) {
+		//payment didnt proceed
+		if (transactionId == null) 
+			return;
+
+		try {
+			paymentService.cancelPayment(transactionId);
+		} catch (Exception e) {
+			logger.error("Refund failed for transaction {}", transactionId, e);
+		}
+	}
+
+	private void safeTicketRevoke(String ticket)
+	{
+		if(ticket==null)
+			return;
+		try{
+			ticketGateway.revokeTicket(ticket);
+		}catch(Exception e)
+		{
+			logger.error("Ticket revoke failed for ticket {}",ticket,e);
+		}
+	}
+
+	private void safeExternalRollback(Integer transactionId, String ticket)
+	{
+		safeRefund(transactionId);
+		safeTicketRevoke(ticket);
+	}
+	
+	
+	private void rollbackSeatEditIfNeeded(
+			Venue venue,
+			boolean venueChanged,
+			String segmentId,
+			List<String> seatsToAdd,
+			List<String> seatsToRemove,
+			int eventID
+	) {
+		if (venue == null || !venueChanged) {
+			return;
+		}
+
+		try {
+			if (seatsToAdd != null && !seatsToAdd.isEmpty()) {
+				venue.cancelSeatReservation(segmentId, seatsToAdd, eventID);
+			}
+
+			if (seatsToRemove != null && !seatsToRemove.isEmpty()) {
+				venue.reserveSeats(ReservationRequest.forSeats(eventID, seatsToRemove, segmentId));
+			}
+
+			venueRepo.save(venue);
+		} catch (Exception rollbackException) {
+			logger.error(
+					"OrderService.rollbackSeatEditIfNeeded: Failed to rollback seat edit for event {} segment {} added {} removed {}: {}",
+					eventID,
+					segmentId,
+					seatsToAdd,
+					seatsToRemove,
+					rollbackException.getMessage()
+			);
+		}
+	}
+
+   private void rollbackFieldEditIfNeeded(
+			Venue venue,
+			boolean venueChanged,
+			String segmentId,
+			int oldNumOfTickets,
+			int newNumOfTickets,
+			int eventID
+	) {
+		if (venue == null || !venueChanged) {
+			return;
+		}
+
+		try {
+			if (newNumOfTickets > oldNumOfTickets) {
+				int added = newNumOfTickets - oldNumOfTickets;
+				venue.cancelFieldReservation(segmentId, added, eventID);
+			} else if (newNumOfTickets < oldNumOfTickets) {
+				int removed = oldNumOfTickets - newNumOfTickets;
+				venue.reserveSeats(ReservationRequest.forField(eventID, removed, segmentId));
+			}
+
+			venueRepo.save(venue);
+		} catch (Exception rollbackException) {
+			logger.error(
+					"OrderService.rollbackFieldEditIfNeeded: Failed to rollback field edit for event {} segment {} oldAmount {} newAmount {}: {}",
+					eventID,
+					segmentId,
+					oldNumOfTickets,
+					newNumOfTickets,
+					rollbackException.getMessage()
+			);
+		}
+	}
+	
+}
+
+===== ReserveService.java =====
+package com.group16b.ApplicationLayer;
+
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.group16b.ApplicationLayer.Exceptions.AuthException;
+import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
+import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.DomainLayer.Event.Event;
+import com.group16b.DomainLayer.Event.IEventRepository;
+import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Order.Order;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
+import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import com.group16b.InfrastructureLayer.RequestContext;
+import com.group16b.InfrastructureLayer.Security.Role;
+
+import io.jsonwebtoken.JwtException;
+
+@Service
+@Transactional
+public class ReserveService {
+    private static final Logger logger = LoggerFactory.getLogger(ReserveService.class);
+
+    private final IRepository<Venue> venueRepo;
+    private final IOrderRepository orderRepo;
+    private final IRepository<VirtualQueue> queueImp;
+    private final IEventRepository eventRepository;
+    private final IProductionCompanyRepository productionCompanyRepo;
+    private final IAuthenticationService authenticationService;
+    private final IRepository<User> userRepo;
+
+    public ReserveService(IAuthenticationService authenticationService,
+            IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> queueImp,
+            IRepository<Venue> venueRepo, IEventRepository eventRepository, IOrderRepository orderRepo,
+            IRepository<User> userRepo) {
+        this.authenticationService = authenticationService;
+        this.productionCompanyRepo = productionCompanyRepo;
+        this.venueRepo = venueRepo;
+        this.queueImp = queueImp;
+        this.eventRepository = eventRepository;
+        this.orderRepo = orderRepo;
+        this.userRepo = userRepo;
+    }
+
+    public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId,
+            String sessionToken) {
+        return this.reserveSeatsWithLottery(segmentId, seatIds, eventID, venueId, "", sessionToken);
+    }
+
+    public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId,
+            String sessionToken) {
+        return this.reserveFieldSeatsWithLottery(segmentId, amount, eventID, venueId, "", sessionToken);
+    }
+
+    public Result<String> reserveSeatsWithLottery(String segmentId, List<String> seatIds, int eventID, String venueId,
+            String lotteryCode, String sessionToken) {
+        VirtualQueue q = null;
+        String subjectID = null;
+        Venue venue = null;
+        boolean seatsReserved = false;
+        Event event = null;
+        boolean lotteryCodeUsed = false;
+        try {
+            logger.info(
+                    "ApplicationLayer.ReserveService.reserveSeats: Starting seat reservation process for eventID {} and user session {}",
+                    eventID, sessionToken);
+            if (seatIds == null || seatIds.isEmpty() || segmentId == null || segmentId.isEmpty() || venueId == null
+                    || venueId.isEmpty()) {
+                logger.warn(
+                        "ApplicationLayer.ReserveService.reserveSeats: Invalid input parameters for seat reservation. segmentId: {}, seatIds: {}, venueId: {}",
+                        segmentId, seatIds, venueId);
+                return Result.makeFail("Invalid input parameters for seat reservation");
+            }
+
+            logger.info("ReserveService.reserveSeats: Verifying session token for reservation.");
+            subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+            
+            logger.info("ReserveService.reserveSeats: Checking for existing active orders for {}", subjectID);
+            if (orderRepo.findFirstByUserIdAndActiveTrue(subjectID) != null) {
+                logger.warn("ReserveService.reserveSeats: User {} already has an active order.", subjectID);
+                return Result.makeFail("User already has an active order.");
+            }
+
+            logger.info("Checking event is active");
+            event = eventRepository.findByID(String.valueOf(eventID));
+            event.validateEventIsActive();
+
+            // 2. System - validates the event does NOT have a lottery policy.
+
+            logger.info("ApplicationLayer.ReserveService.reserveSeats: Validating lottery for {}", subjectID);
+            validateLottery(event, lotteryCode);
+
+            logger.info("ReserveService.reserveSeats: Moving queue forward");
+            joinQueueSafely(q, eventID, subjectID);
+
+            logger.info("ReserveService.reserveSeats: {} is passed the queue", subjectID);
+            // 3. System - validates selected seats exist.
+            // 4. System - validates selected seats are available.
+            // 5. System - removes selected seats from stock.
+            venue = venueRepo.findByID(venueId);
+
+            validatePurchasePolicy(eventID, seatIds.size(), sessionToken);
+
+            double pricePerSeat = venue.getPriceForSegment(segmentId, eventID); // validate segment exists and is valid
+                                                                                // for the event before reserving seats
+
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, seatIds.size());
+            logger.info("@DEBUG: pricePerSeat: {}, priceAfterDiscountPolicy: {}", pricePerSeat,
+                    priceAfterDiscountPolicy);
+
+            logger.info(
+                    "ReserveService.reserveSeats: Attempting to reserve seats {} in segment {} for event {} for user {}",
+                    seatIds, segmentId, eventID, subjectID);
+            venue.reserveTickets(segmentId, seatIds, eventID);
+            seatsReserved = true;
+            venueRepo.save(venue);
+
+            // 6. System - creates an active order for the user with the selected tickets.
+            useLotteryCodeIfNeeded(event, lotteryCode);
+            lotteryCodeUsed = hasLotteryCode(lotteryCode);
+            Order order = new Order(segmentId, seatIds, priceAfterDiscountPolicy, eventID, subjectID);
+            orderRepo.save(order);
+
+            logger.info(
+                    "ApplicationLayer.ReserveService.reserveSeats: Active order {} created successfully for user {}",
+                    order.getOrderId(), subjectID);
+            queueRemovePassed(q, subjectID);
+            return Result.makeOk("new OrderId: " + order.getOrderId());
+        } catch (IllegalArgumentException e) {
+            logger.error("ApplicationLayer.ReserveService.reserveSeats: Failed to reserve seats for user: {}",
+                    e.getMessage());
+            queueRemovePassed(q, subjectID);
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Illegal argument: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error(
+                    "ReserveService.reserveSeats: JWT authentication error during event creation: " + e.getMessage());
+            queueRemovePassed(q, subjectID);
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (AuthException e) {
+            logger.error(
+                    "ReserveService.reserveSeats: Authentication error during retrieving orders: " + e.getMessage());
+            queueRemovePassed(q, subjectID);
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (OptimisticLockingFailureException e) {
+            logger.error("ReserveService.reserveSeats: Concurrent modification detected for order {} for user {}: {}",
+                    eventID, subjectID, e.getMessage());
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
+            queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Optimistic locking failure: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("ReserveService.reserveSeats: Illegal state encountered for order {} for user {}: {}", eventID,
+                    subjectID, e.getMessage());
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
+            queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Illegal state encountered: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error(
+                    "ApplicationLayer.ReserveService.reserveSeats: An unexpected error occurred while reserving seats for user: {}",
+                    e.getMessage());
+            queueRemovePassed(q, subjectID);
+            rollbackSeatReservationIfNeeded(venue, seatsReserved, segmentId, seatIds, eventID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public VirtualQueue joinQueueSafely(VirtualQueue q, int eventID, String subjectID) {
+        q = queueImp.findByID(Integer.toString(eventID));
+        q.addToQueue(subjectID);
+        logger.info("ReserveService.joinQueueSafely: Checking if user passed queue");
+
+        try {
+            q.validateUserPassedQueue(subjectID);
+            q.removePassed(subjectID);   
+        } catch (Exception e) {
+            q.removePassed(subjectID); 
+            queueImp.save(q); 
+            throw e; 
+        }
+        queueImp.save(q);
+        return q;
+    }
+
+    public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId,
+            String lotteryCode, String sessionToken) {
+        String subjectID = null;
+        VirtualQueue q = null;
+        Venue venue = null;
+        boolean seatsReserved = false;
+        Event event = null;
+        boolean lotteryCodeUsed = false;
+        try {
+            logger.info(
+                    "ReserveService.reserveFieldSeats: Starting field seat reservation process for eventID {} and user session {}",
+                    eventID, sessionToken);
+            if (amount <= 0 || segmentId == null || segmentId.isEmpty() || venueId == null || venueId.isEmpty()) {
+                logger.warn(
+                        "ReserveService.reserveFieldSeats: Invalid input parameters for field seat reservation. segmentId: {}, amount: {}, venueId: {}",
+                        segmentId, amount, venueId);
+                return Result.makeFail("Invalid input parameters for field reservation");
+            }
+            logger.info("ReserveService.reserveFieldSeats: Verifying session token for reservation.");
+            subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+            // validate user does not havve another active order
+            logger.info("ReserveService.reserveFieldSeats: Checking for existing active orders for {}", subjectID);
+            if (orderRepo.findFirstByUserIdAndActiveTrue(subjectID) != null) {
+                logger.warn("ReserveService.reserveFieldSeats: User {} already has an active order.", subjectID);
+                return Result.makeFail("User already has an active order.");
+            }
+            logger.info("ReserveService.reserveFieldSeats: Checking event is active");
+            event = eventRepository.findByID(String.valueOf(eventID));
+            event.validateEventIsActive();
+
+            logger.info("ReserveService.reserveFieldSeats: Validating lottery for {}", subjectID);
+            validateLottery(event, lotteryCode);
+
+            logger.info("ReserveService.reserveFieldSeats: Moving queue forward");
+            joinQueueSafely(q, eventID, subjectID);
+            logger.info("ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
+
+            validatePurchasePolicy(eventID, amount, sessionToken);
+
+            venue = venueRepo.findByID(venueId);
+
+            double pricePerSeat = venue.getPriceForSegment(segmentId, eventID);
+            double priceAfterDiscountPolicy = calculateDiscountPolicies(eventID, pricePerSeat, amount);
+
+            venue.reserveTickets(segmentId, amount, eventID);
+            seatsReserved = true;
+            venueRepo.save(venue);
+            logger.info("ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
+
+            // 6. System - creates an active order for the user with the selected tickets.
+            useLotteryCodeIfNeeded(event, lotteryCode);
+            lotteryCodeUsed = hasLotteryCode(lotteryCode);
+
+            Order order = new Order(segmentId, amount, priceAfterDiscountPolicy, eventID, subjectID);
+            orderRepo.save(order);
+            logger.info("ReserveService.reserveFieldSeats: Active order {} created successfully for {}",
+                    order.getOrderId(), subjectID);
+
+            queueRemovePassed(q, subjectID);
+
+            return Result.makeOk("new OrderId: " + order.getOrderId());
+        } catch (IllegalArgumentException e) {
+            logger.error("ReserveService.reserveFieldSeats: Failed to reserve seats for user: {}", e.getMessage());
+            queueRemovePassed(q, subjectID);
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Illegal argument: " + e.getMessage());
+        } catch (JwtException e) {
+            logger.error("ReserveService.reserveFieldSeats: JWT authentication error during event creation: "
+                    + e.getMessage());
+            queueRemovePassed(q, subjectID);
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (AuthException e) {
+            logger.error("ReserveService.reserveFieldSeats: Authentication error during retrieving orders: "
+                    + e.getMessage());
+            queueRemovePassed(q, subjectID);
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (OptimisticLockingFailureException e) {
+            logger.error(
+                    "ReserveService.reserveFieldSeats: Optimistic locking failure occurred while reserving seats for user: {}",
+                    e.getMessage());
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
+            queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Optimistic locking failure: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("ReserveService.reserveFieldSeats: Illegal state encountered for order {} for user {}: {}",
+                    eventID, subjectID, e.getMessage());
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
+            queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("Illegal state encountered: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error(
+                    "ReserveService.reserveFieldSeats: An unexpected error occurred while reserving seats for user: {}",
+                    e.getMessage());
+            rollbackFieldReservationIfNeeded(venue, seatsReserved, segmentId, amount, eventID);
+            queueRemovePassed(q, subjectID);
+            if (lotteryCodeUsed) {
+                renewLotteryCodeIfNeeded(event, lotteryCode);
+            }
+            return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    public Result<Integer> getPositionInQueueForEvent(int eventID) {
+        try {
+            String subjectID = validateUserOrGuestAndGetSubjectId();
+            VirtualQueue queue = queueImp.findByID(String.valueOf(eventID));
+
+            int status = queue.getQueueStatus(subjectID);
+
+            queueImp.save(queue);
+
+            logger.info("ReserveService.getPositionInQueueForEvent: placement in queue is: " + status);
+
+            return Result.makeOk(status);
+
+        } catch (AuthException e) {
+            logger.warn("ReserveService.getPositionInQueueForEvent: AuthException: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            logger.warn("ReserveService.getPositionInQueueForEvent: IllegalArgumentException: {}", e.getMessage());
+            return Result.makeFail(e.getMessage());
+        } catch (Exception e) {
+            logger.error("ReserveService.getPositionInQueueForEvent: an unexpected error occured: ", e);
+            return Result.makeFail("An unexpected error has occured, pls try again later.");
+        }
+    }
+
+    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
+        Event event = eventRepository.findByID(String.valueOf(eventID));
+        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
+        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
+        Set<DiscountPolicy> allPolicies = new HashSet<>();
+
+        if (discountPolicy != null) {
+            allPolicies.addAll(discountPolicy);
+        } else {
+            logger.error("No discount policy found for event {}", eventID);
+        }
+        if (companyDiscountPolicy != null) {
+            allPolicies.addAll(companyDiscountPolicy);
+        } else {
+            logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+        }
+
+        double priceAfterDiscountPolicy = pricePerSeat * amount;
+
+        for (DiscountPolicy dp : allPolicies) {
+            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+        }
+        return priceAfterDiscountPolicy;
+    }
+
+    private void validatePurchasePolicy(int eventID, int ticketsAmount, String sessionToken) {
+
+        int userAge = 0;
+        if (authenticationService.isUserToken(sessionToken)) {
+            String userID = authenticationService.extractSubjectFromToken(sessionToken);
+            User user = userRepo.findByID(userID);
+            // userAge = user.getAge(); TODO: add age to user and uncomment?
+        }
+
+        Set<PurchasePolicy> allPolicies = new HashSet<>();
+
+        Event event = eventRepository.findByID(String.valueOf(eventID));
+        Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
+        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo
+                .findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
+        if (purchasePolicy != null) {
+            allPolicies.addAll(purchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for event {}", eventID);
+        }
+
+        if (companyPurchasePolicy != null) {
+            allPolicies.addAll(companyPurchasePolicy);
+        } else {
+            logger.warn("No purchase policy found for production company {}", event.getEventProductionCompanyID());
+        }
+
+        for (PurchasePolicy pp : allPolicies) {
+            try {
+                if (pp instanceof LotteryPolicy) {
+                    continue;
+                }
+                pp.validatePurchase(new PurchaseContext(userAge, ticketsAmount));
+            } catch (PurchasePolicyException e) {
+                logger.error("User did not meet purchase policy requirements");
+                throw new IllegalArgumentException("User did not meet purchase policy requirements");
+            }
+        }
+    }
+
+    private void queueRemovePassed(VirtualQueue q, String subjectID) {
+        if (q == null || subjectID == null) {
+            return;
+        }
+
+        try {
+            q.removePassed(subjectID);
+            queueImp.save(q);
+        } catch (RuntimeException e) {
+            logger.warn(
+                    "ReserveService.queueRemovePassed: Failed to remove user {} from passed queue: {}",
+                    subjectID,
+                    e.getMessage());
+        }
+    }
+    private String validateAssureNotAdminGetSubjectID(String sessionToken) {
+        if (!authenticationService.validateToken(sessionToken)) {
+            throw new AuthException("Invalid Token");
+        }
+        if (authenticationService.isAdminToken(sessionToken)) {
+            throw new AuthException("Admins are not allowed to perform operation");
+        }
+        String subjectID = authenticationService.extractSubjectFromToken(sessionToken);
+        return subjectID;
+    }
+
+    private void rollbackSeatReservationIfNeeded(Venue venue, boolean seatsReserved, String segmentId,
+            List<String> seatIds, int eventID) {
+        if (venue != null && seatsReserved) {
+            try {
+                venue.cancelSeatReservation(segmentId, seatIds, eventID);
+                venueRepo.save(venue);
+            } catch (Exception rollbackException) {
+                logger.error(
+                        "ReserveService.rollbackSeatReservationIfNeeded: Failed to rollback seat reservation for event {} segment {} seats {}: {}",
+                        eventID, segmentId, seatIds, rollbackException.getMessage());
+            }
+        }
+    }
+
+    private void rollbackFieldReservationIfNeeded(Venue venue, boolean seatsReserved, String segmentId, int amount,
+            int eventID) {
+        if (venue != null && seatsReserved) {
+            try {
+                venue.cancelFieldReservation(segmentId, amount, eventID);
+                venueRepo.save(venue);
+            } catch (Exception rollbackException) {
+                logger.error(
+                        "ReserveService.rollbackFieldReservationIfNeeded: Failed to rollback field reservation for event {} segment {} amount {}: {}",
+                        eventID, segmentId, amount, rollbackException.getMessage());
+            }
+        }
+    }
+
+    private boolean hasLotteryCode(String lotteryCode) {
+        return lotteryCode != null && !lotteryCode.isEmpty();
+    }
+
+    private void validateLottery(Event event, String lotteryCode) {
+        if (hasLotteryCode(lotteryCode)) {
+            event.validateLotteryCode(lotteryCode);
+        } else {
+            event.verifyDoesNotHaveLotteryPolicy();
+        }
+    }
+
+    private void useLotteryCodeIfNeeded(Event event, String lotteryCode) {
+        if (hasLotteryCode(lotteryCode)) {
+            event.lotteryUseCode(lotteryCode);
+            eventRepository.save(event);
+        }
+    }
+
+    private void renewLotteryCodeIfNeeded(Event event, String lotteryCode) {
+        if (event != null && hasLotteryCode(lotteryCode)) {
+            event.renewLotteryCode(lotteryCode);
+            eventRepository.save(event);
+        }
+    }
+
+    private String validateUserOrGuestAndGetSubjectId() {
+        // if we do implement error 403 then this if will also disapear, along with the
+        // function
+        if (!Role.SIGNED.equals(RequestContext.getRole()) && !Role.GUEST.equals(RequestContext.getRole()))
+            throw new AuthException("Only users and guests are allowed to perform this operation.");
+
+        return RequestContext.getUserId();
+    }
+}
+===== Order.java =====
+package com.group16b.DomainLayer.Order;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+@Entity
+@Table(name = "orders")
+public class Order {
+ 
+    @Id
+	@GeneratedValue(strategy = GenerationType.UUID)
+    private String orderId;
+ 
+    @Convert(converter = OrderStateConverter.class)
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private OrderState state;
+ 
+    @Column(nullable = false)
+    private final String segmentId;
+ 
+    @ElementCollection
+    @CollectionTable(name = "order_seats", joinColumns = @JoinColumn(name = "order_id"))
+    @Column(name = "seat_id")
+    private List<String> seats;
+ 
+    @Column(nullable = false)
+    private int numOfTickets;
+ 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private final OrderType orderType;
+ 
+    private static int idCounter = 0;
+ 
+    @Column(nullable = false)
+    private double totalOrderprice;
+ 
+    @Column(nullable = false)
+    private final int eventId;
+ 
+    @Column(nullable = false)
+    private final String subjectID;
+ 
+    @Version
+    private long version;
+ 
+    @Column(name = "transaction_id")
+    private Integer transactioId = null;
+ 
+    @Column(name = "external_ticket")
+    private String externalTicket = null;
+
+
+	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
+		this.state = new ActiveOrder();
+		this.seats = new ArrayList<>(seats);
+		this.numOfTickets = seats.size();
+		this.segmentId = segmentId;
+		this.orderType = OrderType.SEAT;
+		this.totalOrderprice = totalPrice;
+		this.eventId = eventId;
+		this.subjectID = subjectID;
+		this.version = 0;
+	}
+	public Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID) {
+		this.state = new ActiveOrder();
+		this.numOfTickets = amount;
+		this.segmentId = segmentId;
+		this.orderType = OrderType.FIELD;
+		this.totalOrderprice = totalPrice;
+		this.eventId = eventId;
+		this.subjectID = subjectID;
+		this.version = 0;
+		this.seats = new ArrayList<>();
+	}
+
+	public Order(Order other) { // deep copy constructor
+		this.orderId = other.orderId;
+		this.state = other.state.copy();
+		this.segmentId = other.segmentId;
+		this.seats = new ArrayList<>(other.seats);
+		this.numOfTickets = other.numOfTickets;
+		this.orderType = other.orderType;
+		this.totalOrderprice = other.totalOrderprice;
+		this.eventId = other.eventId;
+		this.subjectID = other.subjectID;
+		this.version = other.version;
+		this.transactioId=other.transactioId;
+		this.externalTicket=other.externalTicket;
+		
+	}
+
+	public Order(){ //default constructor for JPA
+        this.orderId = null;
+        this.segmentId = null;
+        this.orderType = null;
+        this.eventId = 0;
+        this.subjectID = null;
+	}
+	
+
+
+	public String getOrderId() {
+		return orderId;
+	}
+	public void setId(int id){
+		this.orderId = "order_" + id;
+	}
+	public int getEventId() {
+		return eventId;
+	}
+	public String getSubjectId() {
+		return this.subjectID;
+	}
+
+	public OrderState getState() {
+		return state;
+	}
+
+	public String getSegmentId() {
+		return segmentId;
+	}
+	public long getOrderStartTime() {
+		if (state instanceof ActiveOrder activeOrder) {
+			return activeOrder.getCreationTime();
+		} else {
+			throw new IllegalStateException("Cannot get order start time for a completed or canceled order");
+		}
+	}
+
+	public List<String> getSeats() {
+		if (orderType == OrderType.FIELD) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+		return seats;
+	}
+
+
+	public int getNumOfTickets() {
+		return numOfTickets;
+	}
+
+	public OrderType getOrderType() {
+		return orderType;
+	}
+
+	public Integer getTransactionId()
+	{
+		return transactioId;
+	}
+
+	public String getExternalTicket()
+	{
+		return externalTicket;
+	}
+
+	public void setTransactionId(int transactionId)
+	{
+		this.transactioId=transactionId;
+	}
+
+	public void setExternalTicket(String ticket)
+	{
+		this.externalTicket=ticket;
+	}
+
+	public void verifyTypeSeats(){
+		if (orderType != OrderType.SEAT) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+	}
+	public void verifyTypeField(){
+		if (orderType != OrderType.FIELD) {
+			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
+		}
+	}
+
+	public boolean CompleteOrder() {
+		this.state = state.completeOrder();
+		return true;
+	}
+	public void CancelOrder() {
+		this.state = new CanceledOrder();
+	}
+
+	public double getTotalOrderprice() {
+		return totalOrderprice;
+	}
+
+	
+	public boolean isActive() {
+		if (!state.isActive() && !state.isCompleted()){
+			CancelOrder();
+		}
+		return state.isActive();
+	}
+	public boolean isCompleted() {
+		return state.isCompleted();
+	}
+
+	public void validiteOrderIsActive() {
+		if (!this.isActive()) {
+			throw new IllegalStateException("Order " + this.orderId + " is not active");
+		}
+	}
+
+
+	public boolean isBelongsToSubject(String subjectID) {
+		return this.subjectID.equals(subjectID);
+	}
+
+	public void verifyBelongsToSubject(String subjectID) {
+		if (!this.subjectID.equals(subjectID)){
+			throw new IllegalArgumentException("Order " + this.orderId + " does not belong to subject " + subjectID);
+		}
+	}	
+
+
+	public void updateSeats(List<String> newSeatIds, double newTotalPrice) {
+		if (orderType == OrderType.FIELD) {
+			throw new IllegalStateException("This order is for field tickets, it does not have specific seats.");
+		}
+		if (newSeatIds == null || newSeatIds.isEmpty()) {
+			throw new IllegalArgumentException("New seat IDs list cannot be null or empty");
+		}
+		this.seats = new ArrayList<>(newSeatIds);
+		this.numOfTickets = newSeatIds.size();
+		this.totalOrderprice = newTotalPrice;
+	}
+	public void updateNumOfTickets(int newNumOfTickets, double newTotalPrice) {
+		if (orderType == OrderType.SEAT) {
+			throw new IllegalStateException("This order is for seat tickets, it must have specific seats.");
+		}
+		if (newNumOfTickets <= 0) {
+			throw new IllegalArgumentException("New number of tickets must be greater than zero");
+		}
+		this.numOfTickets = newNumOfTickets;
+		this.totalOrderprice = newTotalPrice;
+	}
+
+	public long getVersion()
+    {
+        return version;
+    }
+    public void setVersion(long version)
+    {
+        this.version=version;
+    }
+
+	public void incrementVersion() {
+		this.version++;
+	}
+	
+
+}
+
+===== IOrderRepository.java =====
+package com.group16b.DomainLayer.Order;
+
+import java.util.List;
+
+import com.group16b.DomainLayer.Interfaces.IRepository;
+
+public interface IOrderRepository extends IRepository<Order> {
+    List<Order> getBySubjectId(String subjectId);
+    List<Order> getCompletedByEventIdSeatIds(int eventId, String segmentId, List<String> seatIds);
+    List<Order> getCompletedByEventIdField(int eventId, String segmentId);
+    List<Order> getByEventId(int eventId);
+    List<Order> findByUserIdAndActiveFalse(String userId);
+    Order findFirstByUserIdAndActiveTrue(String userId);
+    }
+
+===== OrderRepository.java =====
+package com.group16b.InfrastructureLayer.Database;
+
+import java.util.List;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.group16b.DomainLayer.Order.Order;
+
+@Repository
+public interface OrderRepository extends JpaRepository<Order, String> {
+
+    // Spring auto-generates these queries
+    List<Order> findByEventId(int eventId);
+    List<Order> findBySubjectID(String subjectID);
+
+    @Query("SELECT o FROM Order o WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND o.state LIKE '%Completed%'")
+    List<Order> getCompletedByEventIdField(@Param("eventId") int eventId, @Param("segmentId") String segmentId);
+
+    @Query("SELECT o FROM Order o JOIN o.seats s WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND s IN :seatIds AND o.state LIKE '%Completed%'")
+    List<Order> getCompletedByEventIdSeatIds(@Param("eventId") int eventId, @Param("segmentId") String segmentId, @Param("seatIds") List<String> seatIds);
+
+    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state LIKE '%ActiveOrder%'")
+    List<Order> findBySubjectIDAndActiveTrue(@Param("subjectID") String subjectID);
+
+    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state NOT LIKE '%ActiveOrder%'")
+    List<Order> findBySubjectIDAndActiveFalse(@Param("subjectID") String subjectID);
+}
+===== OrderRepositoryAdapter.java =====
+package com.group16b.InfrastructureLayer.Adapters;
+
+
+import java.util.List;
+
+import org.springframework.context.annotation.Primary;
+import org.springframework.stereotype.Component;
+
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Order.Order;
+import com.group16b.InfrastructureLayer.Database.OrderRepository;
+
+@Component
+@Primary
+public class OrderRepositoryAdapter implements IOrderRepository {
+
+    private final OrderRepository springRepo;
+
+    public OrderRepositoryAdapter(OrderRepository springRepo) {
+        this.springRepo = springRepo;
+    }
+
+    @Override
+    public List<Order> getAll() {
+        return springRepo.findAll();
+    }
+
+    @Override
+    public Order findByID(String id) {
+        return springRepo.findById(id).orElseThrow(() -> 
+            new IllegalArgumentException("Order with ID " + id + " not found.")
+        );
+    }
+
+    @Override
+    public void save(Order order) {
+        springRepo.save(order);
+    }
+
+    @Override
+    public void delete(String id) {
+        springRepo.deleteById(id);
+    }
+
+    @Override
+    public List<Order> getByEventId(int eventId) {
+        return springRepo.findByEventId(eventId);
+    }
+
+    @Override
+    public List<Order> getBySubjectId(String subjectId) {
+        return springRepo.findBySubjectID(subjectId);
+    }
+
+    @Override
+    public List<Order> getCompletedByEventIdSeatIds(int eventId, String segmentId, List<String> seatIds) {
+        return springRepo.getCompletedByEventIdSeatIds(eventId, segmentId, seatIds);
+    }
+
+    @Override
+    public List<Order> getCompletedByEventIdField(int eventId, String segmentId) {
+        return springRepo.getCompletedByEventIdField(eventId, segmentId);
+    }
+
+    @Override
+    public Order findFirstByUserIdAndActiveTrue(String userId) {
+        List<Order> orders = springRepo.findBySubjectIDAndActiveTrue(userId);
+        return orders.isEmpty() ? null : orders.get(0);
+    }
+
+    @Override
+    public List<Order> findByUserIdAndActiveFalse(String userId) {
+        return springRepo.findBySubjectIDAndActiveFalse(userId);
+    }
+}
+
+===== Venue.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.group16b.ApplicationLayer.Records.ChosenSeatingSegRecord;
+import com.group16b.ApplicationLayer.Records.EntranceRecord;
+import com.group16b.ApplicationLayer.Records.FieldSegRecord;
+import com.group16b.ApplicationLayer.Records.StageRecord;
+import com.group16b.ApplicationLayer.Records.VenueGridRecord;
+import com.group16b.DomainLayer.Order.OrderType;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
+
+
+@Entity
+@Table(name = "venues")
+public class Venue {
+
+    @Id
+    private String id;
+    private int companyID;
+    private String name;
+
+    @Version // Automatically tracks updates for safe concurrent writes
+    private long version;
+
+    @Embedded
+	@AttributeOverride(name = "name", column = @Column(name = "location_name"))
+    private Location location;
+
+    @Embedded
+    private VenueGrid grid;
+
+    private int IDForSeg = 0;
+
+
+    // Map Key points directly to the 'segmentID' property inside Segment
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "venue_id")
+    @MapKey(name = "segmentID")
+    private Map<String, Segment> segments;
+
+    // Map Key points directly to the auto-generated database ID inside EventSchedule
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "venue_id")
+    @MapKey(name = "dbId")
+    private Map<Integer, EventSchedule> scheduledEvents;
+
+
+
+    // Maps embeddable components into a separate, clean collection storage table
+    @ElementCollection
+    @CollectionTable(name = "venue_stages", joinColumns = @JoinColumn(name = "venue_id"))
+    @MapKeyColumn(name = "stage_map_key") // Stores the Map's String key
+    private Map<String, Stage> stages;
+
+    @ElementCollection
+    @CollectionTable(name = "venue_entrances", joinColumns = @JoinColumn(name = "venue_id"))
+    @MapKeyColumn(name = "entrance_map_key") // Stores the Map's String key
+    private Map<String, Entrance> entrances;
+
+	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances, int companyID) {
+        this.name = name;
+        this.location = location;
+        this.segments = segments;
+        this.scheduledEvents = new HashMap<>();
+        this.grid = grid;
+        this.stages = stages;
+        this.entrances = entrances;
+        this.id = id;
+        this.companyID = companyID;
+    }
+
+	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg, String id, VenueGridRecord grid, List<StageRecord> stages, List<EntranceRecord> entrances, int companyID) {
+        this.name = name;
+        this.location = location;
+        this.segments = new HashMap<>();
+        for (FieldSegRecord fsr : fieldSeg) {
+            this.segments.put(fsr.segmentID(), new FieldSeg(fsr.segmentID(), fsr.size(), new GridRectangle(fsr.area())));
+        }
+        for (ChosenSeatingSegRecord cssr : seatSeg) {
+            this.segments.put(cssr.segmentID(), new ChosenSeatingSeg(cssr.segmentID(), cssr.seats(), new GridRectangle(cssr.area())));
+        }
+        this.scheduledEvents = new HashMap<>();
+        this.grid = new VenueGrid(grid.rows(), grid.columns());
+        this.stages = new HashMap<>();
+        for(StageRecord record: stages){
+            this.stages.put(record.stageID(), new Stage(record.stageID(), new GridRectangle(record.area())));
+        }
+        this.entrances = new HashMap<>();
+        for(EntranceRecord record: entrances){
+            this.entrances.put(record.entranceID(), new Entrance(record.entranceID(), new GridRectangle(record.area())));
+        }
+        this.id = id;
+        this.companyID = companyID;
+    }
+	protected Venue() {
+		this.location = null;
+		this.segments = null;
+		this.stages = null;
+		this.entrances = null;
+		this.scheduledEvents = null;
+		this.id = null;
+        this.companyID = 0;
+	}
+	
+	public Venue(Venue other) {
+        this.name = other.getName();
+        this.location = other.getLocation();
+
+        this.segments = new HashMap<>();
+        for (Map.Entry<String, Segment> entry : other.getSegments().entrySet()) {
+            Segment origSeg = entry.getValue();
+            if (origSeg instanceof FieldSeg fieldSeg) {
+                this.segments.put(entry.getKey(), new FieldSeg(fieldSeg)); 
+            } else if (origSeg instanceof ChosenSeatingSeg seatingSeg) {
+                this.segments.put(entry.getKey(), new ChosenSeatingSeg(seatingSeg));
+            }
+        }
+        
+
+        this.scheduledEvents = new HashMap<>();
+        for (Map.Entry<Integer, EventSchedule> entry : other.getScheduledEvents().entrySet()) {
+            this.scheduledEvents.put(entry.getKey(), new EventSchedule(entry.getValue().getStartTime(), entry.getValue().getEndTime())); 
+        }
+
+        this.grid = new VenueGrid(other.getGrid().getRows(), other.getGrid().getColumns());
+        this.stages = new HashMap<>(other.getStages());
+        this.entrances = new HashMap<>(other.getEntrances());
+
+        this.IDForSeg = other.getIDForSeg();
+        this.version = other.getVersion();
+        this.id = other.getID();
+        this.companyID = other.getCompanyID();
+    }
+
+	private int getIDForSeg(){
+		return IDForSeg;
+	}
+    public int getCompanyID() {
+        return companyID;
+    }
+
+	public Map<String, Segment> getSegments(){
+		return segments;
+	}
+    public void addSeatSegment(String segmentID, Map<String, Seat> seats, GridRectangle area) {
+        if (segments.containsKey(segmentID)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " already exists in the venue!");
+        }
+        segments.put(segmentID, new ChosenSeatingSeg(segmentID, seats, area));
+    }
+    public void addFieldSegment(String segmentID, int size, GridRectangle area) {
+        if (segments.containsKey(segmentID)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " already exists in the venue!");
+        }
+        segments.put(segmentID, new FieldSeg(segmentID, size, area));
+    }
+        
+
+    public boolean hasSegment(String segmentID) {
+        return segments.containsKey(segmentID);
+    }
+
+	public Map<Integer, EventSchedule> getScheduledEvents(){
+		return scheduledEvents;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String newName) {
+		name = newName;
+	}
+
+	public Location getLocation() {
+		return location;
+	}
+
+	public Segment getSegmentByID(String id) {
+		return segments.get(id);
+	}
+    public String getSegmentTypeByID(String segmentID) {
+        Segment segment = segments.get(segmentID);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+        return segment.getSegmentType();
+    }
+    public int getReservedStockBySegmentEventField(int eventID, String segmentID) {
+        Segment segment = segments.get(segmentID);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+        if (segment instanceof FieldSeg fieldSeg) {
+            return fieldSeg.getFieldSize() - fieldSeg.getStock(eventID); // amount already sold
+        }
+        throw new IllegalArgumentException("Segment with ID " + segmentID + " is not a field segment");
+    }
+    public void setStockForEvent(int eventID, Map.Entry<String, Integer> fieldSegments) {
+        Segment currSeg = getSegmentByID(fieldSegments.getKey());
+        if (currSeg == null) {
+            throw new IllegalArgumentException("Segment with ID: " + fieldSegments.getKey() + " not found in venue !");
+        }
+        if (!currSeg.getSegmentType().equals("F")) {
+            throw new IllegalArgumentException("Segment with ID: " + fieldSegments.getKey() + " is not a field segment !");
+        }
+        FieldSeg fieldSeg = (FieldSeg) currSeg;
+        fieldSeg.setStockForEvent(eventID, fieldSegments.getValue());
+    }
+    public List<String> getStockRefundForEvent(int eventID,String segmentID, List<String> newSeatsIDs) {
+        Segment segment = segments.get(segmentID);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+        if (segment instanceof ChosenSeatingSeg seatingSeg) {
+            return seatingSeg.getStockRefundForEvent(eventID, newSeatsIDs);
+        }
+        throw new IllegalArgumentException("Segment with ID " + segmentID + " is not a seat segment");
+    }
+	public Integer getEventIDByLocalDateTime(LocalDateTime targetDate) {
+        if (targetDate == null) return null;
+
+        for (Map.Entry<Integer, EventSchedule> entry : scheduledEvents.entrySet()) {
+            EventSchedule schedule = entry.getValue();
+            
+            if (!targetDate.isBefore(schedule.getStartTime()) && !targetDate.isAfter(schedule.getEndTime())) {
+                return entry.getKey();
+            }
+        }
+        
+        // no event is happening at this specific time
+        return null; 
+    }
+
+	public EventSchedule getEventSchedule(int eventID) {
+        return scheduledEvents.get(eventID);
+    }
+
+
+	public synchronized void bookEvent(LocalDateTime startTime, LocalDateTime endTime, int eventID) {
+		if (!startTime.isBefore(endTime)) {
+            throw new IllegalArgumentException("Event start time must be before end time!");
+        }
+
+		// initialize stock
+		// use start time n end time for event
+		if (scheduledEvents.containsKey(eventID)) {
+            throw new IllegalArgumentException("Venue is already reserved for this event ID!");
+        }
+
+        EventSchedule newSchedule = new EventSchedule(startTime, endTime);
+        for (EventSchedule existingSchedule : scheduledEvents.values()) {
+            if (newSchedule.overlapsWith(existingSchedule)) {
+                throw new IllegalArgumentException(
+                    "Venue is already booked during this time frame! Conflicts with an existing event."
+                );
+            }
+        }
+
+        scheduledEvents.put(eventID, new EventSchedule(startTime, endTime));
+
+        for (Segment segment : segments.values()) {
+            if (segment instanceof FieldSeg fieldSeg) {
+                fieldSeg.addEvent(eventID);
+            } else if (segment instanceof ChosenSeatingSeg seatingSeg) {
+                for (Seat seat : seatingSeg.seats.values()) {
+                    seat.addEvent(eventID);
+                }
+            }
+        }
+    }
+	public OrderType segmentType(String segmentId) {
+		Segment segment = segments.get(segmentId);
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+		}
+		if (segment instanceof ChosenSeatingSeg) {
+			return OrderType.SEAT;
+		} else if (segment instanceof FieldSeg) {
+			return OrderType.FIELD;
+		} else {
+			throw new IllegalArgumentException("Unknown segment type for segment ID " + segmentId);
+		}
+	}
+	
+	public void cancelEvent(LocalDateTime starTime, int eventID) {
+		if (scheduledEvents.remove(eventID) == null) {
+			throw new IllegalArgumentException("Venue is not reserved for this event at requested date !");
+		}
+	}
+	public void cancelSeatReservation(String segmentId, List<String> seatIds, int eventID) {
+		this.freeTickets(segmentId, seatIds, 0, eventID);
+	}
+	public void cancelFieldReservation(String segmentId, int quantity, int eventID) {
+		this.freeTickets(segmentId, null, quantity, eventID);
+	}
+	private void freeTickets(String segmentId, List<String> seatIds, int quantity, int eventID) {
+		Segment segment = segments.get(segmentId);
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+		}
+		if (segment instanceof ChosenSeatingSeg) {
+			this.freeSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
+		} else if (segment instanceof FieldSeg) {
+			this.freeSeats(ReservationRequest.forField(eventID, quantity, segmentId));
+		} else {
+			throw new IllegalArgumentException("Unknown segment type for segment ID " + segmentId);
+		}
+	}
+
+    public void reserveTickets(String segmentId, List<String> seatIds, int eventID) {
+        this.reserveSeats(ReservationRequest.forSeats(eventID, seatIds, segmentId));
+    }
+
+    public void reserveTickets(String segmentId, int quantity, int eventID) {
+        this.reserveSeats(ReservationRequest.forField(eventID, quantity, segmentId));
+    }
+
+	public void reserveSeats(ReservationRequest request) {
+		Segment segment = segments.get(request.getSegmentId());
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
+		}
+		segment.reserve(request);
+	}
+	
+	public void freeSeats(ReservationRequest request) {
+		Segment segment = segments.get(request.getSegmentId());
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + request.getSegmentId() + " not found");
+		}
+		segment.cancelReservation(request);
+	}
+
+	public double getPriceForSegment(String segmentId, int eventID) {
+		Segment segment = segments.get(segmentId);
+		if (segment == null) {
+			throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+		}
+		return segment.getPrice(eventID);
+	}
+    public void addPriceToSegment(String segmentId, double price, int eventID) {
+        Segment segment = segments.get(segmentId);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+        segment.setPrice(eventID, price);
+    }
+	
+	public String getID(){
+		return id;
+	}
+
+	public long getVersion(){
+		return version;
+	}
+
+	public void setVersion(long version){
+		this.version = version;
+	}
+
+    public void setNewSeatingStock(String segmentId, List<String> newSeatsIDs) {
+        Segment segment = segments.get(segmentId);
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+        if (segment instanceof ChosenSeatingSeg chosenSeatingSeg) {
+            chosenSeatingSeg.setNewStock(newSeatsIDs);
+        } else {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a chosen seating segment");
+        }
+    }
+
+    public void setNewFieldStock(String segmentId, int newSize, List<Integer> eventIDsToUpdate) {
+
+        Segment segment = segments.get(segmentId);
+
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+
+        if (!(segment instanceof FieldSeg fieldSeg)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a field segment");
+        }
+
+        int oldSize = fieldSeg.getFieldSize();
+
+        for (Integer eventID : eventIDsToUpdate) {
+            int oldFreeStock = fieldSeg.getStock(eventID);
+            int reserved = oldSize - oldFreeStock;
+
+            if (reserved > newSize) {
+                throw new IllegalArgumentException(
+                        "Cannot set field segment " + segmentId +
+                        " size to " + newSize +
+                        " because event " + eventID +
+                        " has " + reserved + " reserved tickets."
+                );
+            }
+
+            fieldSeg.setStockForEvent(eventID, newSize - reserved);
+        }
+
+        fieldSeg.setSize(newSize);
+    }
+    public void addChosenSeatingSegment(ChosenSeatingSegRecord seatSeg) {
+        this.segments.put(seatSeg.segmentID(), new ChosenSeatingSeg(seatSeg.segmentID(), seatSeg.seats(), new GridRectangle(seatSeg.area())));
+    }
+    public void addFieldSegment(FieldSegRecord fieldSeg) {
+        this.segments.put(fieldSeg.segmentID(), new FieldSeg(fieldSeg.segmentID(), fieldSeg.size(), new GridRectangle(fieldSeg.area())));
+    }
+    public void validateCompanyID(int companyID) {
+        if (this.companyID != companyID) {
+            throw new IllegalArgumentException("Company ID mismatch: Venue does not belong to the specified company.");
+        }
+    }
+    
+
+    public void removeSegment(String segmentID) {
+        if (!segments.containsKey(segmentID)) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+
+        segments.remove(segmentID);
+    }
+
+    public void replaceStages(List<StageRecord> stageRecords) {
+        stages.clear();
+
+        for (StageRecord record : stageRecords) {
+            stages.put(record.stageID(), new Stage(record.stageID(), new GridRectangle(record.area())));
+        }
+    }
+
+    public void replaceEntrances(List<EntranceRecord> entranceRecords) {
+        entrances.clear();
+
+        for (EntranceRecord record : entranceRecords) {
+            entrances.put(record.entranceID(), new Entrance(record.entranceID(), new GridRectangle(record.area())));
+        }
+    }
+
+    public void replaceGrid(VenueGridRecord gridRecord) {
+        this.grid = new VenueGrid(gridRecord.rows(), gridRecord.columns());
+    }
+    public void initializeSegmentForEvent(String segmentID, int eventID) {
+        Segment segment = segments.get(segmentID);
+
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentID + " not found");
+        }
+
+        if (segment instanceof FieldSeg fieldSeg) {
+            fieldSeg.addEvent(eventID);
+            return;
+        }
+
+        if (segment instanceof ChosenSeatingSeg seatingSeg) {
+            for (Seat seat : seatingSeg.seats.values()) {
+                seat.addEvent(eventID);
+            }
+            return;
+        }
+
+        throw new IllegalArgumentException("Unknown segment type for segment ID " + segmentID);
+    }
+    public void setNewSeatingStock(
+            String segmentId,
+            List<String> newSeatsIDs,
+            List<Integer> eventIDsToInitialize
+    ) {
+        Segment segment = segments.get(segmentId);
+
+        if (segment == null) {
+            throw new IllegalArgumentException("Segment with ID " + segmentId + " not found");
+        }
+
+        if (segment instanceof ChosenSeatingSeg chosenSeatingSeg) {
+            chosenSeatingSeg.setNewStock(newSeatsIDs, eventIDsToInitialize);
+            return;
+        }
+
+        throw new IllegalArgumentException("Segment with ID " + segmentId + " is not a chosen seating segment");
+    }
+
+	public VenueGrid getGrid() { return grid; }
+    public Map<String, Stage> getStages() { return stages; }
+    public Map<String, Entrance> getEntrances() { return entrances; }
+}
+
+===== ChosenSeatingSeg.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.group16b.ApplicationLayer.Records.SeatRecord;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKey;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "chosen_seating_segments")
+public class ChosenSeatingSeg extends Segment {
+	private int IDforSeat = 0;
+
+	@OneToMany(mappedBy = "segment", cascade = CascadeType.ALL, orphanRemoval = true)
+	@MapKey(name = "id.seatId")
+	protected Map<String, Seat> seats = new HashMap<>();
+
+	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
+		super(segmentID, area);
+		this.seats = new ConcurrentHashMap<>();
+
+		for (Seat seat : seats.values()) {
+			addSeat(seat);
+		}
+	}
+
+	public ChosenSeatingSeg() {
+		// Default constructor for JPA
+	}
+
+	public ChosenSeatingSeg(String segmentID, List<SeatRecord> seats, GridRectangle area) {
+		super(segmentID, area);
+		this.seats = new ConcurrentHashMap<>();
+		for (SeatRecord sr : seats) {
+			addSeat(new Seat(sr.row(), sr.number()));
+		}
+	}
+
+	public ChosenSeatingSeg(ChosenSeatingSeg other) {
+		super(other);
+		this.IDforSeat = other.IDforSeat;
+		this.seats = new ConcurrentHashMap<>();
+		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
+			addSeat(new Seat(entry.getValue()));
+		}
+	}
+
+	@Override
+	public String getSegmentType() {
+		return "S";
+	}
+
+	@Override
+	public void reserve(ReservationRequest request) {
+		reserveSeats(request.getSeatIds(), request.getEventID());
+	}
+
+	@Override
+	public void cancelReservation(ReservationRequest request) {
+		returnSeats(request.getSeatIds(), request.getEventID());
+	}
+
+	void reserveSeats(List<String> seatIds, int eventID) {
+		List<Seat> reservedSeats = new java.util.ArrayList<>();
+		for (String seatId : seatIds) {
+			Seat seat = seats.get(seatId);
+			if (seat == null) {
+				for (Seat _seat : reservedSeats) {
+					_seat.returnSeat(eventID);
+				}
+				throw new IllegalArgumentException("Seat with ID " + seatId + " not found");
+			}
+			if (!seat.reserveSeat(eventID)) {
+				for (Seat _seat : reservedSeats) {
+					_seat.returnSeat(eventID);
+				}
+				throw new IllegalArgumentException("Failed to reserve seat with ID " + seatId);
+			}
+			reservedSeats.add(seat);
+		}
+	}
+
+	public void returnSeats(List<String> seatIds, int eventID) {
+		for (String seatId : seatIds) {
+			Seat seat = seats.get(seatId);
+			if (seat != null) {
+				seat.returnSeat(eventID);
+			}
+		}
+	}
+
+	private List<Seat> getSeatsInThisField(int eventID) {
+		List<Seat> list = new LinkedList<>();
+		for (Seat seat : seats.values()) {
+			if (seat.isSeatReserved(eventID)) {
+				list.add(seat);
+			}
+		}
+		return list;
+	}
+
+	public void setNewStock(List<String> newSeatsIDs, List<Integer> eventIDsToInitialize) {
+		List<String> refundSeatsIDs = new LinkedList<>();
+
+		for (String oldSeatID : this.seats.keySet()) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+
+		List<String> addSeatsIDs = new LinkedList<>();
+		for (String newSeatID : newSeatsIDs) {
+			if (!this.seats.keySet().contains(newSeatID)) {
+				addSeatsIDs.add(newSeatID);
+			}
+		}
+		for (String addSeatID : addSeatsIDs) {
+			validateSeatIDFormat(addSeatID);
+		}
+		for (String addSeatID : addSeatsIDs) {
+			String[] parts = addSeatID.split("-");
+			int row = Integer.parseInt(parts[0]);
+			int column = Integer.parseInt(parts[1]);
+			Seat newSeat = new Seat(row, column);
+
+			for (Integer eventID : eventIDsToInitialize) {
+				newSeat.addEvent(eventID);
+			}
+
+			addSeat(newSeat);
+		}
+
+		for (String refundSeatID : refundSeatsIDs) {
+			seats.remove(refundSeatID);
+		}
+	}
+
+	public void setNewStock(List<String> newSeatsIDs) {
+		// cut so that we have the list of seats that are to be deleted. meaning exsist
+		// in the old list but not in the new one. call it refund list
+		List<String> refundSeatsIDs = new LinkedList<>();
+		for (String oldSeatID : this.seats.keySet()) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+		// cut so that we have the list of seats that are to be added. meaning exsist in
+		// the new list but not in the old one. call it add list
+		List<String> addSeatsIDs = new LinkedList<>();
+		for (String newSeatID : newSeatsIDs) {
+			if (!this.seats.keySet().contains(newSeatID)) {
+				addSeatsIDs.add(newSeatID);
+			}
+		}
+		// cheacking fromat before adding the new seats to the segment
+		for (String addSeatID : addSeatsIDs) {
+			validateSeatIDFormat(addSeatID);
+		}
+		// add the new seats to the segment
+
+		for (String addSeatID : addSeatsIDs) {
+			String[] parts = addSeatID.split("-");
+
+			int row = Integer.parseInt(parts[0]);
+			int column = Integer.parseInt(parts[1]);
+			addSeat(new Seat(row, column));
+		}
+
+		for (String refundSeatID : refundSeatsIDs) {
+			seats.remove(refundSeatID);
+		}
+	}
+
+	public List<String> getStockRefundForEvent(int eventID, List<String> newSeatsIDs) {
+		List<Seat> seatsInEvent = getSeatsInThisField(eventID);
+
+		// get exsisting seats for segment
+		List<String> oldSeatsIDs = new LinkedList<>();
+		for (Seat seat : seatsInEvent) {
+			oldSeatsIDs.add(seat.getSeatId());
+		}
+		// cut so that we have the list of seats that are to be deleted. meaning exsist
+		// in the old list but not in the new one. call it refund list
+		List<String> refundSeatsIDs = new LinkedList<>();
+		for (String oldSeatID : oldSeatsIDs) {
+			if (!newSeatsIDs.contains(oldSeatID)) {
+				refundSeatsIDs.add(oldSeatID);
+			}
+		}
+
+		// remove refund seats from the segment
+		List<String> refundSeats = new LinkedList<>();
+		for (String refundSeatID : refundSeatsIDs) {
+			Seat seat = seats.get(refundSeatID);
+			if (seat == null) {
+				throw new IllegalArgumentException("Seat with ID " + refundSeatID + " not found for refund");
+			}
+			if (seat.isSeatReserved(eventID)) {
+				refundSeats.add(refundSeatID);
+			}
+		}
+
+		return refundSeats;
+
+	}
+
+	private void validateSeatIDFormat(String seatID) {
+		String[] parts = seatID.split("-");
+
+		if (parts.length != 2) {
+			throw new IllegalArgumentException("Invalid seat ID format: " + seatID);
+		}
+
+		try {
+			Integer.parseInt(parts[0]);
+			Integer.parseInt(parts[1]);
+		} catch (NumberFormatException e) {
+			throw new IllegalArgumentException("Invalid seat ID format: " + seatID);
+		}
+	}
+
+	@Override
+	public Map<String, Seat> getMap() {
+		return seats;
+	}
+
+	@Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof ChosenSeatingSeg other)) return false;
+        return segmentID==other.segmentID;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(segmentID);
+    }
+
+	private void addSeat(Seat seat) {
+    	seat.setSegment(this);
+    	this.seats.put(seat.getSeatId(), seat);
+	}
+}
+
+===== FieldSeg.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "field_segments")
+public class FieldSeg extends Segment {
+	private int size;
+
+    @ElementCollection
+    @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segmentID"))
+    @MapKeyColumn(name = "stock_key")
+    @Column(name = "stock_value")
+	private Map<Integer, Integer> stock=new HashMap<>();
+
+	public FieldSeg(String segID, int size, GridRectangle area) {
+		super(segID, area);
+		this.size = size;
+	}
+
+	public FieldSeg() {
+		// Default constructor for JPA
+		this.size = 0;
+	}
+	
+	public FieldSeg(FieldSeg other) {
+		super(other);
+		this.size = other.size;
+		this.stock = new HashMap<>(other.stock);
+	}
+	public int getFieldSize() {
+		return size;
+	}
+
+	public int getStock(int eventID) {
+		return stock.get(eventID);
+	}
+
+	protected void addStock(int eventID, Integer quantity) {
+		Integer currQty = stock.get(eventID);
+		if (currQty == null) {
+			throw new IllegalArgumentException("this event is not in this venue.");
+		}
+		if (currQty + quantity > size) {
+			throw new IllegalArgumentException("Field is not big enough !");
+		}
+		stock.put(eventID, currQty + quantity);
+	}
+
+
+	public void setStockForEvent(int eventID, int newStock) {
+		if (!this.stock.containsKey(eventID)) {
+			throw new IllegalArgumentException("cannot modify segments unrelated to event");
+		}
+		stock.put(eventID, newStock);// maybe add a maximum number?
+	}
+
+	protected void setSize(int newSize) {
+		if (newSize < 0) {
+			throw new IllegalArgumentException("Size cannot be negative");
+		}
+		this.size = newSize;
+	}
+
+	protected void removeStock(int eventID, Integer quantity) {
+		Integer currQty = stock.get(eventID);
+		if (currQty == null) {
+			throw new IllegalArgumentException("this event is not in this venue.");
+		}
+		if (currQty - quantity < 0) {
+			throw new IllegalArgumentException("Not enough tickets left in stock !");
+		}
+		stock.put(eventID, currQty - quantity);
+	}
+
+	@Override
+	public void reserve(ReservationRequest request) {
+		removeStock(request.getEventID(), request.getQuantity());
+	}
+
+	@Override
+	public void cancelReservation(ReservationRequest request) {
+		addStock(request.getEventID(), request.getQuantity());
+	}
+
+	protected void addEvent(int eventID) {
+		stock.putIfAbsent(eventID, size);
+	}
+
+	@Override
+	public String getSegmentType() {
+		return "F";
+	}
+
+	@Override
+	public Map<Integer, Integer> getMap() {
+		return stock;
+	}
+}
+
+===== Segment.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.AttributeOverrides;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.Table;
+
+@Entity
+@Inheritance(strategy = jakarta.persistence.InheritanceType.JOINED)
+@Table(name = "segments")
+abstract public class Segment {
+	@Id
+	protected String segmentID;
+
+	@ElementCollection
+	@CollectionTable(name = "segment_event_prices", joinColumns = @JoinColumn(name = "segment_id"))
+	@MapKeyColumn(name = "event_id")
+	@Column(name = "price")
+	protected Map<Integer, Double> eventPrices = new HashMap<>();
+
+	@Embedded
+	@AttributeOverrides({
+			@AttributeOverride(name = "startRow", column = @Column(name = "seg_startRow")),
+			@AttributeOverride(name = "startColumn", column = @Column(name = "seg_startColumn")),
+			@AttributeOverride(name = "rowCount", column = @Column(name = "seg_rowCount")),
+			@AttributeOverride(name = "columnCount", column = @Column(name = "seg_columnCount"))
+	})
+	protected GridRectangle area;
+
+	public Segment(String segmentID, GridRectangle area) {
+		this.segmentID = segmentID;
+		this.area = area;
+	}
+
+	public Segment(Segment other) {
+		this.segmentID = other.segmentID;
+		this.area = other.area;
+		this.eventPrices = new HashMap<>(other.eventPrices);
+	}
+
+	public Segment() {
+		// Default constructor for JPA
+	}
+
+	public String getSegmentID() {
+		return segmentID;
+	}
+
+	public GridRectangle getArea() {
+		return area;
+	}
+
+	public Map<Integer, Double> getEventPrices() {
+		return eventPrices;
+	}
+
+	public double getPrice(int eventID) {
+		validateEventId(eventID);
+		return eventPrices.getOrDefault(eventID, 0.0);
+	}
+
+	public void setPrice(int eventID, double price) {
+		validateEventId(eventID);
+		if (price <= 0)
+			throw new IllegalArgumentException("price must be positive");
+		eventPrices.put(eventID, price);
+	}
+
+	public abstract void reserve(ReservationRequest request);
+
+	public abstract void cancelReservation(ReservationRequest request);
+
+	public abstract String getSegmentType();
+
+	public abstract Map<?, ?> getMap();
+
+	protected void validateEventId(int eventID) {
+		if (eventID <= 0)
+			throw new IllegalArgumentException("Invalid event id: " + eventID);
+	}
+
+}
+
+===== Seat.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "seats")
+public class Seat {
+
+    @EmbeddedId
+    private SeatId id;
+
+    @MapsId("segmentId")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "segment_id", referencedColumnName = "segmentID")
+    private ChosenSeatingSeg segment;
+
+    @Column(name = "seat_row")
+    private int row;
+
+    @Column(name = "seat_number")
+    private int number;
+
+    @ElementCollection
+    @CollectionTable(
+        name = "seat_stock",
+        joinColumns = {
+            @JoinColumn(name = "seat_id", referencedColumnName = "seat_id"),
+            @JoinColumn(name = "segment_id", referencedColumnName = "segment_id")
+        }
+    )
+    @MapKeyColumn(name = "event_id")
+    @Column(name = "is_reserved")
+    private Map<Integer, Boolean> stock = new HashMap<>();
+
+
+	public Seat(int row, int number) {
+		String seatId = row + "-" + number;
+		this.id = new SeatId(seatId, null);
+		this.row = row;
+		this.number = number;
+		this.stock = new HashMap<>();
+	}
+
+	public Seat() {
+		this.stock = new HashMap<>();
+	}
+
+	public Seat(Seat other) {
+		this.id = new SeatId(other.getSeatId(), null);
+		this.row = other.row;
+		this.number = other.number;
+		this.stock = new HashMap<>(other.stock);
+	}
+
+	public SeatId getId() {
+		return id;
+	}
+
+	public String getSeatId() {
+		return id != null ? id.getSeatId() : null;
+	}
+
+	public String getSegmentId() {
+		return id != null ? id.getSegmentId() : null;
+	}
+
+	public ChosenSeatingSeg getSegment() {
+		return segment;
+	}
+
+	public void setSegment(ChosenSeatingSeg segment) {
+		this.segment = segment;
+
+		if (this.id == null) {
+			this.id = new SeatId();
+		}
+
+		this.id.setSeatId(row + "-" + number);
+		this.id.setSegmentId(segment.getSegmentID());
+	}
+
+
+	public int getRow() {
+		return row;
+	}
+
+	public int getNumber() {
+		return number;
+	}
+
+	public boolean getStock(Integer eventID) {
+		return stock.get(eventID);
+	}
+
+	public boolean reserveSeat(int eventID) {
+		Boolean reserved = stock.get(eventID);
+		if (reserved == null) {
+			throw new IllegalArgumentException("this event is not in this venue.");
+		}
+		if (reserved) {
+			return false;
+		}
+		stock.put(eventID, true);
+		return true;
+	}
+
+	public boolean isSeatReserved(int eventID) {
+		Boolean reserved = stock.get(eventID);
+		if (reserved == null) {
+			throw new IllegalArgumentException("this event is not in this venue.");
+		}
+		return reserved;
+	}
+
+	public void returnSeat(int eventID) {
+		Boolean reserved = stock.get(eventID);
+		if (reserved == null) {
+			throw new IllegalArgumentException("this event is not in this venue.");
+		}
+		if (!reserved) {
+			throw new IllegalArgumentException("Seat is already free !");
+		}
+		stock.put(eventID, false);
+	}
+
+	public void addEvent(int eventID) {
+		stock.putIfAbsent(eventID, false);
+	}
+
+
+	public Map<Integer, Boolean> getStock() {
+		return stock;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Seat other)) return false;
+		return Objects.equals(id, other.id);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
+	}
+}
+===== SeatId.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.io.Serializable;
+import java.util.Objects;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+
+@Embeddable
+public class SeatId implements Serializable {
+
+    @Column(name = "seat_id")
+    private String seatId;
+
+    @Column(name = "segment_id")
+    private String segmentId;
+
+    public SeatId() {}
+
+    public SeatId(String seatId, String segmentId) {
+        this.seatId = seatId;
+        this.segmentId = segmentId;
+    }
+
+    public String getSeatId() {
+        return seatId;
+    }
+
+    public void setSeatId(String seatId) {
+        this.seatId = seatId;
+    }
+
+    public String getSegmentId() {
+        return segmentId;
+    }
+
+    public void setSegmentId(String segmentId) {
+        this.segmentId = segmentId;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof SeatId other)) return false;
+        return Objects.equals(seatId, other.seatId)
+                && Objects.equals(segmentId, other.segmentId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(seatId, segmentId);
+    }
+}
+===== ReservationRequest.java =====
+package com.group16b.DomainLayer.Venue;
+
+import java.util.List;
+
+public class ReservationRequest {
+    private final int eventID;
+    private final List<String> seatIds;
+    private final Integer quantity;
+    private final String segmentId;
+
+    private ReservationRequest(int eventID, List<String> seatIds, Integer quantity, String segmentId) {
+        this.eventID = eventID;
+        this.seatIds = seatIds;
+        this.quantity = quantity;
+        this.segmentId = segmentId;
+    }
+
+    public static ReservationRequest forSeats(int eventID, List<String> seatIds, String segmentId) {
+        return new ReservationRequest(eventID, seatIds, null, segmentId);
+    }
+
+    public static ReservationRequest forField(int eventID, int quantity, String segmentId) {
+        return new ReservationRequest(eventID, null, quantity, segmentId);
+    }
+
+    int getEventID() {
+        return eventID;
+    }
+
+    List<String> getSeatIds() {
+        return seatIds;
+    }
+
+    int getQuantity() {
+        return quantity;
+    }
+
+    String getSegmentId() {
+        return segmentId;
+    }
+}
