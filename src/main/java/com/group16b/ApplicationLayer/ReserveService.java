@@ -130,6 +130,7 @@ public class ReserveService {
             venue.reserveTickets(segmentId, seatIds, eventID);
             seatsReserved = true;
             venueRepo.save(venue);
+            venue = venueRepo.findByID(venueId);
 
             // 6. System - creates an active order for the user with the selected tickets.
             useLotteryCodeIfNeeded(event, lotteryCode);
@@ -256,6 +257,7 @@ public class ReserveService {
             venue.reserveTickets(segmentId, amount, eventID);
             seatsReserved = true;
             venueRepo.save(venue);
+            
             logger.info("ReserveService.reserveFieldSeats: Seats reserved successfully for {}", subjectID);
 
             // 6. System - creates an active order for the user with the selected tickets.

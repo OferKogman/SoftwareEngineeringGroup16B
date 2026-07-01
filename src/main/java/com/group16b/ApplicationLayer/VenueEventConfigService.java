@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.DTOs.LocationDTO;
 import com.group16b.ApplicationLayer.DTOs.VenueDTO;
@@ -39,7 +40,6 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 
 import io.jsonwebtoken.JwtException;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional
@@ -226,7 +226,7 @@ public class VenueEventConfigService {
             return Result.makeFail("An unexpected system error occurred");
         }
     }
-
+// from my logs you can see that even though i created venue ranV2. user ran2@com ordered the seats from it of 
     public Result<Boolean> editVenueSegments(int companyID, String venueID, String sessionToken,
             VenueRecord editedVenue) {
         try {

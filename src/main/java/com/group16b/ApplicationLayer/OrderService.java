@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -51,11 +52,12 @@ public class OrderService {
 	private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
+	private final INotificationService notificationService;
 
 	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
 	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
 
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway, INotificationService notificationService) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
 		this.venueRepo = venueRepo;
@@ -64,6 +66,7 @@ public class OrderService {
 		this.orderRepo = orderRepo;
 		this.paymentService = paymentGateway;
 		this.ticketGateway = ticketGateway;
+		this.notificationService = notificationService;
 	}
 
     public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
@@ -102,7 +105,24 @@ public class OrderService {
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
 			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
-			
+
+			try {
+				String notificationMessage = String.format(
+						"Your order is complete! Ticket: %s",
+						ticket
+				);
+
+				notificationService.notify(subjectID, notificationMessage);
+				logger.info("OrderService.CompleteActiveOrder: notification sent to user {} for order {}", subjectID, orderID);
+			} catch (Exception notificationException) {
+				logger.warn(
+						"OrderService.CompleteActiveOrder: order {} was completed, but notification failed for user {}: {}",
+						orderID,
+						subjectID,
+						notificationException.getMessage()
+				);
+			}
+
 			// 7. return tickets
 			return Result.makeOk(ticket);
 
@@ -304,8 +324,7 @@ public class OrderService {
             return Result.makeFail(e.getMessage());
         }
         catch (Exception e) {
-            logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats: {}", e.getMessage());
-            rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+			logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats", e);            rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
@@ -553,6 +572,36 @@ public class OrderService {
 			return Result.makeFail(e.getMessage());
 		} catch (Exception e) {	
 			logger.error("OrderService.getOrderPrice: Unexpected error during getting price for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
+	public Result<Long> getActiveOrderTimeStamp(String orderId, String sessionToken) {
+		try {
+			logger.info("OrderService.getActiveOrderTimeStamp: Attempting to get timestamp for order {}.", orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStamp: Verifying session token for getting order timestamp.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+			logger.info("OrderService.getActiveOrderTimeStamp: Session token verified successfully.");
+
+			Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStamp: verifying that order {} belongs to the user with the provided token for getting order timestamp.", orderId);
+			order.verifyBelongsToSubject(subjectID);
+
+			long timestamp = order.getOrderStartTime();
+			
+			return Result.makeOk(timestamp);
+		} catch (AuthException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Authentication error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.getActiveOrderTimeStamp: Unexpected error during getting timestamp for order {}: {}", orderId, e.getMessage());
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}

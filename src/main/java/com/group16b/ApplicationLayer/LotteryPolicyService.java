@@ -19,22 +19,28 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import java.util.Map;
+import java.util.Set;
+
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 @Service
 @Transactional
 public class LotteryPolicyService {
-    private static final Logger logger = LoggerFactory.getLogger(EventService.class);
+    private static final Logger logger = LoggerFactory.getLogger(LotteryPolicyService.class);
     private final IEventRepository eventRepository;
     private final IRepository<User> userRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
     private final IAuthenticationService authenticationService;
+    private final INotificationService notificationService;
 
     public LotteryPolicyService(IEventRepository eventRepository, IRepository<User> userRepository,
-            IProductionCompanyRepository productionCompanyRepository, IAuthenticationService authenticationService) {
+            IProductionCompanyRepository productionCompanyRepository, IAuthenticationService authenticationService, INotificationService notificationService) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.productionCompanyRepository = productionCompanyRepository;
         this.authenticationService = authenticationService;
+        this.notificationService = notificationService;
     }
 
     public Result<Void> createLotteryPolicy(int eventID, int lotteryID, String lotteryName, int winnerAmount,
@@ -167,12 +173,18 @@ public class LotteryPolicyService {
                     String.valueOf(eventRepository.findByID(String.valueOf(eventID)).getEventProductionCompanyID()));
             company.validateUserPermissions(userID, ManagerPermissions.PURCHASE_POLICY);
 
+            Map<String, String> winnersAndCodes;
+            Set<String> losers;
+
             while (true) {
                 logger.info("LotteryPolicyService.handleLotteryResults: verifying event exists for id {}", eventID);
                 Event e = eventRepository.findByID(String.valueOf(eventID));
 
                 logger.info("LotteryPolicyService.handleLotteryResults: settling lottery");
                 e.handleLotteryResults();
+
+                winnersAndCodes = e.getLotteryPolicy().getWinnersAndCodes();
+                losers = e.getLotteryPolicy().getLosers();
 
                 logger.info("LotteryPolicyService.handleLotteryResults: Saving changes to repository");
                 try {
@@ -182,6 +194,8 @@ public class LotteryPolicyService {
                     logger.warn("LotteryPolicyService.handleLotteryResults: Event got edit retrying");
                 }
             }
+
+            notifyLotteryParticipants(eventID, winnersAndCodes, losers);
 
             logger.info("User with ID: {} finalized the lottery for event ID: {} successfully", user.getEmail(),
                     eventID);
@@ -201,6 +215,48 @@ public class LotteryPolicyService {
                     eventID,
                     e.getMessage());
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+        }
+    }
+
+    private void notifyLotteryParticipants(int eventID, Map<String, String> winnersAndCodes, Set<String> losers) {
+        for (Map.Entry<String, String> entry : winnersAndCodes.entrySet()) {
+            String lotteryCode = entry.getKey();
+            String winnerID = entry.getValue();
+
+            try {
+                String message = String.format(
+                        "You won the lottery for event %d. Your lottery code is: %s",
+                        eventID,
+                        lotteryCode
+                );
+
+                notificationService.notify(winnerID, message);
+                logger.info("LotteryPolicyService.notifyLotteryParticipants: winner notification sent to {}", winnerID);
+            } catch (Exception notificationException) {
+                logger.warn(
+                        "LotteryPolicyService.notifyLotteryParticipants: failed to notify winner {}: {}",
+                        winnerID,
+                        notificationException.getMessage()
+                );
+            }
+        }
+
+        for (String loserID : losers) {
+            try {
+                String message = String.format(
+                        "You did not win the lottery for event %d.",
+                        eventID
+                );
+
+                notificationService.notify(loserID, message);
+                logger.info("LotteryPolicyService.notifyLotteryParticipants: loser notification sent to {}", loserID);
+            } catch (Exception notificationException) {
+                logger.warn(
+                        "LotteryPolicyService.notifyLotteryParticipants: failed to notify loser {}: {}",
+                        loserID,
+                        notificationException.getMessage()
+                );
+            }
         }
     }
 
