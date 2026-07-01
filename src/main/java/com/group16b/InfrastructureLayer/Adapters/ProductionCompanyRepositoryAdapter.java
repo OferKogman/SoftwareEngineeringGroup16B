@@ -32,7 +32,7 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
         );
     }
 
-    /*
+
     @Override
     public void save(ProductionCompany company) {
         // If the version is 0  this is a brand new company
@@ -44,31 +44,13 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
         springRepo.save(company);
     }
 
-     */
 
-    @Override
-    public void save(ProductionCompany company) {
-        int id = company.getProductionCompanyID();
 
-        /*
-         * Existing persisted company:
-         * never mutate its ID. Hibernate/JPA entity identifiers are immutable once managed.
-         */
-        if (id > 0 && springRepo.existsById(id)) {
-            springRepo.save(company);
-            return;
-        }
 
-        /*
-         * Brand new company created with the old in-memory ID generator:
-         * force IDENTITY generation only if this ID does not already exist in DB.
-         */
-        if (company.getVersion() == 0) {
-            company.setProductionCompanyId(0);
-        }
 
-        springRepo.save(company);
-    }
+
+
+
 
     @Override
     public void delete(String id) {
