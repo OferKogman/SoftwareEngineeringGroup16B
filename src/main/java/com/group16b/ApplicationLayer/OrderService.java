@@ -304,8 +304,9 @@ public class OrderService {
             return Result.makeFail(e.getMessage());
         }
         catch (Exception e) {
-            logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats: {}", e.getMessage());
-            rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+			logger.error("OrderService.changeSeatsToOrder: Unexpected error during changing seats", e);            
+			rollbackSeatEditIfNeeded(venue, venueChanged, segmentId, seatsToAdd, seatsToRemove, eventID);
+
             return Result.makeFail("An unexpected error occurred: " + e.getMessage());
         }
     }
