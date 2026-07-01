@@ -4,13 +4,16 @@ import java.util.List;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.Database.VenueRepository;
 
+
 @Component
 @Primary
+@Transactional
 public class VenueRepostoryAdapter implements IRepository<Venue>{
     private final VenueRepository springRepo;
 

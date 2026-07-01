@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
@@ -12,6 +13,7 @@ import com.group16b.InfrastructureLayer.Database.OrderRepository;
 
 @Component
 @Primary
+@Transactional
 public class OrderRepositoryAdapter implements IOrderRepository {
 
     private final OrderRepository springRepo;
