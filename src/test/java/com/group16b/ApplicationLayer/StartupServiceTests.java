@@ -42,21 +42,10 @@ public class StartupServiceTests {
         mockAdminRepository=mock(IRepository.class);
         mockVirtualQueueRepo = mock(IRepository.class);
         mockEventRepository = mock(IEventRepository.class);
-
-        startupService = new StartupService(
-                mockAdminRepository,
-                mockWsepClient,
-                mockEventRepository,
-                mockVirtualQueueRepo,
-                "test-admin",
-                "test-password",
-                "test-admin@example.com",
-                true
-        );
+        startupService=new StartupService(mockAdminRepository, mockWsepClient, mockEventRepository, mockVirtualQueueRepo);
 
         doNothing().when(mockWsepClient).handshake();
         when(mockAdminRepository.getAll()).thenReturn(INITIAL_ADMINS);
-        when(mockEventRepository.getAll()).thenReturn(new ArrayList<>());
     }
 
     @Test

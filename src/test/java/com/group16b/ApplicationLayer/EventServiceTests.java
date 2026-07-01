@@ -76,7 +76,7 @@ public class EventServiceTests {
                                 venueRepository);
                 eventService = new EventService(mockTokenService, mockLocationService, eventFilteringService,
                                 productionCompanyRepository, virtualQueueRepository, venueRepository, eventRepository,
-                                userRepository, 50);
+                                userRepository);
 
                 when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
 

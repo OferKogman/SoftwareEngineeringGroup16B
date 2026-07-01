@@ -1,15 +1,16 @@
 package com.group16b.DomainLayer.Policies.PurchasePolicy;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import org.junit.jupiter.api.Test;
 
 public class LotteryPolicyTests {
+    
 
     @Test
     public void testLotteryPolicyCreation() {
@@ -24,7 +25,7 @@ public class LotteryPolicyTests {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().minusDays(1));
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
-            assert (e.getMessage().equals("Lottery registration due date cannot be in the past."));
+            assert(e.getMessage().equals("Lottery registration due date cannot be in the past."));
         }
     }
 
@@ -37,7 +38,19 @@ public class LotteryPolicyTests {
     }
 
     @Test
-    public void SuccessfulEnrollInLottery() {
+    public void FailuresetLotteryRegistrationDueDateInPast() {
+        try {
+            LocalDateTime lotteryDate = LocalDateTime.now().plusDays(1);
+            LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, lotteryDate);
+            lotteryPolicy.setLotteryRegistrationDueDate(LocalDateTime.now().minusHours(1));
+            throw new Exception("Expected exception was not thrown.");
+        } catch (Exception e) {
+            assert(e.getMessage().equals("Lottery registration due date cannot be in the past."));
+        }
+    }
+
+    @Test
+    public void SuccessfulEnrollInLottery(){
         assertDoesNotThrow(() -> {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusDays(1));
             lotteryPolicy.enrollInLottery(1, "1");
@@ -53,7 +66,7 @@ public class LotteryPolicyTests {
             lotteryPolicy.enrollInLottery(1, "1");
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
-            assert (e.getMessage().equals("Lottery enrollment is closed since " + lotteryDate + "."));
+            assert(e.getMessage().equals("Lottery enrollment is closed since " + lotteryDate + "."));
         }
     }
 
@@ -65,13 +78,13 @@ public class LotteryPolicyTests {
             lotteryPolicy.enrollInLottery(1, "1");
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
-            assert (e.getMessage().equals("User is already enrolled in the lottery."));
+            assert(e.getMessage().equals("User is already enrolled in the lottery."));
         }
     }
 
-    @Test
+    @Test 
     public void FailureValidateLotteryCodeBeenUsed() {
-        try {
+        try{
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusMinutes(1));
             Field field = LotteryPolicy.class.getDeclaredField("winnersAndCodes");
             field.setAccessible(true);
@@ -85,12 +98,12 @@ public class LotteryPolicyTests {
     }
 
     public void FailureValidateLotteryInvalidLotteryCode() {
-        try {
+        try{
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusMinutes(1));
             lotteryPolicy.validateLotteryCode("invalid_code");
             throw new Exception("Expected exception was not thrown.");
         } catch (Exception e) {
-            assert (e.getMessage().equals("Invalid lottery code."));
+            assert(e.getMessage().equals("Invalid lottery code."));
         }
     }
 }

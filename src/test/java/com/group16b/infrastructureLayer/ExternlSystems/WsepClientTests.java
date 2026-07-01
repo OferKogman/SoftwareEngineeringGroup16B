@@ -37,7 +37,7 @@ public class WsepClientTests {
     void startup()
     {
         restTemplate=mock(RestTemplate.class);
-        wsepClient=new WsepClient(restTemplate, "http://localhost:9999/");
+        wsepClient=new WsepClient(restTemplate);
         ResponseEntity<String> response =new ResponseEntity<>(HANSHAKE_EXPECTED_RESPONSE, HttpStatus.OK);
 
         when(restTemplate.postForEntity(anyString(),any(HttpEntity.class),eq(String.class))).thenReturn(response);

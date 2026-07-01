@@ -1,5 +1,6 @@
 package com.group16b.InfrastructureLayer.Adapters;
 
+
 import java.util.List;
 
 import org.springframework.context.annotation.Primary;
@@ -26,8 +27,9 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public Order findByID(String id) {
-        return springRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Order with ID " + id + " not found."));
+        return springRepo.findById(id).orElseThrow(() -> 
+            new IllegalArgumentException("Order with ID " + id + " not found.")
+        );
     }
 
     @Override

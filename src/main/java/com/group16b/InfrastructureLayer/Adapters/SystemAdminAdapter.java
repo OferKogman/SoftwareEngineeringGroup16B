@@ -11,22 +11,23 @@ import com.group16b.InfrastructureLayer.Database.SystemAdminRepository;
 
 @Component
 @Primary
-public class SystemAdminAdapter implements IRepository<SystemAdmin> {
+public class SystemAdminAdapter  implements IRepository<SystemAdmin> {
     private final SystemAdminRepository springRepo;
-
-    public SystemAdminAdapter(SystemAdminRepository springRepo) {
-        this.springRepo = springRepo;
+    
+    public SystemAdminAdapter(SystemAdminRepository springRepo){
+        this.springRepo = springRepo;        
     }
 
     @Override
     public List<SystemAdmin> getAll() {
-        return springRepo.findAll();
+        return springRepo.findAll(); 
     }
 
     @Override
     public SystemAdmin findByID(String id) {
-        return springRepo.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User with ID " + id + " not found."));
+        return springRepo.findById(id).orElseThrow(() -> 
+            new IllegalArgumentException("User with ID " + id + " not found.")
+        );
     }
 
     @Override
@@ -36,6 +37,6 @@ public class SystemAdminAdapter implements IRepository<SystemAdmin> {
 
     @Override
     public void delete(String id) {
-        springRepo.deleteById(id);
-    }
+        springRepo.deleteById(id); 
+    }    
 }

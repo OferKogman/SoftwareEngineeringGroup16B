@@ -1,7 +1,6 @@
-package com.group16b.infrastructureLayer;
+package com.group16b.ApplicationLayer;
 
 import com.group16b.DomainLayer.Notification;
-import com.group16b.InfrastructureLayer.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

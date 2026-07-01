@@ -49,7 +49,7 @@ public class TicketGatewayTests {
     void setup()
     {
         restTemplate=mock(RestTemplate.class);
-        ticketGateway=new TicketGateway(new WsepClient(restTemplate, "http://localhost:9999/"));
+        ticketGateway=new TicketGateway(new WsepClient(restTemplate));
         VALID_SEATS = List.of("1-1","1-42");
 
         when(restTemplate.postForEntity(
