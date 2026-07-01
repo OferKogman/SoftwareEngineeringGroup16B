@@ -246,22 +246,12 @@ public class UserService {
             logger.info("UserService.getUserCompanyInvites: request made by user with id: {}", userId);
             List<ProductionCompany> companies = productionCompanyRepository.getAll();
             List<CompanyInviteRecord> result=companies.stream()
-                    .filter(company -> company.hasOutgoingInvites(userId))
-                    .map(company -> company.getPendingUserInvites(userId))
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
+                    .flatMap(company -> company.getPendingUserInvites(userId).stream())
+                    .toList();
             return Result.makeOk(result);
 
-        } catch (IllegalArgumentException e) {
-            logger.warn("UserService.getUserCompanyInvites: IllegalArgumentException: " + e.getMessage());
-            return Result.makeFail(e.getMessage());
         } catch (AuthException e) {
-            logger.warn(
-                    "UserService.getUserCompanyInvites: Authentication failed during company invites fetch: " + e.getMessage());
-            return Result.makeFail("Authentication failed: " + e.getMessage());
-        } catch (JwtException e) {
-            logger.error("UserService.getUserCompanyInvites: JWT authentication error during company invites fetch: "
-                    + e.getMessage());
+            logger.warn("UserService.getUserCompanyInvites: Authentication failed during company invites fetch: " + e.getMessage());
             return Result.makeFail("Authentication failed: " + e.getMessage());
         } catch (Exception e) {
             logger.error("UserService.getUserCompanyInvites: Unexpected error during company invites fetch: " + e.getMessage());
