@@ -12,8 +12,7 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
-//NotificationController: no idea what im looking at, so ill skip it for now
-//tell me if its supposed to be here, supposed to be public or need auth later
+
 @RestController
 @RequestMapping("/api/notifications")
 public class NotificationController {
