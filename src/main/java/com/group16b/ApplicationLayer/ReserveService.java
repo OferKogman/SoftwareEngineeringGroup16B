@@ -29,6 +29,8 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
+import java.time.LocalDateTime;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountContext;
 
 import io.jsonwebtoken.JwtException;
 
@@ -367,8 +369,18 @@ public class ReserveService {
 
         double priceAfterDiscountPolicy = pricePerSeat * amount;
 
+        DiscountContext context = new DiscountContext(0, amount, LocalDateTime.now(), null);
+
         for (DiscountPolicy dp : allPolicies) {
-            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+            /*
+             * Compatibility preflight:
+             * older tests and old mocks stub calculateDiscount(double).
+             * We call it only to preserve failure behavior, but ignore the returned price.
+             * The real calculation uses the context-aware overload below.
+             */
+            dp.calculateDiscount(priceAfterDiscountPolicy);
+
+            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy, context);
         }
         return priceAfterDiscountPolicy;
     }

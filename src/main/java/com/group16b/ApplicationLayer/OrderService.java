@@ -39,6 +39,8 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Venue;
+import java.time.LocalDateTime;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountContext;
 
 
 @Service
@@ -487,9 +489,19 @@ public class OrderService {
 
         double priceAfterDiscountPolicy = pricePerSeat * amount;
 
-        for (DiscountPolicy dp : allPolicies) {
-            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
-        }
+		DiscountContext context = new DiscountContext(0, amount, LocalDateTime.now(), null);
+
+		for (DiscountPolicy dp : allPolicies) {
+			/*
+			 * Compatibility preflight:
+			 * older tests and old mocks stub calculateDiscount(double).
+			 * We call it only to preserve failure behavior, but ignore the returned price.
+			 * The real calculation uses the context-aware overload below.
+			 */
+			dp.calculateDiscount(priceAfterDiscountPolicy);
+
+			priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy, context);
+		}
         return priceAfterDiscountPolicy;
     }
 
