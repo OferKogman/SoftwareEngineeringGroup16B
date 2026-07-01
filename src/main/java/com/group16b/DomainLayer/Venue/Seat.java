@@ -3,7 +3,7 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import java.util.UUID; // Add this import
+import java.util.UUID;
 
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
