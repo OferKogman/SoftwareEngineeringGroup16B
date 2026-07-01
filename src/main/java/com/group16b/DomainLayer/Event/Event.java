@@ -25,58 +25,59 @@ import jakarta.persistence.Version;
 @Entity
 @Table(name = "events")
 public class Event {
-	
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int eventID;
 
-    @Version 
-    private long version;
+	@Id
+	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	private int eventID;
 
-    @Column(nullable = false)
-    private boolean active = false;
-    
-    @Column(nullable = false)
-    private String venueID;
-    
-    @Column(nullable = false)
-    private String name;
-    
-    @Column(nullable = false)
-    private LocalDateTime startTime;
-    
-    @Column(nullable = false)
-    private LocalDateTime endTime;
-    
-    private String artist; 
-    
-    private String category;
-    
-    @Column(nullable = false)
-    private int productionCompanyID; 
-    
-    @Column(nullable = false)
-    private double price;
-    
-    @Column(nullable = false)
-    private double rating;
-    
-    @Column(nullable = false)
-    private String ownerId; 
-    
-    @Convert(converter = PurchasePolicySetConverter.class)
-    @Column(columnDefinition = "TEXT")
-    private Set<PurchasePolicy> purchasePolicy = new HashSet<>();
+	@Version
+	private long version;
 
-    @Convert(converter = DiscountPolicySetConverter.class)
-    @Column(columnDefinition = "TEXT")
-    private Set<DiscountPolicy> discountPolicy = new HashSet<>();
+	@Column(nullable = false)
+	private boolean active = false;
 
-    @Convert(converter = LotteryPolicyConverter.class) 
-    @Column(columnDefinition = "TEXT")
-    private LotteryPolicy lotteryPolicy;
+	@Column(nullable = false)
+	private String venueID;
 
-    public Event() {}
+	@Column(nullable = false)
+	private String name;
+
+	@Column(nullable = false)
+	private LocalDateTime startTime;
+
+	@Column(nullable = false)
+	private LocalDateTime endTime;
+
+	private String artist;
+
+	private String category;
+
+	@Column(nullable = false)
+	private int productionCompanyID;
+
+	@Column(nullable = false)
+	private double price;
+
+	@Column(nullable = false)
+	private double rating;
+
+	@Column(nullable = false)
+	private String ownerId;
+
+	@Convert(converter = PurchasePolicySetConverter.class)
+	@Column(columnDefinition = "TEXT")
+	private Set<PurchasePolicy> purchasePolicy = new HashSet<>();
+
+	@Convert(converter = DiscountPolicySetConverter.class)
+	@Column(columnDefinition = "TEXT")
+	private Set<DiscountPolicy> discountPolicy = new HashSet<>();
+
+	@Convert(converter = LotteryPolicyConverter.class)
+	@Column(columnDefinition = "TEXT")
+	private LotteryPolicy lotteryPolicy;
+
+	public Event() {
+	}
 
 	public Event(EventRecord eventRecord, String ownerId) {
 		this.venueID = eventRecord.venueID();
@@ -92,7 +93,7 @@ public class Event {
 		this.productionCompanyID = eventRecord.pcID();
 		this.discountPolicy = new HashSet<>();
 		this.purchasePolicy = new HashSet<>();
-		this.price = 0; //update only based on segment price
+		this.price = 0; // update only based on segment price
 		validateRating(eventRecord.rating());
 		this.rating = eventRecord.rating();
 		this.ownerId = ownerId;
@@ -145,7 +146,7 @@ public class Event {
 		return eventID;
 	}
 
-	public void setId(int id){//only for mapImpl repository
+	public void setId(int id) {// only for mapImpl repository
 		this.eventID = id;
 	}
 
@@ -276,8 +277,8 @@ public class Event {
 		return lotteryPolicy;
 	}
 
-	public boolean hasLotteryPolicy(){
-		return lotteryPolicy!=null;
+	public boolean hasLotteryPolicy() {
+		return lotteryPolicy != null;
 	}
 
 	public void setLotteryPolicy(LotteryPolicy lotteryPolicy) {
@@ -330,9 +331,8 @@ public class Event {
 		this.version++;
 	}
 
-	public void handleLotteryResults()
-	{
-		LotteryPolicy lp=getLotteryPolicy();
+	public void handleLotteryResults() {
+		LotteryPolicy lp = getLotteryPolicy();
 		lp.handleLotteryResults();
 	}
 
@@ -441,14 +441,14 @@ public class Event {
 		}
 	}
 
-    public void validateEventPriceIsSet() {
+	public void validateEventPriceIsSet() {
 		if (price <= 0) {
 			throw new IllegalStateException("Event price must be set and greater than zero.");
 		}
-    }
+	}
 
-	public void deactivateIfActive(){
-		if(!this.getEventStatus()){
+	public void deactivateIfActive() {
+		if (!this.getEventStatus()) {
 			return;
 		}
 		this.deactivateEvent();
