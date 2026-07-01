@@ -22,6 +22,7 @@ export default function EditOrderPage() {
   const [activeOrder, setActiveOrder] = useState<ActiveOrderDTO | null>(null);
   const [timeLeft, setTimeLeft] = useState("");
   const [orderId, setOrderId] = useState("");
+  const [orderStartTime, setOrderStartTime] = useState<number | null>(null);
 
   const [venueID, setVenueID] = useState("");
   const [venue, setVenue] = useState<VenueDTO | null>(null);
@@ -75,6 +76,24 @@ export default function EditOrderPage() {
 
         setActiveOrder(orderData);
         setOrderId(orderData.orderId);
+
+        const timestampResponse = await apiFetch(
+          `${API_BASE}/api/order/getActiveOrderTimeStamp/${orderData.orderId}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: sessionToken,
+              "Content-Type": "application/json",
+            },
+          },
+        );
+
+        if (!timestampResponse.ok) {
+          throw new Error(await timestampResponse.text());
+        }
+
+        const timestamp = await timestampResponse.json();
+        setOrderStartTime(timestamp);
 
         const loadedEventID = orderData.eventId;
 
@@ -162,22 +181,22 @@ export default function EditOrderPage() {
   }, [sessionToken, apiFetch]);
 
   useEffect(() => {
-    if (!activeOrder) {
+    if (orderStartTime == null) {
       return;
     }
+    const startTime = orderStartTime;
 
     function updateTimer() {
-      if (!activeOrder) {
-        return;
-      }
-
-      const expiresAt = activeOrder.orderStartTime + ORDER_LIFETIME_MS;
+      const expiresAt = startTime + ORDER_LIFETIME_MS;
       const remaining = Math.max(0, expiresAt - Date.now());
-
       const minutes = Math.floor(remaining / 60000);
       const seconds = Math.floor((remaining % 60000) / 1000);
-
       setTimeLeft(`${minutes}:${seconds.toString().padStart(2, "0")}`);
+
+      if (remaining <= 0) {
+        window.clearInterval(intervalId);
+        navigate("/");
+      }
     }
 
     updateTimer();
@@ -187,7 +206,7 @@ export default function EditOrderPage() {
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [activeOrder]);
+  }, [orderStartTime, navigate]);
 
   function handleFieldSegmentSelected(segment: FieldSegDTO) {
     setError("");

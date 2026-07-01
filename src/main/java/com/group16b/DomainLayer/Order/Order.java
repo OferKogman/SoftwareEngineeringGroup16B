@@ -67,7 +67,7 @@ public class Order {
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
 		this.state = new ActiveOrder();
-		this.seats = List.copyOf(seats);
+		this.seats = new ArrayList<>(seats);
 		this.numOfTickets = seats.size();
 		this.segmentId = segmentId;
 		this.orderType = OrderType.SEAT;
@@ -92,7 +92,7 @@ public class Order {
 		this.orderId = other.orderId;
 		this.state = other.state.copy();
 		this.segmentId = other.segmentId;
-		this.seats = List.copyOf(other.seats);
+		this.seats = new ArrayList<>(other.seats);
 		this.numOfTickets = other.numOfTickets;
 		this.orderType = other.orderType;
 		this.totalOrderprice = other.totalOrderprice;
@@ -203,8 +203,12 @@ public class Order {
 
 	
 	public boolean isActive() {
+		if (!state.isActive() && !state.isCompleted()){
+			CancelOrder();
+		}
 		return state.isActive();
 	}
+	
 	public boolean isCompleted() {
 		return state.isCompleted();
 	}
@@ -234,7 +238,7 @@ public class Order {
 		if (newSeatIds == null || newSeatIds.isEmpty()) {
 			throw new IllegalArgumentException("New seat IDs list cannot be null or empty");
 		}
-		this.seats = List.copyOf(newSeatIds);
+		this.seats = new ArrayList<>(newSeatIds);
 		this.numOfTickets = newSeatIds.size();
 		this.totalOrderprice = newTotalPrice;
 	}
