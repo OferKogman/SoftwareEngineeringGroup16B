@@ -4,7 +4,6 @@ import java.util.List;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
@@ -13,7 +12,6 @@ import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
 
 @Component
 @Primary
-@Transactional
 public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRepository {
 
     private final ProductionCompanyRepository springRepo;

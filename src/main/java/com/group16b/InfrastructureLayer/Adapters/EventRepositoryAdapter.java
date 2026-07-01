@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
@@ -13,7 +12,6 @@ import com.group16b.InfrastructureLayer.Database.EventRepositroy;
 
 @Component
 @Primary
-@Transactional
 public class EventRepositoryAdapter implements IEventRepository {
     private final EventRepositroy springRepo;
 
