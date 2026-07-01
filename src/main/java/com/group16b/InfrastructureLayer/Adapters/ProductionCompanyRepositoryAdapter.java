@@ -10,8 +10,11 @@ import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.Database.ProductionCompanyRepository;
 
+import jakarta.transaction.Transactional;
+
 @Component
 @Primary
+@Transactional
 public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRepository {
 
     private final ProductionCompanyRepository springRepo;
@@ -34,12 +37,6 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
 
     @Override
     public void save(ProductionCompany company) {
-        // If the version is 0  this is a brand new company
-        // we need to intercept the in memory constructor IDgen which isnt resurrected properly
-        if (company.getVersion() == 0) { 
-            company.setProductionCompanyId(0);
-        }
-
         springRepo.save(company);
     }
 
