@@ -52,12 +52,12 @@ export function useGlobalNotifications() {
                     message: parsed.message,
                     duration: 0,
                     onAccept: () => {
-                      apiFetch(`/api/company/${parsed.companyId}/accept`, {
+                      apiFetch(`/api/production-companies/${parsed.companyId}/invites/accept`, {
                         method: "POST",
                       });
                     },
                     onReject: () => {
-                      apiFetch(`/api/company/${parsed.companyId}/reject`, {
+                      apiFetch(`/api/production-companies/${parsed.companyId}/invites/accept`, {
                         method: "POST",
                       });
                     },
