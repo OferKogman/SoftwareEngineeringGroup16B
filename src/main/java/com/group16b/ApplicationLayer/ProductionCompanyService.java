@@ -110,9 +110,7 @@ public class ProductionCompanyService {
 
             logger.info("ProductionCompanyService.displayTotalRevenue: calculating total revenue for company {}",
                     productionCompanyID);
-            double totalRevenue = getAllRevenue(
-                    getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company, userID)));
-
+            double totalRevenue = getAllRevenue(getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company, userID)));
             logger.info(
                     "ProductionCompanyService.displayTotalRevenue: successfuly calculated total revenue for company {}.",
                     productionCompanyID);
@@ -248,7 +246,7 @@ public class ProductionCompanyService {
 
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {
         return orderRepo.getAll().stream()
-                .filter(order -> !order.isActive())
+                .filter(order -> order.isCompleted())
                 .filter(order -> eventIDs.contains(order.getEventId()))
                 .toList();
     }
