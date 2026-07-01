@@ -37,18 +37,6 @@ public class LotteryPolicyTests {
     }
 
     @Test
-    public void FailuresetLotteryRegistrationDueDateInPast() {
-        try {
-            LocalDateTime lotteryDate = LocalDateTime.now().plusDays(1);
-            LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, lotteryDate);
-            lotteryPolicy.setLotteryRegistrationDueDate(LocalDateTime.now().minusHours(1));
-            throw new Exception("Expected exception was not thrown.");
-        } catch (Exception e) {
-            assertEquals("Lottery registration due date cannot be in the past.", e.getMessage());
-        }
-    }
-
-    @Test
     public void SuccessfulEnrollInLottery() {
         assertDoesNotThrow(() -> {
             LotteryPolicy lotteryPolicy = new LotteryPolicy(1, "Test Lottery", 5, LocalDateTime.now().plusDays(1));

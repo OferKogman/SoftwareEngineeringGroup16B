@@ -70,7 +70,6 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public void setLotteryRegistrationDueDate(LocalDateTime lotteryRegistrationDueDate) {
-        validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
     }
 

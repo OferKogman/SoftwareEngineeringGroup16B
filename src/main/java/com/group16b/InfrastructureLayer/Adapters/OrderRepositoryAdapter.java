@@ -1,11 +1,9 @@
 package com.group16b.InfrastructureLayer.Adapters;
 
-
 import java.util.List;
 
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
@@ -13,7 +11,6 @@ import com.group16b.InfrastructureLayer.Database.OrderRepository;
 
 @Component
 @Primary
-@Transactional
 public class OrderRepositoryAdapter implements IOrderRepository {
 
     private final OrderRepository springRepo;
@@ -29,9 +26,8 @@ public class OrderRepositoryAdapter implements IOrderRepository {
 
     @Override
     public Order findByID(String id) {
-        return springRepo.findById(id).orElseThrow(() -> 
-            new IllegalArgumentException("Order with ID " + id + " not found.")
-        );
+        return springRepo.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Order with ID " + id + " not found."));
     }
 
     @Override
