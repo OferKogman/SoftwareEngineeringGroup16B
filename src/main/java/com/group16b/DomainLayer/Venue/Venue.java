@@ -92,10 +92,10 @@ public class Venue {
         this.location = location;
         this.segments = new HashMap<>();
         for (FieldSegRecord fsr : fieldSeg) {
-            this.segments.put(fsr.segmentID(), new FieldSeg(fsr.segmentID(), fsr.size(), new GridRectangle(fsr.area())));
+            this.segments.put(fsr.segmentID(), new FieldSeg(id+fsr.segmentID(), fsr.size(), new GridRectangle(fsr.area())));
         }
         for (ChosenSeatingSegRecord cssr : seatSeg) {
-            this.segments.put(cssr.segmentID(), new ChosenSeatingSeg(cssr.segmentID(), cssr.seats(), new GridRectangle(cssr.area())));
+            this.segments.put(cssr.segmentID(), new ChosenSeatingSeg(id+cssr.segmentID(), cssr.seats(), new GridRectangle(cssr.area())));
         }
         this.scheduledEvents = new HashMap<>();
         this.grid = new VenueGrid(grid.rows(), grid.columns());
