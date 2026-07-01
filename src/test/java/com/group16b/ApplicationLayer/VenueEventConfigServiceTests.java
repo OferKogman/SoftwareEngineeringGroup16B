@@ -1,8 +1,18 @@
 package com.group16b.ApplicationLayer;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -13,17 +23,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 
 import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 import com.group16b.ApplicationLayer.DTOs.LocationDTO;
@@ -86,7 +85,7 @@ public class VenueEventConfigServiceTests {
         private final LocalDateTime startTime = LocalDateTime.now().plusDays(1);
         private final LocalDateTime endTime = startTime.plusHours(3);
 
-        private final String VENUE_ID="venue-123";
+        private final String VENUE_ID = "venue-123";
 
         @BeforeEach
         void setUp() throws IOException, InterruptedException {
@@ -117,7 +116,7 @@ public class VenueEventConfigServiceTests {
                                 mockOrderRepository, mockPaymentService, mockTicketGateway);
         }
 
-        private VenueRecord createValidVenueRecord() {
+        private VenueRecord createValidVenueRecord(String venueName) {
                 List<SeatRecord> dummySeats = new ArrayList<>();
                 ChosenSeatingSegRecord dummySeg = new ChosenSeatingSegRecord("VIP", dummySeats,
                                 new GridRectangleRecord(5, 4, 6, 5));
@@ -146,7 +145,7 @@ public class VenueEventConfigServiceTests {
                 when(mockEvent.getEventEndTime()).thenReturn(endTime);
                 ProductionCompany mockCompany = mock(ProductionCompany.class);
                 User mockUser = mock(User.class);
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue1");
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
@@ -156,6 +155,8 @@ public class VenueEventConfigServiceTests {
 
                 when(mockEventRepository.findByID(String.valueOf(eventID))).thenReturn(mockEvent);
                 when(mockEvent.getEventStatus()).thenReturn(false);
+
+                when(mockVenueRepository.findByID(validRecord.name())).thenThrow(new IllegalArgumentException());
 
                 when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
                 when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
@@ -181,7 +182,7 @@ public class VenueEventConfigServiceTests {
                 when(mockEvent.getEventEndTime()).thenReturn(endTime);
                 User mockUser = mock(User.class);
                 ProductionCompany mockCompany = mock(ProductionCompany.class);
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue2");
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
@@ -193,9 +194,11 @@ public class VenueEventConfigServiceTests {
 
                 when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
 
+                when(mockVenueRepository.findByID(validRecord.name())).thenThrow(new IllegalArgumentException());
+
                 when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
                 when(mockCompany.isOwner(userID)).thenReturn(false);
-                when(mockCompany.isOwner(userID)).thenReturn(true); // is a manager instead
+                when(mockCompany.isManager(userID)).thenReturn(true); // is a manager instead
 
                 Result<String> result = configService.configureNewLayoutAndInventory(
                                 validToken, companyID, validRecord);
@@ -209,7 +212,7 @@ public class VenueEventConfigServiceTests {
 
         @Test
         void configureNewLayoutAndInventory_InvalidToken_ReturnsFailResult() {
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue");
                 when(mockAuthService.validateToken(validToken)).thenReturn(false);
 
                 Result<String> result = configService.configureNewLayoutAndInventory(
@@ -222,7 +225,7 @@ public class VenueEventConfigServiceTests {
 
         @Test
         void configureNewLayoutAndInventory_TokenRoleIsNotUser_ReturnsFailResult() {
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue");
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED); // Wrong role
 
@@ -239,7 +242,7 @@ public class VenueEventConfigServiceTests {
                 Event mockEvent = mock(Event.class);
                 when(mockEvent.getEventStartTime()).thenReturn(startTime);
                 when(mockEvent.getEventEndTime()).thenReturn(endTime);
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue");
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
@@ -267,7 +270,7 @@ public class VenueEventConfigServiceTests {
                 when(mockEvent.getEventEndTime()).thenReturn(endTime);
                 User mockUser = mock(User.class);
                 ProductionCompany mockCompany = mock(ProductionCompany.class);
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue");
 
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
@@ -299,7 +302,7 @@ public class VenueEventConfigServiceTests {
 
         @Test
         void configureNewLayoutAndInventory_EventDoesNotExist_ReturnsFailResult() {
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue");
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
@@ -315,7 +318,7 @@ public class VenueEventConfigServiceTests {
 
         @Test
         void configureNewLayoutAndInventory_GenericSystemException_ReturnsFailResult() {
-                VenueRecord validRecord = createValidVenueRecord();
+                VenueRecord validRecord = createValidVenueRecord("Test Venue");
                 when(mockAuthService.validateToken(validToken)).thenReturn(true);
                 when(mockAuthService.extractRoleFromToken(validToken)).thenReturn(Role.SIGNED);
                 when(mockAuthService.isUserToken(validToken)).thenReturn(true);
@@ -436,7 +439,7 @@ public class VenueEventConfigServiceTests {
 
                 assertTrue(result.isSuccess(), "Expected success when fetching a valid venue.");
                 assertTrue(result.getValue() != null, "Expected a VenueDTO to be returned in the Result payload.");
-                assertEquals(dummyLocation.getName(),result.getValue().getName());
+                assertEquals(dummyLocation.getName(), result.getValue().getName());
                 verify(mockVenueRepository, times(1)).findByID(targetVenueID);
         }
 
@@ -447,7 +450,7 @@ public class VenueEventConfigServiceTests {
                 Result<LocationDTO> result = configService.getVenueLocation(VENUE_ID);
 
                 assertFalse(result.isSuccess(), "Expected fal when fetching an invalid venue.");
-                assertEquals("genshin impact",result.getError());
+                assertEquals("genshin impact", result.getError());
                 verify(mockVenueRepository, times(1)).findByID(VENUE_ID);
         }
 
@@ -458,7 +461,7 @@ public class VenueEventConfigServiceTests {
                 Result<LocationDTO> result = configService.getVenueLocation(VENUE_ID);
 
                 assertFalse(result.isSuccess(), "Expected fal when fetching an invalid venue.");
-                assertEquals("An unexpected system error occurred",result.getError());
+                assertEquals("An unexpected system error occurred", result.getError());
                 verify(mockVenueRepository, times(1)).findByID(VENUE_ID);
         }
 
@@ -918,114 +921,115 @@ public class VenueEventConfigServiceTests {
                 verify(venue).replaceEntrances(List.of(entrance));
                 verify(mockVenueRepository).save(venue);
         }
+
         @Test
         void editVenueSegments_FieldNoRefund_RealVenueUpdatesAvailableStockFrom7To2() {
-        IRepository<Venue> realVenueRepo = new VenueRepositoryMapImpl();
-        IEventRepository realEventRepo = new EventRepositoryMapImpl();
+                IRepository<Venue> realVenueRepo = new VenueRepositoryMapImpl();
+                IEventRepository realEventRepo = new EventRepositoryMapImpl();
 
-        VenueEventConfigService realService = new VenueEventConfigService(
-                        realVenueRepo,
-                        realEventRepo,
-                        mockUserRepository,
-                        mockAuthService,
-                        mockProductionCompanyRepository,
-                        mockLocationService,
-                        mockOrderRepository,
-                        mockPaymentService,
-                        mockTicketGateway);
+                VenueEventConfigService realService = new VenueEventConfigService(
+                                realVenueRepo,
+                                realEventRepo,
+                                mockUserRepository,
+                                mockAuthService,
+                                mockProductionCompanyRepository,
+                                mockLocationService,
+                                mockOrderRepository,
+                                mockPaymentService,
+                                mockTicketGateway);
 
-        User mockUser = mock(User.class);
-        ProductionCompany mockCompany = mock(ProductionCompany.class);
+                User mockUser = mock(User.class);
+                ProductionCompany mockCompany = mock(ProductionCompany.class);
 
-        when(mockAuthService.validateToken(validToken)).thenReturn(true);
-        when(mockAuthService.isUserToken(validToken)).thenReturn(true);
-        when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userID);
+                when(mockAuthService.validateToken(validToken)).thenReturn(true);
+                when(mockAuthService.isUserToken(validToken)).thenReturn(true);
+                when(mockAuthService.extractSubjectFromToken(validToken)).thenReturn(userID);
 
-        when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
-        when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
-        doNothing().when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
+                when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
+                when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
+                doNothing().when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
-        FieldSeg fieldSeg = new FieldSeg(
-                        "field-a",
-                        10,
-                        new GridRectangle(0, 0, 1, 1));
+                FieldSeg fieldSeg = new FieldSeg(
+                                "field-a",
+                                10,
+                                new GridRectangle(0, 0, 1, 1));
 
-        Map<String, Segment> segments = new ConcurrentHashMap<>();
-        segments.put("field-a", fieldSeg);
+                Map<String, Segment> segments = new ConcurrentHashMap<>();
+                segments.put("field-a", fieldSeg);
 
-        Location location = new Location(
-                        "Test Location",
-                        "1",
-                        "Test Street",
-                        "Test City",
-                        "Test State",
-                        "Test Country",
-                        0.0,
-                        0.0);
+                Location location = new Location(
+                                "Test Location",
+                                "1",
+                                "Test Street",
+                                "Test City",
+                                "Test State",
+                                "Test Country",
+                                0.0,
+                                0.0);
 
-        Venue venue = new Venue(
-                        "Test Venue",
-                        location,
-                        segments,
-                        "venue-123",
-                        new VenueGrid(6, 7),
-                        new ConcurrentHashMap<>(),
-                        new ConcurrentHashMap<>(),
-                        companyID);
+                Venue venue = new Venue(
+                                "Test Venue",
+                                location,
+                                segments,
+                                "venue-123",
+                                new VenueGrid(6, 7),
+                                new ConcurrentHashMap<>(),
+                                new ConcurrentHashMap<>(),
+                                companyID);
 
-        realVenueRepo.save(venue);
-        venue = realVenueRepo.findByID("venue-123");
+                realVenueRepo.save(venue);
+                venue = realVenueRepo.findByID("venue-123");
 
-        EventRecord eventRecord = new EventRecord(
-                        "venue-123",
-                        "Test Event",
-                        LocalDateTime.now().plusDays(1),
-                        LocalDateTime.now().plusDays(1).plusHours(2),
-                        "Test Artist",
-                        "Test Category",
-                        companyID,
-                        4.5);
+                EventRecord eventRecord = new EventRecord(
+                                "venue-123",
+                                "Test Event",
+                                LocalDateTime.now().plusDays(1),
+                                LocalDateTime.now().plusDays(1).plusHours(2),
+                                "Test Artist",
+                                "Test Category",
+                                companyID,
+                                4.5);
 
-        Event event = new Event(eventRecord, userID);
-        event.activateEvent();
-        realEventRepo.save(event);
+                Event event = new Event(eventRecord, userID);
+                event.activateEvent();
+                realEventRepo.save(event);
 
-        venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
-        venue.initializeSegmentForEvent("field-a", event.getEventID());
+                venue.bookEvent(eventRecord.startTime(), eventRecord.endTime(), event.getEventID());
+                venue.initializeSegmentForEvent("field-a", event.getEventID());
 
-        realVenueRepo.save(venue);
-        venue = realVenueRepo.findByID("venue-123");
+                realVenueRepo.save(venue);
+                venue = realVenueRepo.findByID("venue-123");
 
-        venue.reserveSeats(ReservationRequest.forField(event.getEventID(), 3, "field-a"));
-        realVenueRepo.save(venue);
-        venue = realVenueRepo.findByID("venue-123");
+                venue.reserveSeats(ReservationRequest.forField(event.getEventID(), 3, "field-a"));
+                realVenueRepo.save(venue);
+                venue = realVenueRepo.findByID("venue-123");
 
-        FieldSeg beforeEditSeg = (FieldSeg) venue.getSegments().get("field-a");
+                FieldSeg beforeEditSeg = (FieldSeg) venue.getSegments().get("field-a");
 
-        assertEquals(10, beforeEditSeg.getFieldSize());
-        assertEquals(7, beforeEditSeg.getStock(event.getEventID()));
-        assertEquals(3, venue.getReservedStockBySegmentEventField(event.getEventID(), "field-a"));
+                assertEquals(10, beforeEditSeg.getFieldSize());
+                assertEquals(7, beforeEditSeg.getStock(event.getEventID()));
+                assertEquals(3, venue.getReservedStockBySegmentEventField(event.getEventID(), "field-a"));
 
-        Result<Boolean> result = realService.editVenueSegments(
-                        companyID,
-                        "venue-123",
-                        validToken,
-                        editVenueRecord(
-                                        List.of(fieldRecord("field-a", 5)),
-                                        List.of()));
+                Result<Boolean> result = realService.editVenueSegments(
+                                companyID,
+                                "venue-123",
+                                validToken,
+                                editVenueRecord(
+                                                List.of(fieldRecord("field-a", 5)),
+                                                List.of()));
 
-        assertTrue(result.isSuccess());
-        assertTrue(result.getValue());
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
 
-        Venue updatedVenue = realVenueRepo.findByID("venue-123");
-        FieldSeg updatedFieldSeg = (FieldSeg) updatedVenue.getSegments().get("field-a");
+                Venue updatedVenue = realVenueRepo.findByID("venue-123");
+                FieldSeg updatedFieldSeg = (FieldSeg) updatedVenue.getSegments().get("field-a");
 
-        assertEquals(5, updatedFieldSeg.getFieldSize());
-        assertEquals(2, updatedFieldSeg.getStock(event.getEventID()));
-        assertEquals(3, updatedVenue.getReservedStockBySegmentEventField(event.getEventID(), "field-a"));
+                assertEquals(5, updatedFieldSeg.getFieldSize());
+                assertEquals(2, updatedFieldSeg.getStock(event.getEventID()));
+                assertEquals(3, updatedVenue.getReservedStockBySegmentEventField(event.getEventID(), "field-a"));
 
-        verify(mockOrderRepository, never()).getCompletedByEventIdField(anyInt(), anyString());
-        verify(mockPaymentService, never()).cancelPayment(anyInt());
-        verify(mockTicketGateway, never()).revokeTicket(anyString());
-}
+                verify(mockOrderRepository, never()).getCompletedByEventIdField(anyInt(), anyString());
+                verify(mockPaymentService, never()).cancelPayment(anyInt());
+                verify(mockTicketGateway, never()).revokeTicket(anyString());
+        }
 }

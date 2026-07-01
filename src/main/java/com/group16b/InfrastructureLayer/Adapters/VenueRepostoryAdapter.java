@@ -9,6 +9,7 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.InfrastructureLayer.Database.VenueRepository;
 
+
 @Component
 @Primary
 public class VenueRepostoryAdapter implements IRepository<Venue> {

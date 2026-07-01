@@ -5,6 +5,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -51,11 +52,12 @@ public class OrderService {
 	private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
+	private final INotificationService notificationService;
 
 	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
 	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
 
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
+    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway, INotificationService notificationService) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepo=productionCompanyRepo;
 		this.venueRepo = venueRepo;
@@ -64,6 +66,7 @@ public class OrderService {
 		this.orderRepo = orderRepo;
 		this.paymentService = paymentGateway;
 		this.ticketGateway = ticketGateway;
+		this.notificationService = notificationService;
 	}
 
     public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
@@ -102,7 +105,24 @@ public class OrderService {
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
 			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
-			
+
+			try {
+				String notificationMessage = String.format(
+						"Your order is complete! Ticket: %s",
+						ticket
+				);
+
+				notificationService.notify(subjectID, notificationMessage);
+				logger.info("OrderService.CompleteActiveOrder: notification sent to user {} for order {}", subjectID, orderID);
+			} catch (Exception notificationException) {
+				logger.warn(
+						"OrderService.CompleteActiveOrder: order {} was completed, but notification failed for user {}: {}",
+						orderID,
+						subjectID,
+						notificationException.getMessage()
+				);
+			}
+
 			// 7. return tickets
 			return Result.makeOk(ticket);
 

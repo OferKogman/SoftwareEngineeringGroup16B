@@ -148,7 +148,11 @@ export default function VenueDisplay({
       });
     }
     void selectedSeatsToStock();
+<<<<<<< HEAD
   });
+=======
+  }, [selectedSeats, eventID]);
+>>>>>>> 672e75f59e48e0059faa212f5a41693e948411a2
 
   useEffect(() => {
     async function loadSegs() {

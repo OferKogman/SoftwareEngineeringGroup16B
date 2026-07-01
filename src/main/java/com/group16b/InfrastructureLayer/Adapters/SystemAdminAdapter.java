@@ -9,6 +9,7 @@ import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.InfrastructureLayer.Database.SystemAdminRepository;
 
+
 @Component
 @Primary
 public class SystemAdminAdapter implements IRepository<SystemAdmin> {
