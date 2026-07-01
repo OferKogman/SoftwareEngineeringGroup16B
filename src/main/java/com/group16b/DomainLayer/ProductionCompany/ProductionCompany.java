@@ -485,12 +485,26 @@ public class ProductionCompany {
         purchasePolicies.add(pp);
     }
 
+    public void setPurchasePolicies(Set<PurchasePolicy> policies) {
+        purchasePolicies.clear();
+        if (policies != null) {
+            purchasePolicies.addAll(policies);
+        }
+    }
+
     public void removePurchasePolicy(PurchasePolicy pp) {
         purchasePolicies.remove(pp);
     }
 
     public void addDiscountPolicy(DiscountPolicy dp) {
         discountPolicies.add(dp);
+    }
+
+    public void setDiscountPolicies(Set<DiscountPolicy> policies) {
+        discountPolicies.clear();
+        if (policies != null) {
+            discountPolicies.addAll(policies);
+        }
     }
 
     public void removeDiscountPolicy(DiscountPolicy dp) {

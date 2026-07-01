@@ -234,6 +234,13 @@ public class Event {
 		discountPolicy.add(dp);
 	}
 
+	public void setEventDiscountPolicies(Set<DiscountPolicy> policies) {
+		discountPolicy.clear();
+		if (policies != null) {
+			discountPolicy.addAll(policies);
+		}
+	}
+
 	public void removeEventDiscountPolicy(DiscountPolicy dp) {
 		discountPolicy.remove(dp);
 	}
@@ -244,6 +251,13 @@ public class Event {
 
 	public void addEventPurchasePolicy(PurchasePolicy pp) {
 		purchasePolicy.add(pp);
+	}
+
+	public void setEventPurchasePolicies(Set<PurchasePolicy> policies) {
+		purchasePolicy.clear();
+		if (policies != null) {
+			purchasePolicy.addAll(policies);
+		}
 	}
 
 	public void removeEventPurchasePolicy(PurchasePolicy pp) {
