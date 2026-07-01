@@ -102,6 +102,17 @@ public class VenueEventConfigService {
                     "VenueEventConfigService.configureLayoutAndInventory: Verifying user has permissions for company");
             company.validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
+            try {
+                venueRepository.findByID(newVenueLayout.name());
+                logger.warn(
+                        "VenueEventConfigService.configureLayoutAndInventory: Venue with name {} already exists, cannot create a new venue with the same name.",
+                        newVenueLayout.name());
+                return Result.makeFail(
+                        "Venue with name " + newVenueLayout.name() + " already exists.");
+            } catch (IllegalArgumentException e) {
+                // continue
+            }
+
             Location loc = locationService.search(newVenueLayout.location());
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: creating a new venue");
@@ -109,14 +120,15 @@ public class VenueEventConfigService {
                     newVenueLayout.name(), newVenueLayout.grid(), newVenueLayout.stages(),
                     newVenueLayout.entrances(), companyID);
 
-            logger.info("VenueEventConfigService.configureLayoutAndInventory: saving venue changes to repository");
+            logger.info("VenueEventConfigService.configureLayoutAndInventory: creating venue in repository");
             venueRepository.save(venue);
 
             return Result.makeOk("Venue layout configured and saved successfully.");
 
         } catch (OptimisticLockingFailureException e) {
-            logger.warn("VenueEventConfigService.configureLayoutAndInventory: Failed to save changes to repository");
-            return Result.makeFail("Failed to save changes to repository.");
+            logger.warn(
+                    "VenueEventConfigService.configureLayoutAndInventory: Failed to create venue due to concurrent modification");
+            return Result.makeFail("Cannot create Venue with the same name.");
         } catch (IllegalArgumentException e) {
             logger.warn(
                     "VenueEventConfigService.configureLayoutAndInventory: Domain logic error during configuration: {}",
@@ -226,7 +238,9 @@ public class VenueEventConfigService {
             return Result.makeFail("An unexpected system error occurred");
         }
     }
-// from my logs you can see that even though i created venue ranV2. user ran2@com ordered the seats from it of 
+
+    // from my logs you can see that even though i created venue ranV2. user
+    // ran2@com ordered the seats from it of
     public Result<Boolean> editVenueSegments(int companyID, String venueID, String sessionToken,
             VenueRecord editedVenue) {
         try {
@@ -354,20 +368,18 @@ public class VenueEventConfigService {
                 venue.removeSegment(deletedSegmentID);
             }
 
-
-            //checking if new segments are actually added or there is no change in that
+            // checking if new segments are actually added or there is no change in that
 
             Stream.concat(newFieldSegments.stream(), newSeatSegments.stream())
-                .findFirst()
-                .ifPresent(ignored -> {
-                    for (Integer eventID : futureEventsToRefund) {
-                        Event eventToDeactivate = eventRepository.findByID(String.valueOf(eventID));
-                        eventToDeactivate.deactivateIfActive();
-                        eventToDeactivate.setEventPrice(0);
-                        eventRepository.save(eventToDeactivate);
-                    }
-            });
-
+                    .findFirst()
+                    .ifPresent(ignored -> {
+                        for (Integer eventID : futureEventsToRefund) {
+                            Event eventToDeactivate = eventRepository.findByID(String.valueOf(eventID));
+                            eventToDeactivate.deactivateIfActive();
+                            eventToDeactivate.setEventPrice(0);
+                            eventRepository.save(eventToDeactivate);
+                        }
+                    });
 
             // adding the new segments with the new stock.
             // adding new field segments
@@ -467,7 +479,6 @@ public class VenueEventConfigService {
                 }
             }
 
-
             return Result.makeOk(true);
 
         } catch (IllegalArgumentException e) {
@@ -489,13 +500,14 @@ public class VenueEventConfigService {
     public Result<LocationDTO> getVenueLocation(String venueID) {
         try {
             logger.info("VenueEventConfigService.getVenueLocation: Attempting to get venue with id: {}", venueID);
-            //we probaly dont cre about user role, maybe dont even care about a valid session token at all
+            // we probaly dont cre about user role, maybe dont even care about a valid
+            // session token at all
             Venue venue = venueRepository.findByID(venueID);
-            logger.info("VenueEventConfigService.getVenueLocation: Successfully found venue for ID {}",venueID);
+            logger.info("VenueEventConfigService.getVenueLocation: Successfully found venue for ID {}", venueID);
 
             return Result.makeOk(new LocationDTO(venue.getLocation()));
         } catch (IllegalArgumentException e) {
-            logger.warn("VenueEventConfigService.getVenueLocation: IllegalArgumentException: {}",e.getMessage());
+            logger.warn("VenueEventConfigService.getVenueLocation: IllegalArgumentException: {}", e.getMessage());
             return Result.makeFail(e.getMessage());
         } catch (Exception e) {
             logger.error("VenueEventConfigService.getVenueLocation: Unexpected Exception: {}", e.getMessage(), e);
