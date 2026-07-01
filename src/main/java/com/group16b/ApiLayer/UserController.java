@@ -63,4 +63,8 @@ public class UserController extends BaseController {
     public ResponseEntity<?> getUserActiveOrder(@RequestHeader("Authorization") String sessionToken) {
         return executeWithReturnData(() -> userService.getUserActiveOrder(sessionToken));
     }
+    @GetMapping("/me/company-invites")
+    public ResponseEntity<?> getUserCompanyInvites() {
+        return executeWithReturnData(() -> userService.getUserCompanyInvites());
+    }
 }
