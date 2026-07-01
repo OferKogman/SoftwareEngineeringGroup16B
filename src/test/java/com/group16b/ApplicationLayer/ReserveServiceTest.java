@@ -17,7 +17,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.dao.OptimisticLockingFailureException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -28,10 +27,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.springframework.dao.OptimisticLockingFailureException;
 
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
-import com.group16b.ApplicationLayer.Interfaces.IPaymentGateway;
-import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
 import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.DomainLayer.Event.Event;
@@ -59,12 +57,12 @@ import com.group16b.DomainLayer.Venue.Stage;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.Venue.VenueGrid;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
-import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
 
 
@@ -141,7 +139,7 @@ public class ReserveServiceTest {
                 Map<String, Seat> seats = new HashMap<>();
                 for (char row = 'A'; row <= 'C'; row++) {
                         for (int num = 1; num <= 5; num++) {
-                                String seatId = row + "-" + num;
+                                String seatId = String.valueOf(row) + "-" + num;
                                 seats.put(seatId, new Seat(row, num));
                         }
                 }
@@ -172,13 +170,13 @@ public class ReserveServiceTest {
         private void seedOrders() {
                 //Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID);
                 //Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID);
-                seatOrder = new Order("seatingSeg1", List.of("A-1", "A-2"), 100.0, testEvent.getEventID(), testUser.getEmail());
+                seatOrder = new Order("seatingSeg1", List.of("65-1", "65-2"), 100.0, testEvent.getEventID(), testUser.getEmail());
                 fieldOrder = new Order("fieldSeg1", 3, 150.0, testEvent.getEventID(), testUser.getEmail());
                 seatOrder.CompleteOrder();
                 fieldOrder.CompleteOrder();
 
                 Venue venue = venueRepo.findByID(testVenue.getID());
-                venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("A-1", "A-2"), "seatingSeg1"));
+                venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("65-1", "65-2"), "seatingSeg1"));
                 venue.reserveSeats(ReservationRequest.forField(testEvent.getEventID(), 3, "fieldSeg1"));
                 venueRepo.save(venue);
 
@@ -202,7 +200,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -225,7 +223,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "invalid"
@@ -248,7 +246,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "admin"
@@ -271,7 +269,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         999999,
                         testVenue.getID(),
                         "user1"
@@ -300,7 +298,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         inactiveEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -328,7 +326,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         lotteryEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -353,7 +351,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -380,7 +378,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -404,7 +402,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         "missingVenue",
                         "user1"
@@ -427,7 +425,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = reserveService.reserveSeats(
                         "missingSegment",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -470,10 +468,10 @@ public class ReserveServiceTest {
         void reserveSeats_selectedSeatsUnavailable_returnsFailAndClearsQueue() {
                 int ordersBefore = orderRepo.getAll().size();
 
-                // A-1 and A-2 were already reserved in seedOrders()
+                // 65-1 and 65-2 were already reserved in seedOrders()
                 Result<String> result = reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("A-1", "A-2"),
+                        List.of("65-1", "65-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -521,7 +519,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = service.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -565,7 +563,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = service.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -609,7 +607,7 @@ public class ReserveServiceTest {
 
                 Result<String> result = service.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user1"
@@ -653,18 +651,18 @@ public class ReserveServiceTest {
         @Test
         void reserveSeats_duplicateSeatIds_returnsFail() {
                 Result<String> result = reserveService.reserveSeats(
-                        "seatingSeg1", List.of("B-1", "B-1"),
+                        "seatingSeg1", List.of("66-1", "66-1"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
                 assertFalse(result.isSuccess());
-                assertEquals("Illegal argument: Failed to reserve seat with ID B-1", result.getError());
+                assertEquals("Illegal argument: Failed to reserve seat with ID 66-1", result.getError());
         }
 
         @Test
         void reserveSeats_nullSegmentId_returnsFail() {
                 Result<String> result = reserveService.reserveSeats(
-                        null, List.of("B-1"),
+                        null, List.of("66-1"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
@@ -675,7 +673,7 @@ public class ReserveServiceTest {
         @Test
         void reserveSeats_blankSegmentId_returnsFail() {
                 Result<String> result = reserveService.reserveSeats(
-                        "   ", List.of("B-1"),
+                        "   ", List.of("66-1"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
@@ -686,7 +684,7 @@ public class ReserveServiceTest {
         @Test
         void reserveSeats_invalidEventId_returnsFail() {
                 Result<String> result = reserveService.reserveSeats(
-                        "seatingSeg1", List.of("B-1"),
+                        "seatingSeg1", List.of("66-1"),
                         -1, testVenue.getID(), "user1"
                 );
 
@@ -697,7 +695,7 @@ public class ReserveServiceTest {
         @Test
         void reserveSeats_nullVenueId_returnsFail() {
                 Result<String> result = reserveService.reserveSeats(
-                        "seatingSeg1", List.of("B-1"),
+                        "seatingSeg1", List.of("66-1"),
                         testEvent.getEventID(), null, "user1"
                 );
 
@@ -720,7 +718,7 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeats(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
@@ -749,15 +747,15 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeats(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
                 assertFalse(result.isSuccess());
                 assertEquals("An unexpected error occurred: Order save failed", result.getError());
 
-                verify(venueSpy).reserveTickets("seatingSeg1", List.of("B-1", "B-2"), testEvent.getEventID());
-                verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("B-1", "B-2"), testEvent.getEventID());
+                verify(venueSpy).reserveTickets("seatingSeg1", List.of("66-1", "66-2"), testEvent.getEventID());
+                verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("66-1", "66-2"), testEvent.getEventID());
 
                 verify(queue).removePassed(testUser.getEmail());
                 
@@ -781,14 +779,14 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeats(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
                 assertFalse(result.isSuccess());
                 assertEquals("Optimistic locking failure: version mismatch", result.getError());
 
-                verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("B-1", "B-2"), testEvent.getEventID());
+                verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("66-1", "66-2"), testEvent.getEventID());
                 verify(queue).removePassed(testUser.getEmail());
         }
 
@@ -1335,7 +1333,7 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeats(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "user1"
                 );
 
@@ -1359,7 +1357,7 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeatsWithLottery(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "LOTTO123", "user1"
                 );
 
@@ -1389,7 +1387,7 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeatsWithLottery(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "BADCODE", "user1"
                 );
 
@@ -1422,7 +1420,7 @@ public class ReserveServiceTest {
                 );
 
                 Result<String> result = service.reserveSeatsWithLottery(
-                        "seatingSeg1", List.of("B-1", "B-2"),
+                        "seatingSeg1", List.of("66-1", "66-2"),
                         testEvent.getEventID(), testVenue.getID(), "LOTTO123", "user1"
                 );
 
@@ -1431,7 +1429,7 @@ public class ReserveServiceTest {
 
                 verify(lotteryEvent).lotteryUseCode("LOTTO123");
                 verify(lotteryEvent).renewLotteryCode("LOTTO123");
-                verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("B-1", "B-2"), testEvent.getEventID());
+                verify(venueSpy).cancelSeatReservation("seatingSeg1", List.of("66-1", "66-2"), testEvent.getEventID());
                 verify(queue).removePassed(testUser.getEmail());
         }
         @Test
@@ -1574,7 +1572,7 @@ public class ReserveServiceTest {
                         startGate.await();
                         return reserveService.reserveSeats(
                                 "seatingSeg1",
-                                List.of("B-1", "B-2"),
+                                List.of("66-1", "66-2"),
                                 testEvent.getEventID(),
                                 testVenue.getID(),
                                 "user1"
@@ -1585,7 +1583,7 @@ public class ReserveServiceTest {
                         startGate.await();
                 return reserveService.reserveSeats(
                         "seatingSeg1",
-                        List.of("B-1", "B-2"),
+                        List.of("66-1", "66-2"),
                         testEvent.getEventID(),
                         testVenue.getID(),
                         "user2"
@@ -1724,7 +1722,7 @@ public class ReserveServiceTest {
         void reserveSeats_userAlreadyHasActiveOrder_returnsFail() {
         Order activeOrder = new Order(
                 "seatingSeg1",
-                List.of("C-1"),
+                List.of("67-1"),
                 50.0,
                 testEvent.getEventID(),
                 testUser.getEmail()
@@ -1733,7 +1731,7 @@ public class ReserveServiceTest {
 
         Result<String> result = reserveService.reserveSeats(
                 "seatingSeg1",
-                List.of("B-1"),
+                List.of("66-1"),
                 testEvent.getEventID(),
                 testVenue.getID(),
                 "user1"
