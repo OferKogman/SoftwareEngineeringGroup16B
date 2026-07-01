@@ -2,52 +2,53 @@ package com.group16b.DomainLayer.Venue;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.UUID;
 
 import com.group16b.ApplicationLayer.DTOs.EventScheduleDTO;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 @Entity
 @Table (name = "event_schedules")
 public class EventSchedule {
+    
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer dbId;
+    @Column(name = "db_id")
+    private String dbId;
+
+    @Column(name = "event_id")
+    private Integer eventId; // Required to map correctly in Venue
+
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
     public EventSchedule(LocalDateTime startTime, LocalDateTime endTime) {
-        if (startTime == null || endTime == null) {
-            throw new IllegalArgumentException("Start and end times cannot be null.");
-        }
-        if (!startTime.isBefore(endTime)) {
-            throw new IllegalArgumentException("Event start time must be before end time!");
-        }
+        if (startTime == null || endTime == null) throw new IllegalArgumentException("Start and end times cannot be null.");
+        if (!startTime.isBefore(endTime)) throw new IllegalArgumentException("Event start time must be before end time!");
         
+        this.dbId = UUID.randomUUID().toString();
         this.startTime = startTime;
         this.endTime = endTime;
     }
+
     public EventSchedule() {
-        // Default constructor for JPA
-        this.startTime = null;
-        this.endTime = null;
+        this.dbId = UUID.randomUUID().toString();
     }
 
     public EventSchedule(EventScheduleDTO eventScheduleDTO){
+        this.dbId = UUID.randomUUID().toString();
         this.startTime = eventScheduleDTO.getStartTime();
         this.endTime = eventScheduleDTO.getEndTime();    
     }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
+    public Integer getEventId() { return eventId; }
+    public void setEventId(Integer eventId) { this.eventId = eventId; }
 
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
 
     public boolean overlapsWith(EventSchedule other) {
         return this.startTime.isBefore(other.endTime) && this.endTime.isAfter(other.startTime);
@@ -61,7 +62,5 @@ public class EventSchedule {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(dbId);
-    }
+    public int hashCode() { return Objects.hash(dbId); }
 }
