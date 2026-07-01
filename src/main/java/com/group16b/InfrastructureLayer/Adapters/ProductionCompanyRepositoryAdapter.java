@@ -37,6 +37,9 @@ public class ProductionCompanyRepositoryAdapter implements IProductionCompanyRep
 
     @Override
     public void save(ProductionCompany company) {
+        if(company.getVersion() == 0){
+            company.setProductionCompanyId(0);
+        }
         springRepo.save(company);
     }
 
