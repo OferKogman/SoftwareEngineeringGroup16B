@@ -110,8 +110,8 @@ public class ProductionCompanyService {
 
             logger.info("ProductionCompanyService.displayTotalRevenue: calculating total revenue for company {}",
                     productionCompanyID);
-            // could be that the refund doesnt turn them canceledcorrectly. or this function considers the refunds?
-            double totalRevenue = getAllRevenue(getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company, userID)));
+            double totalRevenue = getAllRevenue(
+                    getCompletedOrdersByEventIDs(getManagedCompanyEventIDs(company, userID)));
 
             logger.info(
                     "ProductionCompanyService.displayTotalRevenue: successfuly calculated total revenue for company {}.",
@@ -248,7 +248,7 @@ public class ProductionCompanyService {
 
     private List<Order> getCompletedOrdersByEventIDs(Set<Integer> eventIDs) {
         return orderRepo.getAll().stream()
-                .filter(order -> order.isCompleted()) // changed from !order.isActive() to order.isCompleted() should be fixed now.
+                .filter(order -> !order.isActive())
                 .filter(order -> eventIDs.contains(order.getEventId()))
                 .toList();
     }

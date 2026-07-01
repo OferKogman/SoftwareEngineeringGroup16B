@@ -28,44 +28,45 @@ public class CompanyHierarchyController extends BaseController {
 
     @PostMapping("/owners")
     public ResponseEntity<?> assignOwnerToCompany(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId,
-            @RequestBody AssignOwnerRequestDTO requestDTO) {
-        return executeWithNoReturnData(
-                () -> companyHierarchyService.assignOwnerToCompany(companyId, requestDTO.getTargetID(), authToken));
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody AssignOwnerRequestDTO requestDTO) 
+    {
+        return executeWithNoReturnData(() -> companyHierarchyService.assignOwnerToCompany(companyId, requestDTO.getTargetID(), authToken));
     }
 
     @PostMapping("/managers")
     public ResponseEntity<?> assignManagerToCompany(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId,
-            @RequestBody AssignManagerRequestDTO requestDTO) {
-        return executeWithNoReturnData(() -> companyHierarchyService.assignManagerToCompany(companyId,
-                requestDTO.getTargetID(), requestDTO.getPermissions(), authToken));
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody AssignManagerRequestDTO requestDTO) 
+    {
+        return executeWithNoReturnData(() -> companyHierarchyService.assignManagerToCompany(companyId, requestDTO.getTargetID(),requestDTO.getPermissions(), authToken));
     }
 
     @PostMapping("/invites/accept")
     public ResponseEntity<?> acceptInviteToCompany(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId,
-            @RequestBody InviteHandleRequestDTO requestDTO) {
-        return executeWithNoReturnData(
-                () -> companyHierarchyService.acceptInviteToCompany(companyId, requestDTO.getAssignerID(), authToken));
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody InviteHandleRequestDTO requestDTO) 
+    {
+        return executeWithNoReturnData(() -> companyHierarchyService.acceptInviteToCompany(companyId, requestDTO.getAssignerID(), authToken));
     }
 
     @PostMapping("/invites/reject")
     public ResponseEntity<?> rejectInviteToCompany(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId,
-            @RequestBody InviteHandleRequestDTO requestDTO) {
-        return executeWithNoReturnData(
-                () -> companyHierarchyService.rejectInviteToCompany(companyId, requestDTO.getAssignerID(), authToken));
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody InviteHandleRequestDTO requestDTO) 
+    {
+        return executeWithNoReturnData(() -> companyHierarchyService.rejectInviteToCompany(companyId, requestDTO.getAssignerID(), authToken));
     }
 
     @DeleteMapping("/owners/me")
     public ResponseEntity<?> forfeitOwnership(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId) {
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId) 
+    {
         return executeWithNoReturnData(() -> companyHierarchyService.forfeitOwnership(companyId, authToken));
     }
 
@@ -73,34 +74,37 @@ public class CompanyHierarchyController extends BaseController {
     public ResponseEntity<?> removeOwnerManager(
             @RequestHeader("Authorization") String authToken,
             @PathVariable("companyId") int companyId,
-            @PathVariable("targetId") String targetId) {
-        return executeWithNoReturnData(
-                () -> companyHierarchyService.removeOwnerManager(targetId, companyId, authToken));
+            @PathVariable("targetId") String targetId)
+    {
+        return executeWithNoReturnData(() -> companyHierarchyService.removeOwnerManager(targetId,companyId, authToken));
     }
 
     @PatchMapping("/managers/permissions")
     public ResponseEntity<?> changeManagerPermission(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId,
-            @RequestBody ChangeManagerPermissionRequestDTO requestDTO) {
-        return executeWithNoReturnData(() -> companyHierarchyService.changeManagerPermission(requestDTO.getTargetID(),
-                companyId, requestDTO.getNewPermissions(), authToken));
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId,
+                    @RequestBody ChangeManagerPermissionRequestDTO requestDTO) 
+    {
+        return executeWithNoReturnData(() -> companyHierarchyService.changeManagerPermission(requestDTO.getTargetID(),companyId, requestDTO.getNewPermissions(), authToken));
     }
 
     @GetMapping("/hierarchy-tree")
     public ResponseEntity<?> getCompanyHierarchyTree(
-            @RequestHeader("Authorization") String authToken,
-            @PathVariable("companyId") int companyId) {
+                    @RequestHeader("Authorization") String authToken, 
+                    @PathVariable("companyId") int companyId) 
+    {
         return executeWithReturnData(() -> companyHierarchyService.hierarchyTree(companyId, authToken));
     }
 
     @GetMapping("/me/permissions")
-    public ResponseEntity<?> getCompanyPerms(@PathVariable("companyId") int companyId) {
+    public ResponseEntity<?> getCompanyPerms(@PathVariable("companyId") int companyId)
+    {
         return executeWithReturnData(() -> companyHierarchyService.getComapanyPermissions(companyId));
     }
 
     @GetMapping("/me/owner")
-    public ResponseEntity<?> isOwner(@PathVariable("companyId") int companyId) {
+    public ResponseEntity<?> isOwner(@PathVariable("companyId") int companyId)
+    {
         return executeWithReturnData(() -> companyHierarchyService.isOwner(companyId));
     }
 

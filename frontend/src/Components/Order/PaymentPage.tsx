@@ -35,7 +35,6 @@ export default function PaymentPage() {
   const [amount, setAmount] = useState<number>(0);
   const [isLoadingPrice, setIsLoadingPrice] = useState<boolean>(true);
 
-  const [orderStartTime, setOrderStartTime] = useState<number | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);
   const [error, setError] = useState("");
   const [isCanceling, setIsCanceling] = useState(false);
@@ -74,21 +73,6 @@ export default function PaymentPage() {
         const price = await getPrice();
 
         setAmount(price);
-
-        const timestampResponse = await apiFetch(
-          `${API_BASE}/api/order/getActiveOrderTimeStamp/${orderId}`,
-          {
-            method: "GET",
-          },
-        );
-
-        if (!timestampResponse.ok) {
-          throw new Error(await timestampResponse.text());
-        }
-
-        const timestamp = await timestampResponse.json();
-        setOrderStartTime(timestamp);
-        
       } catch (err) {
         setError(err instanceof Error ? err.message : "");
       } finally {
@@ -100,30 +84,12 @@ export default function PaymentPage() {
   }, [orderId, sessionToken, apiFetch]);
 
   useEffect(() => {
-    if (orderStartTime == null) {
-      return;
-    }
-
-    const startTime = orderStartTime;
-
-    function updateTimer() {
-      const expiresAt = startTime + PAYMENT_TIME_LIMIT_SECONDS * 1000;
-      const remainingMs = Math.max(0, expiresAt - Date.now());
-      const remainingSeconds = Math.ceil(remainingMs / 1000);
-
-      setSecondsLeft(remainingSeconds);
-      if (remainingSeconds <= 0) {
-        window.clearInterval(timerID);
-        navigate("/");
-      }
-    }
-
-    updateTimer();
-
-    const timerID = window.setInterval(updateTimer, 1000);
+    const timerID = window.setInterval(() => {
+      setSecondsLeft((current) => Math.max(current - 1, 0));
+    }, 1000);
 
     return () => window.clearInterval(timerID);
-  }, [orderStartTime, navigate]);
+  }, []);
 
   async function cancelOrder() {
     setIsCanceling(true);

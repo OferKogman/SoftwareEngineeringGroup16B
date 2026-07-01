@@ -3,14 +3,12 @@ package com.group16b.DomainLayer.Policies.PurchasePolicy;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LotteryPolicy implements PurchasePolicy {
 
@@ -27,9 +25,9 @@ public class LotteryPolicy implements PurchasePolicy {
         this.winnerAmount = winnerAmount;
         validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
-        this.participants = new HashSet<>();
-        this.winnersAndCodes = new HashMap<>();
-        this.usedCodes = new HashMap<>();
+        this.participants = ConcurrentHashMap.newKeySet();
+        this.winnersAndCodes = new ConcurrentHashMap<>();
+        this.usedCodes = new ConcurrentHashMap<>();
     }
 
     public LotteryPolicy(LotteryPolicy other) {
@@ -37,17 +35,13 @@ public class LotteryPolicy implements PurchasePolicy {
         this.winnerAmount = other.winnerAmount;
         this.lotteryRegistrationDueDate = other.lotteryRegistrationDueDate;
 
-        this.participants = other.participants == null ? new HashSet<>() : new HashSet<>(other.participants);
+        this.participants = new HashSet<>(other.participants);
 
-        this.winnersAndCodes = other.winnersAndCodes == null ? new HashMap<>() : new HashMap<>(other.winnersAndCodes);
-        this.usedCodes = other.usedCodes == null ? new HashMap<>() : new HashMap<>(other.usedCodes);
+        this.winnersAndCodes = new ConcurrentHashMap<>(other.winnersAndCodes);
+        this.usedCodes = new ConcurrentHashMap<>(other.usedCodes);
     }
 
-    public LotteryPolicy() {
-        this.participants = new HashSet<>();
-        this.winnersAndCodes = new HashMap<>();
-        this.usedCodes = new HashMap<>();
-    }
+    public LotteryPolicy() {}
 
     public String getLotteryName() {
         return lotteryName;
@@ -70,15 +64,12 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public void setLotteryRegistrationDueDate(LocalDateTime lotteryRegistrationDueDate) {
+        validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
     }
 
     public Set<String> getParticipants() {
-        return new HashSet<>(participants);
-    }
-
-    public void setParticipants(Set<String> participants) {
-        this.participants = participants == null ? new HashSet<>() : new HashSet<>(participants);
+        return participants;
     }
 
     public synchronized void enrollInLottery(int eventID, String userID) {
@@ -92,14 +83,8 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
-        if (LocalDateTime.now().isBefore(lotteryRegistrationDueDate)) {
+        if(lotteryRegistrationDueDate.isBefore(LocalDateTime.now()))
             throw new IllegalStateException("Cannot handle lottery results before the registration due time passed.");
-        }
-
-        if (!winnersAndCodes.isEmpty()) {
-            throw new IllegalStateException("Lottery results were already handled.");
-        }
-
         List<String> winners = new ArrayList<>(participants);
 
         Collections.shuffle(winners);
@@ -110,6 +95,8 @@ public class LotteryPolicy implements PurchasePolicy {
             String uniqueCode = UUID.randomUUID().toString();
             winnersAndCodes.put(uniqueCode, winnerID);
         }
+
+        // TODO: Notify winners with their unique codes
     }
 
     public synchronized void validateLotteryCode(String code) {
@@ -137,9 +124,6 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     private void validateDate(LocalDateTime lotteryRegistrationDueDate) {
-        if (lotteryRegistrationDueDate == null) {
-            throw new IllegalArgumentException("Lottery registration due date is required.");
-        }
         if (lotteryRegistrationDueDate.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Lottery registration due date cannot be in the past.");
         }
@@ -149,32 +133,8 @@ public class LotteryPolicy implements PurchasePolicy {
     public void validatePurchase(PurchaseContext context) throws PurchasePolicyException {
     }
 
-    // FOR TESTS
-    @JsonIgnore
+    //FOR TESTS
     public List<String> getWinners() {
         return new ArrayList<>(winnersAndCodes.values());
-    }
-
-    public Map<String, String> getWinnersAndCodes() {
-        return new HashMap<>(winnersAndCodes);
-    }
-
-    public void setWinnersAndCodes(Map<String, String> winnersAndCodes) {
-        this.winnersAndCodes = winnersAndCodes == null ? new HashMap<>() : new HashMap<>(winnersAndCodes);
-    }
-
-    public Map<String, String> getUsedCodes() {
-        return new HashMap<>(usedCodes);
-    }
-
-    public void setUsedCodes(Map<String, String> usedCodes) {
-        this.usedCodes = usedCodes == null ? new HashMap<>() : new HashMap<>(usedCodes);
-    }
-
-    @JsonIgnore
-    public Set<String> getLosers() {
-        Set<String> losers = new HashSet<>(participants);
-        losers.removeAll(winnersAndCodes.values());
-        return losers;
     }
 }

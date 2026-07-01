@@ -59,13 +59,6 @@ public class OrderController extends BaseController {
             @PathVariable("orderId") String orderId) {
         return executeWithReturnData(() -> orderService.getOrderPrice(orderId, sessionToken));
     }
-    @GetMapping("/getActiveOrderTimeStamp/{orderId}")
-    public ResponseEntity<?> getActiveOrderTimeStamp(
-            @RequestHeader("Authorization") String sessionToken,
-            @PathVariable("orderId") String orderId) {
-        return executeWithReturnData(
-                () -> orderService.getActiveOrderTimeStamp(orderId, sessionToken));
-    }
 
     
 

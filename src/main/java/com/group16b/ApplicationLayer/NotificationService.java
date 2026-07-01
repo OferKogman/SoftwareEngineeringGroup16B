@@ -1,4 +1,4 @@
-package com.group16b.InfrastructureLayer;
+package com.group16b.ApplicationLayer;
 
 import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 import com.group16b.DomainLayer.Notification;

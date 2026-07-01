@@ -12,24 +12,22 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.beans.factory.annotation.Value;
 
 import com.group16b.ApplicationLayer.Exceptions.WsepCommunicationException;
 
 @Component
 public class WsepClient
 {
-    private final String baseUrl;
+    private static final String BASE_URL ="https://damp-lynna-wsep-1984852e.koyeb.app/";
     private final String HANDSHAKE_OK_RESPONSE="OK";
 
     private final RestTemplate restTemplate;
 
-    public WsepClient(RestTemplate restTemplate,
-                      @Value("${external.wsep.base-url}") String baseUrl)
+    public WsepClient(RestTemplate restTemplate)
     {
         this.restTemplate = restTemplate;
-        this.baseUrl = baseUrl;
     }
+
     public String sendRequest(MultiValueMap<String, String> requestBody,Function<RestClientException, RuntimeException> communicationExceptionFactory,Supplier<RuntimeException> emptyResponseExceptionFactory)
     {
         HttpHeaders headers = new HttpHeaders();
@@ -40,7 +38,7 @@ public class WsepClient
 
         try
         {
-            response = restTemplate.postForEntity(baseUrl, request, String.class);
+            response = restTemplate.postForEntity(BASE_URL,request,String.class);
         }
         catch(RestClientException e)
         {

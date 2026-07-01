@@ -71,7 +71,7 @@ public class UserServiceTests {
         
         VenueRepositoryMapImpl venueRepo = new VenueRepositoryMapImpl();
         EventRepositoryMapImpl eventRepo = new EventRepositoryMapImpl();
-        TicketGateway ticketGateway = new TicketGateway(new WsepClient(mock(RestTemplate.class), "http://localhost:9999/"));
+        TicketGateway ticketGateway = new TicketGateway(new WsepClient(mock(RestTemplate.class)));
         IProductionCompanyRepository productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
 
         userService = new UserService(authService, ticketGateway, venueRepo, userRepo, orderRepo, eventRepo, productionCompanyRepository);

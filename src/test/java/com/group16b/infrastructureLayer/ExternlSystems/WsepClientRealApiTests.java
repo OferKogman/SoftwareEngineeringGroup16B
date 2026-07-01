@@ -10,7 +10,7 @@ import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 
 @Tag("external")
 public class WsepClientRealApiTests {
-    private WsepClient wsepClient=new WsepClient(new RestTemplate(), "https://damp-lynna-wsep-1984852e.koyeb.app/");
+    private WsepClient wsepClient=new WsepClient(new RestTemplate());
 
     @Test
     void test_handshake()
