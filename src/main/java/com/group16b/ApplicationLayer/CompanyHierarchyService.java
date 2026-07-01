@@ -81,7 +81,7 @@ public class CompanyHierarchyService {
 				notifyUserSafely(
 						targetID,
 						"You were invited to become an owner in company " + companyID + ".",
-						"assignOwnerToCompany"
+						"assignOwnerToCompany", companyID
 				);
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
@@ -142,7 +142,7 @@ public class CompanyHierarchyService {
 				notifyUserSafely(
 						targetID,
 						"You were invited to become a manager in company " + companyID + ".",
-						"assignManagerToCompany"
+						"assignManagerToCompany", companyID
 				);
 
 				return Result.makeOk(true);
@@ -206,7 +206,7 @@ public class CompanyHierarchyService {
 				notifyUserSafely(
 						assignerID,
 						"User " + userID + " accepted your company invite for company " + companyID + ".",
-						"acceptInviteToCompany"
+						"acceptInviteToCompany", companyID
 				);
 
 				return Result.makeOk(true);
@@ -272,7 +272,7 @@ public class CompanyHierarchyService {
 				notifyUserSafely(
 						assignerID,
 						"User " + userID + " rejected your company invite for company " + companyID + ".",
-						"rejectInviteToCompany"
+						"rejectInviteToCompany", companyID
 				);
 
 				return Result.makeOk(true);
@@ -384,7 +384,7 @@ public class CompanyHierarchyService {
 				notifyUserSafely(
 						targetID,
 						"You were removed from the hierarchy of company " + companyID + ".",
-						"removeOwnerManager"
+						"removeOwnerManager", companyID
 				);
 
 				return Result.makeOk(true);
@@ -448,7 +448,7 @@ public class CompanyHierarchyService {
 				notifyUserSafely(
 						targetID,
 						"Your manager permissions were updated in company " + companyID + ".",
-						"changeManagerPermission"
+						"changeManagerPermission", companyID
 				);
 
 				return Result.makeOk(true);
@@ -582,17 +582,16 @@ public class CompanyHierarchyService {
         return RequestContext.getUserId();
     }
 
-	private void notifyUserSafely(String userID, String message, String actionName) {
+	private void notifyUserSafely(String userID, String message, String actionName, int companyID) {
 		try {
-			notificationService.notify(userID, message);
-			logger.info("CompanyHierarchyService.{}: notification sent to user {}", actionName, userID);
-		} catch (Exception notificationException) {
-			logger.warn(
-					"CompanyHierarchyService.{}: failed to notify user {}: {}",
-					actionName,
-					userID,
-					notificationException.getMessage()
+			String payload = String.format(
+				"{\"message\": \"%s\", \"action\": \"%s\", \"companyId\": %d}",
+				message.replace("\"", "\\\""), actionName, companyID
 			);
+			notificationService.notify(userID, payload);
+			logger.info("CompanyHierarchyService.{}: notification sent to user {}", actionName, userID);
+		} catch (Exception e) {
+			logger.warn("CompanyHierarchyService.{}: failed to notify user {}: {}", actionName, userID, e.getMessage());
 		}
 	}
 

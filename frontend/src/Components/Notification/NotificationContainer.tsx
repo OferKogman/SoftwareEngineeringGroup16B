@@ -2,10 +2,8 @@ import "./CSS/notifications.css";
 import { useNotifications } from "./NotificationContext";
 
 export default function NotificationsContainer() {
-  // Read the active notifications array and the remove function from context
   const { notifications, removeNotification } = useNotifications();
 
-  // If there are no notifications, don't render anything
   if (notifications.length === 0) return null;
 
   return (
@@ -15,7 +13,37 @@ export default function NotificationsContainer() {
           key={notif.id}
           className={`notification-card notify-${notif.type}`}
         >
-          <span>{notif.message}</span>
+          <div className="notification-content">
+            <span className="notification-message">{notif.message}</span>
+            
+            {(notif.onAccept || notif.onReject) && (
+              <div className="notification-actions">
+                {notif.onAccept && (
+                  <button
+                    className="btn-accept"
+                    onClick={() => {
+                      notif.onAccept!();
+                      removeNotification(notif.id); 
+                    }}
+                  >
+                    Accept
+                  </button>
+                )}
+                {notif.onReject && (
+                  <button
+                    className="btn-reject"
+                    onClick={() => {
+                      notif.onReject!();
+                      removeNotification(notif.id); // Close after clicking
+                    }}
+                  >
+                    Reject
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           <button
             className="notification-close-btn"
             onClick={() => removeNotification(notif.id)}

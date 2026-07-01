@@ -39,30 +39,54 @@ export function useGlobalNotifications() {
               }
             },
             onmessage(event) {
-              let messageText = event.data;
               try {
                 const parsed = JSON.parse(event.data);
-                messageText = parsed.message || event.data;
-              } catch (e) {
-                console.log(e);
-              }
 
-              addNotification({
-                type: "message",
-                message: messageText,
-                duration: 10000,
-              });
+                if (
+                  parsed.action &&
+                  (parsed.action.includes("InviteToCompany") ||
+                  parsed.action === "assignManagerToCompany")
+                ) {
+                  addNotification({
+                    type: "warning",
+                    message: parsed.message,
+                    duration: 0,
+                    onAccept: () => {
+                      apiFetch(`/api/company/${parsed.companyId}/accept`, {
+                        method: "POST",
+                      });
+                    },
+                    onReject: () => {
+                      apiFetch(`/api/company/${parsed.companyId}/reject`, {
+                        method: "POST",
+                      });
+                    },
+                  });
+                } else {
+                  addNotification({
+                    type: "message",
+                    message: parsed.message || event.data,
+                    duration: 10000,
+                  });
+                }
+              } catch (e) {
+                addNotification({
+                  type: "message",
+                  message: event.data,
+                  duration: 10000,
+                });
+              }
             },
             onerror(err) {
               console.error("Lost broadcast connection:", err);
               throw err;
-            },
+            },            
           },
         );
       } catch (err) {
         console.error("Stream setup error:", err);
       }
-    };
+    };  
 
     connectStream();
 
