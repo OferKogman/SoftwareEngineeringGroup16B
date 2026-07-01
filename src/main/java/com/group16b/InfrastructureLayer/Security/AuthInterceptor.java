@@ -48,13 +48,12 @@ public class AuthInterceptor implements HandlerInterceptor {
     private String extractToken(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
 
-        if (header == null)
-            return null;
-
-        if (header.startsWith("Bearer "))
-            return header.substring(7);
-
-        return header;
+        if (header != null) {
+            if (header.startsWith("Bearer "))
+                return header.substring(7);
+            return header;
+        }
+        return request.getParameter("token");
     }
 
     @Override

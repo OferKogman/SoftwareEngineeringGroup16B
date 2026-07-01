@@ -1,6 +1,7 @@
 package com.group16b.InfrastructureLayer.Database;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -16,15 +17,15 @@ public interface OrderRepository extends JpaRepository<Order, String> {
     List<Order> findByEventId(int eventId);
     List<Order> findBySubjectID(String subjectID);
 
-    @Query("SELECT o FROM Order o WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND o.state LIKE '%Completed%'")
+    @Query("SELECT o FROM Order o WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND o.state = 'COMPLETED'")
     List<Order> getCompletedByEventIdField(@Param("eventId") int eventId, @Param("segmentId") String segmentId);
 
-    @Query("SELECT o FROM Order o JOIN o.seats s WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND s IN :seatIds AND o.state LIKE '%Completed%'")
+    @Query("SELECT o FROM Order o JOIN o.seats s WHERE o.eventId = :eventId AND o.segmentId = :segmentId AND s IN :seatIds AND o.state = 'COMPLETED'")
     List<Order> getCompletedByEventIdSeatIds(@Param("eventId") int eventId, @Param("segmentId") String segmentId, @Param("seatIds") List<String> seatIds);
 
-    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state LIKE '%ActiveOrder%'")
+    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state LIKE 'ACTIVE:%'")
     List<Order> findBySubjectIDAndActiveTrue(@Param("subjectID") String subjectID);
 
-    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state NOT LIKE '%ActiveOrder%'")
+    @Query("SELECT o FROM Order o WHERE o.subjectID = :subjectID AND o.state NOT LIKE 'ACTIVE:%'")
     List<Order> findBySubjectIDAndActiveFalse(@Param("subjectID") String subjectID);
 }

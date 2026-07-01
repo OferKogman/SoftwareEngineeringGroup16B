@@ -3,6 +3,7 @@ package com.group16b.ApplicationLayer;
 import java.util.List;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -22,22 +23,25 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
 
+
 import io.jsonwebtoken.JwtException;
 
 @Service
 @Transactional
 public class CompanyHierarchyService {
-	private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+	private static final Logger logger = LoggerFactory.getLogger(CompanyHierarchyService.class);
 
 	private final IAuthenticationService authenticationService;
 	private final IRepository<User> userRepository;
 	private final IProductionCompanyRepository productionCompanyRepository;
+	private final INotificationService notificationService;
 
 	public CompanyHierarchyService(IAuthenticationService authenticationService,
-			IProductionCompanyRepository productionCompanyRepository, IRepository<User> userRepository) {
+			IProductionCompanyRepository productionCompanyRepository, IRepository<User> userRepository, INotificationService notificationService) {
 		this.authenticationService = authenticationService;
 		this.productionCompanyRepository = productionCompanyRepository;
 		this.userRepository = userRepository;
+		this.notificationService = notificationService;
 	}
 
 	public Result<Boolean> assignOwnerToCompany(int companyID, String targetID, String sessionToken) {
@@ -74,6 +78,11 @@ public class CompanyHierarchyService {
 				productionCompanyRepository.save(company);
 				logger.info("CompanyHierarchyService.assignOwnerToCompany: Successfuly saved the {} company",
 						companyID);
+				notifyUserSafely(
+						targetID,
+						"You were invited to become an owner in company " + companyID + ".",
+						"assignOwnerToCompany"
+				);
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.assignOwnerToCompany: Runtime error: " + e.getMessage());
@@ -129,6 +138,12 @@ public class CompanyHierarchyService {
 						companyID);
 				productionCompanyRepository.save(company);
 				logger.info("CompanyHierarchyService.assignManagerToCompany: succesfuly save company {}", companyID);
+
+				notifyUserSafely(
+						targetID,
+						"You were invited to become a manager in company " + companyID + ".",
+						"assignManagerToCompany"
+				);
 
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
@@ -187,6 +202,13 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.acceptInviteToCompany: Succesfully saved company {} after accepting invite",
 						companyID);
+
+				notifyUserSafely(
+						assignerID,
+						"User " + userID + " accepted your company invite for company " + companyID + ".",
+						"acceptInviteToCompany"
+				);
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.acceptInviteToCompany: Runtime error: " + e.getMessage());
@@ -246,6 +268,13 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.rejectInviteToCompany: Succesfully saved company {} after rejected invite",
 						companyID);
+
+				notifyUserSafely(
+						assignerID,
+						"User " + userID + " rejected your company invite for company " + companyID + ".",
+						"rejectInviteToCompany"
+				);
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.rejectInviteToCompany: Runtime error: " + e.getMessage());
@@ -351,6 +380,13 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.removeOwnerManager: Succesfully saved company {} after remove membership of target {}",
 						companyID, targetID);
+
+				notifyUserSafely(
+						targetID,
+						"You were removed from the hierarchy of company " + companyID + ".",
+						"removeOwnerManager"
+				);
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.removeOwnerManager: Runtime error: " + e.getMessage());
@@ -408,6 +444,13 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.changeManagerPermission: Succesfully saved company {} after update manager permissions of target {} by user {}",
 						companyID, targetID, userID);
+
+				notifyUserSafely(
+						targetID,
+						"Your manager permissions were updated in company " + companyID + ".",
+						"changeManagerPermission"
+				);
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.changeManagerPermission: Runtime error: " + e.getMessage());
@@ -538,5 +581,19 @@ public class CompanyHierarchyService {
 
         return RequestContext.getUserId();
     }
+
+	private void notifyUserSafely(String userID, String message, String actionName) {
+		try {
+			notificationService.notify(userID, message);
+			logger.info("CompanyHierarchyService.{}: notification sent to user {}", actionName, userID);
+		} catch (Exception notificationException) {
+			logger.warn(
+					"CompanyHierarchyService.{}: failed to notify user {}: {}",
+					actionName,
+					userID,
+					notificationException.getMessage()
+			);
+		}
+	}
 
 }
