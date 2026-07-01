@@ -1,6 +1,8 @@
 package com.group16b.DomainLayer.User;
 
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.HexFormat;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,13 +43,18 @@ public class User {
 	}
 
 	private void setPassword(String newPassword) {
+		this.password = hashPassword(newPassword);
+	}
+
+	private String hashPassword(String password) {
 		try {
-			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			messageDigest.update(newPassword.getBytes());
-			String stringHash = new String(messageDigest.digest());
-			this.password = stringHash;
+			byte[] hash = MessageDigest
+					.getInstance("SHA-256")
+					.digest(password.getBytes(StandardCharsets.UTF_8));
+
+			return HexFormat.of().formatHex(hash);
 		} catch (Exception e) {
-			System.out.println("Error hashing password: " + e.getMessage());
+			throw new RuntimeException("Error hashing password", e);
 		}
 	}
 
@@ -66,15 +73,7 @@ public class User {
 	}
 
 	public boolean confirmPassword(String password) {
-		try {
-			MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-			messageDigest.update(password.getBytes());
-			String stringHash = new String(messageDigest.digest());
-			return this.password.equals(stringHash);
-		} catch (Exception e) {
-			System.out.println("Error hashing password: " + e.getMessage());
-			return false;
-		}
+		return this.password.equals(hashPassword(password));
 	}
 
 	public long getVersion() {
