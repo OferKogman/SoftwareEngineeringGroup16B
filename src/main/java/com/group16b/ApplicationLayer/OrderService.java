@@ -204,17 +204,28 @@ public class OrderService {
 	private void _cancelOrder(String orderID) {
 	try {
 		Order order = orderRepo.findByID(orderID);
-		orderRepo.delete(orderID);
+
 		int eventID = order.getEventId();
+		String segmentId = order.getSegmentId();
+		OrderType orderType = order.getOrderType();
+        int numOfTickets = order.getNumOfTickets();
+
+		List<String> seats = new ArrayList<>();
+        if (orderType == OrderType.SEAT) {
+            seats = new ArrayList<>(order.getSeats());
+        }
+
 		Event event = eventRepo.findByID(String.valueOf(eventID));
 		Venue venue = venueRepo.findByID(event.getEventVenueID());
-		if (venue.segmentType(order.getSegmentId()) == OrderType.SEAT) {
-			venue.cancelSeatReservation(order.getSegmentId(), order.getSeats(), eventID);
-		} else {
-			venue.cancelFieldReservation(order.getSegmentId(), order.getNumOfTickets(), eventID);
-		}
 
+		if (venue.segmentType(segmentId) == OrderType.SEAT) {
+			venue.cancelSeatReservation(segmentId, seats, eventID);
+		} else {
+			venue.cancelFieldReservation(segmentId, numOfTickets, eventID);
+		}
+		
 		venueRepo.save(venue);
+		orderRepo.delete(orderID);
 		} catch (Exception e) {
 			logger.error("OrderService._cancelOrder: Failed to cancel reservation for order {}: {}", orderID, e.getMessage());
 			 // we log the error but do not throw it further as the main goal of this method is to cancel the order and we don't want a failure in cancelling the reservation to prevent the order cancellation.
@@ -561,7 +572,36 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	public Result<Long> getActiveOrderTimeStamp(String orderId, String sessionToken) {
+		try {
+			logger.info("OrderService.getActiveOrderTimeStamp: Attempting to get timestamp for order {}.", orderId);
 
+			logger.info("OrderService.getActiveOrderTimeStamp: Verifying session token for getting order timestamp.");
+			String subjectID = validateAssureNotAdminGetSubjectID(sessionToken);
+			logger.info("OrderService.getActiveOrderTimeStamp: Session token verified successfully.");
+
+			Order order = orderRepo.findByID(orderId);
+
+			logger.info("OrderService.getActiveOrderTimeStamp: verifying that order {} belongs to the user with the provided token for getting order timestamp.", orderId);
+			order.verifyBelongsToSubject(subjectID);
+
+			long timestamp = order.getOrderStartTime();
+			
+			return Result.makeOk(timestamp);
+		} catch (AuthException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Authentication error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("Authentication failed: " + e.getMessage());
+		} catch (IllegalArgumentException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (IllegalStateException e) {
+			logger.error("OrderService.getActiveOrderTimeStamp: Failed to get timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail(e.getMessage());
+		} catch (Exception e) {	
+			logger.error("OrderService.getActiveOrderTimeStamp: Unexpected error during getting timestamp for order {}: {}", orderId, e.getMessage());
+			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
+		}
+	}
 	//no need to care for the exception type, as it is a automatic refund, meaning that any issue here is critical and should betreated the same way
 	private void safeRefund(Integer transactionId) {
 		//payment didnt proceed

@@ -7,55 +7,100 @@ import java.util.Objects;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapKeyColumn;
+import jakarta.persistence.MapsId;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "seats")
 public class Seat {
-    @Id
-    private String seatId;
+	@EmbeddedId
+	private SeatId id;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumns({
+		@JoinColumn(name = "venue_id", referencedColumnName = "venue_id", insertable = false, updatable = false),
+		@JoinColumn(name = "segment_id", referencedColumnName = "segment_id", insertable = false, updatable = false)
+	})
+	private ChosenSeatingSeg segment;
+
+    @Column(name = "seat_row")
     private int row;
+
+    @Column(name = "seat_number")
     private int number;
 
-    // --- ADD THE Jpa Mapping Strategy Here ---
-    @ElementCollection
-    @CollectionTable(
-        name = "seat_stock", 
-        joinColumns = @JoinColumn(name = "seat_id") // Links to the seat identifier
-    )
-    @MapKeyColumn(name = "event_id")      // The Map Key (Integer event ID)
-    @Column(name = "is_reserved")         // The Map Value (Boolean availability status)
-    private Map<Integer, Boolean> stock=new HashMap<>();;
+	@ElementCollection
+	@CollectionTable(
+		name = "7k",
+		joinColumns = {
+			@JoinColumn(name = "venue_id", referencedColumnName = "venue_id"),
+			@JoinColumn(name = "segment_id", referencedColumnName = "segment_id"),
+			@JoinColumn(name = "seat_id", referencedColumnName = "seat_id")
+		}
+	)
+	@MapKeyColumn(name = "event_id")
+	@Column(name = "is_reserved")
+	private Map<Integer, Boolean> stock = new HashMap<>();
+
 
 	public Seat(int row, int number) {
-		this.seatId = row + "-" + number;
+		String seatId = row + "-" + number;
+		this.id = new SeatId(null, null, seatId);
 		this.row = row;
 		this.number = number;
-		stock = new HashMap<Integer, Boolean>();
+		this.stock = new HashMap<>();
 	}
 
 	public Seat() {
-		// Default constructor for JPA
-		this.seatId = null;
-		this.row = 0;
-		this.number = 0;
-		this.stock = new HashMap<Integer, Boolean>();
+		this.stock = new HashMap<>();
 	}
 
 	public Seat(Seat other) {
-		this.seatId = other.seatId;
+		this.id = new SeatId(null, null, other.getSeatId());
 		this.row = other.row;
 		this.number = other.number;
 		this.stock = new HashMap<>(other.stock);
 	}
 
-	public String getSeatId() {
-		return seatId;
+	public SeatId getId() {
+		return id;
 	}
+
+	public String getSeatId() {
+		return id != null ? id.getSeatId() : null;
+	}
+
+	public String getSegmentId() {
+		return id != null ? id.getSegmentId() : null;
+	}
+
+	public String getVenueId() {
+    	return id != null ? id.getVenueId() : null;
+	}
+
+	public ChosenSeatingSeg getSegment() {
+		return segment;
+	}
+
+	public void setSegment(ChosenSeatingSeg segment) {
+		this.segment = segment;
+
+		if (this.id == null) {
+			this.id = new SeatId();
+		}
+
+		this.id.setSeatId(row + "-" + number);
+		this.id.setSegmentId(segment.getSegmentID());
+		this.id.setVenueId(segment.getVenueID());
+	}
+
 
 	public int getRow() {
 		return row;
@@ -110,18 +155,14 @@ public class Seat {
 	}
 
 	@Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (!(o instanceof Seat other)) {
-            return false;
-        }
-        return Objects.equals(seatId, other.seatId);
-    }
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof Seat other)) return false;
+		return Objects.equals(id, other.id);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(seatId);
-    }
+	@Override
+	public int hashCode() {
+		return Objects.hash(id);
+	}
 }

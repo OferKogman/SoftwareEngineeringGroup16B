@@ -181,11 +181,11 @@ public class OrderServiceTests {
         private void seedOrders() {
                 //Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID);
                 //Order(String segmentId, int amount, double totalPrice, int eventId, String subjectID);
-                seatOrder = new Order("seatingSeg1", List.of("A-1", "A-2"), 100.0, testEvent.getEventID(), testUser.getEmail());
+                seatOrder = new Order("seatingSeg1", List.of("65-1", "65-2"), 100.0, testEvent.getEventID(), testUser.getEmail());
                 fieldOrder = new Order("fieldSeg1", 3, 150.0, testEvent.getEventID(), testUser.getEmail());
 
                 Venue venue = venueRepo.findByID(testVenue.getID());
-                venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("A-1", "A-2"), "seatingSeg1"));
+                venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("65-1", "65-2"), "seatingSeg1"));
                 venue.reserveSeats(ReservationRequest.forField(testEvent.getEventID(), 3, "fieldSeg1"));
                 venueRepo.save(venue);
 
@@ -354,7 +354,7 @@ public class OrderServiceTests {
 void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
         Order otherUserOrder = new Order(
                 "seatingSeg1",
-                List.of("A-3", "A-4"),
+                List.of("65-3", "65-4"),
                 100.0,
                 testEvent.getEventID(),
                 "other@test.com"
@@ -436,8 +436,43 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
 
                 verify(paymentGateway).cancelPayment(anyInt());
         }
+        /* 
+        @Test
+        void completeActiveOrder_expiredOrder_failsCancelsOrderAndFreesReservation() {
+                Order expiredOrder = mock(Order.class);
 
+                when(expiredOrder.getOrderId()).thenReturn("expired-order");
+                doThrow(new com.group16b.ApplicationLayer.Exceptions.OrderExpiredException("expired"))
+                        .when(expiredOrder)
+                        .validiteOrderIsActive();
 
+                IOrderRepository mockOrderRepo = mock(IOrderRepository.class);
+                when(mockOrderRepo.findByID("expired-order")).thenReturn(expiredOrder);
+
+                OrderService service = new OrderService(
+                        authService,
+                        productionCompanyRepo,
+                        paymentGateway,
+                        venueRepo,
+                        eventRepo,
+                        userRepo,
+                        mockOrderRepo,
+                        ticketGateway
+                );
+
+                Result<String> result =
+                        service.CompleteActiveOrder("expired-order", "user1", validPaymentInfo());
+
+                assertFalse(result.isSuccess());
+                assertTrue(result.getError().contains("Order expired"));
+
+                verify(paymentGateway, never()).processPayment(any(), anyDouble());
+                verify(paymentGateway, never()).cancelPayment(anyInt());
+                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
+                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
+                verify(ticketGateway,never()).revokeTicket(anyString());
+                verify(mockOrderRepo, times(1)).delete("expired-order");
+        }*/
 
         @Test
         void completeActiveOrder_optimisticLockFailsOnce_retriesAndCompletesOrder() {
@@ -450,7 +485,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 when(firstOrder.getOrderId()).thenReturn("lock-order");
                 when(firstOrder.getEventId()).thenReturn(testEvent.getEventID());
                 when(firstOrder.getSegmentId()).thenReturn("seatingSeg1");
-                when(firstOrder.getSeats()).thenReturn(List.of("A-1", "A-2"));
+                when(firstOrder.getSeats()).thenReturn(List.of("65-1", "65-2"));
                 when(firstOrder.getNumOfTickets()).thenReturn(2);
                 when(firstOrder.getTotalOrderprice()).thenReturn(100.0);
 
@@ -504,7 +539,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 when(firstOrder.getOrderId()).thenReturn("lock-fail-order");
                 when(firstOrder.getEventId()).thenReturn(testEvent.getEventID());
                 when(firstOrder.getSegmentId()).thenReturn("seatingSeg1");
-                when(firstOrder.getSeats()).thenReturn(List.of("A-1", "A-2"));
+                when(firstOrder.getSeats()).thenReturn(List.of("65-1", "65-2"));
                 when(firstOrder.getNumOfTickets()).thenReturn(2);
                 when(firstOrder.getTotalOrderprice()).thenReturn(100.0);
 
@@ -662,32 +697,32 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         // _______________ changeSeatsToOrder tests:_________________
         @Test
         void changeSeatsToOrder_validChange_updatesOrderSeatsAndPrice() {
-                Result<List<String>> result = orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                Result<List<String>> result = orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
                 String error = result.getError();
                 assertTrue(result.isSuccess());
-                assertEquals(List.of("A-3", "A-4"), result.getValue());
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-3", "A-4"));
+                assertEquals(List.of("65-3", "65-4"), result.getValue());
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-3", "65-4"));
         }
 
         @Test
         void changeSeatsToOrder_partialOverlap_reservesOnlyNewSeatsAndFreesOnlyRemovedSeats() {
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-2", "A-3"));
+                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-2", "65-3"));
 
                 assertTrue(result.isSuccess());
-                assertEquals(List.of("A-2", "A-3"), result.getValue());
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-2", "A-3"));
+                assertEquals(List.of("65-2", "65-3"), result.getValue());
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-2", "65-3"));
         }
 
         @Test
         void changeSeatsToOrder_sameSeats_returnsOkWithoutChangingAnything() {
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-1", "A-2"));
+                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-1", "65-2"));
 
                 assertTrue(result.isSuccess());
-                assertEquals(List.of("A-1", "A-2"), result.getValue());
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertEquals(List.of("65-1", "65-2"), result.getValue());
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
@@ -697,7 +732,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("cannot be null or empty"));
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
@@ -707,34 +742,34 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("cannot be null or empty"));
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
         void changeSeatsToOrder_invalidToken_failsAndDoesNotChangeOrder() {
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "invalid", List.of("A-3", "A-4"));
+                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "invalid", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Authentication failed"));
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
         void changeSeatsToOrder_adminToken_failsAndDoesNotChangeOrder() {
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "admin", List.of("A-3", "A-4"));
+                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "admin", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Authentication failed"));
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
         void changeSeatsToOrder_wrongUser_failsAndDoesNotChangeOrder() {
                 Order otherUserOrder = new Order(
                         "seatingSeg1",
-                        List.of("A-3", "A-4"),
+                        List.of("65-3", "65-4"),
                         100.0,
                         testEvent.getEventID(),
                         "other@test.com"
@@ -743,16 +778,16 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 orderRepo.save(otherUserOrder);
 
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(otherUserOrder.getOrderId(), "user1", List.of("A-5", "B-1"));
+                        orderService.changeSeatsToOrder(otherUserOrder.getOrderId(), "user1", List.of("A-5", "66-1"));
 
                 assertFalse(result.isSuccess());
-                assertOrderSeats(otherUserOrder.getOrderId(), List.of("A-3", "A-4"));
+                assertOrderSeats(otherUserOrder.getOrderId(), List.of("65-3", "65-4"));
         }
 
         @Test
         void changeSeatsToOrder_orderNotFound_fails() {
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder("missing-order-id", "user1", List.of("A-3", "A-4"));
+                        orderService.changeSeatsToOrder("missing-order-id", "user1", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
         }
@@ -764,16 +799,16 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 orderRepo.save(order);
 
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
         void changeSeatsToOrder_fieldOrder_failsAndDoesNotChangeOrder() {
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(fieldOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                        orderService.changeSeatsToOrder(fieldOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
         }
@@ -781,14 +816,14 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         @Test
         void changeSeatsToOrder_requestedSeatAlreadyReserved_failsAndDoesNotChangeOrder() {
                 Venue venue = venueRepo.findByID(testVenue.getID());
-                venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("A-3"), "seatingSeg1"));
+                venue.reserveSeats(ReservationRequest.forSeats(testEvent.getEventID(), List.of("65-3"), "seatingSeg1"));
                 venueRepo.save(venue);
 
                 Result<List<String>> result =
-                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-2", "A-3"));
+                        orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-2", "65-3"));
 
                 assertFalse(result.isSuccess());
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
@@ -809,11 +844,11 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 );
 
                 Result<List<String>> result =
-                        service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                        service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Event not found"));
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         @Test
@@ -834,11 +869,11 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 );
 
                 Result<List<String>> result =
-                        service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                        service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
                 assertFalse(result.isSuccess());
                 assertTrue(result.getError().contains("Venue not found"));
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
 
         private void assertOrderSeats(String orderId, List<String> expectedSeats) {
@@ -963,7 +998,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         orderService.changeNumOfSeatsInFieldOrder(seatOrder.getOrderId(), "user1", 5);
 
                 assertFalse(result.isSuccess());
-                assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+                assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
         }
         @Test
         void changeNumOfSeatsInFieldOrder_notEnoughFieldCapacity_failsAndDoesNotChangeOrder() {
@@ -990,7 +1025,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
                 assertOrderDoesNotExist(orderId);
-                assertSeatsCanBeReservedAgain(List.of("A-1", "A-2"), "seatingSeg1");
+                assertSeatsCanBeReservedAgain(List.of("65-1", "65-2"), "seatingSeg1");
         }
 
         @Test
@@ -1025,8 +1060,77 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 assertEquals("Order " + seatOrder.getOrderId() + " is not active", result.getError());
                 assertOrderIsCompleted(seatOrder);
         }
+        /* 
+        @Test
+        void cancelOrder_eventNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
+                IEventRepository mockEventRepo = mock(IEventRepository.class);
+                when(mockEventRepo.findByID(String.valueOf(testEvent.getEventID())))
+                        .thenThrow(new IllegalArgumentException("Event not found"));
 
+                OrderService service = new OrderService(
+                        authService,
+                        productionCompanyRepo,
+                        paymentGateway,
+                        venueRepo,
+                        mockEventRepo,
+                        userRepo,
+                        orderRepo,
+                        ticketGateway
+                );
 
+                String orderId = seatOrder.getOrderId();
+
+                Result<Boolean> result = service.cancelOrder(orderId, "user1");
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+                assertOrderDoesNotExist(orderId);
+        }
+
+        @Test
+        void cancelOrder_venueNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
+                IRepository<Venue> mockVenueRepo = mock(IRepository.class);
+                when(mockVenueRepo.findByID(testVenue.getID()))
+                        .thenThrow(new IllegalArgumentException("Venue not found"));
+
+                OrderService service = new OrderService(
+                        authService,
+                        productionCompanyRepo,
+                        paymentGateway,
+                        mockVenueRepo,
+                        eventRepo,
+                        userRepo,
+                        orderRepo,
+                        ticketGateway
+                );
+
+                String orderId = seatOrder.getOrderId();
+
+                Result<Boolean> result = service.cancelOrder(orderId, "user1");
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+                assertOrderDoesNotExist(orderId);
+        }
+
+        @Test
+        void cancelOrder_segmentNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
+                Order badSegmentOrder = new Order(
+                        "missingSeg",
+                        List.of("65-3"),
+                        50.0,
+                        testEvent.getEventID(),
+                        testUser.getEmail()
+                );
+
+                orderRepo.save(badSegmentOrder);
+
+                Result<Boolean> result = orderService.cancelOrder(badSegmentOrder.getOrderId(), "user1");
+
+                assertTrue(result.isSuccess());
+                assertTrue(result.getValue());
+                assertOrderDoesNotExist(badSegmentOrder.getOrderId());
+        }*/
 
         @Test
         void cancelOrder_invalidToken_returnsFailAndDoesNotDeleteOrder() {
@@ -1050,7 +1154,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         void cancelOrder_orderBelongsToDifferentUser_shouldFailAndNotDeleteOrder() {
                 Order otherUserOrder = new Order(
                         "seatingSeg1",
-                        List.of("A-3", "A-4"),
+                        List.of("65-3", "65-4"),
                         100.0,
                         testEvent.getEventID(),
                         "other@test.com"
@@ -1161,7 +1265,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         void getOrderPrice_orderBelongsToDifferentUser_fails() {
                 Order otherUserOrder = new Order(
                         "seatingSeg1",
-                        List.of("A-3", "A-4"),
+                        List.of("65-3", "65-4"),
                         100.0,
                         testEvent.getEventID(),
                         "other@test.com"
@@ -1246,14 +1350,14 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         );
 
         Result<List<String>> result =
-                service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
         assertFalse(result.isSuccess());
 
-        assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+        assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
 
         assertDoesNotThrow(() ->
-                assertSeatsCanBeReservedAgain(List.of("A-3", "A-4"), "seatingSeg1")
+                assertSeatsCanBeReservedAgain(List.of("65-3", "65-4"), "seatingSeg1")
         );
 }
 
@@ -1296,10 +1400,10 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         @Test
         void changeSeatsToOrder_duplicateSeatIds_failsAndDoesNotChangeOrder() {
         Result<List<String>> result =
-                orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-3"));
+                orderService.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-3"));
 
         assertFalse(result.isSuccess());
-        assertOrderSeats(seatOrder.getOrderId(), List.of("A-1", "A-2"));
+        assertOrderSeats(seatOrder.getOrderId(), List.of("65-1", "65-2"));
 }
 
         @Test
@@ -1341,12 +1445,12 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
         );
 
         Result<List<String>> result =
-                service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("A-3", "A-4"));
+                service.changeSeatsToOrder(seatOrder.getOrderId(), "user1", List.of("65-3", "65-4"));
 
         assertFalse(result.isSuccess());
 
         assertDoesNotThrow(() ->
-                assertSeatsCanBeReservedAgain(List.of("A-3", "A-4"), "seatingSeg1")
+                assertSeatsCanBeReservedAgain(List.of("65-3", "65-4"), "seatingSeg1")
         );
 }
 
