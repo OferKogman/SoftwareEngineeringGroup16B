@@ -21,6 +21,8 @@ import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.group16b.ApplicationLayer.Interfaces.IBusinessNotificationService;
 
 import io.jsonwebtoken.JwtException;
 
@@ -32,6 +34,7 @@ public class CompanyHierarchyService {
 	private final IAuthenticationService authenticationService;
 	private final IRepository<User> userRepository;
 	private final IProductionCompanyRepository productionCompanyRepository;
+	private IBusinessNotificationService businessNotifications;
 
 	public CompanyHierarchyService(IAuthenticationService authenticationService,
 			IProductionCompanyRepository productionCompanyRepository, IRepository<User> userRepository) {
@@ -74,6 +77,9 @@ public class CompanyHierarchyService {
 				productionCompanyRepository.save(company);
 				logger.info("CompanyHierarchyService.assignOwnerToCompany: Successfuly saved the {} company",
 						companyID);
+
+				notifyOwnerInvite(targetID, companyID, company.getName(), userID);
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.assignOwnerToCompany: Runtime error: " + e.getMessage());
@@ -187,6 +193,9 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.acceptInviteToCompany: Succesfully saved company {} after accepting invite",
 						companyID);
+
+				notifyInviteAccepted(assignerID, userID, companyID, company.getName());
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.acceptInviteToCompany: Runtime error: " + e.getMessage());
@@ -246,6 +255,9 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.rejectInviteToCompany: Succesfully saved company {} after rejected invite",
 						companyID);
+
+				notifyInviteRejected(assignerID, userID, companyID, company.getName());
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.rejectInviteToCompany: Runtime error: " + e.getMessage());
@@ -351,6 +363,9 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.removeOwnerManager: Succesfully saved company {} after remove membership of target {}",
 						companyID, targetID);
+
+				notifyMembershipRemoved(targetID, companyID, company.getName());
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.removeOwnerManager: Runtime error: " + e.getMessage());
@@ -408,6 +423,9 @@ public class CompanyHierarchyService {
 				logger.info(
 						"CompanyHierarchyService.changeManagerPermission: Succesfully saved company {} after update manager permissions of target {} by user {}",
 						companyID, targetID, userID);
+
+				notifyPermissionsChanged(targetID, companyID, company.getName());
+
 				return Result.makeOk(true);
 			} catch (IllegalArgumentException e) {
 				logger.warn("CompanyHierarchyService.changeManagerPermission: Runtime error: " + e.getMessage());
@@ -471,10 +489,10 @@ public class CompanyHierarchyService {
     {
         try{
             logger.info("companyHierarchyService.getComapanyPermissions: retrieving permissions");
-            
+
             String userId=validateRoleAndGetUserId();
             ProductionCompany company=productionCompanyRepository.findByID(String.valueOf(companyID));
-            
+
             logger.info("companyHierarchyService.getComapanyPermissions: succesfully retrieved permissions for user {} in company {}",userId,companyID);
             return Result.makeOk(company.getUserPermissions(userId));
 
@@ -538,5 +556,46 @@ public class CompanyHierarchyService {
 
         return RequestContext.getUserId();
     }
+
+	@Autowired(required = false)
+	public void setBusinessNotifications(IBusinessNotificationService businessNotifications) {
+		this.businessNotifications = businessNotifications;
+	}
+
+	private void notifyOwnerInvite(String targetID, int companyID, String companyName, String inviterID) {
+		if (businessNotifications != null) {
+			businessNotifications.companyOwnerInvite(targetID, companyID, companyName, inviterID);
+		}
+	}
+
+	private void notifyManagerInvite(String targetID, int companyID, String companyName, String inviterID) {
+		if (businessNotifications != null) {
+			businessNotifications.companyManagerInvite(targetID, companyID, companyName, inviterID);
+		}
+	}
+
+	private void notifyInviteAccepted(String assignerID, String targetID, int companyID, String companyName) {
+		if (businessNotifications != null) {
+			businessNotifications.companyInviteAccepted(assignerID, targetID, companyID, companyName);
+		}
+	}
+
+	private void notifyInviteRejected(String assignerID, String targetID, int companyID, String companyName) {
+		if (businessNotifications != null) {
+			businessNotifications.companyInviteRejected(assignerID, targetID, companyID, companyName);
+		}
+	}
+
+	private void notifyMembershipRemoved(String targetID, int companyID, String companyName) {
+		if (businessNotifications != null) {
+			businessNotifications.companyMembershipRemoved(targetID, companyID, companyName);
+		}
+	}
+
+	private void notifyPermissionsChanged(String targetID, int companyID, String companyName) {
+		if (businessNotifications != null) {
+			businessNotifications.companyPermissionsChanged(targetID, companyID, companyName);
+		}
+	}
 
 }

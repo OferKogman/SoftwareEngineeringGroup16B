@@ -137,4 +137,8 @@ public class LotteryPolicy implements PurchasePolicy {
     public List<String> getWinners() {
         return new ArrayList<>(winnersAndCodes.values());
     }
+
+    public synchronized Map<String, String> copyWinnersAndCodesForNotification() {
+        return new ConcurrentHashMap<>(winnersAndCodes);
+    }
 }
