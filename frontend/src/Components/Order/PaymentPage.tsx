@@ -34,9 +34,8 @@ export default function PaymentPage() {
 
   const [amount, setAmount] = useState<number>(0);
   const [isLoadingPrice, setIsLoadingPrice] = useState<boolean>(true);
+
   const [orderStartTime, setOrderStartTime] = useState<number | null>(null);
-
-
   const [secondsLeft, setSecondsLeft] = useState(PAYMENT_TIME_LIMIT_SECONDS);
   const [error, setError] = useState("");
   const [isCanceling, setIsCanceling] = useState(false);
@@ -75,6 +74,7 @@ export default function PaymentPage() {
         const price = await getPrice();
 
         setAmount(price);
+
         const timestampResponse = await apiFetch(
           `${API_BASE}/api/order/getActiveOrderTimeStamp/${orderId}`,
           {
@@ -98,7 +98,7 @@ export default function PaymentPage() {
     void loadPrice();
   }, [orderId, sessionToken, apiFetch]);
 
-   useEffect(() => {
+  useEffect(() => {
     if (orderStartTime == null) {
       return;
     }
