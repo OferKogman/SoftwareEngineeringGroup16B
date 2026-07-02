@@ -161,6 +161,10 @@ public class VenueEventConfigServiceTests {
                 when(mockProductionCompanyRepository.findByID(String.valueOf(companyID))).thenReturn(mockCompany);
                 doNothing().when(mockCompany).validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
+                doThrow(new IllegalArgumentException()).when(mockVenueRepository).findByID(anyString());
+
+                when(mockCompany.isOwner(userID)).thenReturn(true);
+
                 // Action
                 Result<String> result = configService.configureNewLayoutAndInventory(
                                 validToken, companyID, validRecord);
@@ -196,6 +200,7 @@ public class VenueEventConfigServiceTests {
                 when(mockUserRepository.findByID(userID)).thenReturn(mockUser);
                 when(mockCompany.isOwner(userID)).thenReturn(false);
                 when(mockCompany.isOwner(userID)).thenReturn(true); // is a manager instead
+                doThrow(new IllegalArgumentException()).when(mockVenueRepository).findByID(anyString());
 
                 Result<String> result = configService.configureNewLayoutAndInventory(
                                 validToken, companyID, validRecord);
