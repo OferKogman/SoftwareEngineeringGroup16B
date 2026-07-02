@@ -11,6 +11,7 @@ import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapsId;
@@ -19,14 +20,15 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "seats")
 public class Seat {
+	@EmbeddedId
+	private SeatId id;
 
-    @EmbeddedId
-    private SeatId id;
-
-    @MapsId("segmentId")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "segment_id", referencedColumnName = "segmentID")
-    private ChosenSeatingSeg segment;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumns({
+		@JoinColumn(name = "venue_id", referencedColumnName = "venue_id", insertable = false, updatable = false),
+		@JoinColumn(name = "segment_id", referencedColumnName = "segment_id", insertable = false, updatable = false)
+	})
+	private ChosenSeatingSeg segment;
 
     @Column(name = "seat_row")
     private int row;
@@ -34,22 +36,23 @@ public class Seat {
     @Column(name = "seat_number")
     private int number;
 
-    @ElementCollection
-    @CollectionTable(
-        name = "seat_stock",
-        joinColumns = {
-            @JoinColumn(name = "seat_id", referencedColumnName = "seat_id"),
-            @JoinColumn(name = "segment_id", referencedColumnName = "segment_id")
-        }
-    )
-    @MapKeyColumn(name = "event_id")
-    @Column(name = "is_reserved")
-    private Map<Integer, Boolean> stock = new HashMap<>();
+	@ElementCollection
+	@CollectionTable(
+		name = "7k",
+		joinColumns = {
+			@JoinColumn(name = "venue_id", referencedColumnName = "venue_id"),
+			@JoinColumn(name = "segment_id", referencedColumnName = "segment_id"),
+			@JoinColumn(name = "seat_id", referencedColumnName = "seat_id")
+		}
+	)
+	@MapKeyColumn(name = "event_id")
+	@Column(name = "is_reserved")
+	private Map<Integer, Boolean> stock = new HashMap<>();
 
 
 	public Seat(int row, int number) {
 		String seatId = row + "-" + number;
-		this.id = new SeatId(seatId, null);
+		this.id = new SeatId(null, null, seatId);
 		this.row = row;
 		this.number = number;
 		this.stock = new HashMap<>();
@@ -60,7 +63,7 @@ public class Seat {
 	}
 
 	public Seat(Seat other) {
-		this.id = new SeatId(other.getSeatId(), null);
+		this.id = new SeatId(null, null, other.getSeatId());
 		this.row = other.row;
 		this.number = other.number;
 		this.stock = new HashMap<>(other.stock);
@@ -78,6 +81,10 @@ public class Seat {
 		return id != null ? id.getSegmentId() : null;
 	}
 
+	public String getVenueId() {
+    	return id != null ? id.getVenueId() : null;
+	}
+
 	public ChosenSeatingSeg getSegment() {
 		return segment;
 	}
@@ -91,6 +98,7 @@ public class Seat {
 
 		this.id.setSeatId(row + "-" + number);
 		this.id.setSegmentId(segment.getSegmentID());
+		this.id.setVenueId(segment.getVenueID());
 	}
 
 

@@ -18,11 +18,17 @@ import jakarta.persistence.Table;
 public class FieldSeg extends Segment {
 	private int size;
 
-    @ElementCollection
-    @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segmentID"))
-    @MapKeyColumn(name = "stock_key")
-    @Column(name = "stock_value")
-	private Map<Integer, Integer> stock=new HashMap<>();
+	@ElementCollection
+	@CollectionTable(
+		name = "field_seg_stock",
+		joinColumns = {
+			@JoinColumn(name = "venue_id", referencedColumnName = "venue_id"),
+			@JoinColumn(name = "segment_id", referencedColumnName = "segment_id")
+		}
+	)
+	@MapKeyColumn(name = "stock_key")
+	@Column(name = "stock_value")
+	private Map<Integer, Integer> stock = new HashMap<>();
 
 	public FieldSeg(String segID, int size, GridRectangle area) {
 		super(segID, area);
