@@ -20,4 +20,7 @@ public interface ProductionCompanyRepository extends JpaRepository<ProductionCom
 
     @Query("SELECT p FROM ProductionCompany p JOIN p.membersNodes m WHERE KEY(m) = :userId")
     List<ProductionCompany> findCompaniesManagedByUser(@Param("userId") String userId);
+
+    @Query("SELECT COALESCE(MAX(p.productionCompanyID), 0) FROM ProductionCompany p")
+    Optional<Integer> findMaxCompanyId();
 }

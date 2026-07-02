@@ -10,4 +10,6 @@ public interface IProductionCompanyRepository extends IRepository<ProductionComp
 
     List<Integer> getAllUserComapnies(User user);
     List<ProductionCompany> findCompaniesManagedByUser(String Id);
+
+    int getLatestCompanyID();
 }
