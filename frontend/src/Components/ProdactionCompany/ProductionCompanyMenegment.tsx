@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { NavLink, useOutlet, useParams } from "react-router-dom";
+import {
+  NavLink,
+  Navigate,
+  useNavigate,
+  useOutlet,
+  useParams,
+} from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import {
   type ManagerPermissions,
@@ -11,15 +17,12 @@ import "./CSS/ProductionCompanyManagement.css";
 const API_BASE = "http://localhost:8080";
 
 function getApiError(data: unknown): string {
-  if (typeof data === "string" && data.trim()) {
-    return data;
-  }
+  if (typeof data === "string" && data.trim()) return data;
 
   if (data && typeof data === "object") {
     if ("message" in data && typeof data.message === "string") {
       return data.message;
     }
-
     if ("error" in data && typeof data.error === "string") {
       return data.error;
     }
@@ -39,10 +42,7 @@ function isProductionCompanyDTO(data: unknown): data is ProductionCompanyDTO {
 
 async function readResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
-
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
 
   try {
     return JSON.parse(text);
@@ -52,6 +52,7 @@ async function readResponseBody(response: Response): Promise<unknown> {
 }
 
 export default function ProductionCompanyManagement() {
+  const navigate = useNavigate();
   const { companyId } = useParams();
   const { sessionToken } = useSession();
 
@@ -60,15 +61,18 @@ export default function ProductionCompanyManagement() {
   const [owner, setOwner] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   const apiFetch = useApiFetch();
 
   function closePopup() {
     setError("");
+    if (shouldRedirect) {
+      navigate("/", { replace: true });
+    }
   }
 
-  const hasPermission = (permission: ManagerPermissions) =>
-    perms.includes(permission);
+  const hasPermission = (p: ManagerPermissions) => perms.includes(p);
 
   const outlet = useOutlet({
     company,
@@ -84,86 +88,104 @@ export default function ProductionCompanyManagement() {
       setLoading(true);
       setError("");
       setCompany(null);
+      setShouldRedirect(false);
+
+      const fail = (msg: string, redirect = false) => {
+        if (cancelled) return;
+
+        setError(msg);
+        setShouldRedirect(redirect);
+        setLoading(false);
+      };
 
       if (!companyId) {
-        setError("Missing company id");
-        setLoading(false);
+        fail("Missing company id");
         return;
       }
 
-      if (!sessionToken) {
-        return;
-      }
+      if (!sessionToken) return;
 
       try {
         const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
         const data = await readResponseBody(response);
+        if (cancelled) return;
 
-        if (cancelled) {
+        if (!response.ok) {
+          const msg = getApiError(data);
+          const redirect =
+            msg.toLowerCase().includes("not part of the company") ||
+            msg.toLowerCase().includes("not part");
+
+          fail(msg, redirect);
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(getApiError(data));
-        }
-
         if (!isProductionCompanyDTO(data)) {
-          throw new Error("Invalid company response from server");
+          fail("Invalid company response from server");
+          return;
         }
 
         setCompany(data);
 
         const response2 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/owner`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
         const ownerData = await readResponseBody(response2);
+        if (cancelled) return;
 
         if (!response2.ok) {
-          throw new Error(getApiError(ownerData));
+          const msg = getApiError(ownerData);
+          const redirect =
+            msg.toLowerCase().includes("not part of the company") ||
+            msg.toLowerCase().includes("not part");
+
+          fail(msg, redirect);
+          return;
         }
 
         if (typeof ownerData !== "boolean") {
-          throw new Error("Invalid owner response from server");
+          fail("Invalid owner response from server");
+          return;
         }
 
         setOwner(ownerData);
 
         const response3 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/permissions`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
         const permissionsData = await readResponseBody(response3);
+        if (cancelled) return;
 
         if (!response3.ok) {
-          throw new Error(getApiError(permissionsData));
+          const msg = getApiError(permissionsData);
+          const redirect =
+            msg.toLowerCase().includes("not part of the company") ||
+            msg.toLowerCase().includes("not part");
+
+          fail(msg, redirect);
+          return;
         }
 
         if (!Array.isArray(permissionsData)) {
-          throw new Error("Invalid permissions response from server");
+          fail("Invalid permissions response from server");
+          return;
         }
 
         setPerms(permissionsData as ManagerPermissions[]);
-      } catch (error) {
+      } catch (err) {
         if (!cancelled) {
-          setError(error instanceof Error ? error.message : "");
+          fail(err instanceof Error ? err.message : String(err));
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -173,6 +195,10 @@ export default function ProductionCompanyManagement() {
       cancelled = true;
     };
   }, [companyId, sessionToken, apiFetch]);
+
+  if (!sessionToken) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="management-page">
@@ -184,14 +210,13 @@ export default function ProductionCompanyManagement() {
               ? company.name
               : "Company unavailable"}
         </h1>
-
         <p>Company ID: {companyId ?? "Missing"}</p>
       </div>
 
       {error && (
         <div className="settings-alert">
           <p>{error}</p>
-          <button onClick={closePopup}> OK </button>
+          <button onClick={closePopup}>OK</button>
         </div>
       )}
 
@@ -200,31 +225,23 @@ export default function ProductionCompanyManagement() {
           {hasPermission("SALES_REPORT") && (
             <NavLink to="total-revenue">Total Revenue</NavLink>
           )}
-
           {hasPermission("VIEW_PURCHASE_HISTORY") && (
             <NavLink to="sales-history">Sales History</NavLink>
           )}
-
           {hasPermission("PURCHASE_POLICY") && (
             <NavLink to="discount-policy">Discount Policy</NavLink>
           )}
-
           {hasPermission("PURCHASE_POLICY") && (
             <NavLink to="purchase-policy">Purchase Policy</NavLink>
           )}
-
           {hasPermission("EVENT_INVENTORY") && (
             <NavLink to="events">Events</NavLink>
           )}
-
           {hasPermission("VENUE_CONFIGURATION") && (
             <NavLink to="venue-config">Create Venue</NavLink>
           )}
-
           {owner && <NavLink to="members">Members & Permissions</NavLink>}
-
           {owner && <NavLink to="hierarchy">Hierarchy Tree</NavLink>}
-
           {owner && <NavLink to="settings">Resignation</NavLink>}
         </aside>
 
@@ -234,15 +251,10 @@ export default function ProductionCompanyManagement() {
               <h2>Loading...</h2>
               <p>Loading company data from the server.</p>
             </div>
-          ) : error ? (
-            <div className="management-default-content">
-              <h2>Cannot load company management</h2>
-            </div>
           ) : (
             (outlet ?? (
               <div className="management-default-content">
                 <h2>Company Management</h2>
-
                 <p>Select an option from the sidebar.</p>
               </div>
             ))
