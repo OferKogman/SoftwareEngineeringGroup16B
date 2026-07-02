@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, useOutlet } from "react-router-dom";
+import { NavLink, Navigate, useOutlet } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import "../../CSS/Management.css";
 import type { ActiveOrderDTO } from "../../DTOs/ActiveOrderDTO";
@@ -43,19 +43,7 @@ export default function UserManagement() {
   }, [activeOrder]);
 
   if (!isLoggedIn.loggedIn) {
-    return (
-      <div className="management-page">
-        <div className="management-header">
-          <h1>User Management</h1>
-        </div>
-        <div className="management-body">
-          <div className="management-content">
-            <h2>Access Denied</h2>
-            <p>You must be logged in to access this page.</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <Navigate to="/" replace />;
   }
 
   return (
