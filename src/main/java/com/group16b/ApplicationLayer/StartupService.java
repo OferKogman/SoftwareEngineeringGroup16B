@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
 import com.group16b.ApplicationLayer.Exceptions.WsepCommunicationException;
@@ -28,17 +29,35 @@ public class StartupService {
     private final IRepository<VirtualQueue> virtualQueueRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
     private final ProductionCompanyIdGen ProductionCompanyIdGenerator;
+    private final String defaultAdminUsername;
+    private final String defaultAdminPassword;
+    private final String defaultAdminEmail;
 
 
     //will grow as more invariants would be needed to validate
-    public StartupService(IRepository<SystemAdmin> adminRepo,WsepClient wsepClient, IEventRepository eventRepo, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> virtualQueueRepo,ProductionCompanyIdGen ProductionCompanyIdGenerator) {
+    public StartupService(
+            IRepository<SystemAdmin> adminRepo,
+            WsepClient wsepClient,
+            IEventRepository eventRepo,
+            IRepository<VirtualQueue> virtualQueueRepo,
+            IProductionCompanyRepository productionCompanyRepo,
+            ProductionCompanyIdGen ProductionCompanyIdGenerator,
+            @Value("${startup.default-admin.username}") String defaultAdminUsername,
+            @Value("${startup.default-admin.password}") String defaultAdminPassword,
+            @Value("${startup.default-admin.email}") String defaultAdminEmail) {
+            
         this.adminRepo = adminRepo;
-        this.wsepClient=wsepClient;
+        this.wsepClient = wsepClient;
         this.eventRepo = eventRepo;
-        this.productionCompanyRepo = productionCompanyRepo;
         this.virtualQueueRepo = virtualQueueRepo;
+        this.productionCompanyRepo = productionCompanyRepo;
         this.ProductionCompanyIdGenerator = ProductionCompanyIdGenerator;
-    }
+        this.defaultAdminUsername = defaultAdminUsername;
+        this.defaultAdminPassword = defaultAdminPassword;
+        this.defaultAdminEmail = defaultAdminEmail;
+            
+        }
+
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
     public void initializeSystem() {
@@ -64,7 +83,7 @@ public class StartupService {
         try{
             if(adminRepo.getAll().isEmpty()) {
                 logger.info("StartupService.validateAdmins: No system admins found. Creating default system admin...");
-                SystemAdmin defaultAdmin = new SystemAdmin("admin123","password","mail@example.com");
+                SystemAdmin defaultAdmin = new SystemAdmin(defaultAdminUsername, defaultAdminPassword, defaultAdminEmail);
                 adminRepo.save(defaultAdmin);
             }
         } catch (Exception e) {
