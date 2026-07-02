@@ -416,10 +416,29 @@ public class Venue {
                 );
             }
 
-            fieldSeg.setStockForEvent(eventID, newSize - reserved);
+            fieldSeg.setStockForEvent(eventID, Math.max(0, newSize - reserved));
         }
 
         fieldSeg.setSize(newSize);
+    }
+    public void setNewFieldStockAfterRefunds(
+            String segmentId,
+            int newSize,
+            int eventID,
+            int finalReserved
+    ) {
+        Segment segment = segments.get(segmentId);
+
+        if (!(segment instanceof FieldSeg fieldSeg)) {
+            throw new IllegalArgumentException("Segment is not a field segment");
+        }
+
+        if (finalReserved > newSize) {
+            throw new IllegalArgumentException("Still too many reserved tickets after refunds");
+        }
+
+        fieldSeg.setSize(newSize);
+        fieldSeg.setStockForEvent(eventID, newSize - finalReserved);
     }
     public void addChosenSeatingSegment(ChosenSeatingSegRecord seatSeg) {
         this.segments.put(seatSeg.segmentID(), new ChosenSeatingSeg(seatSeg.segmentID(), seatSeg.seats(), new GridRectangle(seatSeg.area())));

@@ -3,8 +3,6 @@ package com.group16b.DomainLayer.Venue;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.group16b.ApplicationLayer.DTOs.FieldSegDTO;
-
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -19,7 +17,7 @@ public class FieldSeg extends Segment {
 	private int size;
 
     @ElementCollection
-    @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segmentID"))
+    @CollectionTable(name = "field_seg_stock", joinColumns = @JoinColumn(name = "segment_id"))
     @MapKeyColumn(name = "stock_key")
     @Column(name = "stock_value")
 	private Map<Integer, Integer> stock=new HashMap<>();
