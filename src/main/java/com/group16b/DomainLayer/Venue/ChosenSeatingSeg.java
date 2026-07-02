@@ -13,6 +13,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKey;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -21,14 +22,17 @@ import jakarta.persistence.Table;
 public class ChosenSeatingSeg extends Segment {
 	private int IDforSeat = 0;
 
-	@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-	@JoinColumn(name = "segment_id", referencedColumnName = "segmentID") // Creates a foreign key column in the seats table linking back here
-	@MapKey(name = "seatId") // Tells Hibernate to use the seatId property from Seat as the Map Key
-	protected Map<String, Seat> seats=new HashMap<>();;
+	@OneToMany(mappedBy = "segment", cascade = CascadeType.ALL, orphanRemoval = true)
+	@MapKeyColumn(name = "seat_map_key")
+	protected Map<String, Seat> seats = new HashMap<>();
 
 	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
 		super(segmentID, area);
-		this.seats = seats;
+		this.seats = new ConcurrentHashMap<>();
+
+		for (Seat seat : seats.values()) {
+			addSeat(seat);
+		}
 	}
 
 	public ChosenSeatingSeg() {
@@ -39,8 +43,7 @@ public class ChosenSeatingSeg extends Segment {
 		super(segmentID, area);
 		this.seats = new ConcurrentHashMap<>();
 		for (SeatRecord sr : seats) {
-			String seatId = sr.row() + "-" + sr.number();
-			this.seats.put(seatId, new Seat(sr.row(), sr.number()));
+			addSeat(new Seat(sr.row(), sr.number()));
 		}
 	}
 
@@ -49,7 +52,7 @@ public class ChosenSeatingSeg extends Segment {
 		this.IDforSeat = other.IDforSeat;
 		this.seats = new ConcurrentHashMap<>();
 		for (Map.Entry<String, Seat> entry : other.seats.entrySet()) {
-			this.seats.put(entry.getKey(), new Seat(entry.getValue()));
+			addSeat(new Seat(entry.getValue()));
 		}
 	}
 
@@ -134,7 +137,8 @@ public class ChosenSeatingSeg extends Segment {
 			for (Integer eventID : eventIDsToInitialize) {
 				newSeat.addEvent(eventID);
 			}
-			seats.put(addSeatID, newSeat);
+
+			addSeat(newSeat);
 		}
 
 		for (String refundSeatID : refundSeatsIDs) {
@@ -170,7 +174,7 @@ public class ChosenSeatingSeg extends Segment {
 
 			int row = Integer.parseInt(parts[0]);
 			int column = Integer.parseInt(parts[1]);
-			seats.put(addSeatID, new Seat(row, column));
+			addSeat(new Seat(row, column));
 		}
 
 		for (String refundSeatID : refundSeatsIDs) {
@@ -232,14 +236,31 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	@Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChosenSeatingSeg other)) return false;
-        return segmentID==other.segmentID;
-    }
+	public void setVenue(Venue venue) {
+		super.setVenue(venue);
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(segmentID);
-    }
+		if (this.seats != null) {
+			for (Seat seat : this.seats.values()) {
+				seat.setSegment(this);
+			}
+		}
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof ChosenSeatingSeg other)) return false;
+		return Objects.equals(getSegmentID(), other.getSegmentID())
+				&& Objects.equals(getVenueID(), other.getVenueID());
+	}
+
+	@Override
+	public int hashCode() {
+    	return Objects.hash(getVenueID(), getSegmentID());
+	}
+
+	private void addSeat(Seat seat) {
+    	seat.setSegment(this);
+    	this.seats.put(seat.getSeatId(), seat);
+	}
 }

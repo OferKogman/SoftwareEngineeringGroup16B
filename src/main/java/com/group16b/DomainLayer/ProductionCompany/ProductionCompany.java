@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.group16b.ApplicationLayer.Records.CompanyInviteRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
@@ -495,5 +496,23 @@ public class ProductionCompany {
 
     public void removeDiscountPolicy(DiscountPolicy dp) {
         discountPolicies.remove(dp);
+    }
+
+    public List<CompanyInviteRecord> getPendingUserInvites(String userID) {
+        List<CompanyInviteRecord> result = new ArrayList<>();
+        for (Map.Entry<InviteKey, MembershipNode> entry : invites.entrySet()) {
+            InviteKey key = entry.getKey();
+            MembershipNode node = entry.getValue();
+            if (key.targetId.equals(userID)) {
+                result.add(new CompanyInviteRecord(
+                    productionCompanyID,
+                    name,
+                    key.assignerId,
+                    key.targetId,
+                    node.getRoleType(),
+                    node.getPermissions()));
+            }
+        }
+        return result;
     }
 }
