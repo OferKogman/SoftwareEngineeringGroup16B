@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useParams } from "react-router-dom";
+import { NavLink, Outlet, useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import "../../CSS/Management.css";
 import type { EventDTO } from "../../DTOs/EventDTO";
@@ -7,18 +7,12 @@ import type { EventDTO } from "../../DTOs/EventDTO";
 const API_BASE = "http://localhost:8080";
 
 function getApiError(data: unknown): string {
-  if (typeof data === "string" && data.trim()) {
-    return data;
-  }
+  if (typeof data === "string" && data.trim()) return data;
 
   if (data && typeof data === "object") {
-    if ("message" in data && typeof data.message === "string") {
+    if ("message" in data && typeof data.message === "string")
       return data.message;
-    }
-
-    if ("error" in data && typeof data.error === "string") {
-      return data.error;
-    }
+    if ("error" in data && typeof data.error === "string") return data.error;
   }
 
   return "event not found";
@@ -35,10 +29,7 @@ function isEventDTO(data: unknown): data is EventDTO {
 
 async function readResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
-
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
 
   try {
     return JSON.parse(text);
@@ -49,15 +40,19 @@ async function readResponseBody(response: Response): Promise<unknown> {
 
 export default function EventManagement() {
   const { eventID } = useParams();
+  const navigate = useNavigate();
+  const apiFetch = useApiFetch();
 
   const [event, setEvent] = useState<EventDTO | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  const apiFetch = useApiFetch();
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   function closePopup() {
     setError("");
+    if (shouldRedirect) {
+      navigate("/", { replace: true });
+    }
   }
 
   useEffect(() => {
@@ -67,62 +62,85 @@ export default function EventManagement() {
       setLoading(true);
       setError("");
       setEvent(null);
+      setShouldRedirect(false);
 
-      if (!eventID) {
-        setError("Missing event id");
+      const fail = (msg: string, redirect = false) => {
+        if (cancelled) return;
+
+        setError(msg);
+        setShouldRedirect(redirect);
         setLoading(false);
-        return;
-      }
+      };
 
       try {
+        if (!eventID) {
+          fail("Missing event id");
+          return;
+        }
+
+        // 1. Load event
         const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
           method: "GET",
         });
 
         const data = await readResponseBody(response);
+        if (cancelled) return;
 
-        if (cancelled) {
+        if (!response.ok) {
+          const msg = getApiError(data);
+
+          const redirect =
+            msg.toLowerCase().includes("not part") ||
+            msg.toLowerCase().includes("not allowed") ||
+            msg.toLowerCase().includes("unauthorized");
+
+          fail(msg, redirect);
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(getApiError(data));
-        }
-
         if (!isEventDTO(data)) {
-          throw new Error("Invalid event response from server");
+          fail("Invalid event response from server");
+          return;
         }
 
         setEvent(data);
 
-        const response3 = await apiFetch(
+        // 2. Permissions
+        const response2 = await apiFetch(
           `${API_BASE}/production-companies/${data.eventProductionCompanyID}/me/permissions`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
-        const permissionsData = await readResponseBody(response3);
+        const permissionsData = await readResponseBody(response2);
+        if (cancelled) return;
 
-        if (!response3.ok) {
-          throw new Error(getApiError(permissionsData));
+        if (!response2.ok) {
+          const msg = getApiError(permissionsData);
+
+          const redirect =
+            msg.toLowerCase().includes("not part") ||
+            msg.toLowerCase().includes("not allowed") ||
+            msg.toLowerCase().includes("unauthorized");
+
+          fail(msg, redirect);
+          return;
         }
 
         if (!Array.isArray(permissionsData)) {
-          throw new Error("Invalid permissions response from server");
+          fail("Invalid permissions response from server");
+          return;
         }
 
         if (!permissionsData.includes("EVENT_INVENTORY")) {
-          throw new Error("User is not authorized to perform this operation");
+          fail("User is not allowed to access this event", true);
+          return;
         }
-      } catch (error) {
+      } catch (err) {
         if (!cancelled) {
-          setError(error instanceof Error ? error.message : "Event not found");
+          fail(err instanceof Error ? err.message : String(err));
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -149,7 +167,7 @@ export default function EventManagement() {
       {error && (
         <div className="settings-alert">
           <p>{error}</p>
-          <button onClick={closePopup}> OK </button>
+          <button onClick={closePopup}>OK</button>
         </div>
       )}
 
