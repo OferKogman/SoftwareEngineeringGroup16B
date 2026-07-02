@@ -38,9 +38,11 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Venue;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Service
+@Transactional
 public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 	private final IAuthenticationService authenticationService;
@@ -538,6 +540,7 @@ public class OrderService {
         return subjectID;
     }
 
+	@Transactional(readOnly = true)
 	public Result<Double> getOrderPrice(String orderId, String sTocken) {
 		try {
 			logger.info("OrderService.getOrderPrice: Attempting to get price for order {}.", orderId);
@@ -568,6 +571,7 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	@Transactional(readOnly = true)
 	public Result<Long> getActiveOrderTimeStamp(String orderId, String sessionToken) {
 		try {
 			logger.info("OrderService.getActiveOrderTimeStamp: Attempting to get timestamp for order {}.", orderId);
