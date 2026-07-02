@@ -1,22 +1,21 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import { useSession } from "../../GlobalContext/SessionContext";
 
 type InviteDTO = {
-  assignerID: string;
   companyId: number;
   companyName: string;
-  assignerName: string;
+  assignerId: string;
+  invitedId: string;
+  roleType: "OWNER" | "MANAGER"; // adjust if backend has more values
+  managerPermissions: string[];
 };
 
 export default function ViewInvites() {
   const { sessionToken } = useSession();
   const apiFetch = useApiFetch();
-  const navigate = useNavigate();
-  const { companyId } = useParams();
 
-  const [invites, setInvites] = useState<InviteDTO[] | null>(null);
+  const [invites, setInvites] = useState<InviteDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -26,6 +25,7 @@ export default function ViewInvites() {
 
   async function loadInvites() {
     try {
+      setLoading(true);
       setError("");
 
       const response = await apiFetch(
@@ -58,51 +58,33 @@ export default function ViewInvites() {
     void loadInvites();
   }, [sessionToken]);
 
-  async function acceptInvite(assignerID: string) {
-    try {
-      const response = await apiFetch(
-        `http://localhost:8080/production-companies/${companyId}/invites/accept`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assignerID }),
-        },
-      );
+  async function acceptInvite(assignerId: string, companyId: number) {
+    await apiFetch(
+      `http://localhost:8080/production-companies/${companyId}/invites/accept`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignerID: assignerId }),
+      },
+    );
 
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      await loadInvites();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to accept invite");
-    }
+    await loadInvites();
   }
 
-  async function rejectInvite(assignerID: string) {
-    try {
-      const response = await apiFetch(
-        `http://localhost:8080/production-companies/${companyId}/invites/reject`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ assignerID }),
-        },
-      );
+  async function rejectInvite(assignerId: string, companyId: number) {
+    await apiFetch(
+      `http://localhost:8080/production-companies/${companyId}/invites/reject`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ assignerID: assignerId }),
+      },
+    );
 
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-
-      await loadInvites();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to reject invite");
-    }
+    await loadInvites();
   }
 
-  if (loading || invites === null) {
-    return <div>Loading invites...</div>;
-  }
+  if (loading) return <div>Loading invites...</div>;
 
   return (
     <div>
@@ -121,21 +103,51 @@ export default function ViewInvites() {
             <tr>
               <th>Company</th>
               <th>Invited By</th>
+              <th>Role</th>
+              <th>Details</th>
               <th>Actions</th>
             </tr>
           </thead>
 
           <tbody>
-            {invites.map((invite) => (
-              <tr key={invite.assignerID}>
+            {invites.map((invite, idx) => (
+              <tr key={`${invite.companyId}-${idx}`}>
                 <td>{invite.companyName}</td>
-                <td>{invite.assignerName}</td>
+                <td>{invite.assignerId}</td>
+                <td>{invite.roleType}</td>
+
                 <td>
-                  <button onClick={() => acceptInvite(invite.assignerID)}>
+                  {invite.roleType === "MANAGER" ? (
+                    invite.managerPermissions.length > 0 ? (
+                      <ul>
+                        {invite.managerPermissions.map((p) => (
+                          <li key={p}>{p}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span>No permissions</span>
+                    )
+                  ) : (
+                    <span>-</span>
+                  )}
+                </td>
+
+                <td>
+                  <button
+                    style={{ marginRight: "10px" }}
+                    onClick={() =>
+                      acceptInvite(invite.assignerId, invite.companyId)
+                    }
+                  >
                     Accept
                   </button>
 
-                  <button onClick={() => rejectInvite(invite.assignerID)}>
+                  <button
+                    style={{ marginRight: "10px" }}
+                    onClick={() =>
+                      rejectInvite(invite.assignerId, invite.companyId)
+                    }
+                  >
                     Reject
                   </button>
                 </td>
