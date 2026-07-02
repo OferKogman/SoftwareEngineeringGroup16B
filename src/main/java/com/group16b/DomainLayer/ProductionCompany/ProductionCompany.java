@@ -35,7 +35,6 @@ import jakarta.persistence.Version;
 public class ProductionCompany {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int productionCompanyID;
 
     @Column(nullable = false)

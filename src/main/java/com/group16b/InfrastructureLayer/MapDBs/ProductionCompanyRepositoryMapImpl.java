@@ -141,5 +141,9 @@ public class ProductionCompanyRepositoryMapImpl implements IProductionCompanyRep
         }
     }
 
+    public int getLatestCompanyID() {
+        return companies.keySet().stream().max(Integer::compareTo).orElse(0);
+    }
+
 
 }
