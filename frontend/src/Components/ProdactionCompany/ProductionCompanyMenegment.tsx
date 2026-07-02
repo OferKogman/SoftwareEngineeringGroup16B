@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
-import { NavLink, useOutlet, useParams } from "react-router-dom";
+import {
+  NavLink,
+  Navigate,
+  useNavigate,
+  useOutlet,
+  useParams,
+} from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import {
   type ManagerPermissions,
@@ -11,18 +17,12 @@ import "./CSS/ProductionCompanyManagement.css";
 const API_BASE = "http://localhost:8080";
 
 function getApiError(data: unknown): string {
-  if (typeof data === "string" && data.trim()) {
-    return data;
-  }
+  if (typeof data === "string" && data.trim()) return data;
 
   if (data && typeof data === "object") {
-    if ("message" in data && typeof data.message === "string") {
+    if ("message" in data && typeof data.message === "string")
       return data.message;
-    }
-
-    if ("error" in data && typeof data.error === "string") {
-      return data.error;
-    }
+    if ("error" in data && typeof data.error === "string") return data.error;
   }
 
   return "";
@@ -33,16 +33,13 @@ function isProductionCompanyDTO(data: unknown): data is ProductionCompanyDTO {
     !!data &&
     typeof data === "object" &&
     "name" in data &&
-    typeof data.name === "string"
+    typeof (data as any).name === "string"
   );
 }
 
 async function readResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
-
-  if (!text) {
-    return null;
-  }
+  if (!text) return null;
 
   try {
     return JSON.parse(text);
@@ -52,23 +49,19 @@ async function readResponseBody(response: Response): Promise<unknown> {
 }
 
 export default function ProductionCompanyManagement() {
+  const navigate = useNavigate();
   const { companyId } = useParams();
   const { sessionToken } = useSession();
 
+  const apiFetch = useApiFetch();
+
   const [company, setCompany] = useState<ProductionCompanyDTO | null>(null);
   const [perms, setPerms] = useState<ManagerPermissions[]>([]);
-  const [owner, setOwner] = useState<boolean>(false);
+  const [owner, setOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const apiFetch = useApiFetch();
-
-  function closePopup() {
-    setError("");
-  }
-
-  const hasPermission = (permission: ManagerPermissions) =>
-    perms.includes(permission);
+  const hasPermission = (p: ManagerPermissions) => perms.includes(p);
 
   const outlet = useOutlet({
     company,
@@ -85,85 +78,105 @@ export default function ProductionCompanyManagement() {
       setError("");
       setCompany(null);
 
-      if (!companyId) {
-        setError("Missing company id");
+      const fail = (msg: string, redirect = false) => {
+        if (cancelled) return;
+
+        setError(msg);
         setLoading(false);
+
+        if (redirect) {
+          navigate("/", { replace: true });
+        }
+      };
+
+      if (!companyId) {
+        fail("Missing company id");
         return;
       }
 
-      if (!sessionToken) {
-        return;
-      }
+      if (!sessionToken) return;
 
       try {
-        const response = await apiFetch(
+        const res1 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
-        const data = await readResponseBody(response);
+        const data1 = await readResponseBody(res1);
+        if (cancelled) return;
 
-        if (cancelled) {
+        if (!res1.ok) {
+          const msg = getApiError(data1);
+          const redirect =
+            msg.toLowerCase().includes("not part of the company") ||
+            msg.toLowerCase().includes("not part");
+
+          fail(msg, redirect);
           return;
         }
 
-        if (!response.ok) {
-          throw new Error(getApiError(data));
+        if (!isProductionCompanyDTO(data1)) {
+          fail("Invalid company response");
+          return;
         }
 
-        if (!isProductionCompanyDTO(data)) {
-          throw new Error("Invalid company response from server");
-        }
+        setCompany(data1);
 
-        setCompany(data);
-
-        const response2 = await apiFetch(
+        const res2 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/owner`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
-        const ownerData = await readResponseBody(response2);
+        const data2 = await readResponseBody(res2);
+        if (cancelled) return;
 
-        if (!response2.ok) {
-          throw new Error(getApiError(ownerData));
+        if (!res2.ok) {
+          const msg = getApiError(data2);
+          const redirect =
+            msg.toLowerCase().includes("not part of the company") ||
+            msg.toLowerCase().includes("not part");
+
+          fail(msg, redirect);
+          return;
         }
 
-        if (typeof ownerData !== "boolean") {
-          throw new Error("Invalid owner response from server");
+        if (typeof data2 !== "boolean") {
+          fail("Invalid owner response");
+          return;
         }
 
-        setOwner(ownerData);
+        setOwner(data2);
 
-        const response3 = await apiFetch(
+        const res3 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/permissions`,
-          {
-            method: "GET",
-          },
+          { method: "GET" },
         );
 
-        const permissionsData = await readResponseBody(response3);
+        const data3 = await readResponseBody(res3);
+        if (cancelled) return;
 
-        if (!response3.ok) {
-          throw new Error(getApiError(permissionsData));
+        if (!res3.ok) {
+          const msg = getApiError(data3);
+          const redirect =
+            msg.toLowerCase().includes("not part of the company") ||
+            msg.toLowerCase().includes("not part");
+
+          fail(msg, redirect);
+          return;
         }
 
-        if (!Array.isArray(permissionsData)) {
-          throw new Error("Invalid permissions response from server");
+        if (!Array.isArray(data3)) {
+          fail("Invalid permissions response");
+          return;
         }
 
-        setPerms(permissionsData as ManagerPermissions[]);
-      } catch (error) {
+        setPerms(data3 as ManagerPermissions[]);
+      } catch (err) {
         if (!cancelled) {
-          setError(error instanceof Error ? error.message : "");
+          fail(err instanceof Error ? err.message : String(err));
         }
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
@@ -172,7 +185,11 @@ export default function ProductionCompanyManagement() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken, apiFetch]);
+  }, [companyId, sessionToken, apiFetch, navigate]);
+
+  if (!sessionToken) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="management-page">
@@ -184,14 +201,13 @@ export default function ProductionCompanyManagement() {
               ? company.name
               : "Company unavailable"}
         </h1>
-
         <p>Company ID: {companyId ?? "Missing"}</p>
       </div>
 
       {error && (
         <div className="settings-alert">
           <p>{error}</p>
-          <button onClick={closePopup}> OK </button>
+          <button onClick={() => setError("")}>OK</button>
         </div>
       )}
 
@@ -200,31 +216,23 @@ export default function ProductionCompanyManagement() {
           {hasPermission("SALES_REPORT") && (
             <NavLink to="total-revenue">Total Revenue</NavLink>
           )}
-
           {hasPermission("VIEW_PURCHASE_HISTORY") && (
             <NavLink to="sales-history">Sales History</NavLink>
           )}
-
           {hasPermission("PURCHASE_POLICY") && (
             <NavLink to="discount-policy">Discount Policy</NavLink>
           )}
-
           {hasPermission("PURCHASE_POLICY") && (
             <NavLink to="purchase-policy">Purchase Policy</NavLink>
           )}
-
           {hasPermission("EVENT_INVENTORY") && (
             <NavLink to="events">Events</NavLink>
           )}
-
           {hasPermission("VENUE_CONFIGURATION") && (
             <NavLink to="venue-config">Create Venue</NavLink>
           )}
-
           {owner && <NavLink to="members">Members & Permissions</NavLink>}
-
           {owner && <NavLink to="hierarchy">Hierarchy Tree</NavLink>}
-
           {owner && <NavLink to="settings">Resignation</NavLink>}
         </aside>
 
@@ -234,15 +242,10 @@ export default function ProductionCompanyManagement() {
               <h2>Loading...</h2>
               <p>Loading company data from the server.</p>
             </div>
-          ) : error ? (
-            <div className="management-default-content">
-              <h2>Cannot load company management</h2>
-            </div>
           ) : (
             (outlet ?? (
               <div className="management-default-content">
                 <h2>Company Management</h2>
-
                 <p>Select an option from the sidebar.</p>
               </div>
             ))
