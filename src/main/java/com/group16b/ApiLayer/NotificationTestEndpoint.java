@@ -3,13 +3,16 @@ package com.group16b.ApiLayer;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/notifications")
+@CrossOrigin(origins = "*")
 public class NotificationTestEndpoint {
 
     private final INotificationService notificationService;
@@ -21,9 +24,9 @@ public class NotificationTestEndpoint {
         this.authService = authService;
     }
 
-    @PostMapping("/notification")
+    @PostMapping("/test")
     public ResponseEntity<String> sendTestNotification(
-            @RequestParam("token") String token,
+            @RequestHeader("Authorization") String token,
             @RequestParam(value = "message", defaultValue = "This is a test notification!") String message) {
 
         if (!authService.validateToken(token) || !authService.isUserToken(token)) {
