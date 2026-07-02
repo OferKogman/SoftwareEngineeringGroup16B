@@ -200,24 +200,44 @@ public class OrderService {
 
 		throw new OptimisticLockingFailureException("Failed to complete order after retries");
 	}
-    
+
 	private void _cancelOrder(String orderID) {
-	try {
-		Order order = orderRepo.findByID(orderID);
-		orderRepo.delete(orderID);
-		int eventID = order.getEventId();
-		Event event = eventRepo.findByID(String.valueOf(eventID));
-		Venue venue = venueRepo.findByID(event.getEventVenueID());
-		if (venue.segmentType(order.getSegmentId()) == OrderType.SEAT) {
-			venue.cancelSeatReservation(order.getSegmentId(), order.getSeats(), eventID);
-		} else {
-			venue.cancelFieldReservation(order.getSegmentId(), order.getNumOfTickets(), eventID);
+		Order order;
+
+		try {
+			order = orderRepo.findByID(orderID);
+		} catch (Exception e) {
+			logger.error("OrderService._cancelOrder: Failed to find order {} for cancellation: {}",
+					orderID, e.getMessage());
+			return;
 		}
 
-		venueRepo.save(venue);
+		try {
+			orderRepo.delete(orderID);
+			logger.info("OrderService._cancelOrder: Deleted order {}", orderID);
 		} catch (Exception e) {
-			logger.error("OrderService._cancelOrder: Failed to cancel reservation for order {}: {}", orderID, e.getMessage());
-			 // we log the error but do not throw it further as the main goal of this method is to cancel the order and we don't want a failure in cancelling the reservation to prevent the order cancellation.
+			logger.error("OrderService._cancelOrder: Failed to delete order {}: {}",
+					orderID, e.getMessage());
+			return;
+		}
+
+		try {
+			int eventID = order.getEventId();
+			Event event = eventRepo.findByID(String.valueOf(eventID));
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
+
+			if (venue.segmentType(order.getSegmentId()) == OrderType.SEAT) {
+				venue.cancelSeatReservation(order.getSegmentId(), order.getSeats(), eventID);
+			} else {
+				venue.cancelFieldReservation(order.getSegmentId(), order.getNumOfTickets(), eventID);
+			}
+
+			venueRepo.save(venue);
+			logger.info("OrderService._cancelOrder: Freed reservation for order {}", orderID);
+
+		} catch (Exception e) {
+			logger.error("OrderService._cancelOrder: Order {} was deleted, but reservation cleanup failed: {}",
+					orderID, e.getMessage());
 		}
 	}
 	
