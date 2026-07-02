@@ -100,7 +100,7 @@ export default function UserManagement() {
   }
 
   const hasInvites = invites && invites.length > 0;
-
+  
   return (
     <div className="management-page">
       <div className="management-header">
@@ -112,10 +112,13 @@ export default function UserManagement() {
           <NavLink to="change-password">Change Password</NavLink>
           <NavLink to="purchase-history">Purchase History</NavLink>
           <NavLink to="companies">My Production Companies</NavLink>
-          <NavLink to="invites">
-            Invites {invites && invites.length > 0 ? `(${invites.length})` : ""}
-          </NavLink>
 
+          {invites && invites.length > 0 && (
+            <NavLink to="invites">
+              Invites ({invites.length})
+            </NavLink>
+          )}
+        
           {activeOrder && <NavLink to="active-order">Active Order</NavLink>}
         </aside>
 
