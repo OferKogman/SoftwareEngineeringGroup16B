@@ -28,6 +28,8 @@ public class StartupService {
     private final String defaultAdminUsername;
     private final String defaultAdminPassword;
     private final String defaultAdminEmail;
+    @Value("${virtual-queue.pass-num:50}")
+    private int virtualQueuePassNum = 50;
 
 
     //will grow as more invariants would be needed to validate
@@ -101,7 +103,7 @@ public class StartupService {
             try {
                 virtualQueueRepo.findByID(String.valueOf(event.getEventID())); 
             } catch (Exception e) {
-                VirtualQueue rebuiltQueue = new VirtualQueue(event.getEventID());
+                VirtualQueue rebuiltQueue = new VirtualQueue(event.getEventID(), virtualQueuePassNum);
                 virtualQueueRepo.save(rebuiltQueue);
             }
         }
