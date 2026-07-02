@@ -20,9 +20,11 @@ import org.junit.jupiter.api.Test;
 import com.group16b.ApplicationLayer.Exceptions.SystemStartupException;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 
 public class StartupServiceTests {
     private StartupService startupService;
@@ -31,7 +33,8 @@ public class StartupServiceTests {
     private IRepository<SystemAdmin> mockAdminRepository;
     private IRepository<VirtualQueue> mockVirtualQueueRepo;
     private IEventRepository mockEventRepository;
-
+    private IProductionCompanyRepository mockProductionCompanyRepository;
+    private ProductionCompanyIdGen mockProductionCompanyIdGen;
 
     private final List<SystemAdmin> INITIAL_ADMINS=List.of(new SystemAdmin());
 
@@ -44,6 +47,10 @@ public class StartupServiceTests {
         mockEventRepository = mock(IEventRepository.class);
         startupService=new StartupService(mockAdminRepository, mockWsepClient, mockEventRepository, mockVirtualQueueRepo,
                 "admin123", "password", "mail@example.com");
+        mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
+        mockProductionCompanyIdGen = mock(ProductionCompanyIdGen.class);
+        
+        startupService=new StartupService(mockAdminRepository, mockWsepClient, mockEventRepository, mockProductionCompanyRepository, mockVirtualQueueRepo, mockProductionCompanyIdGen);
 
         doNothing().when(mockWsepClient).handshake();
         when(mockAdminRepository.getAll()).thenReturn(INITIAL_ADMINS);

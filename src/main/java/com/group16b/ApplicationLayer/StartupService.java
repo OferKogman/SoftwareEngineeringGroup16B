@@ -13,9 +13,11 @@ import com.group16b.ApplicationLayer.Exceptions.WsepCommunicationException;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.SystemAdmin.SystemAdmin;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
+import com.group16b.InfrastructureLayer.IdGenerators.ProductionCompanyIdGen;
 
 @Service
 @Transactional
@@ -25,6 +27,8 @@ public class StartupService {
     private final WsepClient wsepClient;
     private final IEventRepository eventRepo;
     private final IRepository<VirtualQueue> virtualQueueRepo;
+    private final IProductionCompanyRepository productionCompanyRepo;
+    private final ProductionCompanyIdGen ProductionCompanyIdGenerator;
     private final String defaultAdminUsername;
     private final String defaultAdminPassword;
     private final String defaultAdminEmail;
@@ -36,16 +40,25 @@ public class StartupService {
             WsepClient wsepClient,
             IEventRepository eventRepo,
             IRepository<VirtualQueue> virtualQueueRepo,
+            IProductionCompanyRepository productionCompanyRepo,
+            ProductionCompanyIdGen ProductionCompanyIdGenerator,
             @Value("${startup.default-admin.username}") String defaultAdminUsername,
             @Value("${startup.default-admin.password}") String defaultAdminPassword,
             @Value("${startup.default-admin.email}") String defaultAdminEmail) {
+
+
+
+    //will grow as more invariants would be needed to validate
+    public StartupService(IRepository<SystemAdmin> adminRepo,WsepClient wsepClient, IEventRepository eventRepo, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> virtualQueueRepo,ProductionCompanyIdGen ProductionCompanyIdGenerator) {
         this.adminRepo = adminRepo;
         this.wsepClient = wsepClient;
         this.eventRepo = eventRepo;
+        this.productionCompanyRepo = productionCompanyRepo;
         this.virtualQueueRepo = virtualQueueRepo;
         this.defaultAdminUsername = defaultAdminUsername;
         this.defaultAdminPassword = defaultAdminPassword;
         this.defaultAdminEmail = defaultAdminEmail;
+        this.ProductionCompanyIdGenerator = ProductionCompanyIdGenerator;
     }
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
@@ -54,12 +67,14 @@ public class StartupService {
         validateAdmins();
         validateVirtualQueues();
         validateExternalDependencies();
+        initProductionCompanyIdGenerator();
     }
     //--------------------SETUPERS------------------------//
     //should get he latest id from the db and set the gen to start from it +1
     private void initProductionCompanyIdGenerator()
     {
-
+        int next=productionCompanyRepo.getLatestCompanyID() + 1;
+        ProductionCompanyIdGenerator.seed(next);
     }
 
     //-------------------- VALIDATORS --------------------//

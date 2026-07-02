@@ -34,6 +34,7 @@ import ChangePasswordForm from "./Components/User/ChangePasswordForm";
 import LoginForm from "./Components/User/UserLoginForm";
 import UserManagement from "./Components/User/UserManagement";
 import RegistrationForm from "./Components/User/UserRegistrationForm";
+import ViewInvites from "./Components/User/ViewInvites";
 import ViewUserCompanyList from "./Components/User/ViewUserCompanyList";
 import ViewUserPurchaseHistory from "./Components/User/ViewUserPurchaseHistory";
 
@@ -114,6 +115,7 @@ export default function AppRoutes() {
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
       <Route path="/users/management/active-order" element={<EditOrder />} />
+      <Route path="/users/management/invites" element={<ViewInvites />} />
 
       <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>
