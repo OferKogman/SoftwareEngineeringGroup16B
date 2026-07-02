@@ -9,6 +9,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.group16b.ApplicationLayer.Exceptions.AuthException;
 import com.group16b.ApplicationLayer.Exceptions.IllegalPaymentInfoException;
@@ -41,6 +42,7 @@ import com.group16b.DomainLayer.Venue.Venue;
 
 
 @Service
+@Transactional
 public class OrderService {
     private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
 	private final IAuthenticationService authenticationService;
@@ -538,6 +540,7 @@ public class OrderService {
         return subjectID;
     }
 
+	@Transactional(readOnly = true)
 	public Result<Double> getOrderPrice(String orderId, String sTocken) {
 		try {
 			logger.info("OrderService.getOrderPrice: Attempting to get price for order {}.", orderId);
@@ -568,6 +571,7 @@ public class OrderService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
+	@Transactional(readOnly = true)
 	public Result<Long> getActiveOrderTimeStamp(String orderId, String sessionToken) {
 		try {
 			logger.info("OrderService.getActiveOrderTimeStamp: Attempting to get timestamp for order {}.", orderId);
