@@ -29,6 +29,7 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
+import org.springframework.beans.factory.annotation.Value;
 
 import io.jsonwebtoken.JwtException;
 
@@ -45,6 +46,8 @@ public class EventService {
 	private final IEventRepository eventRepository;
 	private final IRepository<VirtualQueue> queueRepository;
 	private final IProductionCompanyRepository productionCompanyRepository;
+	@Value("${virtual-queue.pass-num:50}")
+	private int virtualQueuePassNum = 50;
 
 	public EventService(IAuthenticationService authenticationService, ILocationService locationService,
 			EventFilteringService eventFilteringService, IProductionCompanyRepository productionCompanyRepo,
@@ -80,7 +83,7 @@ public class EventService {
 			eventRepository.save(event);//now correct id finally generated - can use since transactional all or nothing
 
 			logger.info("EventService.createEvent: Creating queue for the new event");
-			VirtualQueue q = new VirtualQueue(event.getEventID());
+			VirtualQueue q = new VirtualQueue(event.getEventID(), virtualQueuePassNum);
 
 			logger.info("EventService.createEvent: Verifying venue availability.");
 			Venue venue = venueRepository.findByID(eventRecord.venueID());

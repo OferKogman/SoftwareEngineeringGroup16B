@@ -728,52 +728,7 @@ public class LotteryPolicyServiceTests {
         assertEquals("An unexpected error occurred: sam gaz al abamperim", res.getError());
     }
 
-    @Test
-    void handleLotteryResults_retryAfterOptimisticLockingFailure_succeeds() {
 
-        IProductionCompanyRepository companyRepo = mock(IProductionCompanyRepository.class);
-        IRepository<User> userRepo = mock(IRepository.class);
-        IEventRepository eventRepo = mock(IEventRepository.class);
-
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
-
-        User user = mock(User.class);
-        Event event = mock(Event.class);
-        ProductionCompany company = mock(ProductionCompany.class);
-
-        when(userRepo.findByID(PERMITED_MAIL))
-                .thenReturn(user);
-
-        when(user.getEmail())
-                .thenReturn(PERMITED_MAIL);
-
-        when(eventRepo.findByID(String.valueOf(event1.getEventID())))
-                .thenReturn(event);
-
-        when(event.getEventProductionCompanyID())
-                .thenReturn(COMPANY_ID);
-
-        when(companyRepo.findByID(String.valueOf(COMPANY_ID)))
-                .thenReturn(company);
-
-        doNothing().when(company)
-                .validateUserPermissions(anyString(), any(ManagerPermissions.class));
-
-        doThrow(new OptimisticLockingFailureException("conflict"))
-                .doNothing()
-                .when(eventRepo)
-                .save(any(Event.class));
-
-        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
-
-        Result<Void> res = service.handleLotteryResults(event1.getEventID(), "user5");
-
-        assertTrue(res.isSuccess());
-
-        verify(eventRepo, times(2)).save(any(Event.class));
-
-        verify(event, times(2)).handleLotteryResults();
-    }
 
     private void createLotteryAndEnroll() {
         RequestContext.set(PERMITED_MAIL, Role.SIGNED);

@@ -38,6 +38,8 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Venue;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 
 @Service
@@ -51,6 +53,7 @@ public class OrderService {
 	private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
+	private INotificationService notificationService;
 
 	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
 	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
@@ -102,6 +105,7 @@ public class OrderService {
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
 			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
+			notifyOrderCompleted(subjectID, orderID);
 			
 			// 7. return tickets
 			return Result.makeOk(ticket);
@@ -697,5 +701,21 @@ public class OrderService {
 			);
 		}
 	}
-	
+	@Autowired(required = false)
+	public void setNotificationService(INotificationService notificationService) {
+		this.notificationService = notificationService;
+	}
+
+	private void notifyOrderCompleted(String userID, String orderID) {
+		if (notificationService == null) {
+			return;
+		}
+
+		try {
+			notificationService.notify(userID, "Your order " + orderID + " was completed successfully.");
+		} catch (Exception e) {
+			logger.warn("OrderService.notifyOrderCompleted: Failed to notify user {} for order {}: {}",
+					userID, orderID, e.getMessage());
+		}
+	}
 }
