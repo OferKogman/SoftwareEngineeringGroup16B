@@ -19,7 +19,6 @@ export default function UserManagement() {
   const [invites, setInvites] = useState<InviteDTO[] | null>(null);
   const [, setSecondsLeft] = useState<number | null>(null);
 
-  // ACTIVE ORDER
   useEffect(() => {
     async function loadActiveOrder() {
       try {
@@ -43,7 +42,6 @@ export default function UserManagement() {
     void loadActiveOrder();
   }, [apiFetch]);
 
-  // INVITES
   useEffect(() => {
     async function loadInvites() {
       try {
@@ -67,7 +65,6 @@ export default function UserManagement() {
     void loadInvites();
   }, [apiFetch]);
 
-  // TIMER
   useEffect(() => {
     if (!activeOrder) return;
 
@@ -82,20 +79,6 @@ export default function UserManagement() {
   }, [activeOrder]);
 
   if (!isLoggedIn.loggedIn) {
-    return (
-      <div className="management-page">
-        <div className="management-header">
-          <h1>User Management</h1>
-        </div>
-
-        <div className="management-body">
-          <div className="management-content">
-            <h2>Access Denied</h2>
-            <p>You must be logged in to access this page.</p>
-          </div>
-        </div>
-      </div>
-    );
     return <Navigate to="/" replace />;
   }
 
@@ -112,8 +95,9 @@ export default function UserManagement() {
           <NavLink to="change-password">Change Password</NavLink>
           <NavLink to="purchase-history">Purchase History</NavLink>
           <NavLink to="companies">My Production Companies</NavLink>
+
           <NavLink to="invites">
-            Invites {invites && invites.length > 0 ? `(${invites.length})` : ""}
+            Invites {hasInvites ? `(${invites!.length})` : ""}
           </NavLink>
 
           {activeOrder && <NavLink to="active-order">Active Order</NavLink>}

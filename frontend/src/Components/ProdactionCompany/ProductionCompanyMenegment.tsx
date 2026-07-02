@@ -20,10 +20,12 @@ function getApiError(data: unknown): string {
   if (typeof data === "string" && data.trim()) return data;
 
   if (data && typeof data === "object") {
-    if ("message" in data && typeof (data as any).message === "string")
-      return (data as any).message;
-    if ("error" in data && typeof (data as any).error === "string")
-      return (data as any).error;
+    if ("message" in data && typeof data.message === "string") {
+      return data.message;
+    }
+    if ("error" in data && typeof data.error === "string") {
+      return data.error;
+    }
   }
 
   return "";
@@ -34,7 +36,7 @@ function isProductionCompanyDTO(data: unknown): data is ProductionCompanyDTO {
     !!data &&
     typeof data === "object" &&
     "name" in data &&
-    typeof (data as any).name === "string"
+    typeof data.name === "string"
   );
 }
 
@@ -53,14 +55,15 @@ export default function ProductionCompanyManagement() {
   const navigate = useNavigate();
   const { companyId } = useParams();
   const { sessionToken } = useSession();
-  const apiFetch = useApiFetch();
 
   const [company, setCompany] = useState<ProductionCompanyDTO | null>(null);
   const [perms, setPerms] = useState<ManagerPermissions[]>([]);
-  const [owner, setOwner] = useState(false);
+  const [owner, setOwner] = useState<boolean>(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  const apiFetch = useApiFetch();
 
   function closePopup() {
     setError("");
@@ -89,6 +92,7 @@ export default function ProductionCompanyManagement() {
 
       const fail = (msg: string, redirect = false) => {
         if (cancelled) return;
+
         setError(msg);
         setShouldRedirect(redirect);
         setLoading(false);
@@ -102,17 +106,16 @@ export default function ProductionCompanyManagement() {
       if (!sessionToken) return;
 
       try {
-        // COMPANY
-        const res1 = await apiFetch(
+        const response = await apiFetch(
           `${API_BASE}/production-companies/${companyId}`,
           { method: "GET" },
         );
 
-        const data1 = await readResponseBody(res1);
+        const data = await readResponseBody(response);
         if (cancelled) return;
 
-        if (!res1.ok) {
-          const msg = getApiError(data1);
+        if (!response.ok) {
+          const msg = getApiError(data);
           const redirect =
             msg.toLowerCase().includes("not part of the company") ||
             msg.toLowerCase().includes("not part");
@@ -121,24 +124,23 @@ export default function ProductionCompanyManagement() {
           return;
         }
 
-        if (!isProductionCompanyDTO(data1)) {
-          fail("Invalid company response");
+        if (!isProductionCompanyDTO(data)) {
+          fail("Invalid company response from server");
           return;
         }
 
-        setCompany(data1);
+        setCompany(data);
 
-        // OWNER
-        const res2 = await apiFetch(
+        const response2 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/owner`,
           { method: "GET" },
         );
 
-        const data2 = await readResponseBody(res2);
+        const ownerData = await readResponseBody(response2);
         if (cancelled) return;
 
-        if (!res2.ok) {
-          const msg = getApiError(data2);
+        if (!response2.ok) {
+          const msg = getApiError(ownerData);
           const redirect =
             msg.toLowerCase().includes("not part of the company") ||
             msg.toLowerCase().includes("not part");
@@ -147,24 +149,23 @@ export default function ProductionCompanyManagement() {
           return;
         }
 
-        if (typeof data2 !== "boolean") {
-          fail("Invalid owner response");
+        if (typeof ownerData !== "boolean") {
+          fail("Invalid owner response from server");
           return;
         }
 
-        setOwner(data2);
+        setOwner(ownerData);
 
-        // PERMISSIONS
-        const res3 = await apiFetch(
+        const response3 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/permissions`,
           { method: "GET" },
         );
 
-        const data3 = await readResponseBody(res3);
+        const permissionsData = await readResponseBody(response3);
         if (cancelled) return;
 
-        if (!res3.ok) {
-          const msg = getApiError(data3);
+        if (!response3.ok) {
+          const msg = getApiError(permissionsData);
           const redirect =
             msg.toLowerCase().includes("not part of the company") ||
             msg.toLowerCase().includes("not part");
@@ -173,15 +174,15 @@ export default function ProductionCompanyManagement() {
           return;
         }
 
-        if (!Array.isArray(data3)) {
-          fail("Invalid permissions response");
+        if (!Array.isArray(permissionsData)) {
+          fail("Invalid permissions response from server");
           return;
         }
 
-        setPerms(data3 as ManagerPermissions[]);
+        setPerms(permissionsData as ManagerPermissions[]);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : String(err));
+          fail(err instanceof Error ? err.message : String(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -193,7 +194,7 @@ export default function ProductionCompanyManagement() {
     return () => {
       cancelled = true;
     };
-  }, [companyId, sessionToken, apiFetch, navigate]);
+  }, [companyId, sessionToken, apiFetch]);
 
   if (!sessionToken) {
     return <Navigate to="/" replace />;
