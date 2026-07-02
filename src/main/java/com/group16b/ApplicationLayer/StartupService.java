@@ -30,6 +30,8 @@ public class StartupService {
     private final String defaultAdminPassword;
     private final String defaultAdminEmail;
 
+    @Value("${virtual-queue.pass-num}")
+    private int virtualQueuePassNum;
 
     //will grow as more invariants would be needed to validate
     public StartupService(
@@ -102,7 +104,7 @@ public class StartupService {
             try {
                 virtualQueueRepo.findByID(String.valueOf(event.getEventID())); 
             } catch (Exception e) {
-                VirtualQueue rebuiltQueue = new VirtualQueue(event.getEventID());
+                VirtualQueue rebuiltQueue = new VirtualQueue(event.getEventID(), virtualQueuePassNum);
                 virtualQueueRepo.save(rebuiltQueue);
             }
         }
