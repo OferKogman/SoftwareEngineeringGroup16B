@@ -96,9 +96,9 @@ export default function UserManagement() {
           <NavLink to="purchase-history">Purchase History</NavLink>
           <NavLink to="companies">My Production Companies</NavLink>
 
-          <NavLink to="invites">
-            Invites {hasInvites ? `(${invites!.length})` : ""}
-          </NavLink>
+          {invites && invites.length > 0 && (
+            <NavLink to="invites">Invites ({invites.length})</NavLink>
+          )}
 
           {activeOrder && <NavLink to="active-order">Active Order</NavLink>}
         </aside>

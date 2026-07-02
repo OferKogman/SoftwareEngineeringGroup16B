@@ -6,38 +6,44 @@ import type { EventDTO } from "../../DTOs/EventDTO";
 
 const API_BASE = "http://localhost:8080";
 
-function getApiError(data: unknown): string {
-  if (typeof data === "string" && data.trim()) return data;
-
-  if (data && typeof data === "object") {
-    if ("message" in data && typeof data.message === "string")
-      return data.message;
-    if ("error" in data && typeof data.error === "string") return data.error;
-  }
-
-  return "event not found";
-}
-
-function isEventDTO(data: unknown): data is EventDTO {
-  return (
-    !!data &&
-    typeof data === "object" &&
-    "eventName" in data &&
-    typeof data.eventName === "string"
-  );
-}
-
+/* ================= SAFE RESPONSE PARSER ================= */
 async function readResponseBody(response: Response): Promise<unknown> {
   const text = await response.text();
+
   if (!text) return null;
 
   try {
     return JSON.parse(text);
   } catch {
-    return text;
+    return text; // fallback for plain text backend errors
   }
 }
 
+/* ================= EVENT TYPE GUARD ================= */
+function isEventDTO(data: unknown): data is EventDTO {
+  return (
+    !!data &&
+    typeof data === "object" &&
+    "eventName" in data &&
+    typeof (data as any).eventName === "string"
+  );
+}
+
+/* ================= ERROR EXTRACTOR ================= */
+function getApiError(data: unknown): string {
+  if (typeof data === "string" && data.trim()) return data;
+
+  if (data && typeof data === "object") {
+    const obj = data as any;
+
+    if (typeof obj.message === "string") return obj.message;
+    if (typeof obj.error === "string") return obj.error;
+  }
+
+  return "Event not found";
+}
+
+/* ================= COMPONENT ================= */
 export default function EventManagement() {
   const { eventID } = useParams();
   const navigate = useNavigate();
@@ -45,16 +51,23 @@ export default function EventManagement() {
 
   const [event, setEvent] = useState<EventDTO | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [error, setError] = useState("");
   const [shouldRedirect, setShouldRedirect] = useState(false);
 
-  function closePopup() {
-    setError("");
-    if (shouldRedirect) {
+  /* ================= SAFE REDIRECT ================= */
+  useEffect(() => {
+    if (shouldRedirect && !error) {
       navigate("/", { replace: true });
     }
+  }, [shouldRedirect, error, navigate]);
+
+  function closePopup() {
+    setError("");
+    setShouldRedirect(true);
   }
 
+  /* ================= LOAD EVENT ================= */
   useEffect(() => {
     let cancelled = false;
 
@@ -64,21 +77,13 @@ export default function EventManagement() {
       setEvent(null);
       setShouldRedirect(false);
 
-      const fail = (msg: string, redirect = false) => {
-        if (cancelled) return;
-
-        setError(msg);
-        setShouldRedirect(redirect);
-        setLoading(false);
-      };
-
       try {
         if (!eventID) {
-          fail("Missing event id");
+          setError("Missing event id");
           return;
         }
 
-        // 1. Load event
+        /* ---------- 1. FETCH EVENT ---------- */
         const response = await apiFetch(`${API_BASE}/events/${eventID}`, {
           method: "GET",
         });
@@ -87,27 +92,20 @@ export default function EventManagement() {
         if (cancelled) return;
 
         if (!response.ok) {
-          const msg = getApiError(data);
-
-          const redirect =
-            msg.toLowerCase().includes("not part") ||
-            msg.toLowerCase().includes("not allowed") ||
-            msg.toLowerCase().includes("unauthorized");
-
-          fail(msg, redirect);
+          setError(getApiError(data));
           return;
         }
 
         if (!isEventDTO(data)) {
-          fail("Invalid event response from server");
+          setError("Invalid event response from server");
           return;
         }
 
         setEvent(data);
 
-        // 2. Permissions
+        /* ---------- 2. FETCH PERMISSIONS ---------- */
         const response2 = await apiFetch(
-          `${API_BASE}/production-companies/${data.eventProductionCompanyID}/me/permissions`,
+          `${API_BASE}/production-companies/${(data as any).eventProductionCompanyID}/me/permissions`,
           { method: "GET" },
         );
 
@@ -115,29 +113,23 @@ export default function EventManagement() {
         if (cancelled) return;
 
         if (!response2.ok) {
-          const msg = getApiError(permissionsData);
-
-          const redirect =
-            msg.toLowerCase().includes("not part") ||
-            msg.toLowerCase().includes("not allowed") ||
-            msg.toLowerCase().includes("unauthorized");
-
-          fail(msg, redirect);
+          setError(getApiError(permissionsData));
           return;
         }
 
         if (!Array.isArray(permissionsData)) {
-          fail("Invalid permissions response from server");
+          setError("Invalid permissions response from server");
           return;
         }
 
         if (!permissionsData.includes("EVENT_INVENTORY")) {
-          fail("User is not allowed to access this event", true);
+          setError("User is not allowed to access this event");
+          setShouldRedirect(true);
           return;
         }
       } catch (err) {
         if (!cancelled) {
-          fail(err instanceof Error ? err.message : String(err));
+          setError(err instanceof Error ? err.message : String(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -151,19 +143,17 @@ export default function EventManagement() {
     };
   }, [eventID, apiFetch]);
 
+  /* ================= UI ================= */
   return (
     <div className="management-page">
       <div className="management-header">
         <h1>
-          {loading
-            ? "Loading event..."
-            : event
-              ? event.eventName
-              : "Event unavailable"}
+          {loading ? "Loading event..." : event ? event.eventName : "Event"}
         </h1>
         <p>Event ID: {eventID ?? "Missing"}</p>
       </div>
 
+      {/* POPUP */}
       {error && (
         <div className="settings-alert">
           <p>{error}</p>
@@ -176,21 +166,21 @@ export default function EventManagement() {
           <NavLink to="show">Information</NavLink>
           <NavLink to="update-info">Update Information</NavLink>
           <NavLink to="lottery">Lottery</NavLink>
-          <NavLink to="discount-policy">Update Discount Policies</NavLink>
-          <NavLink to="purchase-policy">Update Purchase Policies</NavLink>
-          <NavLink to="inventory">Inventory Management</NavLink>
-          <NavLink to="pricing">Pricing Management</NavLink>
+          <NavLink to="discount-policy">Discount Policies</NavLink>
+          <NavLink to="purchase-policy">Purchase Policies</NavLink>
+          <NavLink to="inventory">Inventory</NavLink>
+          <NavLink to="pricing">Pricing</NavLink>
         </aside>
 
         <main className="management-content">
           {loading ? (
-            <div className="management-default-content">
+            <div>
               <h2>Loading...</h2>
-              <p>Loading event data from the server.</p>
+              <p>Loading event data...</p>
             </div>
           ) : error ? (
-            <div className="management-default-content">
-              <h2>Cannot load event management</h2>
+            <div>
+              <h2>Error</h2>
               <p>{error}</p>
             </div>
           ) : (
