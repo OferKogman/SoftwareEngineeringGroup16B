@@ -13,6 +13,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapKey;
+import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
@@ -22,7 +23,7 @@ public class ChosenSeatingSeg extends Segment {
 	private int IDforSeat = 0;
 
 	@OneToMany(mappedBy = "segment", cascade = CascadeType.ALL, orphanRemoval = true)
-	@MapKey(name = "id.seatId")
+	@MapKeyColumn(name = "seat_map_key")
 	protected Map<String, Seat> seats = new HashMap<>();
 
 	public ChosenSeatingSeg(String segmentID, Map<String, Seat> seats, GridRectangle area) {
@@ -235,16 +236,28 @@ public class ChosenSeatingSeg extends Segment {
 	}
 
 	@Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChosenSeatingSeg other)) return false;
-        return segmentID==other.segmentID;
-    }
+	public void setVenue(Venue venue) {
+		super.setVenue(venue);
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(segmentID);
-    }
+		if (this.seats != null) {
+			for (Seat seat : this.seats.values()) {
+				seat.setSegment(this);
+			}
+		}
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (!(o instanceof ChosenSeatingSeg other)) return false;
+		return Objects.equals(getSegmentID(), other.getSegmentID())
+				&& Objects.equals(getVenueID(), other.getVenueID());
+	}
+
+	@Override
+	public int hashCode() {
+    	return Objects.hash(getVenueID(), getSegmentID());
+	}
 
 	private void addSeat(Seat seat) {
     	seat.setSegment(this);

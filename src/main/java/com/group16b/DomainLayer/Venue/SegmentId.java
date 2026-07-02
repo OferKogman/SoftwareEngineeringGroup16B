@@ -7,7 +7,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
 @Embeddable
-public class SeatId implements Serializable {
+public class SegmentId implements Serializable {
 
     @Column(name = "venue_id")
     private String venueId;
@@ -15,15 +15,11 @@ public class SeatId implements Serializable {
     @Column(name = "segment_id")
     private String segmentId;
 
-    @Column(name = "seat_id")
-    private String seatId;
+    public SegmentId() {}
 
-    public SeatId() {}
-
-    public SeatId(String venueId, String segmentId, String seatId) {
+    public SegmentId(String venueId, String segmentId) {
         this.venueId = venueId;
         this.segmentId = segmentId;
-        this.seatId = seatId;
     }
 
     public String getVenueId() {
@@ -42,25 +38,16 @@ public class SeatId implements Serializable {
         this.segmentId = segmentId;
     }
 
-    public String getSeatId() {
-        return seatId;
-    }
-
-    public void setSeatId(String seatId) {
-        this.seatId = seatId;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof SeatId other)) return false;
+        if (!(o instanceof SegmentId other)) return false;
         return Objects.equals(venueId, other.venueId)
-                && Objects.equals(segmentId, other.segmentId)
-                && Objects.equals(seatId, other.seatId);
+                && Objects.equals(segmentId, other.segmentId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(venueId, segmentId, seatId);
+        return Objects.hash(venueId, segmentId);
     }
 }
