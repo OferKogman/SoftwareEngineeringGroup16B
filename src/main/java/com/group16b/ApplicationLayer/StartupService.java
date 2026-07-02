@@ -45,21 +45,19 @@ public class StartupService {
             @Value("${startup.default-admin.username}") String defaultAdminUsername,
             @Value("${startup.default-admin.password}") String defaultAdminPassword,
             @Value("${startup.default-admin.email}") String defaultAdminEmail) {
-
-
-
-    //will grow as more invariants would be needed to validate
-    public StartupService(IRepository<SystemAdmin> adminRepo,WsepClient wsepClient, IEventRepository eventRepo, IProductionCompanyRepository productionCompanyRepo, IRepository<VirtualQueue> virtualQueueRepo,ProductionCompanyIdGen ProductionCompanyIdGenerator) {
+            
         this.adminRepo = adminRepo;
         this.wsepClient = wsepClient;
         this.eventRepo = eventRepo;
-        this.productionCompanyRepo = productionCompanyRepo;
         this.virtualQueueRepo = virtualQueueRepo;
+        this.productionCompanyRepo = productionCompanyRepo;
+        this.ProductionCompanyIdGenerator = ProductionCompanyIdGenerator;
         this.defaultAdminUsername = defaultAdminUsername;
         this.defaultAdminPassword = defaultAdminPassword;
         this.defaultAdminEmail = defaultAdminEmail;
-        this.ProductionCompanyIdGenerator = ProductionCompanyIdGenerator;
-    }
+            
+        }
+
 
     //check and fix basic invariants of the system, such as existence of a default system admin, and more in the future
     public void initializeSystem() {
