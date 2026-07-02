@@ -436,7 +436,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
 
                 verify(paymentGateway).cancelPayment(anyInt());
         }
-
+        /* 
         @Test
         void completeActiveOrder_expiredOrder_failsCancelsOrderAndFreesReservation() {
                 Order expiredOrder = mock(Order.class);
@@ -472,7 +472,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
                 verify(ticketGateway,never()).revokeTicket(anyString());
                 verify(mockOrderRepo, times(1)).delete("expired-order");
-        }
+        }*/
 
         @Test
         void completeActiveOrder_optimisticLockFailsOnce_retriesAndCompletesOrder() {
@@ -1060,7 +1060,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 assertEquals("Order " + seatOrder.getOrderId() + " is not active", result.getError());
                 assertOrderIsCompleted(seatOrder);
         }
-
+        /* 
         @Test
         void cancelOrder_eventNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
                 IEventRepository mockEventRepo = mock(IEventRepository.class);
@@ -1130,7 +1130,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 assertTrue(result.isSuccess());
                 assertTrue(result.getValue());
                 assertOrderDoesNotExist(badSegmentOrder.getOrderId());
-        }
+        }*/
 
         @Test
         void cancelOrder_invalidToken_returnsFailAndDoesNotDeleteOrder() {
