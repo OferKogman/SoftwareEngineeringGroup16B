@@ -21,62 +21,105 @@ public class NotificationServiceTests {
     }
 
     @Test
-    public void testNotifyOfflineUserQueuesNotification() {
+    public void notifyOfflineUserQueuesNotification() {
         service.notify("user1", "hello");
+
+        List<Notification> pending = service.getPendingNotifications("user1");
+
+        assertEquals(1, pending.size());
+        assertEquals("user1", pending.get(0).getUserID());
+        assertEquals("hello", pending.get(0).getMessage());
+    }
+
+    @Test
+    public void getPendingClearsQueue() {
+        service.notify("user1", "hello");
+
+        service.getPendingNotifications("user1");
+        List<Notification> pending = service.getPendingNotifications("user1");
+
+        assertTrue(pending.isEmpty());
+    }
+
+    @Test
+    public void notifyOnlineUserSendsImmediately() throws IOException {
+        SseEmitter emitter = mock(SseEmitter.class);
+        service.registerEmitter("user1", emitter);
+
+        service.notify("user1", "hello");
+
+        verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
+        assertTrue(service.getPendingNotifications("user1").isEmpty());
+    }
+
+    @Test
+    public void registerEmitterFlushesQueue() throws IOException {
+        service.notify("user1", "pending message");
+        SseEmitter emitter = mock(SseEmitter.class);
+
+        service.registerEmitter("user1", emitter);
+
+        verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
+        assertTrue(service.getPendingNotifications("user1").isEmpty());
+    }
+
+    @Test
+    public void failedEmitterQueuesNotification() throws IOException {
+        SseEmitter emitter = mock(SseEmitter.class);
+        doThrow(new IOException()).when(emitter).send(any(SseEmitter.SseEventBuilder.class));
+
+        service.registerEmitter("user1", emitter);
+        service.notify("user1", "hello");
+
         List<Notification> pending = service.getPendingNotifications("user1");
         assertEquals(1, pending.size());
         assertEquals("hello", pending.get(0).getMessage());
     }
 
     @Test
-    public void testGetPendingClearsQueue() {
-        service.notify("user1", "hello");
-        service.getPendingNotifications("user1");
-        List<Notification> pending = service.getPendingNotifications("user1");
-        assertTrue(pending.isEmpty());
-    }
-
-    @Test
-    public void testNotifyOnlineUserSendsImmediately() throws IOException {
-        SseEmitter emitter = mock(SseEmitter.class);
-        service.registerEmitter("user1", emitter);
-        service.notify("user1", "hello");
-        verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
-        assertTrue(service.getPendingNotifications("user1").isEmpty());
-    }
-
-    @Test
-    public void testRegisterEmitterFlushesQueue() throws IOException {
+    public void failedFlushKeepsPendingNotification() throws IOException {
         service.notify("user1", "pending message");
-        SseEmitter emitter = mock(SseEmitter.class);
-        service.registerEmitter("user1", emitter);
-        verify(emitter, atLeastOnce()).send(any(SseEmitter.SseEventBuilder.class));
-    }
 
-    @Test
-    public void testFailedEmitterQueuesNotification() throws IOException {
         SseEmitter emitter = mock(SseEmitter.class);
         doThrow(new IOException()).when(emitter).send(any(SseEmitter.SseEventBuilder.class));
+
         service.registerEmitter("user1", emitter);
-        service.notify("user1", "hello");
+
         List<Notification> pending = service.getPendingNotifications("user1");
         assertEquals(1, pending.size());
+        assertEquals("pending message", pending.get(0).getMessage());
     }
 
     @Test
-    public void testMultiplePendingNotifications() {
+    public void multiplePendingNotificationsArePreserved() {
         service.notify("user1", "msg1");
         service.notify("user1", "msg2");
         service.notify("user1", "msg3");
+
         List<Notification> pending = service.getPendingNotifications("user1");
+
         assertEquals(3, pending.size());
+        assertEquals("msg1", pending.get(0).getMessage());
+        assertEquals("msg2", pending.get(1).getMessage());
+        assertEquals("msg3", pending.get(2).getMessage());
     }
 
     @Test
-    public void testDifferentUsersQueuedSeparately() {
+    public void differentUsersAreQueuedSeparately() {
         service.notify("user1", "msg for user1");
         service.notify("user2", "msg for user2");
+
         assertEquals(1, service.getPendingNotifications("user1").size());
         assertEquals(1, service.getPendingNotifications("user2").size());
+    }
+
+    @Test
+    public void blankNotificationsAreIgnored() {
+        service.notify("user1", "");
+        service.notify("", "hello");
+        service.notify(null, "hello");
+        service.notify("user1", null);
+
+        assertTrue(service.getPendingNotifications("user1").isEmpty());
     }
 }
