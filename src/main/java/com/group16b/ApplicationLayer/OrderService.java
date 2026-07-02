@@ -38,6 +38,8 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Venue;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.group16b.ApplicationLayer.Interfaces.INotificationService;
 
 
 @Service
@@ -51,6 +53,7 @@ public class OrderService {
 	private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
+	private INotificationService notificationService;
 
 	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
 	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
@@ -102,6 +105,7 @@ public class OrderService {
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
 			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
+			notifyOrderCompleted(subjectID, orderID);
 			
 			// 7. return tickets
 			return Result.makeOk(ticket);
@@ -196,7 +200,7 @@ public class OrderService {
 
 		throw new OptimisticLockingFailureException("Failed to complete order after retries");
 	}
-    
+
 	private void _cancelOrder(String orderID) {
 	try {
 		Order order = orderRepo.findByID(orderID);
@@ -223,8 +227,28 @@ public class OrderService {
 		venueRepo.save(venue);
 		orderRepo.delete(orderID);
 		} catch (Exception e) {
-			logger.error("OrderService._cancelOrder: Failed to cancel reservation for order {}: {}", orderID, e.getMessage());
-			 // we log the error but do not throw it further as the main goal of this method is to cancel the order and we don't want a failure in cancelling the reservation to prevent the order cancellation.
+			logger.error("OrderService._cancelOrder: Failed to delete order {}: {}",
+					orderID, e.getMessage());
+			return;
+		}
+
+		try {
+			int eventID = order.getEventId();
+			Event event = eventRepo.findByID(String.valueOf(eventID));
+			Venue venue = venueRepo.findByID(event.getEventVenueID());
+
+			if (venue.segmentType(order.getSegmentId()) == OrderType.SEAT) {
+				venue.cancelSeatReservation(order.getSegmentId(), order.getSeats(), eventID);
+			} else {
+				venue.cancelFieldReservation(order.getSegmentId(), order.getNumOfTickets(), eventID);
+			}
+
+			venueRepo.save(venue);
+			logger.info("OrderService._cancelOrder: Freed reservation for order {}", orderID);
+
+		} catch (Exception e) {
+			logger.error("OrderService._cancelOrder: Order {} was deleted, but reservation cleanup failed: {}",
+					orderID, e.getMessage());
 		}
 	}
 	
@@ -697,5 +721,21 @@ public class OrderService {
 			);
 		}
 	}
-	
+	@Autowired(required = false)
+	public void setNotificationService(INotificationService notificationService) {
+		this.notificationService = notificationService;
+	}
+
+	private void notifyOrderCompleted(String userID, String orderID) {
+		if (notificationService == null) {
+			return;
+		}
+
+		try {
+			notificationService.notify(userID, "Your order " + orderID + " was completed successfully.");
+		} catch (Exception e) {
+			logger.warn("OrderService.notifyOrderCompleted: Failed to notify user {} for order {}: {}",
+					userID, orderID, e.getMessage());
+		}
+	}
 }
