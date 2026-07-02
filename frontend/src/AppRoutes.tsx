@@ -51,6 +51,8 @@ export default function AppRoutes() {
         />
         <Route path="purchase-history" element={<ViewUserPurchaseHistory />} />
         <Route path="companies" element={<ViewUserCompanyList />} />
+
+        <Route path="invites" element={<ViewInvites />} />
       </Route>
       <Route path="/admins" element={<AdminManagement />}>
         <Route path="login" element={<AdminLoginForm title="Admin Login" />} />
@@ -115,7 +117,6 @@ export default function AppRoutes() {
         <Route path="events/create" element={<EventCreationForm />} />
       </Route>
       <Route path="/users/management/active-order" element={<EditOrder />} />
-      <Route path="/users/management/invites" element={<ViewInvites />} />
 
       <Route path="/events/:eventID" element={<EventInformation />} />
     </Routes>

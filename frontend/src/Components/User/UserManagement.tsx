@@ -112,10 +112,9 @@ export default function UserManagement() {
           <NavLink to="change-password">Change Password</NavLink>
           <NavLink to="purchase-history">Purchase History</NavLink>
           <NavLink to="companies">My Production Companies</NavLink>
-
-          {hasInvites && (
-            <NavLink to="invites">Invites ({invites!.length})</NavLink>
-          )}
+          <NavLink to="invites">
+            Invites {invites && invites.length > 0 ? `(${invites.length})` : ""}
+          </NavLink>
 
           {activeOrder && <NavLink to="active-order">Active Order</NavLink>}
         </aside>
