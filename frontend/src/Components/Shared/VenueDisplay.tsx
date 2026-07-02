@@ -135,6 +135,22 @@ export default function VenueDisplay({
   const [entrances, setEntrances] = useState<EntranceDTO[]>([]);
 
   useEffect(() => {
+    function selectedSeatsToStock() {
+      if (eventID === undefined || eventID === null) {
+        return;
+      }
+
+      selectedSeats.forEach((selectedSeat) => {
+        selectedSeat.stock = {
+          ...selectedSeat.stock,
+          [eventID]: false,
+        };
+      });
+    }
+    void selectedSeatsToStock();
+  }, [selectedSeats, eventID]);
+
+  useEffect(() => {
     async function loadSegs() {
       const segmentValues = Object.values(venue.segments);
 
@@ -153,21 +169,8 @@ export default function VenueDisplay({
       setStages(Object.values(venue.stages));
       setEntrances(Object.values(venue.entrances));
     }
-    function selectedSeatsToStock() {
-      if (eventID === undefined || eventID === null) {
-        return;
-      }
-
-      selectedSeats.forEach((selectedSeat) => {
-        selectedSeat.stock = {
-          ...selectedSeat.stock,
-          [eventID]: false,
-        };
-      });
-    }
-    void selectedSeatsToStock();
     void loadSegs();
-  }, [venue, selectedSeats, eventID]);
+  }, [venue]);
 
   function getSegmentPrice(
     segment: FieldSegDTO | ChosenSeatingSegDTO,
