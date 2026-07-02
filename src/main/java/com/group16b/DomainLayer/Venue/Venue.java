@@ -51,10 +51,9 @@ public class Venue {
 
 
     // Map Key points directly to the 'segmentID' property inside Segment
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "venue_id")
-    @MapKey(name = "segmentID")
-    private Map<String, Segment> segments;
+    @OneToMany(mappedBy = "venue", cascade = CascadeType.ALL, orphanRemoval = true)
+    @MapKeyColumn(name = "segment_map_key")
+    private Map<String, Segment> segments = new HashMap<>();
 
     // Map Key points directly to the auto-generated database ID inside EventSchedule
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -75,27 +74,32 @@ public class Venue {
     @MapKeyColumn(name = "entrance_map_key") // Stores the Map's String key
     private Map<String, Entrance> entrances;
 
-	public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances, int companyID) {
+    public Venue(String name, Location location, Map<String, Segment> segments, String id, VenueGrid grid, Map<String, Stage> stages, Map<String, Entrance> entrances, int companyID) {
         this.name = name;
+        this.id = id;
         this.location = location;
-        this.segments = segments;
+        this.segments = new HashMap<>();
         this.scheduledEvents = new HashMap<>();
         this.grid = grid;
         this.stages = stages;
         this.entrances = entrances;
-        this.id = id;
         this.companyID = companyID;
+
+        for (Segment segment : segments.values()) {
+            addSegment(segment);
+        }
     }
 
 	public Venue(String name, Location location, List<FieldSegRecord> fieldSeg, List<ChosenSeatingSegRecord> seatSeg, String id, VenueGridRecord grid, List<StageRecord> stages, List<EntranceRecord> entrances, int companyID) {
         this.name = name;
         this.location = location;
+        this.id = id;
         this.segments = new HashMap<>();
         for (FieldSegRecord fsr : fieldSeg) {
-            this.segments.put(fsr.segmentID(), new FieldSeg(fsr.segmentID(), fsr.size(), new GridRectangle(fsr.area())));
+            addSegment(new FieldSeg(fsr.segmentID(), fsr.size(), new GridRectangle(fsr.area())));
         }
         for (ChosenSeatingSegRecord cssr : seatSeg) {
-            this.segments.put(cssr.segmentID(), new ChosenSeatingSeg(cssr.segmentID(), cssr.seats(), new GridRectangle(cssr.area())));
+            addSegment(new ChosenSeatingSeg(cssr.segmentID(), cssr.seats(), new GridRectangle(cssr.area())));
         }
         this.scheduledEvents = new HashMap<>();
         this.grid = new VenueGrid(grid.rows(), grid.columns());
@@ -107,7 +111,6 @@ public class Venue {
         for(EntranceRecord record: entrances){
             this.entrances.put(record.entranceID(), new Entrance(record.entranceID(), new GridRectangle(record.area())));
         }
-        this.id = id;
         this.companyID = companyID;
     }
 	protected Venue() {
@@ -121,6 +124,7 @@ public class Venue {
 	}
 	
 	public Venue(Venue other) {
+        this.id = other.getID();
         this.name = other.getName();
         this.location = other.getLocation();
 
@@ -128,9 +132,9 @@ public class Venue {
         for (Map.Entry<String, Segment> entry : other.getSegments().entrySet()) {
             Segment origSeg = entry.getValue();
             if (origSeg instanceof FieldSeg fieldSeg) {
-                this.segments.put(entry.getKey(), new FieldSeg(fieldSeg)); 
+                addSegment(new FieldSeg(fieldSeg)); 
             } else if (origSeg instanceof ChosenSeatingSeg seatingSeg) {
-                this.segments.put(entry.getKey(), new ChosenSeatingSeg(seatingSeg));
+                addSegment(new ChosenSeatingSeg(seatingSeg));
             }
         }
         
@@ -146,7 +150,6 @@ public class Venue {
 
         this.IDForSeg = other.getIDForSeg();
         this.version = other.getVersion();
-        this.id = other.getID();
         this.companyID = other.getCompanyID();
     }
 
@@ -164,13 +167,13 @@ public class Venue {
         if (segments.containsKey(segmentID)) {
             throw new IllegalArgumentException("Segment with ID " + segmentID + " already exists in the venue!");
         }
-        segments.put(segmentID, new ChosenSeatingSeg(segmentID, seats, area));
+        addSegment(new ChosenSeatingSeg(segmentID, seats, area));
     }
     public void addFieldSegment(String segmentID, int size, GridRectangle area) {
         if (segments.containsKey(segmentID)) {
             throw new IllegalArgumentException("Segment with ID " + segmentID + " already exists in the venue!");
         }
-        segments.put(segmentID, new FieldSeg(segmentID, size, area));
+        addSegment(new FieldSeg(segmentID, size, area));
     }
         
 
@@ -441,10 +444,10 @@ public class Venue {
         fieldSeg.setStockForEvent(eventID, newSize - finalReserved);
     }
     public void addChosenSeatingSegment(ChosenSeatingSegRecord seatSeg) {
-        this.segments.put(seatSeg.segmentID(), new ChosenSeatingSeg(seatSeg.segmentID(), seatSeg.seats(), new GridRectangle(seatSeg.area())));
+        addSegment(new ChosenSeatingSeg(seatSeg.segmentID(), seatSeg.seats(), new GridRectangle(seatSeg.area())));
     }
     public void addFieldSegment(FieldSegRecord fieldSeg) {
-        this.segments.put(fieldSeg.segmentID(), new FieldSeg(fieldSeg.segmentID(), fieldSeg.size(), new GridRectangle(fieldSeg.area())));
+        addSegment(new FieldSeg(fieldSeg.segmentID(), fieldSeg.size(), new GridRectangle(fieldSeg.area())));
     }
     public void validateCompanyID(int companyID) {
         if (this.companyID != companyID) {
@@ -523,4 +526,9 @@ public class Venue {
 	public VenueGrid getGrid() { return grid; }
     public Map<String, Stage> getStages() { return stages; }
     public Map<String, Entrance> getEntrances() { return entrances; }
+
+    private void addSegment(Segment segment) {
+        segment.setVenue(this);
+        this.segments.put(segment.getSegmentID(), segment);
+    }
 }
