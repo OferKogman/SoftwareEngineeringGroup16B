@@ -71,6 +71,8 @@ export default function Header({ theme, setTheme }: ThemeToggleProps) {
 
       setSessionToken(token);
       setLoggedIn(false);
+
+      navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "");
     } finally {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { NavLink, useOutlet } from "react-router-dom";
+import { NavLink, Navigate, useOutlet } from "react-router-dom";
 import { useApiFetch } from "../../apiFetch";
 import "../../CSS/Management.css";
 import type { ActiveOrderDTO } from "../../DTOs/ActiveOrderDTO";
@@ -96,6 +96,7 @@ export default function UserManagement() {
         </div>
       </div>
     );
+    return <Navigate to="/" replace />;
   }
 
   const hasInvites = invites && invites.length > 0;

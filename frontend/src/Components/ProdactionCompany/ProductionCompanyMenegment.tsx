@@ -20,9 +20,10 @@ function getApiError(data: unknown): string {
   if (typeof data === "string" && data.trim()) return data;
 
   if (data && typeof data === "object") {
-    if ("message" in data && typeof data.message === "string")
-      return data.message;
-    if ("error" in data && typeof data.error === "string") return data.error;
+    if ("message" in data && typeof (data as any).message === "string")
+      return (data as any).message;
+    if ("error" in data && typeof (data as any).error === "string")
+      return (data as any).error;
   }
 
   return "";
@@ -52,7 +53,6 @@ export default function ProductionCompanyManagement() {
   const navigate = useNavigate();
   const { companyId } = useParams();
   const { sessionToken } = useSession();
-
   const apiFetch = useApiFetch();
 
   const [company, setCompany] = useState<ProductionCompanyDTO | null>(null);
@@ -60,6 +60,14 @@ export default function ProductionCompanyManagement() {
   const [owner, setOwner] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [shouldRedirect, setShouldRedirect] = useState(false);
+
+  function closePopup() {
+    setError("");
+    if (shouldRedirect) {
+      navigate("/", { replace: true });
+    }
+  }
 
   const hasPermission = (p: ManagerPermissions) => perms.includes(p);
 
@@ -77,16 +85,13 @@ export default function ProductionCompanyManagement() {
       setLoading(true);
       setError("");
       setCompany(null);
+      setShouldRedirect(false);
 
       const fail = (msg: string, redirect = false) => {
         if (cancelled) return;
-
         setError(msg);
+        setShouldRedirect(redirect);
         setLoading(false);
-
-        if (redirect) {
-          navigate("/", { replace: true });
-        }
       };
 
       if (!companyId) {
@@ -97,6 +102,7 @@ export default function ProductionCompanyManagement() {
       if (!sessionToken) return;
 
       try {
+        // COMPANY
         const res1 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}`,
           { method: "GET" },
@@ -122,6 +128,7 @@ export default function ProductionCompanyManagement() {
 
         setCompany(data1);
 
+        // OWNER
         const res2 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/owner`,
           { method: "GET" },
@@ -147,6 +154,7 @@ export default function ProductionCompanyManagement() {
 
         setOwner(data2);
 
+        // PERMISSIONS
         const res3 = await apiFetch(
           `${API_BASE}/production-companies/${companyId}/me/permissions`,
           { method: "GET" },
@@ -173,7 +181,7 @@ export default function ProductionCompanyManagement() {
         setPerms(data3 as ManagerPermissions[]);
       } catch (err) {
         if (!cancelled) {
-          fail(err instanceof Error ? err.message : String(err));
+          setError(err instanceof Error ? err.message : String(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -207,7 +215,7 @@ export default function ProductionCompanyManagement() {
       {error && (
         <div className="settings-alert">
           <p>{error}</p>
-          <button onClick={() => setError("")}>OK</button>
+          <button onClick={closePopup}>OK</button>
         </div>
       )}
 

@@ -103,6 +103,18 @@ public class VenueEventConfigService {
             company.validateUserPermissions(userID, ManagerPermissions.VENUE_CONFIGURATION);
 
             Location loc = locationService.search(newVenueLayout.location());
+            
+            logger.info("VenueEventConfigService.configureLayoutAndInventory: validating name is unique");
+            try
+            {
+                venueRepository.findByID(newVenueLayout.name());
+                logger.warn("VenueEventConfigService.configureLayoutAndInventory: Venue name already exists.");
+                return Result.makeFail("Venue name already exists. Please choose a different name.");
+            }
+            catch(IllegalArgumentException e)
+            {
+                //name is unique, continue
+            }
 
             logger.info("VenueEventConfigService.configureLayoutAndInventory: creating a new venue");
             Venue venue = new Venue(newVenueLayout.name(), loc, newVenueLayout.fieldSeg(), newVenueLayout.seatSeg(),
