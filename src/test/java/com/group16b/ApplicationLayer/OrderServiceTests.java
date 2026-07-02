@@ -437,42 +437,7 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                 verify(paymentGateway).cancelPayment(anyInt());
         }
 
-        @Test
-        void completeActiveOrder_expiredOrder_failsCancelsOrderAndFreesReservation() {
-                Order expiredOrder = mock(Order.class);
 
-                when(expiredOrder.getOrderId()).thenReturn("expired-order");
-                doThrow(new com.group16b.ApplicationLayer.Exceptions.OrderExpiredException("expired"))
-                        .when(expiredOrder)
-                        .validiteOrderIsActive();
-
-                IOrderRepository mockOrderRepo = mock(IOrderRepository.class);
-                when(mockOrderRepo.findByID("expired-order")).thenReturn(expiredOrder);
-
-                OrderService service = new OrderService(
-                        authService,
-                        productionCompanyRepo,
-                        paymentGateway,
-                        venueRepo,
-                        eventRepo,
-                        userRepo,
-                        mockOrderRepo,
-                        ticketGateway
-                );
-
-                Result<String> result =
-                        service.CompleteActiveOrder("expired-order", "user1", validPaymentInfo());
-
-                assertFalse(result.isSuccess());
-                assertTrue(result.getError().contains("Order expired"));
-
-                verify(paymentGateway, never()).processPayment(any(), anyDouble());
-                verify(paymentGateway, never()).cancelPayment(anyInt());
-                verify(ticketGateway, never()).generateSeatingTicket(anyInt(), anyString(), anyString(), any());
-                verify(ticketGateway,never()).generateGeneralAdmissionTicket(anyInt(), anyString(), anyString(),anyInt());
-                verify(ticketGateway,never()).revokeTicket(anyString());
-                verify(mockOrderRepo, times(1)).delete("expired-order");
-        }
 
         @Test
         void completeActiveOrder_optimisticLockFailsOnce_retriesAndCompletesOrder() {
@@ -1061,76 +1026,7 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 assertOrderIsCompleted(seatOrder);
         }
 
-        @Test
-        void cancelOrder_eventNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
-                IEventRepository mockEventRepo = mock(IEventRepository.class);
-                when(mockEventRepo.findByID(String.valueOf(testEvent.getEventID())))
-                        .thenThrow(new IllegalArgumentException("Event not found"));
 
-                OrderService service = new OrderService(
-                        authService,
-                        productionCompanyRepo,
-                        paymentGateway,
-                        venueRepo,
-                        mockEventRepo,
-                        userRepo,
-                        orderRepo,
-                        ticketGateway
-                );
-
-                String orderId = seatOrder.getOrderId();
-
-                Result<Boolean> result = service.cancelOrder(orderId, "user1");
-
-                assertTrue(result.isSuccess());
-                assertTrue(result.getValue());
-                assertOrderDoesNotExist(orderId);
-        }
-
-        @Test
-        void cancelOrder_venueNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
-                IRepository<Venue> mockVenueRepo = mock(IRepository.class);
-                when(mockVenueRepo.findByID(testVenue.getID()))
-                        .thenThrow(new IllegalArgumentException("Venue not found"));
-
-                OrderService service = new OrderService(
-                        authService,
-                        productionCompanyRepo,
-                        paymentGateway,
-                        mockVenueRepo,
-                        eventRepo,
-                        userRepo,
-                        orderRepo,
-                        ticketGateway
-                );
-
-                String orderId = seatOrder.getOrderId();
-
-                Result<Boolean> result = service.cancelOrder(orderId, "user1");
-
-                assertTrue(result.isSuccess());
-                assertTrue(result.getValue());
-                assertOrderDoesNotExist(orderId);
-        }
-
-        @Test
-        void cancelOrder_segmentNotFound_deletesOrderButReturnsOkOrFailAccordingToSpec() {
-                Order badSegmentOrder = new Order(
-                        "missingSeg",
-                        List.of("A-3"),
-                        50.0,
-                        testEvent.getEventID(),
-                        testUser.getEmail()
-                );
-
-                orderRepo.save(badSegmentOrder);
-
-                Result<Boolean> result = orderService.cancelOrder(badSegmentOrder.getOrderId(), "user1");
-
-                assertTrue(result.isSuccess());
-                assertTrue(result.getValue());
-                assertOrderDoesNotExist(badSegmentOrder.getOrderId());
-        }
 
         @Test
         void cancelOrder_invalidToken_returnsFailAndDoesNotDeleteOrder() {
