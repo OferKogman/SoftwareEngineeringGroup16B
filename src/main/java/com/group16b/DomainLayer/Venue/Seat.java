@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import org.hibernate.annotations.BatchSize;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -34,6 +36,7 @@ public class Seat {
     @Column(name = "seat_number")
     private int number;
 
+	@BatchSize(size = 50)
     @ElementCollection
     @CollectionTable(
         name = "seat_stock",
