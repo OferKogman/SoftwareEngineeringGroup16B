@@ -17,6 +17,7 @@ import com.group16b.ApplicationLayer.Exceptions.OrderExpiredException;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.ITicketGateway;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.CompanyInviteRecord;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
@@ -25,6 +26,8 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.Venue;
+import com.group16b.InfrastructureLayer.RequestContext;
+import com.group16b.InfrastructureLayer.Security.Role;
 
 import io.jsonwebtoken.JwtException;
 
@@ -235,6 +238,27 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public Result<List<CompanyInviteRecord>> getUserCompanyInvites() {
+        try {
+            logger.info("UserService.getUserCompanyInvites: request made");
+            String userId = validateRoleAndGetId();
+            logger.info("UserService.getUserCompanyInvites: request made by user with id: {}", userId);
+            List<ProductionCompany> companies = productionCompanyRepository.getAll();
+            List<CompanyInviteRecord> result=companies.stream()
+                    .flatMap(company -> company.getPendingUserInvites(userId).stream())
+                    .toList();
+            return Result.makeOk(result);
+
+        } catch (AuthException e) {
+            logger.warn("UserService.getUserCompanyInvites: Authentication failed during company invites fetch: " + e.getMessage());
+            return Result.makeFail("Authentication failed: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("UserService.getUserCompanyInvites: Unexpected error during company invites fetch: " + e.getMessage());
+            return Result.makeFail("An unexpected error occurred.");
+        }
+    }
+
     public Result<Boolean> isRole(String sessionToken, String role) {
         try {
             logger.info("UserService.isRole: checking if seeion {} is of Role: {}", sessionToken, role);
@@ -269,6 +293,12 @@ public class UserService {
         userRepo.findByID(userID);
         
         return userID;
+    }
+
+    private String validateRoleAndGetId() {
+        if(!RequestContext.getRole().equals(Role.SIGNED))
+            throw new AuthException("Only signed users are allowed to perform operation");
+        return RequestContext.getUserId();
     }
 
 }

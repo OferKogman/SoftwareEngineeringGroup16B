@@ -1,6 +1,7 @@
 package com.group16b.ApplicationLayer;
 
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -20,14 +21,17 @@ import com.group16b.ApplicationLayer.DTOs.ProductionCompanyDTO;
 import com.group16b.ApplicationLayer.DTOs.UserDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
+import com.group16b.ApplicationLayer.Records.CompanyInviteRecord;
 import com.group16b.DomainLayer.Interfaces.IRepository;
 import com.group16b.DomainLayer.Order.IOrderRepository;
 import com.group16b.DomainLayer.Order.Order;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.SessionToken;
 import com.group16b.DomainLayer.User.User;
 import com.group16b.InfrastructureLayer.AuthenticationServiceJWTImpl;
+import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.ExternalSystems.WsepClient;
 import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
@@ -114,6 +118,8 @@ public class UserServiceTests {
         ProductionCompany company1 = new ProductionCompany(USER_COMPANY_ID, "User's Company",0.0,USER_EMAIL);
         ProductionCompany company2 = new ProductionCompany(NON_USER_COMPANY_ID, "Non User's Company",0.0,OTHER_USER_EMAIL);
         ProductionCompany company3 = new ProductionCompany(USER_COMPANY_ID_2, "Other Company",0.0,USER_EMAIL);
+        company1.AssignManager(USER_EMAIL, NO_COMPANY_USER_EMAIL, Set.of(ManagerPermissions.CUSTOMER_SUPPORT));
+        company2.AssignOwner(OTHER_USER_EMAIL, NO_COMPANY_USER_EMAIL);
         productionCompanyRepository.save(company1);
         productionCompanyRepository.save(company2);
         productionCompanyRepository.save(company3);
@@ -459,6 +465,44 @@ public class UserServiceTests {
 
         assertFalse(result.isSuccess());
         assertEquals("An unexpected error occurred: Database Exploded!!!!!", result.getError());
+    }
+
+    @Test
+    void getUserCompanyInvites_hasInvite_returnsInvites() {
+        RequestContext.set(NO_COMPANY_USER_EMAIL, Role.SIGNED);
+        Result<List<CompanyInviteRecord>> result = userService.getUserCompanyInvites();
+        
+        assertTrue(result.isSuccess());
+        assertEquals(2, result.getValue().size());
+    }
+    @Test
+    void getUserCompanyInvites_noInvite_returnsEmptyList() {
+        RequestContext.set(USER_EMAIL, Role.SIGNED);
+        Result<List<CompanyInviteRecord>> result = userService.getUserCompanyInvites();
+        
+        assertTrue(result.isSuccess());
+        assertEquals(0, result.getValue().size());
+    }
+
+    @Test
+    void getUserCompanyInvites_notSigned_fail() {
+        RequestContext.set(NO_COMPANY_USER_EMAIL, Role.GUEST);
+        Result<List<CompanyInviteRecord>> result = userService.getUserCompanyInvites();
+        
+        assertFalse(result.isSuccess());
+        assertEquals("Authentication failed: Only signed users are allowed to perform operation", result.getError());
+    }
+
+    @Test
+    void getUserCompanyInvites_unexpctedError_fail() {
+        RequestContext.set(NO_COMPANY_USER_EMAIL, Role.SIGNED);
+        IProductionCompanyRepository faultyRepo = mock(IProductionCompanyRepository.class);
+        when(faultyRepo.getAll()).thenThrow(new RuntimeException("Database Exploded!!!!!"));
+        UserService faultyUserService = new UserService(authService, null, null, userRepo, orderRepo, null, faultyRepo);
+        Result<List<CompanyInviteRecord>> result = faultyUserService.getUserCompanyInvites();
+        
+        assertFalse(result.isSuccess());
+        assertEquals("An unexpected error occurred.", result.getError());
     }
 
 }
