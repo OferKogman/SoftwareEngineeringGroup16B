@@ -39,6 +39,8 @@ import com.group16b.DomainLayer.User.User;
 import com.group16b.DomainLayer.Venue.ReservationRequest;
 import com.group16b.DomainLayer.Venue.Venue;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.group16b.ApplicationLayer.Interfaces.INotifier;
 
 
 @Service
@@ -53,19 +55,29 @@ public class OrderService {
 	private final IRepository<User> userRepo;
     private final IProductionCompanyRepository productionCompanyRepo;
 	private final IPaymentGateway paymentService;
+	private final INotifier notifier;
 
 	private static final String POSSIBLE_REFUND_MSG ="If you were charged, the amount will be refunded automatically. If not resolved, please contact support with your order ID.";
 	private static final String REFUND_MSG="you will be refunded automatically. If not resolved, please contact support with your order ID.";
 
-    public OrderService(IAuthenticationService authenticationService, IProductionCompanyRepository productionCompanyRepo, IPaymentGateway paymentGateway, IRepository<Venue> venueRepo, IEventRepository eventRepo, IRepository<User> userRepo, IOrderRepository orderRepo, ITicketGateway ticketGateway) {
+	public OrderService(IAuthenticationService authenticationService,
+	                    IProductionCompanyRepository productionCompanyRepo,
+	                    IPaymentGateway paymentGateway,
+	                    IRepository<Venue> venueRepo,
+	                    IEventRepository eventRepo,
+	                    IRepository<User> userRepo,
+	                    IOrderRepository orderRepo,
+	                    ITicketGateway ticketGateway,
+	                    INotifier notifier) {
 		this.authenticationService = authenticationService;
-		this.productionCompanyRepo=productionCompanyRepo;
+		this.productionCompanyRepo = productionCompanyRepo;
 		this.venueRepo = venueRepo;
 		this.eventRepo = eventRepo;
 		this.userRepo = userRepo;
 		this.orderRepo = orderRepo;
 		this.paymentService = paymentGateway;
 		this.ticketGateway = ticketGateway;
+		this.notifier = notifier;
 	}
 
     public Result<String> CompleteActiveOrder(String orderID, String sTocken, PaymentInfo paymentInfo) {
@@ -103,8 +115,10 @@ public class OrderService {
 			
 			// 6. complete order with optimistic locking retry
 			logger.info("OrderService.CompleteActiveOrder: completing order {} for user {} with optimistic locking retry", orderID, subjectID);
-			completeOrderWithOptimisticRetry(orderID, subjectID,transactionId,ticket);
-			
+			completeOrderWithOptimisticRetry(orderID, subjectID, transactionId, ticket);
+
+			notifier.notify(subjectID, "Your order " + orderID + " was completed successfully.");
+
 			// 7. return tickets
 			return Result.makeOk(ticket);
 
