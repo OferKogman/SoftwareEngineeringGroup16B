@@ -38,8 +38,8 @@ public class VirtualQueueRepositoryMapImplTests {
     void setUp() {
         repo = new VirtualQueueRepositoryMapImpl();
 
-        vq1 = spy(new VirtualQueue(VQ1_ID));
-        vq2 = spy(new VirtualQueue(VQ2_ID));
+        vq1 = spy(new VirtualQueue(VQ1_ID, 50));
+        vq2 = spy(new VirtualQueue(VQ2_ID, 50));
 
         repo.save(vq1);
     }
