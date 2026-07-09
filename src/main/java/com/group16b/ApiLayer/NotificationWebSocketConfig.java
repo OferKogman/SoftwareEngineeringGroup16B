@@ -5,21 +5,21 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
-import com.group16b.InfrastructureLayer.Notifications.NotificationWebSocketHandler;
+import com.group16b.InfrastructureLayer.Notifications.Notifier;
 
 @Configuration
 @EnableWebSocket
 public class NotificationWebSocketConfig implements WebSocketConfigurer {
 
-    private final NotificationWebSocketHandler notificationWebSocketHandler;
+    private final Notifier notifier;
 
-    public NotificationWebSocketConfig(NotificationWebSocketHandler notificationWebSocketHandler) {
-        this.notificationWebSocketHandler = notificationWebSocketHandler;
+    public NotificationWebSocketConfig(Notifier notifier) {
+        this.notifier = notifier;
     }
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(notificationWebSocketHandler, "/ws/notifications")
+        registry.addHandler(notifier, "/ws/notifications")
                 .setAllowedOrigins("*");
     }
 }
