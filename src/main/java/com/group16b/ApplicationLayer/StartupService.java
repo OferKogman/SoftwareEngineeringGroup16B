@@ -32,6 +32,7 @@ public class StartupService {
     private final String defaultAdminUsername;
     private final String defaultAdminPassword;
     private final String defaultAdminEmail;
+    private final int virtualQueuePassNum;
 
 
     //will grow as more invariants would be needed to validate
@@ -44,7 +45,8 @@ public class StartupService {
             ProductionCompanyIdGen ProductionCompanyIdGenerator,
             @Value("${startup.default-admin.username}") String defaultAdminUsername,
             @Value("${startup.default-admin.password}") String defaultAdminPassword,
-            @Value("${startup.default-admin.email}") String defaultAdminEmail) {
+            @Value("${startup.default-admin.email}") String defaultAdminEmail,
+            @Value("${virtual-queue.pass-num}") int virtualQueuePassNum) {
             
         this.adminRepo = adminRepo;
         this.wsepClient = wsepClient;
@@ -55,6 +57,7 @@ public class StartupService {
         this.defaultAdminUsername = defaultAdminUsername;
         this.defaultAdminPassword = defaultAdminPassword;
         this.defaultAdminEmail = defaultAdminEmail;
+        this.virtualQueuePassNum = virtualQueuePassNum;
             
         }
 
@@ -114,7 +117,7 @@ public class StartupService {
             try {
                 virtualQueueRepo.findByID(String.valueOf(event.getEventID())); 
             } catch (Exception e) {
-                VirtualQueue rebuiltQueue = new VirtualQueue(event.getEventID());
+                VirtualQueue rebuiltQueue = new VirtualQueue(event.getEventID(), virtualQueuePassNum);
                 virtualQueueRepo.save(rebuiltQueue);
             }
         }

@@ -19,7 +19,7 @@ public class VirtualQueueTests {
 
     @BeforeEach
     void setup() {
-        q = new VirtualQueue(0);
+        q = new VirtualQueue(0, 50);
     }
 
     @Test

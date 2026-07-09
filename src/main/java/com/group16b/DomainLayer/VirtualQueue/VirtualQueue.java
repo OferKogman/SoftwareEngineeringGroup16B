@@ -36,9 +36,9 @@ public class VirtualQueue {
     @Column(name = "passed_time")
     private Map<String, Long> passedQueue = new LinkedHashMap<>();
 
-    private int pass_num; 
-    
-    private static final Integer PASS_NUM = 50;
+    @Column(name = "pass_num", nullable = false)
+    private int pass_num;
+
     private static int PASS_TIMEOUT = 60 * 10 * 1000;
 
     // add a package-private setter specifically for tests that dont necessairly use dbms
@@ -49,11 +49,12 @@ public class VirtualQueue {
 
     protected VirtualQueue() {}
 
-    public VirtualQueue(int id) {
-        this(id, PASS_NUM);
-    }
 
     public VirtualQueue(int id, int pass_num) {
+        if (pass_num <= 0) {
+            throw new IllegalArgumentException("pass_num must be positive");
+        }
+
         this.id = id;
         this.pass_num = pass_num;
     }

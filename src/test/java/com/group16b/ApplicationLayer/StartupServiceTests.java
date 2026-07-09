@@ -48,7 +48,7 @@ public class StartupServiceTests {
         mockProductionCompanyRepository = mock(IProductionCompanyRepository.class);
         mockProductionCompanyIdGen = mock(ProductionCompanyIdGen.class);
         startupService=new StartupService(mockAdminRepository, mockWsepClient, mockEventRepository, mockVirtualQueueRepo,mockProductionCompanyRepository, mockProductionCompanyIdGen,
-                "admin123", "password", "mail@example.com");
+                "admin123", "password", "mail@example.com", 50);
 
         
 
