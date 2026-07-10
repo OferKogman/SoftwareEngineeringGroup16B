@@ -1,80 +1,59 @@
-import { fetchEventSource } from "@microsoft/fetch-event-source";
 import { useEffect } from "react";
 import { useLoggedIn } from "../../GlobalContext/LoggedInContext";
 import { useSession } from "../../GlobalContext/SessionContext";
-import { useApiFetch } from "../../apiFetch";
 import { useNotifications } from "./NotificationContext";
+
+function notificationSocketUrl(token: string): string {
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+  return `${protocol}://localhost:8080/ws/notifications?token=${encodeURIComponent(token)}`;
+}
 
 export function useGlobalNotifications() {
   const { sessionToken } = useSession();
   const { loggedIn } = useLoggedIn();
-  const apiFetch = useApiFetch();
-
   const { addNotification, clearInbox, clearAllToasts } = useNotifications();
 
   useEffect(() => {
     clearInbox();
     clearAllToasts();
 
-    if (!sessionToken || !loggedIn) return;
+    if (!sessionToken || !loggedIn) {
+      return;
+    }
 
-    const abortController = new AbortController();
+    const socket = new WebSocket(notificationSocketUrl(sessionToken));
 
-    const connectStream = async () => {
-      try {
-        await fetchEventSource(
-          `http://localhost:8080/api/notifications/stream?token=${sessionToken}`,
-          {
-            fetch: fetch,
-            signal: abortController.signal,
-            async onopen(response) {
-              if (response.ok) {
-                console.log("Connected to global notification stream!");
-                return;
-              }
-              if (response.status >= 400 && response.status < 600) {
-                throw new Error(
-                  `Server rejected connection: ${response.status}`,
-                );
-              }
-            },
-            onmessage(event) {
-              let messageText = event.data;
-              try {
-                const parsed = JSON.parse(event.data);
-                messageText = parsed.message || event.data;
-              } catch (e) {
-                console.log(e);
-              }
-
-              addNotification({
-                type: "message",
-                message: messageText,
-                duration: 10000,
-              });
-            },
-            onerror(err) {
-              console.error("Lost broadcast connection:", err);
-              throw err;
-            },
-          },
-        );
-      } catch (err) {
-        console.error("Stream setup error:", err);
-      }
+    socket.onopen = () => {
+      console.log("Connected to notification WebSocket.");
     };
 
-    connectStream();
+    socket.onmessage = (event) => {
+      let messageText = event.data;
+
+      try {
+        const parsed = JSON.parse(event.data);
+        messageText = parsed.message || event.data;
+      } catch {
+        // If it is not JSON, use the raw message.
+      }
+
+      addNotification({
+        type: "message",
+        message: messageText,
+        duration: 10000,
+      });
+    };
+
+    socket.onerror = (event) => {
+      console.error("Notification WebSocket error:", event);
+    };
+
+    socket.onclose = (event) => {
+      console.log("Notification WebSocket closed:", event.code, event.reason);
+    };
 
     return () => {
-      abortController.abort();
+      socket.close();
     };
-  }, [
-    sessionToken,
-    loggedIn,
-    addNotification,
-    clearInbox,
-    clearAllToasts,
-    apiFetch,
-  ]);
+  }, [sessionToken, loggedIn, addNotification, clearInbox, clearAllToasts]);
 }

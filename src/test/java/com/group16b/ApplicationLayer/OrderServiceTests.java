@@ -75,6 +75,7 @@ import com.group16b.InfrastructureLayer.MapDBs.OrderRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
+import com.group16b.ApplicationLayer.Interfaces.INotifier;
 
 public class OrderServiceTests {
         private OrderService orderService;
@@ -87,6 +88,7 @@ public class OrderServiceTests {
         private IEventRepository eventRepo;
         private IRepository<User> userRepo;
         private IProductionCompanyRepository productionCompanyRepo;
+        private INotifier notifier;
 
 
         // example objects:
@@ -97,6 +99,7 @@ public class OrderServiceTests {
         private ProductionCompany testPCompany;
         private Order seatOrder;
         private Order fieldOrder;
+
 
         private final int TRANSACTION_ID=12345;
         private final String SEATING_TICKET="amogus";
@@ -123,6 +126,7 @@ public class OrderServiceTests {
         setUpAuthMocks();
         setUpPaymentMocks();
         setUpTicketMocks();
+        notifier = mock(INotifier.class);
 
         orderService = new OrderService(
                 authService,
@@ -132,7 +136,8 @@ public class OrderServiceTests {
                 eventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notifier
         );
         }
         private void seedUsers() {
@@ -508,7 +513,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         eventRepo,
                         userRepo,
                         mockOrderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notifier
                 );
 
                 Result<String> result =
@@ -569,7 +575,8 @@ void completeActiveOrder_orderBelongsToDifferentUser_failsAndDoesNotPay() {
                         eventRepo,
                         userRepo,
                         mockOrderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notifier
                 );
 
                 Result<String> result =
@@ -840,7 +847,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         mockEventRepo,
                         userRepo,
                         orderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notifier
                 );
 
                 Result<List<String>> result =
@@ -865,7 +873,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                         eventRepo,
                         userRepo,
                         orderRepo,
-                        ticketGateway
+                        ticketGateway,
+                        notifier
                 );
 
                 Result<List<String>> result =
@@ -1310,7 +1319,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 eventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notifier
         );
 
         Result<Integer> result =
@@ -1346,7 +1356,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 mockEventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notifier
         );
 
         Result<List<String>> result =
@@ -1389,7 +1400,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 mockEventRepo,
                 userRepo,
                 orderRepo,
-                ticketGateway
+                ticketGateway,
+                notifier
         );
 
         Result<Double> result = service.getOrderPrice(seatOrder.getOrderId(), "user1");
@@ -1441,7 +1453,8 @@ void completeActiveOrder_twoThreadsSameOrder_onlyOneCompletesSuccessfully() thro
                 eventRepo,
                 userRepo,
                 mockOrderRepo,
-                ticketGateway
+                ticketGateway,
+                notifier
         );
 
         Result<List<String>> result =
