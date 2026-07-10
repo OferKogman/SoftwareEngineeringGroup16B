@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 public class LotteryPolicy implements PurchasePolicy {
 
@@ -25,9 +25,9 @@ public class LotteryPolicy implements PurchasePolicy {
         this.winnerAmount = winnerAmount;
         validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
-        this.participants = ConcurrentHashMap.newKeySet();
-        this.winnersAndCodes = new ConcurrentHashMap<>();
-        this.usedCodes = new ConcurrentHashMap<>();
+        this.participants = new HashSet<>();
+        this.winnersAndCodes = new HashMap<>();
+        this.usedCodes = new HashMap<>();
     }
 
     public LotteryPolicy(LotteryPolicy other) {
@@ -36,9 +36,8 @@ public class LotteryPolicy implements PurchasePolicy {
         this.lotteryRegistrationDueDate = other.lotteryRegistrationDueDate;
 
         this.participants = new HashSet<>(other.participants);
-
-        this.winnersAndCodes = new ConcurrentHashMap<>(other.winnersAndCodes);
-        this.usedCodes = new ConcurrentHashMap<>(other.usedCodes);
+        this.winnersAndCodes = new HashMap<>(other.winnersAndCodes);
+        this.usedCodes = new HashMap<>(other.usedCodes);
     }
 
     public LotteryPolicy() {}

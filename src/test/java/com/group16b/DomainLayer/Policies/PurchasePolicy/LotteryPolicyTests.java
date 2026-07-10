@@ -4,10 +4,9 @@ import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 public class LotteryPolicyTests {
     
@@ -105,5 +104,30 @@ public class LotteryPolicyTests {
         } catch (Exception e) {
             assert(e.getMessage().equals("Invalid lottery code."));
         }
+    }
+
+    @Test
+    void lotteryPolicyConverter_roundTrip_preservesPolicy() {
+        LotteryPolicy original = new LotteryPolicy(
+                1,
+                "test lottery",
+                2,
+                LocalDateTime.now().plusDays(1)
+        );
+
+        original.enrollInLottery(10, "user1");
+        original.enrollInLottery(10, "user2");
+
+        LotteryPolicyConverter converter = new LotteryPolicyConverter();
+
+        String db = converter.convertToDatabaseColumn(original);
+        assertFalse(db.contains("ConcurrentHashMap"));
+        assertFalse(db.contains("KeySetView"));
+        LotteryPolicy restored = converter.convertToEntityAttribute(db);
+
+        assertEquals("test lottery", restored.getLotteryName());
+        assertEquals(2, restored.getWinnerAmount());
+        assertTrue(restored.getParticipants().contains("user1"));
+        assertTrue(restored.getParticipants().contains("user2"));
     }
 }
