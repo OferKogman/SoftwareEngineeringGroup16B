@@ -39,12 +39,17 @@ import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
 import com.group16b.InfrastructureLayer.Security.Role;
+import com.group16b.ApplicationLayer.Interfaces.INotifier;
+
+import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.eq;
 
 public class CompanyHierarchyServiceTests {
         private CompanyHierarchyService CompanyHierarchyService;
         private IAuthenticationService mockAuthService;
         private IRepository<User> UserRepository;
         private IProductionCompanyRepository ProductionCompanyRepository;
+        private INotifier notifier;
 
         private User founder;
         private User owner1;
@@ -94,7 +99,8 @@ public class CompanyHierarchyServiceTests {
                 mockAuthService = mock(IAuthenticationService.class);
                 UserRepository = new UserRepositoryMapImpl();
                 ProductionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-                CompanyHierarchyService = new CompanyHierarchyService(mockAuthService, ProductionCompanyRepository, UserRepository);
+                notifier = mock(INotifier.class);
+                CompanyHierarchyService = new CompanyHierarchyService(mockAuthService, ProductionCompanyRepository, UserRepository, notifier);
 
                 when(mockAuthService.validateToken(anyString())).thenReturn(false);
                 when(mockAuthService.isUserToken(anyString())).thenReturn(false);
@@ -349,7 +355,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                notifier
                         );
 
                 Result<Boolean> result =
@@ -821,7 +828,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                notifier
                         );
 
                 Result<Boolean> result =
@@ -1306,7 +1314,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                notifier
                         );
 
                 Result<Boolean> result =
@@ -1609,7 +1618,8 @@ public class CompanyHierarchyServiceTests {
                         new CompanyHierarchyService(
                         mockAuthService,
                         repo,
-                        UserRepository
+                        UserRepository,
+                                notifier
                         );
 
                 Result<Boolean> result =
@@ -2881,7 +2891,7 @@ public class CompanyHierarchyServiceTests {
         {
                 RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
                 IProductionCompanyRepository mockRepo=mock(IProductionCompanyRepository.class);
-                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository);
+                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository, notifier);
                 
                 doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
                 Result<Set<ManagerPermissions>> result=CompanyHierarchyService.getComapanyPermissions(BAD_COMPANY_ID);
@@ -2932,7 +2942,7 @@ public class CompanyHierarchyServiceTests {
         {
                 RequestContext.set(MANAGER1_EMAIL,Role.SIGNED);
                 IProductionCompanyRepository mockRepo=mock(IProductionCompanyRepository.class);
-                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository);
+                CompanyHierarchyService=new CompanyHierarchyService(mockAuthService, mockRepo, UserRepository, notifier);
                 
                 doThrow(new RuntimeException("The zombies are coming")).when(mockRepo).findByID(anyString());
                 Result<Boolean> result=CompanyHierarchyService.isOwner(COMPANY1_ID);

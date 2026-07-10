@@ -3,6 +3,7 @@ package com.group16b.InfrastructureLayer.Notifications;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -19,6 +20,7 @@ import com.group16b.ApplicationLayer.DTOs.NotificationDTO;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Interfaces.INotifier;
 import com.group16b.DomainLayer.Notification;
+import com.group16b.InfrastructureLayer.Database.NotificationRepository;
 
 @Component
 public class Notifier extends TextWebSocketHandler implements INotifier {
@@ -29,11 +31,14 @@ public class Notifier extends TextWebSocketHandler implements INotifier {
 
     private final IAuthenticationService authenticationService;
     private final ObjectMapper objectMapper;
+    private final NotificationRepository notificationRepository;
 
     public Notifier(IAuthenticationService authenticationService,
-                    ObjectMapper objectMapper) {
+                    ObjectMapper objectMapper,
+                    NotificationRepository notificationRepository) {
         this.authenticationService = authenticationService;
         this.objectMapper = objectMapper;
+        this.notificationRepository = notificationRepository;
     }
 
     @Override
@@ -53,6 +58,8 @@ public class Notifier extends TextWebSocketHandler implements INotifier {
         sessionsByUser.put(userID, session);
 
         logger.info("Notifier: user {} connected to notification WebSocket", userID);
+
+        sendPendingNotifications(userID);
     }
 
     @Override
@@ -70,24 +77,49 @@ public class Notifier extends TextWebSocketHandler implements INotifier {
     public void notify(String userID, String message) {
         Notification notification = new Notification(userID, message);
 
+        notificationRepository.save(notification);
+
+        if (sendNotification(userID, notification)) {
+            notification.markSent();
+            notificationRepository.save(notification);
+
+            logger.info("Notifier: sent live notification to user {}", userID);
+            return;
+        }
+
+        logger.info("Notifier: user {} is offline, notification saved for later", userID);
+    }
+
+    private void sendPendingNotifications(String userID) {
+        List<Notification> pendingNotifications = notificationRepository.findUnsentByUserID(userID);
+
+        for (Notification notification : pendingNotifications) {
+            if (sendNotification(userID, notification)) {
+                notification.markSent();
+                notificationRepository.save(notification);
+            } else {
+                logger.info("Notifier: stopped sending pending notifications for user {}", userID);
+                return;
+            }
+        }
+    }
+
+    private boolean sendNotification(String userID, Notification notification) {
         WebSocketSession session = sessionsByUser.get(userID);
 
         if (session == null || !session.isOpen()) {
-            logger.info("Notifier: user {} is offline, notification was not sent live", userID);
-            return;
+            return false;
         }
 
         try {
             String json = objectMapper.writeValueAsString(NotificationDTO.from(notification));
             session.sendMessage(new TextMessage(json));
-
-            notification.markSent();
-
-            logger.info("Notifier: sent live notification to user {}", userID);
+            return true;
 
         } catch (Exception e) {
             logger.warn("Notifier: failed to send notification to user {}", userID, e);
             removeSession(session);
+            return false;
         }
     }
 
