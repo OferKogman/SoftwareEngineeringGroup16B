@@ -22,5 +22,12 @@ public class MaxTicketsPolicy implements PurchasePolicy {
     }
 
     @Override
-    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
+    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException {
+        if (context.ticketCount() > maxTicketsPerTransaction) {
+            throw new PurchasePolicyException(
+                    "Cannot purchase more than "
+                            + maxTicketsPerTransaction
+                            + " ticket(s).");
+        }
+    }
 }

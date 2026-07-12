@@ -22,5 +22,12 @@ public class MinTicketsPolicy implements PurchasePolicy {
     }
 
     @Override
-    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException { }
+    public void validatePurchase(PurchaseContext context) throws PurchasePolicyException {
+        if (context.ticketCount() < minTicketsPerTransaction) {
+            throw new PurchasePolicyException(
+                    "Must purchase at least "
+                            + minTicketsPerTransaction
+                            + " ticket(s).");
+        }
+    }
 }
