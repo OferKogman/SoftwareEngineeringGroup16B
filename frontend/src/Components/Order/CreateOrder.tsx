@@ -73,8 +73,6 @@ export default function CreateOrderPage() {
           navigate(`/events/${eventID}/queue`, {
             state: {
               initialStatus: status,
-              lotteryCode,
-              age,
             },
           });
         }
@@ -184,19 +182,13 @@ export default function CreateOrderPage() {
     });
   }
 
-  function hasLotteryCode(
-      lotteryCode: string | null | undefined,
-  ): lotteryCode is string {
-    return lotteryCode !== null && lotteryCode !== undefined && lotteryCode.trim() !== "";
-  }
-
   async function reserveFieldSeats(
     eventID: string,
     venueID: string,
     segmentID: string,
     amount: number,
   ) {
-    if (!hasLotteryCode(lotteryCode)) {
+    if (lotteryCode === null) {
       const response = await apiFetch(
         `${API_BASE}/events/${eventID}/reservations/field`,
         {
@@ -233,10 +225,9 @@ export default function CreateOrderPage() {
           },
           body: JSON.stringify({
             venueId: venueID,
-            lotteryCode: lotteryCode.trim(),
+            lotteryCode: lotteryCode,
             segmentId: segmentID,
             amount,
-            age,
           }),
         },
       );
@@ -262,7 +253,7 @@ export default function CreateOrderPage() {
   ) {
     const seatIDs = seats.map((seat) => `${seat.row}-${seat.number}`);
 
-    if (!hasLotteryCode(lotteryCode)) {
+    if (lotteryCode === null) {
       const response = await apiFetch(
         `${API_BASE}/events/${eventID}/reservations/seats`,
         {
@@ -298,7 +289,7 @@ export default function CreateOrderPage() {
           },
           body: JSON.stringify({
             venueId: venueID,
-            lotteryCode: lotteryCode.trim(),
+            lotteryCode: lotteryCode,
             segmentId: segmentID,
             seatIds: seatIDs,
             age,
