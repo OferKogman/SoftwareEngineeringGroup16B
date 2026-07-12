@@ -9,12 +9,16 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.time.LocalDateTime;
+import static org.mockito.ArgumentMatchers.contains;
+
+import com.group16b.ApplicationLayer.Interfaces.INotifier;
 
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LotteryPolicyTests {
+    private INotifier notifier;
     
 
     @Test

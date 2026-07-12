@@ -5,8 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
@@ -14,6 +13,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import com.group16b.ApplicationLayer.Interfaces.INotifier;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -48,6 +49,7 @@ public class LotteryPolicyServiceTests {
     private IRepository<User> userRepository;
     private IEventRepository eventRepository;
     private IAuthenticationService authService;
+    private INotifier notifier;
 
     private final int BAD_EVENT_ID = 100;
     private final String FOUNDER_MAIL = "yuval hamebulbal";
@@ -69,6 +71,7 @@ public class LotteryPolicyServiceTests {
         eventRepository = new EventRepositoryMapImpl();
         productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
         authService = mock(IAuthenticationService.class);
+        notifier = mock(INotifier.class);
         when(authService.validateToken("user1")).thenReturn(true);
         when(authService.isUserToken("user1")).thenReturn(true);
         when(authService.extractSubjectFromToken("user1")).thenReturn(FOUNDER_MAIL);
@@ -88,7 +91,7 @@ public class LotteryPolicyServiceTests {
         when(authService.extractSubjectFromToken("user6")).thenReturn(BYSTANDER_MAIL);
 
         lotteryPolicyService = new LotteryPolicyService(eventRepository, userRepository, productionCompanyRepository,
-                authService);
+                authService, notifier);
 
         seedData();
 
@@ -237,7 +240,7 @@ public class LotteryPolicyServiceTests {
         doThrow(new RuntimeException("sam gaz al abamperim")).when(mockCompanyRepository).findByID(anyString());
 
         lotteryPolicyService = new LotteryPolicyService(eventRepository, userRepository, mockCompanyRepository,
-                authService);
+                authService, notifier);
 
         Result<Void> res = lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 2, "another", 50,
                 now.plusDays(5), "user1");
@@ -313,7 +316,7 @@ public class LotteryPolicyServiceTests {
         IRepository<User> userRepo = mock(IRepository.class);
         IEventRepository eventRepo = mock(IEventRepository.class);
 
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
+        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService, notifier);
 
         User user = mock(User.class);
         ProductionCompany company = mock(ProductionCompany.class);
@@ -461,7 +464,7 @@ public class LotteryPolicyServiceTests {
         doThrow(new RuntimeException("sam gaz al abamperim")).when(mockEventRepository).findByID(anyString());
 
         lotteryPolicyService = new LotteryPolicyService(mockEventRepository, userRepository,
-                productionCompanyRepository, authService);
+                productionCompanyRepository, authService, notifier);
 
         Result<Void> res = lotteryPolicyService.enrollInLottery(event1.getEventID(), "user1");
         assertFalse(res.isSuccess());
@@ -602,7 +605,7 @@ public class LotteryPolicyServiceTests {
         IEventRepository eventRepo = mock(IEventRepository.class);
         IProductionCompanyRepository companyRepo = mock(IProductionCompanyRepository.class);
 
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
+        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService, notifier);
 
         User user = mock(User.class);
         Event event = mock(Event.class);
@@ -651,6 +654,10 @@ public class LotteryPolicyServiceTests {
 
         assertTrue(e.getLotteryPolicy().getWinners().contains(PERMITED_MAIL));
         assertEquals(1, e.getLotteryPolicy().getWinners().size());
+        verify(notifier, times(1)).notify(
+                eq(PERMITED_MAIL),
+                contains("You won the lottery for event " + event1.getEventID())
+        );
     }
 
     @Test
@@ -723,7 +730,7 @@ public class LotteryPolicyServiceTests {
         doThrow(new RuntimeException("sam gaz al abamperim")).when(mockEventRepository).findByID(anyString());
 
         lotteryPolicyService = new LotteryPolicyService(mockEventRepository, userRepository,
-                productionCompanyRepository, authService);
+                productionCompanyRepository, authService, notifier);
 
         Result<Void> res = lotteryPolicyService.handleLotteryResults(event1.getEventID(), "user1");
         assertFalse(res.isSuccess());
@@ -737,7 +744,7 @@ public class LotteryPolicyServiceTests {
         IRepository<User> userRepo = mock(IRepository.class);
         IEventRepository eventRepo = mock(IEventRepository.class);
 
-        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService);
+        LotteryPolicyService service = new LotteryPolicyService(eventRepo, userRepo, companyRepo, authService, notifier);
 
         User user = mock(User.class);
         Event event = mock(Event.class);

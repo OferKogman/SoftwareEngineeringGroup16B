@@ -21,6 +21,7 @@ public class NotificationService implements INotificationService {
 
     private final Map<String, SseEmitter> emitters = new ConcurrentHashMap<>();
     private final Map<String, List<Notification>> pending = new ConcurrentHashMap<>();
+    
 
     @Override
     public void notify(String userID, String message) {

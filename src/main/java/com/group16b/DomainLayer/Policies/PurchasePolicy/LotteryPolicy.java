@@ -143,4 +143,16 @@ public class LotteryPolicy implements PurchasePolicy {
     public List<String> getWinners() {
         return new ArrayList<>(winnersAndCodes.values());
     }
+
+    public Map<String, String> getWinnerCodesByUser() {
+        Map<String, String> result = new HashMap<>();
+
+        for (Map.Entry<String, String> entry : winnersAndCodes.entrySet()) {
+            String code = entry.getKey();
+            String userID = entry.getValue();
+            result.put(userID, code);
+        }
+
+        return result;
+    }
 }

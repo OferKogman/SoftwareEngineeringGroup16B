@@ -1,7 +1,11 @@
 package com.group16b.ApplicationLayer;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
+import com.group16b.ApplicationLayer.Interfaces.INotifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -28,13 +32,17 @@ public class LotteryPolicyService {
     private final IRepository<User> userRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
     private final IAuthenticationService authenticationService;
+    private final INotifier notifier;
 
     public LotteryPolicyService(IEventRepository eventRepository, IRepository<User> userRepository,
-            IProductionCompanyRepository productionCompanyRepository, IAuthenticationService authenticationService) {
+                                IProductionCompanyRepository productionCompanyRepository,
+                                IAuthenticationService authenticationService,
+                                INotifier notifier) {
         this.eventRepository = eventRepository;
         this.userRepository = userRepository;
         this.productionCompanyRepository = productionCompanyRepository;
         this.authenticationService = authenticationService;
+        this.notifier = notifier;
     }
 
     public Result<Void> createLotteryPolicy(int eventID, int lotteryID, String lotteryName, int winnerAmount,
@@ -177,6 +185,7 @@ public class LotteryPolicyService {
                 logger.info("LotteryPolicyService.handleLotteryResults: Saving changes to repository");
                 try {
                     eventRepository.save(e);
+                    notifyLotteryResultsSafely(eventID, e);
                     break;
                 } catch (OptimisticLockingFailureException err) {
                     logger.warn("LotteryPolicyService.handleLotteryResults: Event got edit retrying");
@@ -214,6 +223,56 @@ public class LotteryPolicyService {
         String userID = (authenticationService.extractSubjectFromToken(sessionToken));
         userRepository.findByID(userID);
         return userID;
+    }
+
+    private void notifyLotteryResults(int eventID, Event event) {
+        LotteryPolicy lotteryPolicy = event.getLotteryPolicy();
+
+        Set<String> participants = new HashSet<>(lotteryPolicy.getParticipants());
+        Map<String, String> winnerCodesByUser = lotteryPolicy.getWinnerCodesByUser();
+
+        for (Map.Entry<String, String> winnerEntry : winnerCodesByUser.entrySet()) {
+            String winnerID = winnerEntry.getKey();
+            String lotteryCode = winnerEntry.getValue();
+
+            notifyUserSafely(
+                    winnerID,
+                    "You won the lottery for event " + eventID + ". Your lottery code is " + lotteryCode + ".",
+                    "handleLotteryResults"
+            );
+        }
+
+        for (String participantID : participants) {
+            if (winnerCodesByUser.containsKey(participantID)) {
+                continue;
+            }
+
+            notifyUserSafely(
+                    participantID,
+                    "You did not win the lottery for event " + eventID + ".",
+                    "handleLotteryResults"
+            );
+        }
+    }
+
+    private void notifyUserSafely(String userID, String message, String context) {
+        try {
+            notifier.notify(userID, message);
+        } catch (Exception e) {
+            logger.warn("LotteryPolicyService.{}: failed to send notification to user {}", context, userID, e);
+        }
+    }
+
+    private void notifyLotteryResultsSafely(int eventID, Event event) {
+        try {
+            notifyLotteryResults(eventID, event);
+        } catch (Exception e) {
+            logger.warn(
+                    "LotteryPolicyService.handleLotteryResults: failed to send lottery result notifications for event {}",
+                    eventID,
+                    e
+            );
+        }
     }
 
 }
