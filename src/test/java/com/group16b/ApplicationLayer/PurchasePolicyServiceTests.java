@@ -1,171 +1,386 @@
 package com.group16b.ApplicationLayer;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.AndDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MaxTicketsDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MinAgeDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.OrDTO;
+import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.PurchasePolicyDTO;
 import com.group16b.ApplicationLayer.Enums.PurchasePolicyTypes;
 import com.group16b.ApplicationLayer.Interfaces.IAuthenticationService;
 import com.group16b.ApplicationLayer.Objects.Result;
-import com.group16b.ApplicationLayer.Records.EventRecord;
 import com.group16b.ApplicationLayer.Records.PurchasePolicyRecord;
 import com.group16b.DomainLayer.Event.Event;
 import com.group16b.DomainLayer.Event.IEventRepository;
 import com.group16b.DomainLayer.Interfaces.IRepository;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.AgePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.AndPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.MaxTicketsPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.MinTicketsPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.OrPolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchaseContext;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicyException;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
-import com.group16b.DomainLayer.Venue.Entrance;
-import com.group16b.DomainLayer.Venue.FieldSeg;
-import com.group16b.DomainLayer.Venue.GridRectangle;
-import com.group16b.DomainLayer.Venue.Location;
-import com.group16b.DomainLayer.Venue.Segment;
-import com.group16b.DomainLayer.Venue.Stage;
-import com.group16b.DomainLayer.Venue.Venue;
-import com.group16b.DomainLayer.Venue.VenueGrid;
-import com.group16b.InfrastructureLayer.MapDBs.EventRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.ProductionCompanyRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.UserRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.MapDBs.VenueRepositoryMapImpl;
-import com.group16b.InfrastructureLayer.Security.Role;
-/*
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
 public class PurchasePolicyServiceTests {
-    private PurchasePolicyService purchasePolicyService;
-    private IAuthenticationService mockTokenService;
-    private IProductionCompanyRepository productionCompanyRepository;
-    private IRepository<User> userRepository;
-    private IRepository<Venue> venueRepository;
+
+    private IAuthenticationService authenticationService;
+    private IProductionCompanyRepository companyRepository;
     private IEventRepository eventRepository;
-    private User user;
-    private User user2;
-    private Event e1;
-    private Location location1;
-    private Segment segment1;
+    private IRepository<User> userRepository;
+
     private ProductionCompany company;
+    private Event event;
+
+    private PurchasePolicyService service;
 
     @BeforeEach
     public void setUp() {
-        mockTokenService = mock(IAuthenticationService.class);
-        productionCompanyRepository = new ProductionCompanyRepositoryMapImpl();
-        eventRepository = new EventRepositoryMapImpl();
-        venueRepository = new VenueRepositoryMapImpl();
-        userRepository = new UserRepositoryMapImpl();
-        purchasePolicyService = new PurchasePolicyService(mockTokenService, productionCompanyRepository,
-                eventRepository, userRepository);
+        authenticationService =
+                mock(IAuthenticationService.class);
 
-        when(mockTokenService.validateToken("invalid_token")).thenReturn(false);
-        when(mockTokenService.validateToken("guest")).thenReturn(true);
-        when(mockTokenService.isUserToken("guest")).thenReturn(false);
+        companyRepository =
+                mock(IProductionCompanyRepository.class);
 
-        user = new User("testuser", "password");
-        userRepository.save(user);
-        when(mockTokenService.validateToken("user1")).thenReturn(true);
-        when(mockTokenService.extractRoleFromToken("user1")).thenReturn(Role.SIGNED);
-        when(mockTokenService.isUserToken("user1")).thenReturn(true);
-        when(mockTokenService.extractSubjectFromToken("user1")).thenReturn(String.valueOf(user.getEmail()));
+        eventRepository =
+                mock(IEventRepository.class);
 
-        user2 = new User("testuser2", "password");
-        userRepository.save(user2);
-        when(mockTokenService.validateToken("user2")).thenReturn(true);
-        when(mockTokenService.extractRoleFromToken("user2")).thenReturn(Role.SIGNED);
-        when(mockTokenService.isUserToken("user2")).thenReturn(true);
-        when(mockTokenService.extractSubjectFromToken("user2")).thenReturn(String.valueOf(user2.getEmail()));
+        userRepository =
+                mock(IRepository.class);
 
-        company = new ProductionCompany(1, "Pixar", 3.5, "testuser");
-        productionCompanyRepository.save(company);
+        company = mock(ProductionCompany.class);
+        event = mock(Event.class);
 
-        location1 = new Location("location1", "1", "street", "city", "state", "country", 0.00, 0.00);
+        service = new PurchasePolicyService(
+                authenticationService,
+                companyRepository,
+                eventRepository,
+                userRepository);
 
-        segment1 = new FieldSeg("segment1", 50, new GridRectangle(1, 2, 3, 4));
-        Map<String, Segment> segmentMap = new TreeMap<>();
-        segmentMap.put("segment1", segment1);
+        when(authenticationService.validateToken("token"))
+                .thenReturn(true);
 
-        Venue venue1 = new Venue("Test Venue", location1, segmentMap, "testVenueID", new VenueGrid(6, 7),
-                new ConcurrentHashMap<String, Stage>(), new ConcurrentHashMap<String, Entrance>(), 1);
+        when(authenticationService.isUserToken("token"))
+                .thenReturn(true);
 
-        LocalDateTime startTime = LocalDateTime.now().plusDays(1);
-        LocalDateTime endTime = LocalDateTime.now().plusDays(2);
+        when(authenticationService.extractSubjectFromToken("token"))
+                .thenReturn("user@example.com");
 
-        e1 = new Event(new EventRecord("venue1", "event1", startTime, endTime, "artist1", "category1", 1, 3.5),
-                user.getEmail());
-        e1.activateEvent();
-        eventRepository.save(e1);
-        venue1.bookEvent(e1.getEventStartTime(), e1.getEventEndTime(), 1);
-        venueRepository.save(venue1);
+        when(companyRepository.findByID("1"))
+                .thenReturn(company);
+
+        when(eventRepository.findByID("7"))
+                .thenReturn(event);
+
+        when(event.getEventProductionCompanyID())
+                .thenReturn(1);
+
+        when(company.getPurchasePolicy())
+                .thenReturn(new HashSet<>());
+
+        when(event.getEventPurchasePolicy())
+                .thenReturn(new HashSet<>());
     }
 
     @Test
-    public void createEventPurchasePolicy_Success() {
-        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", e1.getEventID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 1, null, null, null));
-        assertTrue(res.isSuccess());
+    public void createCompanyPurchasePolicy_recursiveAnd_buildsAndSaves() {
+        PurchasePolicyRecord record = new PurchasePolicyRecord(
+                PurchasePolicyTypes.AND,
+                null,
+                null,
+                null,
+                null,
+                minAge(18),
+                maxTickets(4));
+
+        Result<Boolean> result =
+                service.createCompanyPurchasePolicy(
+                        "token",
+                        1,
+                        record);
+
+        assertTrue(result.isSuccess());
+
+        ArgumentCaptor<PurchasePolicy> captor =
+                ArgumentCaptor.forClass(PurchasePolicy.class);
+
+        verify(company).addPurchasePolicy(captor.capture());
+        verify(companyRepository).save(company);
+
+        AndPolicy policy = assertInstanceOf(
+                AndPolicy.class,
+                captor.getValue());
+
+        assertDoesNotThrow(
+                () -> policy.validatePurchase(
+                        new PurchaseContext(25, 3)));
+
+        assertThrows(
+                PurchasePolicyException.class,
+                () -> policy.validatePurchase(
+                        new PurchaseContext(17, 3)));
+
+        assertThrows(
+                PurchasePolicyException.class,
+                () -> policy.validatePurchase(
+                        new PurchaseContext(25, 5)));
     }
 
     @Test
-    public void createEventPurchasePolicy_FailInvalidToken() {
-        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("invalid_token", e1.getEventID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 1, null, null, null));
-        assertFalse(res.isSuccess());
+    public void createEventPurchasePolicy_recursiveOr_buildsAndSaves() {
+        PurchasePolicyRecord record = new PurchasePolicyRecord(
+                PurchasePolicyTypes.OR,
+                null,
+                null,
+                null,
+                null,
+                maxAge(30),
+                minTickets(3));
+
+        Result<Boolean> result =
+                service.createEventPurchasePolicy(
+                        "token",
+                        7,
+                        record);
+
+        assertTrue(result.isSuccess());
+
+        ArgumentCaptor<PurchasePolicy> captor =
+                ArgumentCaptor.forClass(PurchasePolicy.class);
+
+        verify(event).addEventPurchasePolicy(captor.capture());
+        verify(eventRepository).save(event);
+
+        OrPolicy policy = assertInstanceOf(
+                OrPolicy.class,
+                captor.getValue());
+
+        assertDoesNotThrow(
+                () -> policy.validatePurchase(
+                        new PurchaseContext(25, 1)));
+
+        assertDoesNotThrow(
+                () -> policy.validatePurchase(
+                        new PurchaseContext(40, 3)));
+
+        assertThrows(
+                PurchasePolicyException.class,
+                () -> policy.validatePurchase(
+                        new PurchaseContext(40, 1)));
     }
 
     @Test
-    public void createEventPurchasePolicy_FailNoPermission() {
-        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user2", e1.getEventID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 1, null, null, null));
-        assertFalse(res.isSuccess());
+    public void createCompanyPurchasePolicy_existingPolicy_returnsFailure() {
+        when(company.getPurchasePolicy())
+                .thenReturn(Set.of(new MinTicketsPolicy(1)));
+
+        Result<Boolean> result =
+                service.createCompanyPurchasePolicy(
+                        "token",
+                        1,
+                        minTickets(2));
+
+        assertFalse(result.isSuccess());
+
+        verify(company, never())
+                .addPurchasePolicy(any());
+
+        verify(companyRepository, never())
+                .save(any());
     }
 
     @Test
-    public void createEventPurchasePolicy_FailEventNotFound() {
-        Result<Boolean> res = purchasePolicyService.createEventPurchasePolicy("user1", 999,
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 1, null, null, null));
-        assertFalse(res.isSuccess());
+    public void editCompanyPurchasePolicy_replacesExistingPolicy() {
+        PurchasePolicy oldPolicy =
+                new MinTicketsPolicy(1);
+
+        when(company.getPurchasePolicy())
+                .thenReturn(Set.of(oldPolicy));
+
+        Result<Boolean> result =
+                service.editCompanyPurchasePolicy(
+                        "token",
+                        1,
+                        maxAge(65));
+
+        assertTrue(result.isSuccess());
+
+        verify(company).removePurchasePolicy(oldPolicy);
+
+        ArgumentCaptor<PurchasePolicy> captor =
+                ArgumentCaptor.forClass(PurchasePolicy.class);
+
+        verify(company).addPurchasePolicy(captor.capture());
+        verify(companyRepository).save(company);
+
+        AgePolicy replacement = assertInstanceOf(
+                AgePolicy.class,
+                captor.getValue());
+
+        assertNull(replacement.getMinAge());
+        assertEquals(65, replacement.getMaxAge());
     }
 
     @Test
-    public void editCompanyPurchasePolicy_Success() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        company.addPurchasePolicy(oldPolicy);
-        productionCompanyRepository.save(company);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", company.getProductionCompanyID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 2, null, null, null));
-        assertTrue(res.isSuccess());
+    public void editEventPurchasePolicy_nullRecord_deletesPolicy() {
+        PurchasePolicy oldPolicy =
+                new MaxTicketsPolicy(4);
+
+        when(event.getEventPurchasePolicy())
+                .thenReturn(Set.of(oldPolicy));
+
+        Result<Boolean> result =
+                service.editEventPurchasePolicy(
+                        "token",
+                        7,
+                        null);
+
+        assertTrue(result.isSuccess());
+
+        verify(event).removeEventPurchasePolicy(oldPolicy);
+
+        verify(event, never())
+                .addEventPurchasePolicy(any());
+
+        verify(eventRepository).save(event);
     }
 
     @Test
-    public void editCompanyPurchasePolicy_FailInvalidToken() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("invalid_token",
-                company.getProductionCompanyID(), new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 2, null, null, null));
-        assertFalse(res.isSuccess());
+    public void getCompanyPurchasePolicy_recursivePolicy_returnsDTO() {
+        when(company.getPurchasePolicy())
+                .thenReturn(Set.of(
+                        new AndPolicy(List.of(
+                                new AgePolicy(18, null),
+                                new MaxTicketsPolicy(4)))));
+
+        Result<PurchasePolicyDTO> result =
+                service.getCompanyPurchasePolicy(
+                        "token",
+                        1);
+
+        assertTrue(result.isSuccess());
+
+        AndDTO dto = assertInstanceOf(
+                AndDTO.class,
+                result.getValue());
+
+        assertInstanceOf(MinAgeDTO.class, dto.getLeft());
+        assertInstanceOf(MaxTicketsDTO.class, dto.getRight());
     }
 
     @Test
-    public void editCompanyPurchasePolicy_FailNoPermission() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        company.addPurchasePolicy(oldPolicy);
-        productionCompanyRepository.save(company);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user2", company.getProductionCompanyID(),
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 2, null, null, null));
-        assertFalse(res.isSuccess());
+    public void getEventPurchasePolicy_orPolicy_returnsDTO() {
+        when(event.getEventPurchasePolicy())
+                .thenReturn(Set.of(
+                        new OrPolicy(List.of(
+                                new AgePolicy(18, null),
+                                new MaxTicketsPolicy(2)))));
+
+        Result<PurchasePolicyDTO> result =
+                service.getEventPurchasePolicy(
+                        "token",
+                        7);
+
+        assertTrue(result.isSuccess());
+        assertInstanceOf(OrDTO.class, result.getValue());
     }
 
     @Test
-    public void editCompanyPurchasePolicy_FailCompanyNotFound() {
-        MinTicketsPolicy oldPolicy = new MinTicketsPolicy(1);
-        Result<Boolean> res = purchasePolicyService.editCompanyPurchasePolicy("user1", 999,
-                new PurchasePolicyRecord(PurchasePolicyTypes.MIN_TICKETS, null, null, 2, null, null, null));
-        assertFalse(res.isSuccess());
+    public void createCompanyPurchasePolicy_invalidToken_returnsFailure() {
+        when(authenticationService.validateToken("bad"))
+                .thenReturn(false);
+
+        Result<Boolean> result =
+                service.createCompanyPurchasePolicy(
+                        "bad",
+                        1,
+                        minAge(18));
+
+        assertFalse(result.isSuccess());
+
+        verifyNoInteractions(
+                companyRepository,
+                eventRepository,
+                userRepository);
+    }
+
+    @Test
+    public void createCompanyPurchasePolicy_missingValue_returnsFailure() {
+        PurchasePolicyRecord invalidRecord =
+                new PurchasePolicyRecord(
+                        PurchasePolicyTypes.MIN_AGE,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null);
+
+        Result<Boolean> result =
+                service.createCompanyPurchasePolicy(
+                        "token",
+                        1,
+                        invalidRecord);
+
+        assertFalse(result.isSuccess());
+
+        verify(companyRepository, never()).save(any());
+    }
+
+    private PurchasePolicyRecord minAge(int value) {
+        return new PurchasePolicyRecord(
+                PurchasePolicyTypes.MIN_AGE,
+                value,
+                null,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private PurchasePolicyRecord maxAge(int value) {
+        return new PurchasePolicyRecord(
+                PurchasePolicyTypes.MAX_AGE,
+                null,
+                value,
+                null,
+                null,
+                null,
+                null);
+    }
+
+    private PurchasePolicyRecord minTickets(int value) {
+        return new PurchasePolicyRecord(
+                PurchasePolicyTypes.MIN_TICKETS,
+                null,
+                null,
+                value,
+                null,
+                null,
+                null);
+    }
+
+    private PurchasePolicyRecord maxTickets(int value) {
+        return new PurchasePolicyRecord(
+                PurchasePolicyTypes.MAX_TICKETS,
+                null,
+                null,
+                null,
+                value,
+                null,
+                null);
     }
 }
-*/

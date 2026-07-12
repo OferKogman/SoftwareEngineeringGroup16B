@@ -92,9 +92,7 @@ public class EventService {
 				event.addEventPurchasePolicy(policy);
 			}
 
-			for (DiscountPolicy policy : company.getDiscountPolicy()) {
-				event.addEventDiscountPolicy(policy);
-			}
+
 
 			eventRepository.save(event);//now correct id finally generated - can use since transactional all or nothing
 

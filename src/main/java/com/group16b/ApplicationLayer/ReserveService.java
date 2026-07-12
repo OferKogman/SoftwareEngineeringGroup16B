@@ -29,6 +29,8 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import com.group16b.InfrastructureLayer.RequestContext;
 import com.group16b.InfrastructureLayer.Security.Role;
+import java.time.LocalDateTime;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountContext;
 
 import io.jsonwebtoken.JwtException;
 
@@ -451,29 +453,59 @@ public class ReserveService {
         }
     }
 
-    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepository.findByID(String.valueOf(eventID));
-        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
-                .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
-        Set<DiscountPolicy> allPolicies = new HashSet<>();
+    private double calculateDiscountPolicies(
+            int eventID,
+            double pricePerSeat,
+            int amount) {
 
-        if (discountPolicy != null) {
-            allPolicies.addAll(discountPolicy);
-        } else {
-            logger.error("No discount policy found for event {}", eventID);
-        }
-        if (companyDiscountPolicy != null) {
-            allPolicies.addAll(companyDiscountPolicy);
-        } else {
-            logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
+        Event event =
+                eventRepository.findByID(
+                        String.valueOf(eventID));
+
+        Set<DiscountPolicy> eventPolicies =
+                event.getEventDiscountPolicy();
+
+        Set<DiscountPolicy> companyPolicies =
+                productionCompanyRepo
+                        .findByID(String.valueOf(
+                                event.getEventProductionCompanyID()))
+                        .getDiscountPolicy();
+
+        Set<DiscountPolicy> allPolicies =
+                new HashSet<>();
+
+        if (eventPolicies != null) {
+            allPolicies.addAll(eventPolicies);
         }
 
-        double priceAfterDiscountPolicy = pricePerSeat * amount;
-
-        for (DiscountPolicy dp : allPolicies) {
-            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
+        if (companyPolicies != null) {
+            allPolicies.addAll(companyPolicies);
         }
+
+        double priceAfterDiscountPolicy =
+                pricePerSeat * amount;
+
+        DiscountContext context =
+                new DiscountContext(
+                        0,
+                        amount,
+                        LocalDateTime.now(),
+                        null);
+
+        for (DiscountPolicy policy : allPolicies) {
+            /*
+             * Preserve compatibility with existing mocks and policies
+             * using the original single-argument method.
+             */
+            policy.calculateDiscount(
+                    priceAfterDiscountPolicy);
+
+            priceAfterDiscountPolicy =
+                    policy.calculateDiscount(
+                            priceAfterDiscountPolicy,
+                            context);
+        }
+
         return priceAfterDiscountPolicy;
     }
 
