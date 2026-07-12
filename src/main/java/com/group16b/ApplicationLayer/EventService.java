@@ -31,6 +31,7 @@ import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import org.springframework.beans.factory.annotation.Value;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 
 import io.jsonwebtoken.JwtException;
 
@@ -89,6 +90,10 @@ public class EventService {
 
 			for (PurchasePolicy policy : company.getPurchasePolicy()) {
 				event.addEventPurchasePolicy(policy);
+			}
+
+			for (DiscountPolicy policy : company.getDiscountPolicy()) {
+				event.addEventDiscountPolicy(policy);
 			}
 
 			eventRepository.save(event);//now correct id finally generated - can use since transactional all or nothing

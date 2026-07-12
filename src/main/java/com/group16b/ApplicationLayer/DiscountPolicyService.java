@@ -236,7 +236,8 @@ public class DiscountPolicyService {
             validateUserAndGetId(sessionToken);
 
             Event event = eventRepo.findByID(String.valueOf(eventID));
-            return Result.makeOk(toDTO(combinePolicies(event.getEventDiscountPolicy())));
+            return Result.makeOk(
+                    toDTO(event.getEventDiscountPolicy()));
         } catch (Exception e) {
             logger.error("DiscountPolicyService.getEventDiscountPolicy: {}", e.getMessage());
             return Result.makeFail(e.getMessage());
@@ -248,7 +249,8 @@ public class DiscountPolicyService {
             validateUserAndGetId(sessionToken);
 
             ProductionCompany company = productionCompanyRepository.findByID(String.valueOf(companyID));
-            return Result.makeOk(toDTO(combinePolicies(company.getDiscountPolicy())));
+            return Result.makeOk(
+                    toDTO(combinePolicies(company.getDiscountPolicy())));
         } catch (Exception e) {
             logger.error("DiscountPolicyService.getCompanyDiscountPolicy: {}", e.getMessage());
             return Result.makeFail(e.getMessage());
@@ -321,7 +323,14 @@ public class DiscountPolicyService {
         };
     }
 
-    private DiscountPolicy combinePolicies(Set<DiscountPolicy> policies) {
+    public static DiscountPolicyDTO toDTO(
+            Set<DiscountPolicy> policies) {
+
+        return toDTO(combinePolicies(policies));
+    }
+
+    private static DiscountPolicy combinePolicies(
+            Set<DiscountPolicy> policies) {
         if (policies == null || policies.isEmpty()) {
             return null;
         }
@@ -340,7 +349,8 @@ public class DiscountPolicyService {
         return combined;
     }
 
-    private DiscountPolicyDTO toDTO(DiscountPolicy policy) {
+    private static DiscountPolicyDTO toDTO(
+            DiscountPolicy policy) {
         if (policy == null) {
             return null;
         }

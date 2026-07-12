@@ -6,6 +6,7 @@ import com.group16b.ApplicationLayer.DTOs.DiscountPolicy.DiscountPolicyDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.PurchasePolicyDTO;
 import com.group16b.ApplicationLayer.PurchasePolicyService;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
+import com.group16b.ApplicationLayer.DiscountPolicyService;
 
 
 public class ProductionCompanyDTO {
@@ -28,7 +29,9 @@ public class ProductionCompanyDTO {
         this.purchasePolicy =
                 PurchasePolicyService.toDTO(
                         company.getPurchasePolicy());
-        this.discountPolicy = null;
+        this.discountPolicy =
+                DiscountPolicyService.toDTO(
+                        company.getDiscountPolicy());
     }
 
     public int getId() {

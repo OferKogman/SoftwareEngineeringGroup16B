@@ -16,6 +16,7 @@ import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
 import com.group16b.DomainLayer.ProductionCompany.membership.RoleType;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicySetConverter;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -67,8 +68,9 @@ public class ProductionCompany {
     @Column(name = "purchase_policies", columnDefinition = "TEXT")
     private Set<PurchasePolicy> purchasePolicies = new HashSet<>();
 
-    @Transient
-    private final Set<DiscountPolicy> discountPolicies = new HashSet<>();
+    @Convert(converter = DiscountPolicySetConverter.class)
+    @Column(name = "discount_policies", columnDefinition = "TEXT")
+    private Set<DiscountPolicy> discountPolicies = new HashSet<>();
 
     protected ProductionCompany() {
     }
