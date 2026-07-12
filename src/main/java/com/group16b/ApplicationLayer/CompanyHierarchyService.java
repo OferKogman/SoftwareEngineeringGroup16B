@@ -475,7 +475,7 @@ public class CompanyHierarchyService {
 			}
 		}
 	}
-
+	@Transactional(readOnly = true)
 	public Result<List<HierarchyNodeDTO>> hierarchyTree(int companyID, String sessionToken) {
 		try {
 			// auth
@@ -512,7 +512,7 @@ public class CompanyHierarchyService {
 			return Result.makeFail("An unexpected error occurred: " + e.getMessage());
 		}
 	}
-
+	@Transactional(readOnly = true)
 	public Result<Set<ManagerPermissions>> getComapanyPermissions(int companyID)
     {
         try{
@@ -535,7 +535,7 @@ public class CompanyHierarchyService {
             return Result.makeFail("An unexpected error occured, pls try again later.");
         }
     }
-
+	@Transactional(readOnly = true)
 	public Result<Boolean> isOwner(int companyId)
 	{
 		try

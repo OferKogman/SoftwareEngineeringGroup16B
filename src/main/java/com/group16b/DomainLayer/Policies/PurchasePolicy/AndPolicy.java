@@ -5,6 +5,9 @@ import java.util.List;
 public class AndPolicy implements PurchasePolicy {
     private List<PurchasePolicy> policies;
 
+    protected AndPolicy() {
+    }
+
     public AndPolicy(List<PurchasePolicy> policies) {
         if (policies == null || policies.isEmpty()) {
             throw new IllegalArgumentException("AndPolicy must have at least one policy.");

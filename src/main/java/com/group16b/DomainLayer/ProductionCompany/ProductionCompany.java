@@ -11,6 +11,7 @@ import java.util.Set;
 import com.group16b.ApplicationLayer.Records.CompanyInviteRecord;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicySetConverter;
 import com.group16b.DomainLayer.ProductionCompany.membership.HierarchyNodeData;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.ProductionCompany.membership.MembershipNode;
@@ -62,9 +63,10 @@ public class ProductionCompany {
     @Column(name = "children_by_user", columnDefinition = "TEXT")
     private final Map<String, Set<String>> childrenByUser = new HashMap<>();
 
-    // TODO: purchasePolicies and discountPolicies need annotations once rewritten
-    @Transient
-    private final Set<PurchasePolicy> purchasePolicies = new HashSet<>();
+    @Convert(converter = PurchasePolicySetConverter.class)
+    @Column(name = "purchase_policies", columnDefinition = "TEXT")
+    private Set<PurchasePolicy> purchasePolicies = new HashSet<>();
+
     @Transient
     private final Set<DiscountPolicy> discountPolicies = new HashSet<>();
 

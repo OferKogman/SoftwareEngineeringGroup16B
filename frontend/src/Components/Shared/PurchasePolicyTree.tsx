@@ -18,58 +18,53 @@ import { PolicyNode, type PolicyPath } from "./PolicyNode";
 
 type Props = {
   policy: NullablePurchasePolicyDTO;
-  onSave: (policy: NullablePurchasePolicyDTO) => void;
+  onSave: (policy: NullablePurchasePolicyDTO) => Promise<void>;
 };
 
 type PolicyEdge = Edge;
+type CompositeType = "AND" | "OR";
 
 const HORIZONTAL_GAP = 550;
 const VERTICAL_GAP = 220;
 
 function isCompositePolicy(
-  policy: PurchasePolicyDTO,
+    policy: PurchasePolicyDTO,
 ): policy is AndDTO | OrDTO {
   return policy.type === "AND" || policy.type === "OR";
 }
 
 function getSubtreeWidth(policy: PurchasePolicyDTO): number {
-  if (!policy) {
-    return 1;
-  }
-
   if (isCompositePolicy(policy)) {
-    const leftWidth = getSubtreeWidth(policy.left);
-    const rightWidth = getSubtreeWidth(policy.right);
-
-    return leftWidth + rightWidth;
+    return getSubtreeWidth(policy.left) + getSubtreeWidth(policy.right);
   }
 
   return 1;
 }
 
 function buildTree(
-  policy: PurchasePolicyDTO,
-  centerX: number,
-  level: number,
-  nodes: PolicyNode[],
-  edges: PolicyEdge[],
-  path: PolicyPath,
-  onSwap: (path: PolicyPath) => void,
-  onChangeGoal: (path: PolicyPath, newGoal: number) => void,
-  onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void,
-  onDelete: () => void,
+    policy: PurchasePolicyDTO,
+    centerX: number,
+    level: number,
+    nodes: PolicyNode[],
+    edges: PolicyEdge[],
+    path: PolicyPath,
+    onSwap: (path: PolicyPath) => void,
+    onChangeGoal: (path: PolicyPath, newGoal: number) => void,
+    onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void,
+    onAdd: (
+        path: PolicyPath,
+        operator: CompositeType,
+        newPolicy: PurchasePolicyDTO,
+    ) => void,
+    onDelete: () => void,
 ): string {
   const id = crypto.randomUUID();
-
   const y = level * VERTICAL_GAP;
 
   if (isCompositePolicy(policy)) {
     nodes.push({
       id,
-      position: {
-        x: centerX,
-        y,
-      },
+      position: { x: centerX, y },
       className: "hierarchy-flow-node",
       type: "policy",
       data: {
@@ -79,6 +74,7 @@ function buildTree(
         onSwap,
         onChangeGoal,
         onReplace,
+        onAdd,
         onDelete,
       },
     });
@@ -86,34 +82,38 @@ function buildTree(
     const leftWidth = getSubtreeWidth(policy.left);
     const rightWidth = getSubtreeWidth(policy.right);
 
-    const leftCenter = centerX - (rightWidth * HORIZONTAL_GAP) / 2;
+    const leftCenter =
+        centerX - (rightWidth * HORIZONTAL_GAP) / 2;
 
-    const rightCenter = centerX + (leftWidth * HORIZONTAL_GAP) / 2;
+    const rightCenter =
+        centerX + (leftWidth * HORIZONTAL_GAP) / 2;
 
     const leftId = buildTree(
-      policy.left,
-      leftCenter,
-      level + 1,
-      nodes,
-      edges,
-      [...path, "left"],
-      onSwap,
-      onChangeGoal,
-      onReplace,
-      onDelete,
+        policy.left,
+        leftCenter,
+        level + 1,
+        nodes,
+        edges,
+        [...path, "left"],
+        onSwap,
+        onChangeGoal,
+        onReplace,
+        onAdd,
+        onDelete,
     );
 
     const rightId = buildTree(
-      policy.right,
-      rightCenter,
-      level + 1,
-      nodes,
-      edges,
-      [...path, "right"],
-      onSwap,
-      onChangeGoal,
-      onReplace,
-      onDelete,
+        policy.right,
+        rightCenter,
+        level + 1,
+        nodes,
+        edges,
+        [...path, "right"],
+        onSwap,
+        onChangeGoal,
+        onReplace,
+        onAdd,
+        onDelete,
     );
 
     edges.push({
@@ -133,9 +133,9 @@ function buildTree(
     return id;
   }
 
-  let label;
+  let label: string;
 
-  switch (policy?.type) {
+  switch (policy.type) {
     case "MIN_AGE":
       label = `Min Age: ${(policy as MinAgeDTO).minAge}`;
       break;
@@ -145,32 +145,31 @@ function buildTree(
       break;
 
     case "MIN_TICKETS":
-      label = `Min Tickets: ${(policy as MinTicketsDTO).minTickets}`;
+      label = `Min Tickets: ${
+          (policy as MinTicketsDTO).minTickets
+      }`;
       break;
 
     case "MAX_TICKETS":
-      label = `Max Tickets: ${(policy as MaxTicketsDTO).maxTickets}`;
+      label = `Max Tickets: ${
+          (policy as MaxTicketsDTO).maxTickets
+      }`;
       break;
-
-    default:
-      label = "Create policy";
   }
 
   nodes.push({
     id,
-    position: {
-      x: centerX,
-      y,
-    },
+    position: { x: centerX, y },
     className: "hierarchy-flow-node",
     type: "policy",
     data: {
       label,
-      type: policy?.type || "NONE",
+      type: policy.type,
       path,
       onSwap,
       onChangeGoal,
       onReplace,
+      onAdd,
       onDelete,
     },
   });
@@ -179,11 +178,16 @@ function buildTree(
 }
 
 function createFlow(
-  policy: NullablePurchasePolicyDTO,
-  onSwap: (path: PolicyPath) => void,
-  onChangeGoal: (path: PolicyPath, newGoal: number) => void,
-  onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void,
-  onDelete: () => void,
+    policy: NullablePurchasePolicyDTO,
+    onSwap: (path: PolicyPath) => void,
+    onChangeGoal: (path: PolicyPath, newGoal: number) => void,
+    onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void,
+    onAdd: (
+        path: PolicyPath,
+        operator: CompositeType,
+        newPolicy: PurchasePolicyDTO,
+    ) => void,
+    onDelete: () => void,
 ) {
   const nodes: PolicyNode[] = [];
   const edges: PolicyEdge[] = [];
@@ -191,10 +195,7 @@ function createFlow(
   if (!policy) {
     nodes.push({
       id: crypto.randomUUID(),
-      position: {
-        x: 0,
-        y: 0,
-      },
+      position: { x: 0, y: 0 },
       className: "hierarchy-flow-node",
       type: "policy",
       data: {
@@ -204,6 +205,7 @@ function createFlow(
         onSwap,
         onChangeGoal,
         onReplace,
+        onAdd,
         onDelete,
       },
     });
@@ -212,24 +214,25 @@ function createFlow(
   }
 
   buildTree(
-    policy,
-    0,
-    0,
-    nodes,
-    edges,
-    [],
-    onSwap,
-    onChangeGoal,
-    onReplace,
-    onDelete,
+      policy,
+      0,
+      0,
+      nodes,
+      edges,
+      [],
+      onSwap,
+      onChangeGoal,
+      onReplace,
+      onAdd,
+      onDelete,
   );
 
   return { nodes, edges };
 }
 
 function swapPolicyAtPath(
-  policy: NullablePurchasePolicyDTO,
-  path: PolicyPath,
+    policy: NullablePurchasePolicyDTO,
+    path: PolicyPath,
 ): NullablePurchasePolicyDTO {
   if (!policy) {
     return null;
@@ -255,16 +258,16 @@ function swapPolicyAtPath(
   return {
     ...policy,
     [head]:
-      head === "left"
-        ? swapPolicyAtPath(policy.left, rest)
-        : swapPolicyAtPath(policy.right, rest),
+        head === "left"
+            ? swapPolicyAtPath(policy.left, rest)
+            : swapPolicyAtPath(policy.right, rest),
   };
 }
 
 function changeGoalAtPath(
-  policy: PurchasePolicyDTO,
-  path: PolicyPath,
-  newGoal: number,
+    policy: PurchasePolicyDTO,
+    path: PolicyPath,
+    newGoal: number,
 ): PurchasePolicyDTO {
   if (path.length === 0) {
     switch (policy.type) {
@@ -285,23 +288,25 @@ function changeGoalAtPath(
     }
   }
 
-  if (!isCompositePolicy(policy)) return policy;
+  if (!isCompositePolicy(policy)) {
+    return policy;
+  }
 
   const [head, ...rest] = path;
 
   return {
     ...policy,
     [head]:
-      head === "left"
-        ? changeGoalAtPath(policy.left, rest, newGoal)
-        : changeGoalAtPath(policy.right, rest, newGoal),
+        head === "left"
+            ? changeGoalAtPath(policy.left, rest, newGoal)
+            : changeGoalAtPath(policy.right, rest, newGoal),
   };
 }
 
 function replacePolicyAtPath(
-  policy: PurchasePolicyDTO,
-  path: PolicyPath,
-  newPolicy: PurchasePolicyDTO,
+    policy: PurchasePolicyDTO,
+    path: PolicyPath,
+    newPolicy: PurchasePolicyDTO,
 ): PurchasePolicyDTO {
   if (path.length === 0) {
     return newPolicy;
@@ -315,55 +320,131 @@ function replacePolicyAtPath(
 
   return {
     ...policy,
-    ...(head === "left"
-      ? {
-          left: replacePolicyAtPath(policy.left, rest, newPolicy),
-        }
-      : {
-          right: replacePolicyAtPath(policy.right, rest, newPolicy),
-        }),
+    [head]:
+        head === "left"
+            ? replacePolicyAtPath(
+                policy.left,
+                rest,
+                newPolicy,
+            )
+            : replacePolicyAtPath(
+                policy.right,
+                rest,
+                newPolicy,
+            ),
   };
 }
 
-export default function PurchasePolicyTree({ policy, onSave }: Props) {
+function addPolicyAtPath(
+    policy: PurchasePolicyDTO,
+    path: PolicyPath,
+    operator: CompositeType,
+    newPolicy: PurchasePolicyDTO,
+): PurchasePolicyDTO {
+  if (path.length === 0) {
+    return {
+      type: operator,
+      left: policy,
+      right: newPolicy,
+    };
+  }
+
+  if (!isCompositePolicy(policy)) {
+    return policy;
+  }
+
+  const [head, ...rest] = path;
+
+  return {
+    ...policy,
+    [head]:
+        head === "left"
+            ? addPolicyAtPath(
+                policy.left,
+                rest,
+                operator,
+                newPolicy,
+            )
+            : addPolicyAtPath(
+                policy.right,
+                rest,
+                operator,
+                newPolicy,
+            ),
+  };
+}
+
+export default function PurchasePolicyTree({
+                                             policy,
+                                             onSave,
+                                           }: Props) {
   const [currentPolicy, setCurrentPolicy] =
-    useState<NullablePurchasePolicyDTO>(policy);
-  const [message, setMessage] = useState("");
+      useState<NullablePurchasePolicyDTO>(policy);
+
   const nodeTypes = {
     policy: PolicyNode,
   };
 
-  function closePopup() {
-    setMessage("");
-  }
-
-  function handleSave() {
-    onSave(currentPolicy);
-    setMessage("Purchase policy saved successfully.");
+  async function handleSave() {
+    await onSave(currentPolicy);
   }
 
   function swapPolicy(path: PolicyPath) {
-    setCurrentPolicy((prevPolicy) => {
-      if (!prevPolicy) return prevPolicy;
-      return swapPolicyAtPath(prevPolicy, path);
+    setCurrentPolicy((previous) =>
+        swapPolicyAtPath(previous, path),
+    );
+  }
+
+  function changeGoal(
+      path: PolicyPath,
+      goal: number,
+  ) {
+    setCurrentPolicy((previous) => {
+      if (!previous) {
+        return previous;
+      }
+
+      return changeGoalAtPath(
+          previous,
+          path,
+          goal,
+      );
     });
   }
 
-  function changeGoal(path: PolicyPath, goal: number) {
-    setCurrentPolicy((prev) => {
-      if (!prev) return prev;
-
-      return changeGoalAtPath(prev, path, goal);
-    });
-  }
-
-  function replacePolicy(path: PolicyPath, newPolicy: PurchasePolicyDTO) {
-    setCurrentPolicy((prev) => {
-      if (!prev) {
+  function replacePolicy(
+      path: PolicyPath,
+      newPolicy: PurchasePolicyDTO,
+  ) {
+    setCurrentPolicy((previous) => {
+      if (!previous) {
         return newPolicy;
       }
 
-      return replacePolicyAtPath(prev, path, newPolicy);
+      return replacePolicyAtPath(
+          previous,
+          path,
+          newPolicy,
+      );
+    });
+  }
+
+  function addPolicy(
+      path: PolicyPath,
+      operator: CompositeType,
+      newPolicy: PurchasePolicyDTO,
+  ) {
+    setCurrentPolicy((previous) => {
+      if (!previous) {
+        return newPolicy;
+      }
+
+      return addPolicyAtPath(
+          previous,
+          path,
+          operator,
+          newPolicy,
+      );
     });
   }
 
@@ -372,33 +453,32 @@ export default function PurchasePolicyTree({ policy, onSave }: Props) {
   }
 
   const { nodes, edges } = createFlow(
-    currentPolicy,
-    swapPolicy,
-    changeGoal,
-    replacePolicy,
-    deletePolicy,
+      currentPolicy,
+      swapPolicy,
+      changeGoal,
+      replacePolicy,
+      addPolicy,
+      deletePolicy,
   );
 
   return (
-    <div style={{ width: "100%", height: "600px" }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        fitView
-        proOptions={{ hideAttribution: true }}
-        nodeTypes={nodeTypes}
-      >
-        <Background />
-      </ReactFlow>
+      <div style={{ width: "100%", height: "600px" }}>
+        <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            fitView
+            proOptions={{ hideAttribution: true }}
+            nodeTypes={nodeTypes}
+        >
+          <Background />
+        </ReactFlow>
 
-      {message && (
-        <div className="settings-alert">
-          <p>{message}</p>
-          <button onClick={closePopup}> OK </button>
-        </div>
-      )}
-
-      <button onClick={handleSave}>Save Changes</button>
-    </div>
+        <button
+            type="button"
+            onClick={handleSave}
+        >
+          Save Changes
+        </button>
+      </div>
   );
 }

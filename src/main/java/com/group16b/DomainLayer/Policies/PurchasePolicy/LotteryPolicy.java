@@ -82,7 +82,7 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
-        if(lotteryRegistrationDueDate.isBefore(LocalDateTime.now()))
+        if (lotteryRegistrationDueDate.isAfter(LocalDateTime.now()))
             throw new IllegalStateException("Cannot handle lottery results before the registration due time passed.");
         List<String> winners = new ArrayList<>(participants);
 
@@ -99,26 +99,33 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void validateLotteryCode(String code) {
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("Lottery code is required.");
+        }
+
         if (usedCodes.containsKey(code)) {
             throw new IllegalArgumentException("Lottery code has already been used.");
         }
+
         if (!winnersAndCodes.containsKey(code)) {
             throw new IllegalArgumentException("Invalid lottery code.");
         }
-        String winnerID = winnersAndCodes.get(code);
-        usedCodes.put(code, winnerID);
     }
 
     public synchronized void useCode(String code) {
-        winnersAndCodes.remove(code);
+        validateLotteryCode(code);
+        String winnerID = winnersAndCodes.remove(code);
+        usedCodes.put(code, winnerID);
     }
 
     public synchronized void renewLotteryCode(String code) {
-        if (winnersAndCodes.containsKey(code) && usedCodes.containsKey(code)) {
-            String userID = winnersAndCodes.get(code);
-            winnersAndCodes.remove(code);
+        if (code == null || code.isBlank()) {
+            return;
+        }
+
+        if (!winnersAndCodes.containsKey(code) && usedCodes.containsKey(code)) {
+            String userID = usedCodes.remove(code);
             winnersAndCodes.put(code, userID);
-            usedCodes.remove(code);
         }
     }
 

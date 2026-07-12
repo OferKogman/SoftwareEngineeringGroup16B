@@ -3,6 +3,9 @@ package com.group16b.DomainLayer.Policies.PurchasePolicy;
 public class MaxTicketsPolicy implements PurchasePolicy {
     private int maxTicketsPerTransaction;
 
+    protected MaxTicketsPolicy() {
+    }
+
     public MaxTicketsPolicy(int maxTicketsPerTransaction) {
         if (maxTicketsPerTransaction <= 0) {
             throw new IllegalArgumentException("Maximum ticket limit must be greater than 0.");

@@ -31,7 +31,13 @@ public class ReserveController extends BaseController {
         @PathVariable("eventId") int eventId,
         @RequestBody ReserveSeatsRequestDTO request
     ) {
-        return executeWithReturnData(() -> reserveService.reserveSeats(request.getSegmentId(), request.getSeatIds(), eventId,request.getVenueId(), authToken));
+        return executeWithReturnData(() -> reserveService.reserveSeats(
+                request.getSegmentId(),
+                request.getSeatIds(),
+                eventId,
+                request.getVenueId(),
+                request.getAge(),
+                authToken));
     }
 
     @PostMapping("/field")
@@ -40,7 +46,13 @@ public class ReserveController extends BaseController {
         @PathVariable("eventId") int eventId,
         @RequestBody ReserveFieldSeatsRequestDTO request
     ) {
-        return executeWithReturnData(() -> reserveService.reserveFieldSeats(request.getSegmentId(), request.getAmount(), eventId, request.getVenueId(), authToken));
+        return executeWithReturnData(() -> reserveService.reserveFieldSeats(
+                request.getSegmentId(),
+                request.getAmount(),
+                eventId,
+                request.getVenueId(),
+                request.getAge(),
+                authToken));
     }
 
     @PostMapping("/seats/lottery")
@@ -49,7 +61,15 @@ public class ReserveController extends BaseController {
         @PathVariable("eventId") int eventId,
         @RequestBody ReserveSeatsWithLotteryRequestDTO request
     ) {
-        return executeWithReturnData(() -> reserveService.reserveSeatsWithLottery(request.getSegmentId(), request.getSeatIds(), eventId, request.getVenueId(), request.getLotteryCode(), authToken));
+        return executeWithReturnData(() ->
+                reserveService.reserveSeatsWithLottery(
+                        request.getSegmentId(),
+                        request.getSeatIds(),
+                        eventId,
+                        request.getVenueId(),
+                        request.getLotteryCode(),
+                        request.getAge(),
+                        authToken));
     }
 
     @PostMapping("/field/lottery")
@@ -58,7 +78,15 @@ public class ReserveController extends BaseController {
         @PathVariable("eventId") int eventId,
         @RequestBody ReserveFieldSeatsWithLotteryRequestDTO request
     ) {
-        return executeWithReturnData(() -> reserveService.reserveFieldSeatsWithLottery(request.getSegmentId(), request.getAmount(), eventId, request.getVenueId(), request.getLotteryCode(), authToken));
+        return executeWithReturnData(() ->
+                reserveService.reserveFieldSeatsWithLottery(
+                        request.getSegmentId(),
+                        request.getAmount(),
+                        eventId,
+                        request.getVenueId(),
+                        request.getLotteryCode(),
+                        request.getAge(),
+                        authToken));
     }  
 
     @GetMapping("/status")

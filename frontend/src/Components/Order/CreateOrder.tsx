@@ -32,8 +32,8 @@ export default function CreateOrderPage() {
   const lotteryCode = (location.state as { lotteryCode?: string } | null)
     ?.lotteryCode;
 
-  //TODO: Pass Age to reservation somehow when implemented in the backend
-  //const age = (location.state as { age?: number } | null)?.age;
+  const age =
+      (location.state as { age?: number } | null)?.age ?? 0;
 
   const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
     null,
@@ -73,6 +73,8 @@ export default function CreateOrderPage() {
           navigate(`/events/${eventID}/queue`, {
             state: {
               initialStatus: status,
+              lotteryCode,
+              age,
             },
           });
         }
@@ -182,13 +184,19 @@ export default function CreateOrderPage() {
     });
   }
 
+  function hasLotteryCode(
+      lotteryCode: string | null | undefined,
+  ): lotteryCode is string {
+    return lotteryCode !== null && lotteryCode !== undefined && lotteryCode.trim() !== "";
+  }
+
   async function reserveFieldSeats(
     eventID: string,
     venueID: string,
     segmentID: string,
     amount: number,
   ) {
-    if (lotteryCode === null) {
+    if (!hasLotteryCode(lotteryCode)) {
       const response = await apiFetch(
         `${API_BASE}/events/${eventID}/reservations/field`,
         {
@@ -200,6 +208,7 @@ export default function CreateOrderPage() {
             venueId: venueID,
             segmentId: segmentID,
             amount,
+            age,
           }),
         },
       );
@@ -224,9 +233,10 @@ export default function CreateOrderPage() {
           },
           body: JSON.stringify({
             venueId: venueID,
-            lotteryCode: lotteryCode,
+            lotteryCode: lotteryCode.trim(),
             segmentId: segmentID,
             amount,
+            age,
           }),
         },
       );
@@ -252,7 +262,7 @@ export default function CreateOrderPage() {
   ) {
     const seatIDs = seats.map((seat) => `${seat.row}-${seat.number}`);
 
-    if (lotteryCode === null) {
+    if (!hasLotteryCode(lotteryCode)) {
       const response = await apiFetch(
         `${API_BASE}/events/${eventID}/reservations/seats`,
         {
@@ -264,6 +274,7 @@ export default function CreateOrderPage() {
             venueId: venueID,
             segmentId: segmentID,
             seatIds: seatIDs,
+            age,
           }),
         },
       );
@@ -287,9 +298,10 @@ export default function CreateOrderPage() {
           },
           body: JSON.stringify({
             venueId: venueID,
-            lotteryCode: lotteryCode,
+            lotteryCode: lotteryCode.trim(),
             segmentId: segmentID,
             seatIds: seatIDs,
+            age,
           }),
         },
       );

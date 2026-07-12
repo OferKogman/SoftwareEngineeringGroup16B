@@ -1,353 +1,465 @@
-import { Handle, Position, type Node, type NodeProps } from "@xyflow/react";
+import {
+    Handle,
+    Position,
+    type Node,
+    type NodeProps,
+} from "@xyflow/react";
+
 import "@xyflow/react/dist/style.css";
 import { useState } from "react";
-import type {
-  PurchasePolicyDTO,
-  PurchasePolicyTypes,
-  SimplePolicyTypes,
-} from "../../DTOs/PurchasePolicyDTO";
-import "./CSS/PolicyNode.css";
 
-type PolicyNodeData = {
-  label: string;
-  type: PurchasePolicyTypes | "NONE";
-  path: PolicyPath;
-  onSwap: (path: PolicyPath) => void;
-  onChangeGoal: (path: PolicyPath, newGoal: number) => void;
-  onReplace: (path: PolicyPath, newPolicy: PurchasePolicyDTO) => void;
-  onDelete: () => void;
-};
+import type {
+    PurchasePolicyDTO,
+    PurchasePolicyTypes,
+    SimplePolicyTypes,
+} from "../../DTOs/PurchasePolicyDTO";
+
+import "./CSS/PolicyNode.css";
 
 export type PolicyPath = ("left" | "right")[];
 
+type CompositeType = "AND" | "OR";
+
+type PolicyNodeData = {
+    label: string;
+    type: PurchasePolicyTypes | "NONE";
+    path: PolicyPath;
+
+    onSwap: (path: PolicyPath) => void;
+
+    onChangeGoal: (
+        path: PolicyPath,
+        newGoal: number,
+    ) => void;
+
+    onReplace: (
+        path: PolicyPath,
+        newPolicy: PurchasePolicyDTO,
+    ) => void;
+
+    onAdd: (
+        path: PolicyPath,
+        operator: CompositeType,
+        newPolicy: PurchasePolicyDTO,
+    ) => void;
+
+    onDelete: () => void;
+};
+
 export type PolicyNode = Node<PolicyNodeData>;
 
-function createSimplePolicy(
-  type: SimplePolicyTypes,
-  value: number,
-): PurchasePolicyDTO {
-  switch (type) {
-    case "MIN_AGE":
-      return {
-        type,
-        minAge: value,
-      };
-
-    case "MAX_AGE":
-      return {
-        type,
-        maxAge: value,
-      };
-
-    case "MIN_TICKETS":
-      return {
-        type,
-        minTickets: value,
-      };
-
-    case "MAX_TICKETS":
-      return {
-        type,
-        maxTickets: value,
-      };
-
-    default:
-      throw new Error("Not simple policy");
-  }
-}
-
-const simplePolicyTypes: PurchasePolicyTypes[] = [
-  "MIN_AGE",
-  "MAX_AGE",
-  "MIN_TICKETS",
-  "MAX_TICKETS",
+const simplePolicyTypes: SimplePolicyTypes[] = [
+    "MIN_AGE",
+    "MAX_AGE",
+    "MIN_TICKETS",
+    "MAX_TICKETS",
 ];
 
-export function PolicyNode(props: NodeProps<PolicyNode>) {
-  const [showPopup, setShowPopup] = useState(false);
-  const [error, setError] = useState("");
-  const [inputValue, setInputValue] = useState("");
-  const [action, setAction] = useState<"CHANGE" | "REPLACE" | null>(null);
-  const [replaceInputValue, setReplaceInputValue] =
-    useState<PurchasePolicyTypes>("MIN_AGE");
-  const [replaceValue, setReplaceValue] = useState("");
-  const [leftPolicy, setLeftPolicy] = useState<PurchasePolicyDTO | null>(null);
-  const [rightPolicy, setRightPolicy] = useState<PurchasePolicyDTO | null>(
-    null,
-  );
+function createSimplePolicy(
+    type: SimplePolicyTypes,
+    value: number,
+): PurchasePolicyDTO {
+    switch (type) {
+        case "MIN_AGE":
+            return {
+                type,
+                minAge: value,
+            };
 
-  function closePopup() {
-    setError("");
-  }
+        case "MAX_AGE":
+            return {
+                type,
+                maxAge: value,
+            };
 
-  function renderReplace() {
-    if (action !== "REPLACE") return null;
+        case "MIN_TICKETS":
+            return {
+                type,
+                minTickets: value,
+            };
 
-    const isComplex = replaceInputValue === "AND" || replaceInputValue === "OR";
+        case "MAX_TICKETS":
+            return {
+                type,
+                maxTickets: value,
+            };
+    }
+}
 
-    return (
-      <>
-        <select
-          value={replaceInputValue}
-          onChange={(e) => {
-            const value = e.target.value as PurchasePolicyTypes;
+function isValidValue(
+    type: SimplePolicyTypes,
+    value: number,
+): boolean {
+    if (!Number.isInteger(value)) {
+        return false;
+    }
 
-            setReplaceInputValue(value);
+    if (
+        type === "MIN_AGE" ||
+        type === "MAX_AGE"
+    ) {
+        return value >= 0;
+    }
 
-            setLeftPolicy(null);
-            setRightPolicy(null);
-            setReplaceValue("");
-          }}
-        >
-          {simplePolicyTypes.map((type) => (
-            <option key={type} value={type}>
-              {type.replace("_", " ")}
-            </option>
-          ))}
-          <option value="AND">AND</option>
-          <option value="OR">OR</option>
-        </select>
+    return value >= 1;
+}
 
-        {!isComplex && (
-          <input
-            type="number"
-            value={replaceValue}
-            onChange={(e) => setReplaceValue(e.target.value)}
-            placeholder="Value"
-          />
-        )}
+export function PolicyNode(
+    props: NodeProps<PolicyNode>,
+) {
+    const [showPopup, setShowPopup] =
+        useState(false);
 
-        {isComplex && (
-          <>
-            <select
-              onChange={(e) => {
-                const type = e.target.value as SimplePolicyTypes;
+    const [error, setError] =
+        useState("");
 
-                if (type) {
-                  setLeftPolicy(createSimplePolicy(type, 1));
-                }
-              }}
-            >
-              <option value="">Choose left policy</option>
+    const [action, setAction] = useState<
+        "CHANGE" | "REPLACE" | "ADD" | null
+    >(null);
 
-              {simplePolicyTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.replace("_", " ")}
-                </option>
-              ))}
-            </select>
+    const [inputValue, setInputValue] =
+        useState("");
 
-            <select
-              onChange={(e) => {
-                const type = e.target.value as SimplePolicyTypes;
+    const [selectedType, setSelectedType] =
+        useState<SimplePolicyTypes>("MIN_AGE");
 
-                if (type) {
-                  setRightPolicy(createSimplePolicy(type, 1));
-                }
-              }}
-            >
-              <option value="">Choose right policy</option>
+    const [selectedValue, setSelectedValue] =
+        useState("");
 
-              {simplePolicyTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.replace("_", " ")}
-                </option>
-              ))}
-            </select>
-          </>
-        )}
+    const [operator, setOperator] =
+        useState<CompositeType>("AND");
 
-        <button
-          disabled={isComplex && (!leftPolicy || !rightPolicy)}
-          onClick={() => {
-            let newPolicy: PurchasePolicyDTO;
+    function resetEditor() {
+        setError("");
+        setInputValue("");
+        setSelectedType("MIN_AGE");
+        setSelectedValue("");
+        setOperator("AND");
+        setAction(null);
+    }
 
-            if (isComplex) {
-              if (!leftPolicy || !rightPolicy) {
-                return;
-              }
+    function closeEditor() {
+        resetEditor();
+        setShowPopup(false);
+    }
 
-              newPolicy = {
-                type: replaceInputValue,
-                left: leftPolicy,
-                right: rightPolicy,
-              };
-            } else {
-              const value = Number(replaceValue);
+    function readSelectedPolicy():
+        | PurchasePolicyDTO
+        | null {
 
-              if (!value || value <= 0) {
-                setError("Enter valid value");
-                return;
-              }
+        const value = Number(selectedValue);
 
-              newPolicy = createSimplePolicy(replaceInputValue, value);
-            }
+        if (!isValidValue(selectedType, value)) {
+            setError(
+                selectedType === "MIN_AGE" ||
+                selectedType === "MAX_AGE"
+                    ? "Age must be a non-negative whole number."
+                    : "Ticket amount must be a positive whole number.",
+            );
 
-            props.data.onReplace(props.data.path, newPolicy);
+            return null;
+        }
 
-            setLeftPolicy(null);
-            setRightPolicy(null);
-            setReplaceValue("");
-            setAction(null);
-            setShowPopup(false);
-          }}
-        >
-          Replace
-        </button>
-      </>
-    );
-  }
+        return createSimplePolicy(
+            selectedType,
+            value,
+        );
+    }
 
-  function renderActions() {
-    return (
-      <>
-        {props.data.path.length === 0 && props.data.type !== "NONE" && (
-          <button
-            onClick={() => {
-              props.data.onDelete();
-              setShowPopup(false);
-            }}
-          >
-            Delete policy
-          </button>
-        )}
+    function renderSimplePolicyInputs() {
+        return (
+            <>
+                <select
+                    value={selectedType}
+                    onChange={(event) =>
+                        setSelectedType(
+                            event.target
+                                .value as SimplePolicyTypes,
+                        )
+                    }
+                >
+                    {simplePolicyTypes.map((type) => (
+                        <option
+                            key={type}
+                            value={type}
+                        >
+                            {type.replace("_", " ")}
+                        </option>
+                    ))}
+                </select>
 
-        {(() => {
-          switch (props.data.type) {
-            case "AND":
-            case "OR":
-              return (
-                <>
-                  <button
+                <input
+                    type="number"
+                    value={selectedValue}
+                    onChange={(event) =>
+                        setSelectedValue(
+                            event.target.value,
+                        )
+                    }
+                    placeholder="Value"
+                />
+            </>
+        );
+    }
+
+    function renderReplace() {
+        if (action !== "REPLACE") {
+            return null;
+        }
+
+        return (
+            <>
+                {renderSimplePolicyInputs()}
+
+                <button
+                    type="button"
                     onClick={() => {
-                      props.data.onSwap(props.data.path);
-                      setShowPopup(false);
-                    }}
-                  >
-                    Change {props.data.type === "AND" ? "to OR" : "to AND"}
-                  </button>
+                        const newPolicy =
+                            readSelectedPolicy();
 
-                  <button
-                    onClick={() => {
-                      setLeftPolicy(null);
-                      setRightPolicy(null);
-                      setReplaceValue("");
-                      setAction("REPLACE");
-                    }}
-                  >
-                    Replace policy
-                  </button>
-
-                  {renderReplace()}
-                </>
-              );
-
-            case "MIN_AGE":
-            case "MAX_AGE":
-            case "MIN_TICKETS":
-            case "MAX_TICKETS":
-              return (
-                <>
-                  {action === "CHANGE" ? (
-                    <>
-                      <input
-                        type="number"
-                        value={inputValue}
-                        onChange={(e) => setInputValue(e.target.value)}
-                        placeholder="New value"
-                      />
-
-                      <button
-                        onClick={() => {
-                          const goalVal = Number(inputValue);
-
-                          if (!goalVal || goalVal <= 0) {
-                            setError("Please enter a valid value");
+                        if (!newPolicy) {
                             return;
-                          }
-                          props.data.onChangeGoal(props.data.path, goalVal);
+                        }
 
-                          setInputValue("");
-                          setAction(null);
-                          setShowPopup(false);
-                        }}
-                      >
-                        Change value
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setAction("CHANGE");
-                      }}
-                    >
-                      Change value
-                    </button>
-                  )}
+                        props.data.onReplace(
+                            props.data.path,
+                            newPolicy,
+                        );
 
-                  <button
-                    onClick={() => {
-                      setLeftPolicy(null);
-                      setRightPolicy(null);
-                      setReplaceValue("");
-                      setAction("REPLACE");
+                        closeEditor();
                     }}
-                  >
-                    Replace policy
-                  </button>
+                >
+                    {props.data.type === "NONE"
+                        ? "Create"
+                        : "Replace"}
+                </button>
+            </>
+        );
+    }
 
-                  {renderReplace()}
-                </>
-              );
+    function renderAdd() {
+        if (action !== "ADD") {
+            return null;
+        }
 
-            case "NONE":
-              return (
-                <>
-                  {action === "REPLACE" ? (
-                    renderReplace()
-                  ) : (
+        return (
+            <>
+                <select
+                    value={operator}
+                    onChange={(event) =>
+                        setOperator(
+                            event.target
+                                .value as CompositeType,
+                        )
+                    }
+                >
+                    <option value="AND">AND</option>
+                    <option value="OR">OR</option>
+                </select>
+
+                {renderSimplePolicyInputs()}
+
+                <button
+                    type="button"
+                    onClick={() => {
+                        const newPolicy =
+                            readSelectedPolicy();
+
+                        if (!newPolicy) {
+                            return;
+                        }
+
+                        props.data.onAdd(
+                            props.data.path,
+                            operator,
+                            newPolicy,
+                        );
+
+                        closeEditor();
+                    }}
+                >
+                    Add policy
+                </button>
+            </>
+        );
+    }
+
+    function renderActions() {
+        if (props.data.type === "NONE") {
+            return action === "REPLACE" ? (
+                renderReplace()
+            ) : (
+                <button
+                    type="button"
+                    onClick={() =>
+                        setAction("REPLACE")
+                    }
+                >
+                    Create policy
+                </button>
+            );
+        }
+
+        return (
+            <>
+                {props.data.path.length === 0 && (
                     <button
-                      onClick={() => {
-                        setAction("REPLACE");
-                      }}
+                        type="button"
+                        onClick={() => {
+                            props.data.onDelete();
+                            closeEditor();
+                        }}
                     >
-                      Create policy
+                        Delete policy
                     </button>
-                  )}
-                </>
-              );
-          }
-        })()}
-      </>
-    );
-  }
+                )}
 
-  return (
-    <div className="policy-node-wrapper">
-      <div
-        className="policy-node"
-        onClick={() => setShowPopup((prev) => !prev)}
-      >
-        <label>{props.data.label}</label>
+                {(props.data.type === "AND" ||
+                    props.data.type === "OR") && (
+                    <button
+                        type="button"
+                        onClick={() => {
+                            props.data.onSwap(
+                                props.data.path,
+                            );
 
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
-      </div>
+                            closeEditor();
+                        }}
+                    >
+                        Change{" "}
+                        {props.data.type === "AND"
+                            ? "to OR"
+                            : "to AND"}
+                    </button>
+                )}
 
-      {showPopup && (
-        <div className="policy-node-popup" onClick={(e) => e.stopPropagation()}>
-          {error && (
-            <div className="settings-alert">
-              <p>{error}</p>
-              <button onClick={closePopup}> OK </button>
+                {props.data.type !== "AND" &&
+                    props.data.type !== "OR" && (
+                        <>
+                            {action === "CHANGE" ? (
+                                <>
+                                    <input
+                                        type="number"
+                                        value={inputValue}
+                                        onChange={(event) =>
+                                            setInputValue(
+                                                event.target.value,
+                                            )
+                                        }
+                                        placeholder="New value"
+                                    />
+
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const value =
+                                                Number(inputValue);
+
+                                            const type =
+                                                props.data
+                                                    .type as SimplePolicyTypes;
+
+                                            if (
+                                                !isValidValue(
+                                                    type,
+                                                    value,
+                                                )
+                                            ) {
+                                                setError(
+                                                    "Enter a valid whole number.",
+                                                );
+
+                                                return;
+                                            }
+
+                                            props.data.onChangeGoal(
+                                                props.data.path,
+                                                value,
+                                            );
+
+                                            closeEditor();
+                                        }}
+                                    >
+                                        Change value
+                                    </button>
+                                </>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={() =>
+                                        setAction("CHANGE")
+                                    }
+                                >
+                                    Change value
+                                </button>
+                            )}
+                        </>
+                    )}
+
+                <button
+                    type="button"
+                    onClick={() => setAction("ADD")}
+                >
+                    Add policy
+                </button>
+
+                <button
+                    type="button"
+                    onClick={() =>
+                        setAction("REPLACE")
+                    }
+                >
+                    Replace policy
+                </button>
+
+                {renderAdd()}
+                {renderReplace()}
+            </>
+        );
+    }
+
+    return (
+        <div className="policy-node-wrapper">
+            <div
+                className="policy-node"
+                onClick={() =>
+                    setShowPopup(
+                        (previous) => !previous,
+                    )
+                }
+            >
+                <label>{props.data.label}</label>
+
+                <Handle
+                    type="target"
+                    position={Position.Top}
+                />
+
+                <Handle
+                    type="source"
+                    position={Position.Bottom}
+                />
             </div>
-          )}
 
-          {renderActions()}
+            {showPopup && (
+                <div
+                    className="policy-node-popup"
+                    onClick={(event) =>
+                        event.stopPropagation()
+                    }
+                >
+                    {error && <p>{error}</p>}
 
-          <button onClick={() => setShowPopup(false)}>Close</button>
+                    {renderActions()}
+
+                    <button
+                        type="button"
+                        onClick={closeEditor}
+                    >
+                        Close
+                    </button>
+                </div>
+            )}
         </div>
-      )}
-    </div>
-  );
+    );
 }

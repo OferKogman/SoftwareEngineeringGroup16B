@@ -115,8 +115,7 @@ public class PurchasePolicyService {
                     eventRepo.findByID(String.valueOf(eventID));
 
             return Result.makeOk(
-                    toDTO(getSinglePolicy(
-                            event.getEventPurchasePolicy())));
+                    toDTO(event.getEventPurchasePolicy()));
 
         } catch (Exception exception) {
             logger.warn(
@@ -139,8 +138,7 @@ public class PurchasePolicyService {
                             String.valueOf(companyID));
 
             return Result.makeOk(
-                    toDTO(getSinglePolicy(
-                            company.getPurchasePolicy())));
+                    toDTO(company.getPurchasePolicy()));
 
         } catch (Exception exception) {
             logger.warn(
@@ -359,17 +357,17 @@ public class PurchasePolicyService {
         return value;
     }
 
-    private PurchasePolicy getSinglePolicy(
+    public static PurchasePolicyDTO toDTO(
             Set<PurchasePolicy> policies) {
 
         if (policies == null || policies.isEmpty()) {
             return null;
         }
 
-        return policies.iterator().next();
+        return toDTO(policies.iterator().next());
     }
 
-    private PurchasePolicyDTO toDTO(
+    private static PurchasePolicyDTO toDTO(
             PurchasePolicy policy) {
 
         if (policy == null) {
@@ -423,7 +421,7 @@ public class PurchasePolicyService {
                         + policy.getClass().getSimpleName());
     }
 
-    private PurchasePolicyDTO combineDTOs(
+    private static PurchasePolicyDTO combineDTOs(
             List<PurchasePolicy> policies,
             boolean and) {
 

@@ -6,6 +6,7 @@ public class ReserveSeatsRequestDTO {
     String segmentId;
     List<String> seatIds;
     String venueId;
+    int age;
 
     public ReserveSeatsRequestDTO(String segmentId, List<String> seatIds, String venueId) {
         this.segmentId = segmentId;
@@ -32,6 +33,13 @@ public class ReserveSeatsRequestDTO {
     }
     public void setVenueId(String venueId) {
         this.venueId = venueId;
+    }
+    public int getAge() {
+        return age;
+    }
+
+    public void setAge(int age) {
+        this.age = age;
     }
     
 }

@@ -58,18 +58,100 @@ public class ReserveService {
         this.userRepo = userRepo;
     }
 
-    public Result<String> reserveSeats(String segmentId, List<String> seatIds, int eventID, String venueId,
+    public Result<String> reserveSeats(
+            String segmentId,
+            List<String> seatIds,
+            int eventID,
+            String venueId,
             String sessionToken) {
-        return this.reserveSeatsWithLottery(segmentId, seatIds, eventID, venueId, "", sessionToken);
+
+        return reserveSeats(
+                segmentId,
+                seatIds,
+                eventID,
+                venueId,
+                0,
+                sessionToken);
     }
 
-    public Result<String> reserveFieldSeats(String segmentId, int amount, int eventID, String venueId,
+    public Result<String> reserveSeats(
+            String segmentId,
+            List<String> seatIds,
+            int eventID,
+            String venueId,
+            int age,
             String sessionToken) {
-        return this.reserveFieldSeatsWithLottery(segmentId, amount, eventID, venueId, "", sessionToken);
+
+        return reserveSeatsWithLottery(
+                segmentId,
+                seatIds,
+                eventID,
+                venueId,
+                "",
+                age,
+                sessionToken);
     }
 
-    public Result<String> reserveSeatsWithLottery(String segmentId, List<String> seatIds, int eventID, String venueId,
-            String lotteryCode, String sessionToken) {
+    public Result<String> reserveFieldSeats(
+            String segmentId,
+            int amount,
+            int eventID,
+            String venueId,
+            String sessionToken) {
+
+        return reserveFieldSeats(
+                segmentId,
+                amount,
+                eventID,
+                venueId,
+                0,
+                sessionToken);
+    }
+
+    public Result<String> reserveFieldSeats(
+            String segmentId,
+            int amount,
+            int eventID,
+            String venueId,
+            int age,
+            String sessionToken) {
+
+        return reserveFieldSeatsWithLottery(
+                segmentId,
+                amount,
+                eventID,
+                venueId,
+                "",
+                age,
+                sessionToken);
+    }
+
+    public Result<String> reserveSeatsWithLottery(
+            String segmentId,
+            List<String> seatIds,
+            int eventID,
+            String venueId,
+            String lotteryCode,
+            String sessionToken) {
+
+        return reserveSeatsWithLottery(
+                segmentId,
+                seatIds,
+                eventID,
+                venueId,
+                lotteryCode,
+                0,
+                sessionToken);
+    }
+
+    public Result<String> reserveSeatsWithLottery(
+            String segmentId,
+            List<String> seatIds,
+            int eventID,
+            String venueId,
+            String lotteryCode,
+            int age,
+            String sessionToken) {
         VirtualQueue q = null;
         String subjectID = null;
         Venue venue = null;
@@ -115,7 +197,7 @@ public class ReserveService {
             // 5. System - removes selected seats from stock.
             venue = venueRepo.findByID(venueId);
 
-            validatePurchasePolicy(eventID, seatIds.size(), sessionToken);
+            validatePurchasePolicy(event, seatIds.size(), age);
 
             double pricePerSeat = venue.getPriceForSegment(segmentId, eventID); // validate segment exists and is valid
                                                                                 // for the event before reserving seats
@@ -209,8 +291,32 @@ public class ReserveService {
         return q;
     }
 
-    public Result<String> reserveFieldSeatsWithLottery(String segmentId, int amount, int eventID, String venueId,
-            String lotteryCode, String sessionToken) {
+    public Result<String> reserveFieldSeatsWithLottery(
+            String segmentId,
+            int amount,
+            int eventID,
+            String venueId,
+            String lotteryCode,
+            String sessionToken) {
+
+        return reserveFieldSeatsWithLottery(
+                segmentId,
+                amount,
+                eventID,
+                venueId,
+                lotteryCode,
+                0,
+                sessionToken);
+    }
+
+    public Result<String> reserveFieldSeatsWithLottery(
+            String segmentId,
+            int amount,
+            int eventID,
+            String venueId,
+            String lotteryCode,
+            int age,
+            String sessionToken) {
         String subjectID = null;
         VirtualQueue q = null;
         Venue venue = null;
@@ -246,7 +352,7 @@ public class ReserveService {
             joinQueueSafely(q, eventID, subjectID);
             logger.info("ReserveService.reserveFieldSeats: {} is passed the queue", subjectID);
 
-            validatePurchasePolicy(eventID, amount, sessionToken);
+            validatePurchasePolicy(event, amount, age);
 
             venue = venueRepo.findByID(venueId);
 
@@ -371,42 +477,34 @@ public class ReserveService {
         return priceAfterDiscountPolicy;
     }
 
-    private void validatePurchasePolicy(int eventID, int ticketsAmount, String sessionToken) {
+    private void validatePurchasePolicy(
+            Event event,
+            int ticketsAmount,
+            int age) {
 
-        int userAge = 0;
-        if (authenticationService.isUserToken(sessionToken)) {
-            String userID = authenticationService.extractSubjectFromToken(sessionToken);
-            User user = userRepo.findByID(userID);
-            // userAge = user.getAge(); TODO: add age to user and uncomment?
+        Set<PurchasePolicy> policies =
+                event.getEventPurchasePolicy();
+
+        if (policies == null || policies.isEmpty()) {
+            return;
         }
 
-        Set<PurchasePolicy> allPolicies = new HashSet<>();
-
-        Event event = eventRepository.findByID(String.valueOf(eventID));
-        Set<PurchasePolicy> purchasePolicy = event.getEventPurchasePolicy();
-        Set<PurchasePolicy> companyPurchasePolicy = productionCompanyRepo
-                .findByID(String.valueOf(event.getEventProductionCompanyID())).getPurchasePolicy();
-        if (purchasePolicy != null) {
-            allPolicies.addAll(purchasePolicy);
-        } else {
-            logger.warn("No purchase policy found for event {}", eventID);
-        }
-
-        if (companyPurchasePolicy != null) {
-            allPolicies.addAll(companyPurchasePolicy);
-        } else {
-            logger.warn("No purchase policy found for production company {}", event.getEventProductionCompanyID());
-        }
-
-        for (PurchasePolicy pp : allPolicies) {
+        for (PurchasePolicy policy : policies) {
             try {
-                if (pp instanceof LotteryPolicy) {
+                if (policy instanceof LotteryPolicy) {
                     continue;
                 }
-                pp.validatePurchase(new PurchaseContext(userAge, ticketsAmount));
-            } catch (PurchasePolicyException e) {
-                logger.error("User did not meet purchase policy requirements");
-                throw new IllegalArgumentException("User did not meet purchase policy requirements");
+
+                policy.validatePurchase(
+                        new PurchaseContext(age, ticketsAmount));
+
+            } catch (PurchasePolicyException exception) {
+                logger.error(
+                        "User did not meet purchase policy requirements: {}",
+                        exception.getMessage());
+
+                throw new IllegalArgumentException(
+                        "User did not meet purchase policy requirements");
             }
         }
     }
@@ -466,27 +564,32 @@ public class ReserveService {
     }
 
     private boolean hasLotteryCode(String lotteryCode) {
-        return lotteryCode != null && !lotteryCode.isEmpty();
+        return lotteryCode != null && !lotteryCode.isBlank();
+    }
+
+    private String normalizeLotteryCode(String lotteryCode) {
+        return lotteryCode == null ? null : lotteryCode.trim();
     }
 
     private void validateLottery(Event event, String lotteryCode) {
-        if (hasLotteryCode(lotteryCode)) {
-            event.validateLotteryCode(lotteryCode);
-        } else {
+        if (lotteryCode == null || lotteryCode.isBlank()) {
             event.verifyDoesNotHaveLotteryPolicy();
+            return;
         }
+
+        event.validateLotteryCode(lotteryCode);
     }
 
     private void useLotteryCodeIfNeeded(Event event, String lotteryCode) {
         if (hasLotteryCode(lotteryCode)) {
-            event.lotteryUseCode(lotteryCode);
+            event.lotteryUseCode(normalizeLotteryCode(lotteryCode));
             eventRepository.save(event);
         }
     }
 
     private void renewLotteryCodeIfNeeded(Event event, String lotteryCode) {
         if (event != null && hasLotteryCode(lotteryCode)) {
-            event.renewLotteryCode(lotteryCode);
+            event.renewLotteryCode(normalizeLotteryCode(lotteryCode));
             eventRepository.save(event);
         }
     }

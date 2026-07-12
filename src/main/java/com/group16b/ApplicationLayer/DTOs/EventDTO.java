@@ -20,6 +20,7 @@ import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MinTicketsDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.OrDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.PurchasePolicyDTO;
 import com.group16b.DomainLayer.Event.Event;
+import com.group16b.ApplicationLayer.PurchasePolicyService;
 
 public class EventDTO {
 	private final int eventID;
@@ -66,9 +67,9 @@ public class EventDTO {
 								7.5)),
 				new SimpleDiscountDTO(
 						5.0));
-		purchasePolicy = new AndDTO(new OrDTO(new AndDTO(new MinAgeDTO(
-				55), new MaxTicketsDTO(5)), new MaxAgeDTO(18)),
-				new OrDTO(new MinTicketsDTO(10), new MaxTicketsDTO(2)));
+		purchasePolicy =
+				PurchasePolicyService.toDTO(
+						event.getEventPurchasePolicy());
 		price = event.getEventPrice();
 		rating = event.getEventRating();
 

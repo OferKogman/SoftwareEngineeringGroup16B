@@ -637,8 +637,10 @@ public class LotteryPolicyServiceTests {
     }
 
     @Test
-    void handleLotteryResults_Success() {
-        createLotteryAndEnroll();
+    public void handleLotteryResults_Success()
+            throws InterruptedException {
+        createLotteryAndEnroll2();
+        Thread.sleep(2200);
         RequestContext.set(PERMITED_MAIL, Role.SIGNED);
 
         Result<Void> res = lotteryPolicyService.handleLotteryResults(event1.getEventID(), "user5");
@@ -778,6 +780,14 @@ public class LotteryPolicyServiceTests {
     private void createLotteryAndEnroll() {
         RequestContext.set(PERMITED_MAIL, Role.SIGNED);
         lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME, 50, now.plusDays(5), "user1");
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        lotteryPolicyService.enrollInLottery(event1.getEventID(), "user5");
+
+    }
+
+    private void createLotteryAndEnroll2() {
+        RequestContext.set(PERMITED_MAIL, Role.SIGNED);
+        lotteryPolicyService.createLotteryPolicy(event1.getEventID(), 1, LOTTERY_NAME, 50, now.plusSeconds(2), "user1");
         RequestContext.set(PERMITED_MAIL, Role.SIGNED);
         lotteryPolicyService.enrollInLottery(event1.getEventID(), "user5");
 

@@ -3,6 +3,9 @@ package com.group16b.DomainLayer.Policies.PurchasePolicy;
 public class MinTicketsPolicy implements PurchasePolicy {
     private int minTicketsPerTransaction;
 
+    protected MinTicketsPolicy() {
+    }
+
     public MinTicketsPolicy(int minTicketsPerTransaction) {
         if (minTicketsPerTransaction < 1) {
             throw new IllegalArgumentException("Customer must buy at least 1 ticket.");

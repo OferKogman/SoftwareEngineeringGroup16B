@@ -30,6 +30,7 @@ import com.group16b.DomainLayer.Venue.Location;
 import com.group16b.DomainLayer.Venue.Venue;
 import com.group16b.DomainLayer.VirtualQueue.VirtualQueue;
 import org.springframework.beans.factory.annotation.Value;
+import com.group16b.DomainLayer.Policies.PurchasePolicy.PurchasePolicy;
 
 import io.jsonwebtoken.JwtException;
 
@@ -80,7 +81,13 @@ public class EventService {
 			logger.info("EventService.createEvent: User permissions validated successfully.");
 
 			logger.info("EventService.createEvent: Attempting to create event: " + eventRecord.name());
-			Event event = new Event(eventRecord, user.getEmail());
+			Event event =
+					new Event(eventRecord, user.getEmail());
+
+			for (PurchasePolicy policy : company.getPurchasePolicy()) {
+				event.addEventPurchasePolicy(policy);
+			}
+
 			eventRepository.save(event);//now correct id finally generated - can use since transactional all or nothing
 
 			logger.info("EventService.createEvent: Creating queue for the new event");
@@ -228,6 +235,7 @@ public class EventService {
 		}
 	}
 
+	@Transactional(readOnly = true)
 	public Result<EventDTO> viewEvent(int eventID) {
 		try {
 			logger.info("EventService.viewEvent: Attempting to retrieve event with ID: " + eventID);
@@ -338,6 +346,7 @@ public class EventService {
 		}
 	}
 
+	@Transactional(readOnly = true)
 	public Result<List<EventDTO>> searchEvents(Map<String, List<Object>> searchParams) {
 		try {
 

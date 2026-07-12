@@ -7,6 +7,7 @@ public class ReserveSeatsWithLotteryRequestDTO {
     List<String> seatIds;
     String venueId;
     String lotteryCode;
+    int age;
 
     public ReserveSeatsWithLotteryRequestDTO(String segmentId, List<String> seatIds, String venueId, String lotteryCode) {
         this.segmentId = segmentId;
@@ -40,5 +41,13 @@ public class ReserveSeatsWithLotteryRequestDTO {
     }
     public void setLotteryCode(String lotteryCode) {
         this.lotteryCode = lotteryCode;
+    }
+
+    public int getAge() {
+        return this.age;
+    }
+
+    public void setAge(int age){
+        this.age = age;
     }
 }
