@@ -62,6 +62,9 @@ public class EventService {
 		this.venueRepository = venueRepository;
 		this.eventRepository = eventRepository;
 		this.userRepository = userRepository;
+		if (virtualQueuePassNum <= 0) {
+			throw new IllegalArgumentException("virtual-queue.pass-num must be positive");
+		}
 		this.virtualQueuePassNum = virtualQueuePassNum;
 	}
 

@@ -57,6 +57,9 @@ public class StartupService {
         this.defaultAdminUsername = defaultAdminUsername;
         this.defaultAdminPassword = defaultAdminPassword;
         this.defaultAdminEmail = defaultAdminEmail;
+        if (virtualQueuePassNum <= 0) {
+            throw new IllegalArgumentException("virtual-queue.pass-num must be positive");
+        }
         this.virtualQueuePassNum = virtualQueuePassNum;
             
         }
