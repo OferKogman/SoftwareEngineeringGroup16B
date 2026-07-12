@@ -41,6 +41,8 @@ import com.group16b.DomainLayer.Venue.Venue;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.group16b.ApplicationLayer.Interfaces.INotifier;
+import java.time.LocalDateTime;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountContext;
 
 
 @Service
@@ -476,31 +478,57 @@ public class OrderService {
 		}
     }
 
-    private double calculateDiscountPolicies(int eventID, double pricePerSeat, int amount) {
-        Event event = eventRepo.findByID(String.valueOf(eventID));
-        Set<DiscountPolicy> discountPolicy = event.getEventDiscountPolicy();
-        Set<DiscountPolicy> companyDiscountPolicy = productionCompanyRepo
-                .findByID(String.valueOf(event.getEventProductionCompanyID())).getDiscountPolicy();
-        Set<DiscountPolicy> allPolicies = new HashSet<>();
+	private double calculateDiscountPolicies(
+			int eventID,
+			double pricePerSeat,
+			int amount) {
 
-        if (discountPolicy != null) {
-            allPolicies.addAll(discountPolicy);
-        } else {
-            logger.error("No discount policy found for event {}", eventID);
-        }
-        if (companyDiscountPolicy != null) {
-            allPolicies.addAll(companyDiscountPolicy);
-        } else {
-            logger.error("No discount policy found for production company {}", event.getEventProductionCompanyID());
-        }
+		Event event =
+				eventRepo.findByID(
+						String.valueOf(eventID));
 
-        double priceAfterDiscountPolicy = pricePerSeat * amount;
+		Set<DiscountPolicy> eventPolicies =
+				event.getEventDiscountPolicy();
 
-        for (DiscountPolicy dp : allPolicies) {
-            priceAfterDiscountPolicy = dp.calculateDiscount(priceAfterDiscountPolicy);
-        }
-        return priceAfterDiscountPolicy;
-    }
+		Set<DiscountPolicy> companyPolicies =
+				productionCompanyRepo
+						.findByID(String.valueOf(
+								event.getEventProductionCompanyID()))
+						.getDiscountPolicy();
+
+		Set<DiscountPolicy> allPolicies =
+				new HashSet<>();
+
+		if (eventPolicies != null) {
+			allPolicies.addAll(eventPolicies);
+		}
+
+		if (companyPolicies != null) {
+			allPolicies.addAll(companyPolicies);
+		}
+
+		double priceAfterDiscountPolicy =
+				pricePerSeat * amount;
+
+		DiscountContext context =
+				new DiscountContext(
+						0,
+						amount,
+						LocalDateTime.now(),
+						null);
+
+		for (DiscountPolicy policy : allPolicies) {
+			policy.calculateDiscount(
+					priceAfterDiscountPolicy);
+
+			priceAfterDiscountPolicy =
+					policy.calculateDiscount(
+							priceAfterDiscountPolicy,
+							context);
+		}
+
+		return priceAfterDiscountPolicy;
+	}
 
     private void validatePurchasePolicy(int eventID, int ticketsAmount, String sessionToken) {
 

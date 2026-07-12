@@ -49,6 +49,8 @@ export default function PaymentForm({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+  const [couponApplied, setCouponApplied] =
+      useState(false);
   const [amount, setAmount] = useState(initAmount);
 
   const apiFetch = useApiFetch();
@@ -97,33 +99,66 @@ export default function PaymentForm({
   }
 
   async function handleApplyCoupon() {
+    if (
+        couponApplied ||
+        couponCode.trim() === ""
+    ) {
+      return;
+    }
+
     setIsApplyingCoupon(true);
     setMessage("");
-    setErrors((prev) => ({ ...prev, submit: undefined }));
+
+    setErrors((previous) => ({
+      ...previous,
+      submit: undefined,
+    }));
 
     try {
+      const normalizedCode =
+          couponCode
+              .trim()
+              .toUpperCase();
+
       const response = await apiFetch(
-        `http://localhost:8080/api/orders/${orderID}/coupon`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+          `http://localhost:8080/api/orders/${orderID}/coupon`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                  "application/json",
+            },
+            body: JSON.stringify({
+              couponCode: normalizedCode,
+            }),
           },
-          body: JSON.stringify({
-            couponCode: couponCode,
-          }),
-        },
       );
 
       if (!response.ok) {
-        throw new Error(await response.text());
+        throw new Error(
+            await response.text(),
+        );
       }
 
-      setAmount(Number(await response.json()));
-      setMessage("Coupon applied successfully.");
+      const updatedPrice =
+          Number(await response.json());
+
+      setAmount(
+          Math.max(0, updatedPrice),
+      );
+
+      setCouponApplied(true);
+      setCouponCode(normalizedCode);
+
+      setMessage(
+          "Coupon applied successfully.",
+      );
     } catch (err) {
       setErrors({
-        submit: err instanceof Error ? err.message : "",
+        submit:
+            err instanceof Error
+                ? err.message
+                : "",
       });
     } finally {
       setIsApplyingCoupon(false);
@@ -266,18 +301,38 @@ export default function PaymentForm({
 
       <div className="payment-form-field">
         <label>Coupon Code</label>
+
         <input
-          id="couponCode"
-          type="text"
-          value={couponCode}
-          onChange={(e) => setCouponCode(e.target.value)}
+            id="couponCode"
+            type="text"
+            value={couponCode}
+            disabled={
+                couponApplied ||
+                isApplyingCoupon
+            }
+            onChange={(event) =>
+                setCouponCode(
+                    event.target.value.toUpperCase(),
+                )
+            }
         />
+
         <button
-          type="button"
-          disabled={isApplyingCoupon}
-          onClick={() => void handleApplyCoupon()}
+            type="button"
+            disabled={
+                couponApplied ||
+                isApplyingCoupon ||
+                couponCode.trim() === ""
+            }
+            onClick={() =>
+                void handleApplyCoupon()
+            }
         >
-          {isApplyingCoupon ? "Applying..." : "Apply"}
+          {couponApplied
+              ? "Applied"
+              : isApplyingCoupon
+                  ? "Applying..."
+                  : "Apply"}
         </button>
       </div>
 

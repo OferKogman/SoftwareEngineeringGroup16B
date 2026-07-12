@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
 
 public class LotteryPolicy implements PurchasePolicy {
 
@@ -25,9 +25,9 @@ public class LotteryPolicy implements PurchasePolicy {
         this.winnerAmount = winnerAmount;
         validateDate(lotteryRegistrationDueDate);
         this.lotteryRegistrationDueDate = lotteryRegistrationDueDate;
-        this.participants = ConcurrentHashMap.newKeySet();
-        this.winnersAndCodes = new ConcurrentHashMap<>();
-        this.usedCodes = new ConcurrentHashMap<>();
+        this.participants = new HashSet<>();
+        this.winnersAndCodes = new HashMap<>();
+        this.usedCodes = new HashMap<>();
     }
 
     public LotteryPolicy(LotteryPolicy other) {
@@ -36,9 +36,8 @@ public class LotteryPolicy implements PurchasePolicy {
         this.lotteryRegistrationDueDate = other.lotteryRegistrationDueDate;
 
         this.participants = new HashSet<>(other.participants);
-
-        this.winnersAndCodes = new ConcurrentHashMap<>(other.winnersAndCodes);
-        this.usedCodes = new ConcurrentHashMap<>(other.usedCodes);
+        this.winnersAndCodes = new HashMap<>(other.winnersAndCodes);
+        this.usedCodes = new HashMap<>(other.usedCodes);
     }
 
     public LotteryPolicy() {}
@@ -83,7 +82,7 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void handleLotteryResults() {
-        if(lotteryRegistrationDueDate.isBefore(LocalDateTime.now()))
+        if (lotteryRegistrationDueDate.isAfter(LocalDateTime.now()))
             throw new IllegalStateException("Cannot handle lottery results before the registration due time passed.");
         List<String> winners = new ArrayList<>(participants);
 
@@ -100,26 +99,33 @@ public class LotteryPolicy implements PurchasePolicy {
     }
 
     public synchronized void validateLotteryCode(String code) {
+        if (code == null || code.isBlank()) {
+            throw new IllegalArgumentException("Lottery code is required.");
+        }
+
         if (usedCodes.containsKey(code)) {
             throw new IllegalArgumentException("Lottery code has already been used.");
         }
+
         if (!winnersAndCodes.containsKey(code)) {
             throw new IllegalArgumentException("Invalid lottery code.");
         }
-        String winnerID = winnersAndCodes.get(code);
-        usedCodes.put(code, winnerID);
     }
 
     public synchronized void useCode(String code) {
-        winnersAndCodes.remove(code);
+        validateLotteryCode(code);
+        String winnerID = winnersAndCodes.remove(code);
+        usedCodes.put(code, winnerID);
     }
 
     public synchronized void renewLotteryCode(String code) {
-        if (winnersAndCodes.containsKey(code) && usedCodes.containsKey(code)) {
-            String userID = winnersAndCodes.get(code);
-            winnersAndCodes.remove(code);
+        if (code == null || code.isBlank()) {
+            return;
+        }
+
+        if (!winnersAndCodes.containsKey(code) && usedCodes.containsKey(code)) {
+            String userID = usedCodes.remove(code);
             winnersAndCodes.put(code, userID);
-            usedCodes.remove(code);
         }
     }
 
@@ -136,5 +142,17 @@ public class LotteryPolicy implements PurchasePolicy {
     //FOR TESTS
     public List<String> getWinners() {
         return new ArrayList<>(winnersAndCodes.values());
+    }
+
+    public Map<String, String> getWinnerCodesByUser() {
+        Map<String, String> result = new HashMap<>();
+
+        for (Map.Entry<String, String> entry : winnersAndCodes.entrySet()) {
+            String code = entry.getKey();
+            String userID = entry.getValue();
+            result.put(userID, code);
+        }
+
+        return result;
     }
 }

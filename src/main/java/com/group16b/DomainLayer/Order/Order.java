@@ -64,6 +64,9 @@ public class Order {
     @Column(name = "external_ticket")
     private String externalTicket = null;
 
+	@Column(name = "applied_coupon_code")
+	private String appliedCouponCode = null;
+
 
 	public Order(String segmentId, List<String> seats, double totalPrice, int eventId, String subjectID) {
 		this.state = new ActiveOrder();
@@ -101,6 +104,8 @@ public class Order {
 		this.version = other.version;
 		this.transactioId=other.transactioId;
 		this.externalTicket=other.externalTicket;
+		this.appliedCouponCode =
+				other.appliedCouponCode;
 		
 	}
 
@@ -199,6 +204,42 @@ public class Order {
 
 	public double getTotalOrderprice() {
 		return totalOrderprice;
+	}
+
+	public String getAppliedCouponCode() {
+		return appliedCouponCode;
+	}
+
+	public void applyCoupon(
+			String couponCode,
+			double discountedPrice) {
+
+		validiteOrderIsActive();
+
+		if (appliedCouponCode != null) {
+			throw new IllegalStateException(
+					"A coupon has already been applied to this order.");
+		}
+
+		if (couponCode == null
+				|| couponCode.trim().isEmpty()) {
+
+			throw new IllegalArgumentException(
+					"Coupon code cannot be empty.");
+		}
+
+		if (discountedPrice < 0
+				|| discountedPrice > totalOrderprice) {
+
+			throw new IllegalArgumentException(
+					"Discounted price is invalid.");
+		}
+
+		this.totalOrderprice =
+				Math.max(0.0, discountedPrice);
+
+		this.appliedCouponCode =
+				couponCode.trim().toUpperCase();
 	}
 
 	

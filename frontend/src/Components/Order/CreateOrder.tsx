@@ -32,8 +32,8 @@ export default function CreateOrderPage() {
   const lotteryCode = (location.state as { lotteryCode?: string } | null)
     ?.lotteryCode;
 
-  //TODO: Pass Age to reservation somehow when implemented in the backend
-  //const age = (location.state as { age?: number } | null)?.age;
+  const age =
+      (location.state as { age?: number } | null)?.age ?? 0;
 
   const [selectedFieldSeg, setSelectedFieldSeg] = useState<FieldSegDTO | null>(
     null,
@@ -200,6 +200,7 @@ export default function CreateOrderPage() {
             venueId: venueID,
             segmentId: segmentID,
             amount,
+            age,
           }),
         },
       );
@@ -264,6 +265,7 @@ export default function CreateOrderPage() {
             venueId: venueID,
             segmentId: segmentID,
             seatIds: seatIDs,
+            age,
           }),
         },
       );
@@ -290,6 +292,7 @@ export default function CreateOrderPage() {
             lotteryCode: lotteryCode,
             segmentId: segmentID,
             seatIds: seatIDs,
+            age,
           }),
         },
       );

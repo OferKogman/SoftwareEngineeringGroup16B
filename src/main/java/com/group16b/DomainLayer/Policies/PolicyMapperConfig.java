@@ -13,7 +13,8 @@ public class PolicyMapperConfig {
 
     private static ObjectMapper buildMapper() {
         PolymorphicTypeValidator ptv = BasicPolymorphicTypeValidator.builder()
-                .allowIfBaseType("com.group16b.DomainLayer.Policies") 
+                .allowIfBaseType("com.group16b.DomainLayer.Policies")
+                .allowIfBaseType("java.util.List")
                 .allowIfBaseType("java.util.Set")
                 .build();
                 

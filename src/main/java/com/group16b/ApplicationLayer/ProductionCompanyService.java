@@ -55,6 +55,7 @@ public class ProductionCompanyService {
         this.idGen = idGen;
     }
 
+    @Transactional(readOnly = true)
     public Result<List<OrderDTO>> viewSalesHistory(String sessionToken, int productionCompanyID) {
         try {
             logger.info("ProductionCompanyService.viewSalesHistory: Retrieving sales history for specific company");
@@ -92,6 +93,7 @@ public class ProductionCompanyService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Result<Double> displayTotalRevenue(String sessionToken, int productionCompanyID) {
         try {
             logger.info("ProductionCompanyService.displayTotalRevenue: Calculating total revenue for company {}",
@@ -160,6 +162,7 @@ public class ProductionCompanyService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Result<ProductionCompanyInfoDTO> getProductionCompany(int companyID) {
         try {
             logger.info("ProductionCompanyService.getProductionCompany: Retrieving production company with id {}",
@@ -178,6 +181,7 @@ public class ProductionCompanyService {
         }
     }
 
+    @Transactional(readOnly = true)
     public Result<List<EventDTO>> getCompanyAllEvents(int companyID) {
         try {
             logger.info("ProductionCompanyService.getCompanyEvents: Retrieving events for company with id {}",

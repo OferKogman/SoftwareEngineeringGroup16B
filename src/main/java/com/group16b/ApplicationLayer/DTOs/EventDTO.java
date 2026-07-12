@@ -19,7 +19,9 @@ import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MinAgeDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.MinTicketsDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.OrDTO;
 import com.group16b.ApplicationLayer.DTOs.PurchasePolicy.PurchasePolicyDTO;
+import com.group16b.ApplicationLayer.DiscountPolicyService;
 import com.group16b.DomainLayer.Event.Event;
+import com.group16b.ApplicationLayer.PurchasePolicyService;
 
 public class EventDTO {
 	private final int eventID;
@@ -48,27 +50,12 @@ public class EventDTO {
 		artist = event.getEventArtist();
 		category = event.getEventCategory();
 		productionCompanyID = event.getEventProductionCompanyID();
-		discountPolicy = new SumDiscountDTO(
-				new MaxDiscountDTO(
-						new AndDiscountDTO(
-								new MinTicketsDiscountDTO(
-										10.0,
-										3),
-								new MaxDateDiscountDTO(15.0,
-										LocalDateTime.of(2026, 12, 31, 23, 59)),
-								5.0),
-						new OrDiscountDTO(
-								new MaxTicketsDiscountDTO(
-										12.0,
-										20),
-								new MinDateDiscountDTO(8.0,
-										LocalDateTime.of(2026, 1, 1, 0, 0)),
-								7.5)),
-				new SimpleDiscountDTO(
-						5.0));
-		purchasePolicy = new AndDTO(new OrDTO(new AndDTO(new MinAgeDTO(
-				55), new MaxTicketsDTO(5)), new MaxAgeDTO(18)),
-				new OrDTO(new MinTicketsDTO(10), new MaxTicketsDTO(2)));
+		discountPolicy =
+				DiscountPolicyService.toDTO(
+						event.getEventDiscountPolicy());
+		purchasePolicy =
+				PurchasePolicyService.toDTO(
+						event.getEventPurchasePolicy());
 		price = event.getEventPrice();
 		rating = event.getEventRating();
 

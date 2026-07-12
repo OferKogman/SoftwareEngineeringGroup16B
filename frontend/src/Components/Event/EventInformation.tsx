@@ -28,14 +28,13 @@ export default function EventInformation() {
     setIsOrdering(true);
     setMessage("");
     setError("");
-
+    const normalizedLotteryCode =
+        lotteryCode && lotteryCode.trim() !== "" ? lotteryCode.trim() : null;
     try {
       if (age === -1) {
         throw new Error("Age is required");
       }
-      if (lotteryCode === "") {
-        throw new Error("Lottery code is required");
-      }
+
       const response = await apiFetch(
         `http://localhost:8080/events/${eventID}/reservations/status`,
         {
@@ -51,7 +50,7 @@ export default function EventInformation() {
       if (status === -1) {
         navigate("create-order", {
           state: {
-            lotteryCode,
+            lotteryCode: normalizedLotteryCode,
             age,
           },
         });
@@ -59,7 +58,7 @@ export default function EventInformation() {
         navigate(`/events/${eventID}/queue`, {
           state: {
             initialStatus: status,
-            lotteryCode,
+            lotteryCode: normalizedLotteryCode,
             age,
           },
         });
@@ -177,14 +176,7 @@ export default function EventInformation() {
   }
   const ageRequired = checkAgeRequired();
 
-  useEffect(() => {
-    async function needCode() {
-      if (eventDTO?.lotteryDTO && lotteryCode === null) {
-        setLotteryCode("");
-      }
-    }
-    void needCode();
-  }, [eventDTO?.lotteryDTO, lotteryCode]);
+
 
   useEffect(() => {
     async function needAge() {

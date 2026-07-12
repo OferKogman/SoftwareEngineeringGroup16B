@@ -4,6 +4,9 @@ public class AgePolicy implements PurchasePolicy {
     private Integer minAge; // null = no minimum
     private Integer maxAge; // null = no maximum
 
+    protected AgePolicy() {
+    }
+
     public AgePolicy(Integer minAge, Integer maxAge) {
         if (minAge == null && maxAge == null)
             throw new IllegalArgumentException("At least one of minAge or maxAge must be defined.");
