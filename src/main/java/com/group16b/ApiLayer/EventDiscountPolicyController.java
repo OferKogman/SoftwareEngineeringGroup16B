@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.group16b.ApplicationLayer.DiscountPolicyService;
 import com.group16b.ApplicationLayer.Records.ApplyCouponCodeRequest;
 import com.group16b.ApplicationLayer.Records.DiscountPolicyRecord;
+import com.group16b.ApplicationLayer.Records.CouponRecord;
 
 @RestController
 public class EventDiscountPolicyController extends BaseController {
@@ -46,11 +47,30 @@ public class EventDiscountPolicyController extends BaseController {
         return executeWithReturnData(() -> discountPolicyService.getEventDiscountPolicy(authToken, eventId));
     }
 
+    @PostMapping("/api/events/{eventId}/coupons")
+    public ResponseEntity<?> createEventCoupon(
+            @RequestHeader("Authorization") String authToken,
+            @PathVariable("eventId") int eventId,
+            @RequestBody CouponRecord record) {
+
+        return executeWithNoReturnData(
+                () -> discountPolicyService.createEventCoupon(
+                        authToken,
+                        eventId,
+                        record));
+    }
+
     @PostMapping("/api/orders/{orderId}/coupon")
     public ResponseEntity<?> applyCoupon(
+            @RequestHeader("Authorization") String authToken,
             @PathVariable("orderId") String orderId,
             @RequestBody ApplyCouponCodeRequest request) {
-        return executeWithReturnData(() -> discountPolicyService.applyCoupon(orderId, request.couponCode()));
+
+        return executeWithReturnData(
+                () -> discountPolicyService.applyCoupon(
+                        authToken,
+                        orderId,
+                        request.couponCode()));
     }
 
 }

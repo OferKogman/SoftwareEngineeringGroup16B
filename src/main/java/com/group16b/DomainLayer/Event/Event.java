@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import com.group16b.ApplicationLayer.Records.EventRecord;
+import com.group16b.DomainLayer.Policies.DiscountPolicy.CouponCodeDiscount;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicy;
 import com.group16b.DomainLayer.Policies.DiscountPolicy.DiscountPolicySetConverter;
 import com.group16b.DomainLayer.Policies.PurchasePolicy.LotteryPolicy;
@@ -21,6 +22,10 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
 
 @Entity
 @Table(name = "events")
@@ -72,6 +77,12 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private Set<DiscountPolicy> discountPolicy = new HashSet<>();
 
+	@ElementCollection(fetch = FetchType.EAGER)
+	@CollectionTable(
+			name = "event_coupons",
+			joinColumns = @JoinColumn(name = "event_id"))
+	private Set<CouponCodeDiscount> coupons = new HashSet<>();
+
     @Convert(converter = LotteryPolicyConverter.class) 
     @Column(columnDefinition = "TEXT")
     private LotteryPolicy lotteryPolicy;
@@ -91,6 +102,7 @@ public class Event {
 		this.category = eventRecord.category();
 		this.productionCompanyID = eventRecord.pcID();
 		this.discountPolicy = new HashSet<>();
+		this.coupons = new HashSet<>();
 		this.purchasePolicy = new HashSet<>();
 		this.price = 0; //update only based on segment price
 		validateRating(eventRecord.rating());
@@ -110,8 +122,16 @@ public class Event {
 		this.artist = other.getEventArtist();
 		this.category = other.getEventCategory();
 		this.productionCompanyID = other.getEventProductionCompanyID();
-		this.discountPolicy = copyDiscountPolicies(other.getEventDiscountPolicy());
-		this.purchasePolicy = copyPurchasePolicies(other.getEventPurchasePolicy());
+		this.discountPolicy =
+				copyDiscountPolicies(
+						other.getEventDiscountPolicy());
+
+		this.coupons =
+				copyCoupons(other.getCoupons());
+
+		this.purchasePolicy =
+				copyPurchasePolicies(
+						other.getEventPurchasePolicy());
 		this.price = other.getEventPrice();
 		this.rating = other.getEventRating();
 		this.ownerId = other.getOwnerId();
@@ -126,6 +146,20 @@ public class Event {
 			copiedPolicies.add(policy);
 		}
 		return copiedPolicies;
+	}
+
+	private Set<CouponCodeDiscount> copyCoupons(
+			Set<CouponCodeDiscount> sourceCoupons) {
+
+		Set<CouponCodeDiscount> copiedCoupons =
+				new HashSet<>();
+
+		for (CouponCodeDiscount coupon : sourceCoupons) {
+			copiedCoupons.add(
+					new CouponCodeDiscount(coupon));
+		}
+
+		return copiedCoupons;
 	}
 
 	private Set<PurchasePolicy> copyPurchasePolicies(Set<PurchasePolicy> policies) {
@@ -236,6 +270,47 @@ public class Event {
 
 	public void removeEventDiscountPolicy(DiscountPolicy dp) {
 		discountPolicy.remove(dp);
+	}
+
+	public Set<CouponCodeDiscount> getCoupons() {
+		return copyCoupons(coupons);
+	}
+
+	public void addCoupon(CouponCodeDiscount coupon) {
+		if (coupon == null) {
+			throw new IllegalArgumentException(
+					"Coupon cannot be null.");
+		}
+
+		boolean duplicateCode =
+				coupons.stream()
+						.anyMatch(existingCoupon ->
+								existingCoupon.matchesCode(
+										coupon.getCode()));
+
+		if (duplicateCode) {
+			throw new IllegalStateException(
+					"A coupon with this code already exists for the event.");
+		}
+
+		coupons.add(coupon);
+	}
+
+	public double redeemCoupon(
+			String couponCode,
+			double currentOrderPrice) {
+
+		CouponCodeDiscount coupon =
+				coupons.stream()
+						.filter(existingCoupon ->
+								existingCoupon.matchesCode(
+										couponCode))
+						.findFirst()
+						.orElseThrow(() ->
+								new IllegalArgumentException(
+										"Invalid coupon code."));
+
+		return coupon.redeem(currentOrderPrice);
 	}
 
 	public Set<PurchasePolicy> getEventPurchasePolicy() {

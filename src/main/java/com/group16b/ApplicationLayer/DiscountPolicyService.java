@@ -40,6 +40,9 @@ import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.ProductionCompany.membership.ManagerPermissions;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.ApplicationLayer.Records.CouponRecord;
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import com.group16b.DomainLayer.Order.Order;
 
 @Service
 @Transactional
@@ -50,15 +53,18 @@ public class DiscountPolicyService {
     private final IEventRepository eventRepo;
     private final IRepository<User> userRepository;
     private final IProductionCompanyRepository productionCompanyRepository;
+    private final IOrderRepository orderRepository;
 
     public DiscountPolicyService(IAuthenticationService authenticationService,
                                  IProductionCompanyRepository productionCompanyRepository,
                                  IEventRepository eventRepo,
-                                 IRepository<User> userRepository) {
+                                 IRepository<User> userRepository,
+                                 IOrderRepository orderRepository) {
         this.authenticationService = authenticationService;
         this.productionCompanyRepository = productionCompanyRepository;
         this.eventRepo = eventRepo;
         this.userRepository = userRepository;
+        this.orderRepository = orderRepository;
     }
 
     public Result<Boolean> createCompanyDiscountPolicy(
@@ -257,8 +263,116 @@ public class DiscountPolicyService {
         }
     }
 
-    public Result<Double> applyCoupon(String orderID, String couponCode) {
-        return Result.makeFail("Coupon discounts are not implemented yet.");
+    public Result<Boolean> createEventCoupon(
+            String sessionToken,
+            int eventID,
+            CouponRecord record) {
+
+        try {
+            String userID =
+                    validateUserAndGetId(sessionToken);
+
+            if (record == null) {
+                throw new IllegalArgumentException(
+                        "Coupon details are required.");
+            }
+
+            Event event =
+                    eventRepo.findByID(
+                            String.valueOf(eventID));
+
+            ProductionCompany company =
+                    productionCompanyRepository.findByID(
+                            String.valueOf(
+                                    event.getEventProductionCompanyID()));
+
+            company.validateUserPermissions(
+                    userID,
+                    ManagerPermissions.PURCHASE_POLICY);
+
+            CouponCodeDiscount coupon =
+                    new CouponCodeDiscount(
+                            requireDouble(
+                                    record.percentage(),
+                                    "percentage"),
+
+                            record.code(),
+
+                            requireDate(
+                                    record.expirationDate(),
+                                    "expirationDate"),
+
+                            requireInt(
+                                    record.maxUses(),
+                                    "maxUses"));
+
+            event.addCoupon(coupon);
+            eventRepo.save(event);
+
+            return Result.makeOk(true);
+
+        } catch (Exception e) {
+            logger.error(
+                    "DiscountPolicyService.createEventCoupon: {}",
+                    e.getMessage());
+
+            return Result.makeFail(e.getMessage());
+        }
+    }
+
+    public Result<Double> applyCoupon(
+            String sessionToken,
+            String orderID,
+            String couponCode) {
+
+        try {
+            String userID =
+                    validateUserAndGetId(sessionToken);
+
+            Order order =
+                    orderRepository.findByID(orderID);
+
+            order.validiteOrderIsActive();
+            order.verifyBelongsToSubject(userID);
+
+            if (order.getAppliedCouponCode() != null) {
+                throw new IllegalStateException(
+                        "A coupon has already been applied to this order.");
+            }
+
+            Event event =
+                    eventRepo.findByID(
+                            String.valueOf(
+                                    order.getEventId()));
+
+            /*
+             * order.getTotalOrderprice() already contains
+             * the result of the recursive discount tree.
+             *
+             * The coupon is stacked afterward.
+             */
+            double discountedPrice =
+                    event.redeemCoupon(
+                            couponCode,
+                            order.getTotalOrderprice());
+
+            order.applyCoupon(
+                    couponCode,
+                    discountedPrice);
+
+            eventRepo.save(event);
+            orderRepository.save(order);
+
+            return Result.makeOk(
+                    order.getTotalOrderprice());
+
+        } catch (Exception e) {
+            logger.error(
+                    "DiscountPolicyService.applyCoupon: {}",
+                    e.getMessage());
+
+            return Result.makeFail(e.getMessage());
+        }
     }
 
     private String validateUserAndGetId(String sessionToken) {

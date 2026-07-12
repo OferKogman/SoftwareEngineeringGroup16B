@@ -74,3 +74,23 @@
 .form-actions button {
   cursor: pointer;
 }
+
+
+
+.form-actions {
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.coupon-creation-form {
+  max-width: 520px;
+  margin: 24px auto 0;
+  padding: 20px;
+  border: 1px solid rgba(127, 127, 127, 0.45);
+  border-radius: 10px;
+}
+
+.coupon-creation-form h3 {
+  margin-top: 0;
+  text-align: center;
+}

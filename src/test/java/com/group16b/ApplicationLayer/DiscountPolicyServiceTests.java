@@ -28,6 +28,8 @@ import com.group16b.DomainLayer.Policies.DiscountPolicy.SumDiscount;
 import com.group16b.DomainLayer.ProductionCompany.IProductionCompanyRepository;
 import com.group16b.DomainLayer.ProductionCompany.ProductionCompany;
 import com.group16b.DomainLayer.User.User;
+import com.group16b.DomainLayer.Order.IOrderRepository;
+import org.mockito.Mock;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -43,6 +45,8 @@ public class DiscountPolicyServiceTests {
     private Event event;
 
     private DiscountPolicyService service;
+    @Mock
+    private IOrderRepository orderRepository;
 
     @BeforeEach
     public void setUp() {
@@ -65,7 +69,7 @@ public class DiscountPolicyServiceTests {
                 authenticationService,
                 companyRepository,
                 eventRepository,
-                userRepository);
+                userRepository, orderRepository);
 
         when(authenticationService.validateToken("token"))
                 .thenReturn(true);
